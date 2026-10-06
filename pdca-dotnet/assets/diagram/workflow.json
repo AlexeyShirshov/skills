@@ -1,0 +1,242 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "pdca-dotnet: оркестратор и фазы цикла",
+    "output": "pdca-dotnet.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "main-cycle",
+        "label": "Цикл",
+        "focus": [
+          "plan",
+          "do",
+          "check",
+          "act"
+        ],
+        "note": "PLAN → DO → CHECK → ACT по гейтам; ACT только после зелёного CHECK; go — начало DO."
+      },
+      {
+        "id": "branches",
+        "label": "Оркестратор и ветки",
+        "focus": [
+          "orb",
+          "check",
+          "sec_audit",
+          "escalate",
+          "stop"
+        ],
+        "note": "Cheap-оркестратор маршрутизирует решение escalate: r не исчерпан → DO, исчерпан → PLAN r+1, иначе STOP; security — поток CHECK."
+      }
+    ],
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "дешёвая ступень (cheap)"
+        },
+        "security": {
+          "label": "средняя ступень (medium)"
+        },
+        "external": {
+          "label": "дорогая ступень (strong)"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "l_plan",
+      "label": "PLAN"
+    },
+    {
+      "id": "l_do",
+      "label": "DO"
+    },
+    {
+      "id": "l_check",
+      "label": "CHECK"
+    },
+    {
+      "id": "l_act",
+      "label": "ACT / EXIT"
+    },
+    {
+      "id": "l_ret",
+      "label": "Оркестратор и ветки",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "plan",
+    "do",
+    "check",
+    "act"
+  ],
+  "nodes": [
+    {
+      "id": "plan",
+      "lane": "l_plan",
+      "col": 0,
+      "type": "security",
+      "label": "PLAN",
+      "sublabel": "дизайн · план → go",
+      "width": 150
+    },
+    {
+      "id": "do",
+      "lane": "l_do",
+      "col": 0,
+      "type": "backend",
+      "label": "DO",
+      "sublabel": "код ∥ тесты ∥ доки",
+      "width": 150
+    },
+    {
+      "id": "check",
+      "lane": "l_check",
+      "col": 0,
+      "type": "security",
+      "label": "CHECK",
+      "sublabel": "вердикт · аудит + линзы",
+      "width": 150
+    },
+    {
+      "id": "sec_audit",
+      "lane": "l_check",
+      "col": 1,
+      "type": "security",
+      "label": "CHECK · security",
+      "sublabel": "поток CHECK · отчёт",
+      "width": 132
+    },
+    {
+      "id": "act",
+      "lane": "l_act",
+      "col": 0,
+      "type": "backend",
+      "label": "ACT",
+      "sublabel": "закрытие · handoff",
+      "width": 150
+    },
+    {
+      "id": "escalate",
+      "lane": "l_ret",
+      "col": 3,
+      "type": "external",
+      "label": "Эскалация",
+      "sublabel": "решение · r+1 / STOP",
+      "width": 180
+    },
+    {
+      "id": "orb",
+      "lane": "l_ret",
+      "col": 2,
+      "type": "backend",
+      "label": "Оркестратор",
+      "sublabel": "cheap · normal: primary · autonomous: pdca-orchestrator",
+      "width": 270
+    },
+    {
+      "id": "stop",
+      "lane": "l_ret",
+      "col": 4,
+      "type": "external",
+      "label": "STOP",
+      "sublabel": "нет actionable r+1",
+      "width": 92
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_do_check",
+      "from": "do",
+      "to": "check",
+      "label": "потоки закрыты",
+      "role": "main"
+    },
+    {
+      "id": "e_sec_audit",
+      "from": "check",
+      "to": "sec_audit",
+      "label": "условно · fork auth/секреты/ввод",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "e_sec_report",
+      "from": "sec_audit",
+      "to": "check",
+      "label": "отчёт → CHECK · агрегация",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "e_lenses",
+      "from": "check",
+      "to": "act",
+      "label": "все 4 потока + security отчёт зелёные · final CHECK",
+      "role": "main"
+    },
+    {
+      "id": "e_go",
+      "from": "plan",
+      "to": "do",
+      "label": "`go` · n=1 / авто: сразу",
+      "role": "main"
+    },
+    {
+      "id": "e_check_orb",
+      "from": "check",
+      "to": "orb",
+      "label": "вердикт pass/fail (все потоки + security)",
+      "role": "return"
+    },
+    {
+      "id": "e_escalate_orb",
+      "from": "escalate",
+      "to": "orb",
+      "label": "решение (для маршрутизации)",
+      "variant": "security",
+      "role": "return"
+    },
+    {
+      "id": "e_orb_do",
+      "from": "orb",
+      "to": "do",
+      "label": "решение: r не исчерпан → DO / дефект CHECK",
+      "variant": "security",
+      "role": "return"
+    },
+    {
+      "id": "e_orb_stop",
+      "from": "orb",
+      "to": "stop",
+      "label": "нет actionable PLAN r+1"
+    },
+    {
+      "id": "e_orb_escalate",
+      "from": "orb",
+      "to": "escalate",
+      "label": "повтор после 1 фикса · 3-й провал CHECK(r) · жёсткий security tradeoff",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "e_orb_replan",
+      "from": "orb",
+      "to": "plan",
+      "label": "решение: исчерпан r → genuine PLAN r+1",
+      "variant": "security",
+      "role": "return"
+    },
+    {
+      "id": "e_do_replan",
+      "from": "do",
+      "to": "plan",
+      "label": "новое предусловие / блокер",
+      "variant": "security",
+      "role": "return"
+    }
+  ]
+}

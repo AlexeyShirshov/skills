@@ -1,0 +1,379 @@
+<svg viewBox="0 0 1604 1412" width="1604" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+<defs>
+<marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#334155"/></marker>
+</defs>
+<style>
+.t{font-size:13px;font-weight:600;fill:#0f172a}
+.s{font-size:10.5px;fill:#64748b}
+.h{font-size:12.5px;font-weight:700;fill:#ffffff}
+.g{font-size:10.5px;font-weight:600}
+.band{fill:#1f2937}
+.bt{fill:#ffffff;font-size:15px;font-weight:700}
+.ol{fill:#e6e9ef;font-size:11.5px}
+.lt{font-size:12.5px;font-weight:700;fill:#0f172a}
+.ls{font-size:10.5px;fill:#64748b}
+.lm{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12px;font-weight:700}
+.bm{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:10.5px;font-weight:700}
+.st{font-size:14px;font-weight:700}
+</style>
+<rect x="24" y="24" width="1556" height="138" rx="10" class="band"/>
+<text x="42" y="48" class="bt">Оркестратор · cheap — normal: primary · autonomous: pdca-orchestrator</text>
+<text x="42" y="76" class="ol">← PLAN ← «старт» · «реплан от check» · «реплан от DO»</text>
+<text x="42" y="94" class="ol">← DO ← «план готов» · «фикс дефекта от check (вкл. security)» · «фикс от escalate при r не исчерпан»</text>
+<text x="42" y="112" class="ol">← CHECK ← «потоки закрыты»</text>
+<text x="42" y="130" class="ol">← CHECK · security ← «условно: auth / секреты / ввод / crypto» · «отчёт → CHECK»</text>
+<text x="820.0" y="76" class="ol">← ACT ← «check pass»</text>
+<text x="820.0" y="94" class="ol">← ЭСКАЛАЦИЯ ← «неоднозначность» · «повтор после 1 фикса / 3-й провал CHECK(r)»</text>
+<text x="834.0" y="112" class="ol">· «arch/API/hard-security trade-off» · «приёмка рискованного диффа» · «низкая уверенность PLAN/DO»</text>
+<text x="820.0" y="130" class="ol">← STOP ← «нет выполнимого PLAN r+1» · «блокер не разрешён planner/escalate»</text>
+<text x="834.0" y="148" class="ol">· «очередь пуста / остаток blocked» · «лимит итераций (n/3)» · «стоп пользователя»</text>
+<rect x="24" y="224" width="196" height="40" rx="8" fill="#2563eb"/><text x="122.0" y="249.0" class="h" text-anchor="middle">P · PLAN</text>
+<polyline points="122.0,264 122.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="24" y="280" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="287" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="287" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="299.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="303" class="t">PLAN</text>
+<text x="37" y="322" class="s">старт · дизайн</text>
+<rect x="24" y="342" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="349" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="162" y="349" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="187.0" y="361.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="37" y="365" class="t">Сбор · gather</text>
+<text x="37" y="384" class="s">scout + доменные линзы</text>
+<rect x="24" y="404" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="411" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="411" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="423.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="427" class="t">Decide · planner</text>
+<text x="37" y="446" class="s">fix / defer · декомпозиция</text>
+<rect x="24" y="466" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="473" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="473" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="485.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="489" class="t">Критерии · цель</text>
+<text x="37" y="508" class="s">goal · приёмка (+негатив)</text>
+<rect x="24" y="528" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="535" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="535" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="547.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="551" class="t">Задачи · риски</text>
+<text x="37" y="570" class="s">шаги · без TBD</text>
+<rect x="24" y="590" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="597" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="597" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="609.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="613" class="t">Тесты · Доки</text>
+<text x="37" y="632" class="s">стратегия · план</text>
+<rect x="24" y="652" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="659" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="659" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="671.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="675" class="t">Перф-решение</text>
+<text x="37" y="694" class="s">мерить? · чем · baseline</text>
+<rect x="24" y="714" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="721" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="721" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="733.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="737" class="t">Разведка (spike)</text>
+<text x="37" y="756" class="s">нужен ли? · чем · PoC</text>
+<rect x="24" y="776" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="25" y="783" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="783" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="187.0" y="795.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="37" y="799" class="t">Юнит-режим</text>
+<text x="37" y="818" class="s">послед. · дерево · worktrees</text>
+<polyline points="122.0,330 122.0,342" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,392 122.0,404" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,454 122.0,466" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,516 122.0,528" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,578 122.0,590" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,640 122.0,652" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,702 122.0,714" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="122.0,764 122.0,776" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="18" y="272" width="208" height="562" rx="12" fill="none" stroke="#2563eb" stroke-opacity="0.35" stroke-width="1"/>
+<rect x="248" y="224" width="196" height="40" rx="8" fill="#7c3aed"/><text x="346.0" y="249.0" class="h" text-anchor="middle">D · DO</text>
+<polyline points="346.0,264 346.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="248" y="280" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="249" y="287" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="287" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="299.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="261" y="303" class="t">DO</text>
+<text x="261" y="322" class="s">журнал · план до go</text>
+<rect x="278" y="342" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="279" y="349" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="349" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="361.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="291" y="365" class="t">Код</text>
+<text x="291" y="384" class="s">из плана</text>
+<polyline points="262,367.0 276,367.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="278" y="404" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="279" y="411" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="411" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="423.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="291" y="427" class="t">Тесты</text>
+<text x="291" y="446" class="s">из плана</text>
+<polyline points="262,429.0 276,429.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="278" y="466" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="279" y="473" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="473" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="485.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="291" y="489" class="t">Доки · проза</text>
+<text x="291" y="508" class="s">README · документация</text>
+<polyline points="262,491.0 276,491.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<line x1="262" y1="330" x2="262" y2="491.0" stroke="#94a3b8" stroke-width="1.5"/>
+<rect x="248" y="528" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="249" y="535" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="535" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="547.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="261" y="551" class="t">XML-doc</text>
+<text x="261" y="570" class="s">после кода · если требует проект</text>
+<path d="M346.0,516 L346.0,528" fill="none" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="248" y="590" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="249" y="597" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="597" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="609.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="261" y="613" class="t">Сборка · тесты</text>
+<text x="261" y="632" class="s">build-гейт · unit-луп</text>
+<path d="M346.0,578 L346.0,590" fill="none" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="248" y="652" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="249" y="659" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="386" y="659" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="411.0" y="671.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="261" y="675" class="t">Интеграц. тесты</text>
+<text x="261" y="694" class="s">граница DO → CHECK</text>
+<path d="M346.0,640 L346.0,652" fill="none" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="242" y="272" width="208" height="438" rx="12" fill="none" stroke="#7c3aed" stroke-opacity="0.35" stroke-width="1"/>
+<rect x="472" y="224" width="196" height="40" rx="8" fill="#d97706"/><text x="570.0" y="249.0" class="h" text-anchor="middle">C · CHECK</text>
+<polyline points="570.0,264 570.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="472" y="280" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="473" y="287" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="610" y="287" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="635.0" y="299.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="485" y="303" class="t">CHECK · gather</text>
+<text x="485" y="322" class="s">форк 4 потоков + security</text>
+<rect x="502" y="342" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="503" y="349" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="610" y="349" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="635.0" y="361.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="515" y="365" class="t">Аудит кода</text>
+<text x="515" y="384" class="s">сбор · кандидаты</text>
+<polyline points="486,367.0 500,367.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="502" y="404" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="503" y="411" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="610" y="411" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="635.0" y="423.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="515" y="427" class="t">Линза тестов</text>
+<text x="515" y="446" class="s">прогон · покрытие</text>
+<polyline points="486,429.0 500,429.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="502" y="466" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="503" y="473" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="610" y="473" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="635.0" y="485.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="515" y="489" class="t">Линза доков</text>
+<text x="515" y="508" class="s">проза + XML-doc</text>
+<polyline points="486,491.0 500,491.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="502" y="528" width="166" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="503" y="535" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="610" y="535" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="635.0" y="547.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="515" y="551" class="t">Линза перфа</text>
+<text x="515" y="570" class="s">замер → суждение</text>
+<polyline points="486,553.0 500,553.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<line x1="486" y1="330" x2="486" y2="553.0" stroke="#94a3b8" stroke-width="1.5"/>
+<rect x="472" y="590" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="473" y="597" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="610" y="597" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="635.0" y="609.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="485" y="613" class="t">Триаж · вердикт</text>
+<text x="485" y="632" class="s">агрегат всех потоков → pass/fail</text>
+<path d="M570.0,578 L570.0,590" fill="none" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="466" y="272" width="208" height="376" rx="12" fill="none" stroke="#d97706" stroke-opacity="0.35" stroke-width="1"/>
+<rect x="696" y="224" width="240" height="40" rx="8" fill="#be123c"/><text x="816.0" y="249.0" class="h" text-anchor="middle">CHECK · security (поток)</text>
+<polyline points="816.0,264 816.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="696" y="280" width="240" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="697" y="287" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="878" y="287" width="50" height="18" rx="6" fill="#4f46e5" fill-opacity="0.13" stroke="#4f46e5" stroke-opacity="0.7"/>
+<text x="903.0" y="299.5" class="bm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="709" y="303" class="t">Аудит безопасности</text>
+<text x="709" y="322" class="s">read-only · отчёт → CHECK</text>
+<rect x="696" y="342" width="240" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="5 4"/>
+<rect x="697" y="349" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="878" y="349" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="903.0" y="361.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="709" y="365" class="t">Скаут (опц.)</text>
+<text x="709" y="384" class="s">scout · только факты вне диффа (опц.)</text>
+<path d="M816.0,342 L816.0,330" fill="none" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="690" y="272" width="252" height="128" rx="12" fill="none" stroke="#be123c" stroke-opacity="0.35" stroke-width="1"/>
+<rect x="964" y="224" width="168" height="40" rx="8" fill="#b91c1c"/><text x="1048.0" y="249.0" class="h" text-anchor="middle">ЭСКАЛАЦИЯ</text>
+<polyline points="1048.0,264 1048.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="964" y="280" width="168" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="965" y="287" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1074" y="287" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1099.0" y="299.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="977" y="303" class="t">Скаут</text>
+<text x="977" y="322" class="s">scout · факты · file:line</text>
+<rect x="964" y="342" width="168" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="965" y="349" width="3" height="36" rx="1.5" fill="#ea580c"/>
+<rect x="1074" y="349" width="50" height="18" rx="6" fill="#ea580c" fill-opacity="0.13" stroke="#ea580c" stroke-opacity="0.7"/>
+<text x="1099.0" y="361.5" class="bm" fill="#ea580c" text-anchor="middle">strong</text>
+<text x="977" y="365" class="t">Эскалация</text>
+<text x="977" y="384" class="s">решает · решение → орб</text>
+<polyline points="1048.0,330 1048.0,342" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="958" y="272" width="180" height="128" rx="12" fill="none" stroke="#b91c1c" stroke-opacity="0.35" stroke-width="1"/>
+<rect x="1160" y="224" width="196" height="40" rx="8" fill="#b91c1c"/><text x="1258.0" y="249.0" class="h" text-anchor="middle">STOP</text>
+<polyline points="1258.0,264 1258.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="1160" y="280" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1161" y="287" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1298" y="287" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1323.0" y="299.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1173" y="303" class="t">Статус-файл</text>
+<text x="1173" y="322" class="s">запись · source of truth</text>
+<rect x="1160" y="342" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1161" y="349" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1298" y="349" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1323.0" y="361.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1173" y="365" class="t">Отчёт</text>
+<text x="1173" y="384" class="s">закрыто / осталось / блокеры</text>
+<rect x="1160" y="404" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1161" y="411" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1298" y="411" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1323.0" y="423.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1173" y="427" class="t">Сообщение</text>
+<text x="1173" y="446" class="s">commit advice · manual</text>
+<polyline points="1258.0,330 1258.0,342" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="1258.0,392 1258.0,404" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="1154" y="272" width="208" height="190" rx="12" fill="none" stroke="#b91c1c" stroke-opacity="0.35" stroke-width="1"/>
+<rect x="1384" y="224" width="196" height="40" rx="8" fill="#059669"/><text x="1482.0" y="249.0" class="h" text-anchor="middle">A · ACT</text>
+<polyline points="1482.0,264 1482.0,280" fill="none" stroke="#334155" marker-end="url(#arrow)"/>
+<rect x="1384" y="280" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1385" y="287" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1522" y="287" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1547.0" y="299.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1397" y="303" class="t">ACT</text>
+<text x="1397" y="322" class="s">закрытие цикла</text>
+<rect x="1384" y="342" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1385" y="349" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1522" y="349" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1547.0" y="361.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1397" y="365" class="t">Урок</text>
+<text x="1397" y="384" class="s">→ memory</text>
+<rect x="1384" y="404" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1385" y="411" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1522" y="411" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1547.0" y="423.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1397" y="427" class="t">Правила</text>
+<text x="1397" y="446" class="s">AGENTS.md · оверлей</text>
+<rect x="1384" y="466" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1385" y="473" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1522" y="473" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1547.0" y="485.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1397" y="489" class="t">Статус</text>
+<text x="1397" y="508" class="s">файл · итог</text>
+<rect x="1384" y="528" width="196" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="1385" y="535" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1522" y="535" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
+<text x="1547.0" y="547.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="1397" y="551" class="t">Handoff</text>
+<text x="1397" y="570" class="s">→ EXIT · commit advice</text>
+<polyline points="1482.0,330 1482.0,342" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="1482.0,392 1482.0,404" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="1482.0,454 1482.0,466" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<polyline points="1482.0,516 1482.0,528" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="1378" y="272" width="208" height="314" rx="12" fill="none" stroke="#059669" stroke-opacity="0.35" stroke-width="1"/>
+<polyline points="106.0,162 106.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_p" marker-end="url(#arrow)"/>
+<text x="98.0" y="183.0" class="g" fill="#334155" text-anchor="end">старт</text>
+<text x="98.0" y="196.0" class="g" fill="#334155" text-anchor="end">реплан от check</text>
+<text x="98.0" y="209.0" class="g" fill="#334155" text-anchor="end">реплан от DO</text>
+<polyline points="138.0,224 138.0,162" fill="none" stroke="#334155" data-edge-id="return_p" marker-end="url(#arrow)"/>
+<polyline points="330.0,162 330.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_d" marker-end="url(#arrow)"/>
+<text x="322.0" y="183.0" class="g" fill="#334155" text-anchor="end">план готов</text>
+<text x="322.0" y="196.0" class="g" fill="#334155" text-anchor="end">фикс от check (с security)</text>
+<text x="322.0" y="209.0" class="g" fill="#334155" text-anchor="end">фикс от escalate (r активен)</text>
+<polyline points="362.0,224 362.0,162" fill="none" stroke="#334155" data-edge-id="return_d" marker-end="url(#arrow)"/>
+<polyline points="554.0,162 554.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_c" marker-end="url(#arrow)"/>
+<text x="546.0" y="196.0" class="g" fill="#334155" text-anchor="end">потоки закрыты</text>
+<polyline points="586.0,224 586.0,162" fill="none" stroke="#334155" data-edge-id="return_c" marker-end="url(#arrow)"/>
+<polyline points="800.0,162 800.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_sec" marker-end="url(#arrow)"/>
+<text x="792.0" y="183.0" class="g" fill="#334155" text-anchor="end">из CHECK · условно</text>
+<text x="792.0" y="196.0" class="g" fill="#334155" text-anchor="end">сбор (gather)</text>
+<text x="792.0" y="209.0" class="g" fill="#334155" text-anchor="end">отчёт → CHECK</text>
+<polyline points="832.0,224 832.0,162" fill="none" stroke="#334155" data-edge-id="return_sec" marker-end="url(#arrow)"/>
+<polyline points="1032.0,162 1032.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_e" marker-end="url(#arrow)"/>
+<text x="1024.0" y="183.0" class="g" fill="#334155" text-anchor="end">повтор после 1 фикса</text>
+<text x="1024.0" y="196.0" class="g" fill="#334155" text-anchor="end">3-й провал CHECK(r)</text>
+<text x="1024.0" y="209.0" class="g" fill="#334155" text-anchor="end">жёсткий tradeoff</text>
+<polyline points="1064.0,224 1064.0,162" fill="none" stroke="#334155" data-edge-id="return_e" marker-end="url(#arrow)"/>
+<polyline points="1242.0,162 1242.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_s" marker-end="url(#arrow)"/>
+<text x="1234.0" y="196.0" class="g" fill="#334155" text-anchor="end">нет плана r+1</text>
+<polyline points="1466.0,162 1466.0,224" fill="none" stroke="#334155" data-edge-id="dispatch_a" marker-end="url(#arrow)"/>
+<text x="1458.0" y="196.0" class="g" fill="#334155" text-anchor="end">check pass</text>
+<polyline points="1498.0,224 1498.0,162" fill="none" stroke="#334155" data-edge-id="return_a" marker-end="url(#arrow)"/>
+<rect x="24.0" y="870" width="15" height="15" rx="4" fill="#0d9488"/>
+<text x="46.0" y="882" class="lt">дешёвая ступень</text>
+<rect x="46.0" y="890" width="53.0" height="21" rx="7" fill="#0d9488" fill-opacity="0.12" stroke="#0d9488" stroke-opacity="0.65"/>
+<text x="72.5" y="905" class="lm" fill="#0d9488" text-anchor="middle">cheap</text>
+<text x="109.0" y="905" class="ls">оркестрация · scout · coder · CHECK gather</text>
+<rect x="542.6666666666666" y="870" width="15" height="15" rx="4" fill="#4f46e5"/>
+<text x="564.6666666666666" y="882" class="lt">средняя ступень</text>
+<rect x="564.6666666666666" y="890" width="60.400000000000006" height="21" rx="7" fill="#4f46e5" fill-opacity="0.12" stroke="#4f46e5" stroke-opacity="0.65"/>
+<text x="594.8666666666667" y="905" class="lm" fill="#4f46e5" text-anchor="middle">medium</text>
+<text x="635.0666666666666" y="905" class="ls">planner · check · security-auditor</text>
+<rect x="1061.3333333333333" y="870" width="15" height="15" rx="4" fill="#ea580c"/>
+<text x="1083.3333333333333" y="882" class="lt">дорогая ступень</text>
+<rect x="1083.3333333333333" y="890" width="60.400000000000006" height="21" rx="7" fill="#ea580c" fill-opacity="0.12" stroke="#ea580c" stroke-opacity="0.65"/>
+<text x="1113.5333333333333" y="905" class="lm" fill="#ea580c" text-anchor="middle">strong</text>
+<text x="1153.7333333333333" y="905" class="ls">escalate</text>
+<text x="24" y="956" class="lt">Граф состояний цикла</text>
+<rect x="24" y="1166" width="120" height="44" rx="10" fill="#475569" fill-opacity="0.08" stroke="#475569" stroke-width="1.6" data-node-id="START"/>
+<text x="84.0" y="1193.0" class="st" fill="#475569" text-anchor="middle">START</text>
+<rect x="295" y="1166" width="120" height="44" rx="10" fill="#2563eb" fill-opacity="0.08" stroke="#2563eb" stroke-width="1.6" data-node-id="PLAN"/>
+<text x="355.0" y="1193.0" class="st" fill="#2563eb" text-anchor="middle">PLAN</text>
+<rect x="566" y="1166" width="120" height="44" rx="10" fill="#7c3aed" fill-opacity="0.08" stroke="#7c3aed" stroke-width="1.6" data-node-id="DO"/>
+<text x="626.0" y="1193.0" class="st" fill="#7c3aed" text-anchor="middle">DO</text>
+<rect x="837" y="1166" width="120" height="44" rx="10" fill="#d97706" fill-opacity="0.08" stroke="#d97706" stroke-width="1.6" data-node-id="CHECK"/>
+<text x="897.0" y="1193.0" class="st" fill="#d97706" text-anchor="middle">CHECK</text>
+<rect x="1108" y="1166" width="120" height="44" rx="10" fill="#059669" fill-opacity="0.08" stroke="#059669" stroke-width="1.6" data-node-id="ACT"/>
+<text x="1168.0" y="1193.0" class="st" fill="#059669" text-anchor="middle">ACT</text>
+<rect x="1379" y="1166" width="120" height="44" rx="10" fill="#475569" fill-opacity="0.08" stroke="#475569" stroke-width="1.6" data-node-id="EXIT"/>
+<text x="1439.0" y="1193.0" class="st" fill="#475569" text-anchor="middle">EXIT</text>
+<polyline points="144,1188.0 295,1188.0" fill="none" stroke="#334155" data-edge-id="start_plan" marker-end="url(#arrow)"/>
+<text x="219.5" y="1181.0" class="g" fill="#475569" text-anchor="middle">старт</text>
+<polyline points="415,1188.0 566,1188.0" fill="none" stroke="#334155" data-edge-id="plan_do" marker-end="url(#arrow)"/>
+<text x="490.5" y="1169.0" class="g" fill="#475569" text-anchor="middle">go (normal) / сразу</text>
+<text x="490.5" y="1181.0" class="g" fill="#475569" text-anchor="middle">(autonomous) · n=1/3</text>
+<polyline points="686,1188.0 837,1188.0" fill="none" stroke="#334155" data-edge-id="do_check" marker-end="url(#arrow)"/>
+<text x="761.5" y="1181.0" class="g" fill="#475569" text-anchor="middle">потоки закрыты</text>
+<polyline points="957,1188.0 1108,1188.0" fill="none" stroke="#334155" data-edge-id="check_act" marker-end="url(#arrow)"/>
+<text x="1032.5" y="1181.0" class="g" fill="#475569" text-anchor="middle">pass</text>
+<polyline points="1228,1188.0 1379,1188.0" fill="none" stroke="#334155" data-edge-id="act_exit" marker-end="url(#arrow)"/>
+<text x="1303.5" y="1181.0" class="g" fill="#475569" text-anchor="middle">закрыто</text>
+<path d="M880,1166 C880,1106 686,1106 686,1166" fill="none" stroke="#334155" marker-end="url(#arrow)" data-edge-id="check_do_defect"/>
+<text x="786" y="1120" class="g" fill="#475569" text-anchor="middle">дефект · n+1 (до 3)</text>
+<path d="M950,1166 C950,1054 415,1054 415,1166" fill="none" stroke="#334155" marker-end="url(#arrow)" data-edge-id="check_plan_replan"/>
+<text x="683" y="1066" class="g" fill="#475569" text-anchor="middle">неверный план · r+1 при ревизии</text>
+<path d="M606,1166 C606,1106 405,1106 405,1166" fill="none" stroke="#334155" marker-end="url(#arrow)" data-edge-id="do_plan_blocker"/>
+<text x="513" y="1120" class="g" fill="#475569" text-anchor="middle">новое предусловие/блокер</text>
+<path d="M1168,1166 C1168,986 355,986 355,1166" fill="none" stroke="#059669" stroke-dasharray="5 4" marker-end="url(#arrow)" data-edge-id="act_plan"/>
+<text x="761" y="980" class="g" fill="#475569" text-anchor="middle">следующий цикл · N+1</text>
+<rect x="837" y="1298" width="120" height="44" rx="10" fill="#be123c" fill-opacity="0.08" stroke="#be123c" stroke-width="1.6" stroke-dasharray="5 4" data-node-id="sec_check"/>
+<text x="897.0" y="1325.0" class="st" fill="#be123c" text-anchor="middle">поток CHECK</text>
+<rect x="1100" y="1298" width="120" height="44" rx="10" fill="#b91c1c" fill-opacity="0.08" stroke="#b91c1c" stroke-width="1.6" data-node-id="escalate"/>
+<text x="1160.0" y="1325.0" class="st" fill="#b91c1c" text-anchor="middle">ESCALATE</text>
+<rect x="1360" y="1298" width="120" height="44" rx="10" fill="#b91c1c" fill-opacity="0.08" stroke="#b91c1c" stroke-width="1.6" data-node-id="stop"/>
+<text x="1420.0" y="1325.0" class="st" fill="#b91c1c" text-anchor="middle">STOP</text>
+<polyline points="917,1210 917,1298" fill="none" stroke="#be123c" stroke-dasharray="5 4" data-edge-id="check_security" marker-end="url(#arrow)"/>
+<text x="907" y="1248.0" class="g" fill="#be123c" text-anchor="end">условно · auth/секр/ввод/crypto</text>
+<polyline points="937,1298 937,1210" fill="none" stroke="#be123c" data-edge-id="security_check_report" marker-end="url(#arrow)"/>
+<text x="947" y="1260.0" class="g" fill="#be123c" text-anchor="start">отчёт → CHECK</text>
+<polyline points="945,1210 945,1240 1180,1240 1180,1298" fill="none" stroke="#334155" data-edge-id="check_escalate_trigger" marker-end="url(#arrow)"/>
+<text x="1070" y="1232" class="g" fill="#475569" text-anchor="middle">повтор после 1 фикса · 3-й провал CHECK(r)</text>
+<polyline points="955,1320.0 1100,1320.0" fill="none" stroke="#b91c1c" data-edge-id="security_escalate_tradeoff" marker-end="url(#arrow)"/>
+<text x="1048" y="1313.0" class="g" fill="#475569" text-anchor="middle">жёсткий tradeoff</text>
+<polyline points="1220,1320.0 1360,1320.0" fill="none" stroke="#b91c1c" data-edge-id="escalate_stop" marker-end="url(#arrow)"/>
+<text x="1310" y="1313.0" class="g" fill="#475569" text-anchor="middle">нет плана r+1</text>
+<polyline points="1160,1342 1160,1372 646,1372 646,1210" fill="none" stroke="#334155" data-edge-id="escalate_do_nonexhausted" marker-end="url(#arrow)"/>
+<text x="850" y="1364" class="g" fill="#475569" text-anchor="middle">решение · r не исчерпан → DO</text>
+<polyline points="1200,1342 1200,1386 375,1386 375,1210" fill="none" stroke="#334155" data-edge-id="escalate_plan_exhausted" marker-end="url(#arrow)"/>
+<text x="760" y="1399" class="g" fill="#475569" text-anchor="middle">исчерпан r → PLAN r+1</text>
+</svg>

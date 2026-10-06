@@ -1,0 +1,485 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>pdca-collection — ручная раскладка (тёмная тема)</title><style>body{margin:0;background:#0f172a;font-family:Segoe UI,system-ui,sans-serif}.card{background:#1e293b;border-radius:12px;margin:20px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.5);overflow:auto}</style><div class="card"><svg viewBox="0 0 1456 1606" width="1456" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+<defs>
+<marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker>
+</defs>
+<style>
+.t{font-size:13px;font-weight:600;fill:#e2e8f0}
+.s{font-size:10.5px;fill:#94a3b8}
+.h{font-size:12.5px;font-weight:700;fill:#ffffff}
+.g{font-size:10.5px;font-weight:600}
+.band{fill:#141d31}
+.bt{fill:#ffffff;font-size:15px;font-weight:700}
+.ol{fill:#e2e8f0;font-size:11.5px}
+.lt{font-size:12.5px;font-weight:700;fill:#e2e8f0}
+.ls{font-size:10.5px;fill:#94a3b8}
+.nt{font-size:10.5px;fill:#94a3b8}
+.lm{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12px;font-weight:700}
+.bm{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:10.5px;font-weight:700}
+.st{font-size:14px;font-weight:700}
+</style>
+<rect x="24" y="24" width="1408" height="138" rx="10" class="band" data-band="orchestrator"/>
+<text x="42" y="48" class="bt">Оркестратор · pdca-collection — входы по фазам</text>
+<text x="42" y="76" class="ol">← PLAN ← «START: список задач»</text>
+<text x="42" y="94" class="ol">← DO ← «PLAN: все планы готовы · группы/порядок зафиксированы»</text>
+<text x="42" y="112" class="ol">← MERGE ← «все группы завершены» · «ESCALATE: повтор MERGE или incomplete skip»</text>
+<text x="746.0" y="76" class="ol">← CHECK ← «одна группа: без MERGE» · «MERGE завершён» · «REPAIR completed» · «re-gather: blocked»</text>
+<text x="746.0" y="94" class="ol">← ACT ← «CHECK pass»</text>
+<g data-column="P">
+<g data-peer-header="P">
+<rect x="24" y="318" width="196" height="40" rx="8" fill="#2563eb"/><text x="122.0" y="343.0" class="h" text-anchor="middle">PLAN</text>
+</g>
+<polyline points="122.0,358 122.0,374" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="24" y="374" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="25" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="162" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="187.0" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="37" y="397" class="t">Вход</text>
+<text x="37" y="416" class="s">список задач · от пользователя</text>
+<g data-step="task-plan">
+<rect x="24" y="436" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="25" y="443" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="443" width="50" height="18" rx="6" fill="#4f46e5"/>
+<text x="187.0" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">medium</text>
+<text x="37" y="459" class="t">Свой PLAN задачи</text>
+<text x="37" y="478" class="s">scout + planner · каждой задачи</text>
+</g>
+<g data-step="all-plans-barrier">
+<rect x="24" y="498" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="25" y="505" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="162" y="505" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="187.0" y="517.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="37" y="521" class="t">ALL-barrier</text>
+<text x="37" y="540" class="s">все планы готовы · до DAG</text>
+</g>
+<g data-step="collection-scheduling">
+<rect x="24" y="560" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="25" y="567" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="162" y="567" width="50" height="18" rx="6" fill="#4f46e5"/>
+<text x="187.0" y="579.5" class="bm" fill="#cbd5e1" text-anchor="middle">medium</text>
+<text x="37" y="583" class="t">DAG · группы</text>
+<text x="37" y="602" class="s">planner · после барьера</text>
+</g>
+<rect x="24" y="622" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="25" y="629" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="162" y="629" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="187.0" y="641.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="37" y="645" class="t">Статус-файл</text>
+<text x="37" y="664" class="s">plan_state + groups/tasks</text>
+<polyline points="122.0,424 122.0,436" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="122.0,486 122.0,498" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="122.0,548 122.0,560" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="122.0,610 122.0,622" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<rect x="18" y="366" width="208" height="314" rx="12" fill="none" stroke="#2563eb" stroke-opacity="0.6" stroke-width="1.6" data-frame="P"/>
+</g>
+<g data-column="DO">
+<g data-peer-header="DO">
+<rect x="266.0" y="318" width="424" height="40" rx="8" fill="#7c3aed"/><text x="478.0" y="343.0" class="h" text-anchor="middle">DO · ПОДГОТОВКА + ЛЕЙНЫ</text>
+</g>
+<polyline points="478.0,358 478.0,374" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="266.0" y="374" width="424" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="267.0" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="632.0" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="657.0" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="279.0" y="397" class="t">Worktree + ветки</text>
+<text x="279.0" y="416" class="s">coder · на группу</text>
+<rect x="266.0" y="436" width="424" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="267.0" y="443" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="632.0" y="443" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="657.0" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="279.0" y="459" class="t">Запуск лейнов</text>
+<text x="279.0" y="478" class="s">параллельно · ≤ cap (4)</text>
+<polyline points="478.0,424 478.0,436" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<rect x="266.0" y="498" width="424" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="267.0" y="505" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="632.0" y="505" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="657.0" y="517.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="279.0" y="521" class="t">Лейн · группа</text>
+<text x="279.0" y="540" class="s">один Task · оркеструет, не решает</text>
+<polyline points="478.0,486 478.0,498" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="493.0,548 493.0,560" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<rect x="296.0" y="560" width="394" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="297.0" y="567" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="632.0" y="567" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="657.0" y="579.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="309.0" y="583" class="t">Ветка задачи</text>
+<text x="309.0" y="602" class="s">от tip предыдущей · coder</text>
+<rect x="296.0" y="622" width="394" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="297.0" y="629" width="3" height="36" rx="1.5" fill="#8b5cf6"/>
+<rect x="604.0" y="629" width="78" height="18" rx="6" fill="#8b5cf6"/>
+<text x="643.0" y="641.5" class="bm" fill="#cbd5e1" text-anchor="middle">составной</text>
+<text x="309.0" y="642" class="t">pdca-цикл · continue from saved PLAN</text>
+<text x="309.0" y="656" class="t">DO→CHECK→ACT</text>
+<text x="309.0" y="669" class="s">руки cheap · решения medium · эскалация strong</text>
+<polyline points="493.0,610 493.0,622" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<rect x="296.0" y="684" width="394" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="297.0" y="691" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="632.0" y="691" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="657.0" y="703.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="309.0" y="707" class="t">Коммит · если разрешён автокоммит</text>
+<text x="309.0" y="726" class="s">иначе patch · только файлы задачи</text>
+<polyline points="493.0,672 493.0,684" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<path d="M296.0,709.0 L282.0,709.0 L282.0,585.0 L296.0,585.0" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<text x="277.0" y="647.0" class="g" fill="#cbd5e1" text-anchor="middle" transform="rotate(-90 277.0 647.0)">следующая задача</text>
+<rect x="260.0" y="366" width="436" height="376" rx="12" fill="none" stroke="#7c3aed" stroke-opacity="0.6" stroke-width="1.6" data-frame="DO"/>
+<text x="478.0" y="759" class="g" fill="#cbd5e1" text-anchor="middle">цикл: .NET/C# → pdca-dotnet · другой код → pdca-coder</text>
+<text x="478.0" y="774" class="g" fill="#cbd5e1" text-anchor="middle">иначе → pdca (по умолчанию)</text>
+</g>
+<g data-column="MERGE">
+<g data-peer-header="MERGE">
+<rect x="736.0" y="318" width="176" height="40" rx="8" fill="#475569"/><text x="824.0" y="343.0" class="h" text-anchor="middle">MERGE</text>
+</g>
+<polyline points="824.0,358 824.0,374" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="736.0" y="374" width="176" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="737.0" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="854.0" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="879.0" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="749.0" y="397" class="t">merge --no-ff</text>
+<text x="749.0" y="416" class="s">coder · в текущий бранч</text>
+<rect x="736.0" y="436" width="176" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="737.0" y="443" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="854.0" y="443" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="879.0" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="749.0" y="459" class="t">По группам</text>
+<text x="749.0" y="478" class="s">последовательно · «#&lt;n&gt;»</text>
+<polyline points="824.0,424 824.0,436" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<g data-condition="all-lanes-terminal">
+<rect x="730.0" y="366" width="188" height="128" rx="12" fill="none" stroke="#475569" stroke-opacity="0.6" stroke-width="1.6" data-frame="MERGE"/>
+<text x="824.0" y="511" class="g" fill="#cbd5e1" text-anchor="middle">только при ≥2 группах</text>
+<text x="824.0" y="526" class="g" fill="#cbd5e1" text-anchor="middle">barrier · ALL LANES TERMINAL</text>
+<text x="824.0" y="541" class="ls" fill="#94a3b8" text-anchor="middle">done | incomplete</text>
+<text x="824.0" y="556" class="ls" fill="#94a3b8" text-anchor="middle">merge только done</text>
+<text x="824.0" y="571" class="ls" fill="#94a3b8" text-anchor="middle">incomplete · skip</text>
+</g>
+</g>
+<g data-column="C" data-role="check" data-tier="medium">
+<g data-peer-header="C">
+<rect x="958.0" y="318" width="196" height="40" rx="8" fill="#d97706"/><text x="1056.0" y="343.0" class="h" text-anchor="middle">CHECK</text>
+</g>
+<polyline points="1056.0,358 1056.0,374" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="958.0" y="374" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="959.0" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1096.0" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1121.0" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="971.0" y="397" class="t">Проверки задачи</text>
+<text x="971.0" y="416" class="s">обязательные · по типу работы</text>
+<rect x="958.0" y="436" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="959.0" y="443" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1096.0" y="443" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1121.0" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="971.0" y="459" class="t">Тесты</text>
+<text x="971.0" y="478" class="s">функциональные · приёмка</text>
+<rect x="958.0" y="498" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="959.0" y="505" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1096.0" y="505" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1121.0" y="517.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="971.0" y="518" class="t">Замеры</text>
+<text x="971.0" y="532" class="t">производительности</text>
+<text x="971.0" y="545" class="s">если hot path</text>
+<rect x="958.0" y="560" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="959.0" y="567" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1096.0" y="567" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1121.0" y="579.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="971.0" y="583" class="t">Review-линзы</text>
+<text x="971.0" y="602" class="s">риск · регресс · соответствие</text>
+<polyline points="1056.0,424 1056.0,436" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="1056.0,486 1056.0,498" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="1056.0,548 1056.0,560" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="1056.0,610 1056.0,622" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<g data-step="check-verdict" data-role="check" data-tier="medium">
+<rect x="958.0" y="622" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="959.0" y="629" width="3" height="36" rx="1.5" fill="#4f46e5"/>
+<rect x="1096.0" y="629" width="50" height="18" rx="6" fill="#4f46e5"/>
+<text x="1121.0" y="641.5" class="bm" fill="#cbd5e1" text-anchor="middle">medium</text>
+<text x="971.0" y="645" class="t">Вердикт</text>
+<text x="971.0" y="664" class="s">check · PASS / FAIL</text>
+</g>
+<rect x="952.0" y="366" width="208" height="314" rx="12" fill="none" stroke="#d97706" stroke-opacity="0.6" stroke-width="1.6" data-frame="C"/>
+</g>
+<g data-column="A">
+<g data-peer-header="A">
+<rect x="1200.0" y="318" width="232" height="40" rx="8" fill="#059669"/><text x="1316.0" y="343.0" class="h" text-anchor="middle">ACT</text>
+</g>
+<polyline points="1316.0,358 1316.0,374" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="1200.0" y="374" width="232" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="1201.0" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1374.0" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1399.0" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="1213.0" y="397" class="t">Отчёт</text>
+<text x="1213.0" y="416" class="s">группы · задачи · evidence</text>
+<rect x="1200.0" y="436" width="232" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="1201.0" y="443" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1374.0" y="443" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1399.0" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="1213.0" y="459" class="t">Чистка · done/merged</text>
+<text x="1213.0" y="478" class="s">incomplete сохраняются</text>
+<rect x="1200.0" y="498" width="232" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="1201.0" y="505" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="1374.0" y="505" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="1399.0" y="517.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="1213.0" y="521" class="t">Статус-файл</text>
+<text x="1213.0" y="540" class="s">Done / Verified / Incomplete</text>
+<polyline points="1316.0,424 1316.0,436" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<polyline points="1316.0,486 1316.0,498" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<rect x="1194.0" y="366" width="244" height="190" rx="12" fill="none" stroke="#059669" stroke-opacity="0.6" stroke-width="1.6" data-frame="A"/>
+</g>
+<g data-column="REPAIR" data-child-of="C" data-dispatched-by="orchestrator" data-main-recovery="corrective-pdca" data-composition="composite">
+<g data-peer-header="REPAIR">
+<rect x="958.0" y="736" width="196" height="40" rx="8" fill="#8b5cf6"/><text x="1056.0" y="761.0" class="h" text-anchor="middle">REPAIR</text>
+</g>
+<polyline points="1056.0,776 1056.0,792" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="958.0" y="792" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="959.0" y="799" width="3" height="36" rx="1.5" fill="#8b5cf6"/>
+<rect x="1068.0" y="799" width="78" height="18" rx="6" fill="#8b5cf6"/>
+<text x="1107.0" y="811.5" class="bm" fill="#cbd5e1" text-anchor="middle">составной</text>
+<text x="971.0" y="812" class="t">PDCA</text>
+<text x="971.0" y="826" class="t">исправления</text>
+<text x="971.0" y="839" class="s">стандартный PDCA · оркестратор</text>
+<rect x="952.0" y="784" width="208" height="66" rx="12" fill="none" stroke="#8b5cf6" stroke-opacity="0.6" stroke-width="1.6" data-frame="REPAIR"/>
+<text x="1056.0" y="867" class="g" fill="#cbd5e1" text-anchor="middle">по FAIL от check</text>
+</g>
+<g data-bus="dispatch" data-origin="C" data-target="REPAIR" data-kind="dispatch">
+<polyline points="1041.0,680 1041.0,736" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="C" data-entry-to="REPAIR" data-entry-condition="FAIL">
+<text x="1033.0" y="706" class="g" fill="#cbd5e1" text-anchor="end">CHECK fail · real</text>
+<text x="1033.0" y="718" class="g" fill="#cbd5e1" text-anchor="end">defect</text>
+</g>
+</g>
+<g data-bus="result" data-origin="REPAIR" data-target="C" data-kind="result">
+<polyline points="1071.0,736 1071.0,680" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-column="E" data-child-of="MERGE" data-dispatched-by="orchestrator">
+<g data-peer-header="E">
+<rect x="716.0" y="674" width="216" height="40" rx="8" fill="#b91c1c"/><text x="824.0" y="699.0" class="h" text-anchor="middle">ESCALATE</text>
+</g>
+<polyline points="824.0,714 824.0,730" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<rect x="716.0" y="730" width="216" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="717.0" y="737" width="3" height="36" rx="1.5" fill="#0d9488"/>
+<rect x="874.0" y="737" width="50" height="18" rx="6" fill="#0d9488"/>
+<text x="899.0" y="749.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
+<text x="729.0" y="753" class="t">Скаут</text>
+<text x="729.0" y="772" class="s">scout · факты · file:line</text>
+<rect x="716.0" y="792" width="216" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
+<rect x="717.0" y="799" width="3" height="36" rx="1.5" fill="#ea580c"/>
+<rect x="874.0" y="799" width="50" height="18" rx="6" fill="#ea580c"/>
+<text x="899.0" y="811.5" class="bm" fill="#cbd5e1" text-anchor="middle">strong</text>
+<text x="729.0" y="812" class="t">Разрешение</text>
+<text x="729.0" y="826" class="t">конфликтов слияния</text>
+<text x="729.0" y="839" class="s">merge fail · решает</text>
+<polyline points="824.0,780 824.0,792" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
+<rect x="710.0" y="722" width="228" height="128" rx="12" fill="none" stroke="#b91c1c" stroke-opacity="0.6" stroke-width="1.6" data-frame="E"/>
+</g>
+<g data-bus="dispatch" data-origin="MERGE" data-target="E" data-kind="dispatch">
+<polyline points="809.0,594 809.0,674" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="MERGE" data-entry-to="ESCALATE" data-entry-condition="merge-конфликт">
+<text x="801.0" y="644" class="g" fill="#cbd5e1" text-anchor="end">MERGE fail</text>
+</g>
+<g data-entry-from="REPAIR" data-entry-to="ESCALATE" data-entry-condition="повтор дефекта после 1 фикса">
+<text x="801.0" y="656" class="g" fill="#cbd5e1" text-anchor="end">повтор дефекта</text>
+<text x="801.0" y="668" class="g" fill="#cbd5e1" text-anchor="end">после 1 фикса</text>
+</g>
+</g>
+<g data-bus="result" data-origin="E" data-target="MERGE" data-kind="result">
+<polyline points="839.0,674 839.0,594" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-bus="dispatch" data-origin="orchestrator" data-target="P" data-kind="dispatch">
+<polyline points="106.0,162 106.0,318" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="START" data-entry-to="P" data-entry-condition="старт">
+<text x="102.0" y="235.0" class="g" fill="#94a3b8" text-anchor="end">START:</text>
+<text x="102.0" y="247.0" class="g" fill="#94a3b8" text-anchor="end">список задач</text>
+</g>
+</g>
+<g data-bus="result" data-origin="P" data-target="orchestrator" data-kind="result">
+<polyline points="138.0,318 138.0,162" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-bus="dispatch" data-origin="orchestrator" data-target="DO" data-kind="dispatch">
+<polyline points="462.0,162 462.0,318" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="P" data-entry-to="DO" data-entry-condition="группы">
+<text x="458.0" y="235.0" class="g" fill="#94a3b8" text-anchor="end">PLAN: все планы готовы ·</text>
+<text x="458.0" y="247.0" class="g" fill="#94a3b8" text-anchor="end">группы/порядок зафиксированы</text>
+</g>
+</g>
+<g data-bus="result" data-origin="DO" data-target="orchestrator" data-kind="result">
+<polyline points="494.0,318 494.0,162" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-bus="dispatch" data-origin="orchestrator" data-target="MERGE" data-kind="dispatch">
+<polyline points="808.0,162 808.0,318" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="DO" data-entry-to="MERGE" data-entry-condition="≥2 · all-lanes-terminal">
+<text x="804.0" y="201.0" class="g" fill="#94a3b8" text-anchor="end">все группы</text>
+<text x="804.0" y="213.0" class="g" fill="#94a3b8" text-anchor="end">завершены</text>
+</g>
+<g data-entry-from="ESCALATE" data-entry-to="MERGE" data-entry-condition="решено/переставить/пометить incomplete">
+<text x="804.0" y="233.0" class="g" fill="#94a3b8" text-anchor="end">ESCALATE:</text>
+<text x="804.0" y="245.0" class="g" fill="#94a3b8" text-anchor="end">повтор</text>
+<text x="804.0" y="257.0" class="g" fill="#94a3b8" text-anchor="end">MERGE или</text>
+<text x="804.0" y="269.0" class="g" fill="#94a3b8" text-anchor="end">incomplete</text>
+<text x="804.0" y="281.0" class="g" fill="#94a3b8" text-anchor="end">skip</text>
+</g>
+</g>
+<g data-bus="result" data-origin="MERGE" data-target="orchestrator" data-kind="result">
+<polyline points="840.0,318 840.0,162" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-bus="dispatch" data-origin="orchestrator" data-target="C" data-kind="dispatch">
+<polyline points="1040.0,162 1040.0,318" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="DO" data-entry-to="C" data-entry-condition="одна группа · без merge">
+<text x="1036.0" y="187.0" class="g" fill="#94a3b8" text-anchor="end">одна группа:</text>
+<text x="1036.0" y="199.0" class="g" fill="#94a3b8" text-anchor="end">без MERGE</text>
+</g>
+<g data-entry-from="MERGE" data-entry-to="C" data-entry-condition="интеграция завершена">
+<text x="1036.0" y="219.0" class="g" fill="#94a3b8" text-anchor="end">MERGE</text>
+<text x="1036.0" y="231.0" class="g" fill="#94a3b8" text-anchor="end">завершён</text>
+</g>
+<g data-entry-from="REPAIR" data-entry-to="C" data-entry-condition="full-verification">
+<text x="1036.0" y="251.0" class="g" fill="#94a3b8" text-anchor="end">REPAIR</text>
+<text x="1036.0" y="263.0" class="g" fill="#94a3b8" text-anchor="end">completed</text>
+</g>
+<g data-entry-from="C" data-entry-to="C" data-entry-condition="re-gather">
+<text x="1036.0" y="283.0" class="g" fill="#94a3b8" text-anchor="end">re-gather:</text>
+<text x="1036.0" y="295.0" class="g" fill="#94a3b8" text-anchor="end">blocked</text>
+</g>
+</g>
+<g data-bus="result" data-origin="C" data-target="orchestrator" data-kind="result">
+<polyline points="1072.0,318 1072.0,162" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-bus="dispatch" data-origin="orchestrator" data-target="A" data-kind="dispatch">
+<polyline points="1300.0,162 1300.0,318" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<g data-entry-from="C" data-entry-to="A" data-entry-condition="PASS">
+<text x="1296.0" y="241.0" class="g" fill="#94a3b8" text-anchor="end">CHECK pass</text>
+</g>
+</g>
+<g data-bus="result" data-origin="A" data-target="orchestrator" data-kind="result">
+<polyline points="1332.0,318 1332.0,162" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-legend="model-tiers">
+<text x="24" y="924" class="lt">Ступени модели</text>
+<text x="46.0" y="946" class="lt">дешёвая ступень</text>
+<rect x="24.0" y="934" width="15" height="15" rx="4" fill="#0d9488"/>
+<rect x="46.0" y="954" width="53.0" height="21" rx="7" fill="#0d9488"/>
+<text x="72.5" y="969" class="lm" fill="#ffffff" text-anchor="middle">cheap</text>
+<text x="109.0" y="969" class="ls">pdca-orchestrator · scout · coder</text>
+<text x="318.2133333333333" y="946" class="lt">средняя ступень</text>
+<rect x="296.2133333333333" y="934" width="15" height="15" rx="4" fill="#4f46e5"/>
+<rect x="318.2133333333333" y="954" width="60.400000000000006" height="21" rx="7" fill="#4f46e5"/>
+<text x="348.4133333333333" y="969" class="lm" fill="#ffffff" text-anchor="middle">medium</text>
+<text x="388.61333333333334" y="969" class="ls">planner · check · security-auditor</text>
+<text x="590.4266666666666" y="946" class="lt">дорогая ступень</text>
+<rect x="568.4266666666666" y="934" width="15" height="15" rx="4" fill="#ea580c"/>
+<rect x="590.4266666666666" y="954" width="60.400000000000006" height="21" rx="7" fill="#ea580c"/>
+<text x="620.6266666666667" y="969" class="lm" fill="#ffffff" text-anchor="middle">strong</text>
+<text x="660.8266666666666" y="969" class="ls">escalate</text>
+</g>
+<line x1="870.64" y1="920" x2="870.64" y2="980" stroke="#94a3b8" stroke-opacity="0.5"/>
+<g data-legend="composition">
+<text x="900.64" y="924" class="lt">Композиция PDCA</text>
+<rect x="900.64" y="934" width="15" height="15" rx="4" fill="none" stroke="#8b5cf6" stroke-dasharray="3 2"/>
+<text x="922.64" y="949" class="ls" fill="#cbd5e1">составной: руки cheap · решения medium · эскалация strong</text>
+</g>
+<text x="24" y="1020" class="lt">Граф состояний коллекции</text>
+<g data-node="START">
+<rect x="24" y="1140" width="160" height="44" rx="10" fill="#94a3b8" fill-opacity="0.08" stroke="#94a3b8" stroke-width="1.6"/>
+<text x="104.0" y="1167.0" class="st" fill="#94a3b8" text-anchor="middle">START</text>
+</g>
+<g data-node="P">
+<rect x="232" y="1140" width="160" height="44" rx="10" fill="#2563eb" fill-opacity="0.08" stroke="#2563eb" stroke-width="1.6"/>
+<text x="312.0" y="1167.0" class="st" fill="#2563eb" text-anchor="middle">PLAN</text>
+</g>
+<g data-node="DO" data-tier="cheap">
+<rect x="440" y="1140" width="160" height="44" rx="10" fill="#7c3aed" fill-opacity="0.08" stroke="#7c3aed" stroke-width="1.6"/>
+<text x="520.0" y="1157" class="st" fill="#7c3aed" text-anchor="middle">DO · ПОДГОТОВКА</text>
+<text x="520.0" y="1171" class="st" fill="#7c3aed" text-anchor="middle">+ ЛЕЙНЫ</text>
+</g>
+<g data-node="MERGE" data-tier="cheap">
+<rect x="648" y="1140" width="160" height="44" rx="10" fill="#475569" fill-opacity="0.08" stroke="#475569" stroke-width="1.6"/>
+<text x="728.0" y="1157" class="st" fill="#475569" text-anchor="middle">MERGE</text>
+<text x="728.0" y="1173" class="ls" fill="#475569" text-anchor="middle">coder · cheap</text>
+</g>
+<g data-node="C" data-tier="medium">
+<rect x="856" y="1140" width="160" height="44" rx="10" fill="#4f46e5" fill-opacity="0.08" stroke="#4f46e5" stroke-width="1.6"/>
+<text x="936.0" y="1157" class="st" fill="#4f46e5" text-anchor="middle">CHECK</text>
+<text x="936.0" y="1173" class="ls" fill="#4f46e5" text-anchor="middle">check · medium</text>
+</g>
+<g data-node="A">
+<rect x="1064" y="1140" width="160" height="44" rx="10" fill="#059669" fill-opacity="0.08" stroke="#059669" stroke-width="1.6"/>
+<text x="1144.0" y="1167.0" class="st" fill="#059669" text-anchor="middle">ACT</text>
+</g>
+<g data-node="EXIT">
+<rect x="1272" y="1140" width="160" height="44" rx="10" fill="#94a3b8" fill-opacity="0.08" stroke="#94a3b8" stroke-width="1.6"/>
+<text x="1352.0" y="1167.0" class="st" fill="#94a3b8" text-anchor="middle">EXIT</text>
+</g>
+<g data-node="REPAIR" data-composition="composite">
+<rect x="856" y="1260" width="160" height="44" rx="10" fill="#8b5cf6" fill-opacity="0.08" stroke="#8b5cf6" stroke-width="1.6"/>
+<text x="936.0" y="1277" class="st" fill="#8b5cf6" text-anchor="middle">REPAIR</text>
+<text x="936.0" y="1293" class="ls" fill="#8b5cf6" text-anchor="middle">pdca · составной</text>
+</g>
+<g data-node="ESCALATE" data-tier="strong">
+<rect x="648" y="1260" width="160" height="44" rx="10" fill="#b91c1c" fill-opacity="0.08" stroke="#b91c1c" stroke-width="1.6"/>
+<text x="728.0" y="1287.0" class="st" fill="#b91c1c" text-anchor="middle">ESCALATE</text>
+</g>
+<g data-annotation="ESCALATE">
+<text x="636" y="1320" class="nt" text-anchor="end">решение → planner (план)</text>
+<text x="636" y="1333" class="nt" text-anchor="end">или coder (реализация, STOP)</text>
+</g>
+<g data-node="STOP">
+<rect x="856" y="1380" width="160" height="44" rx="10" fill="#b91c1c" fill-opacity="0.08" stroke="#b91c1c" stroke-width="1.6"/>
+<text x="936.0" y="1407.0" class="st" fill="#b91c1c" text-anchor="middle">STOP</text>
+</g>
+<g data-annotation="STOP">
+<text x="936.0" y="1440" class="nt" text-anchor="middle">unverified · без ACT/cleanup</text>
+</g>
+<g data-from="START" data-to="P" data-condition="старт">
+<polyline points="184,1162.0 232,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="P" data-to="DO" data-condition="группы">
+<polyline points="392,1162.0 440,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="DO" data-to="MERGE" data-condition="≥2 · all-lanes-terminal">
+<polyline points="600,1162.0 648,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="DO" data-to="C" data-condition="одна группа · без merge">
+<polyline points="520.0,1140 520.0,1100 876,1100 876,1140" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="698.0" y="1092" class="g" fill="#cbd5e1" text-anchor="middle">одна группа: без MERGE</text>
+</g>
+<g data-from="MERGE" data-to="C" data-condition="интеграция завершена">
+<polyline points="808,1162.0 856,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="C" data-to="REPAIR" data-condition="FAIL" data-dispatched-by="orchestrator">
+<polyline points="921.0,1184 921.0,1260" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="872.0" y="1222.0" class="g" fill="#cbd5e1" text-anchor="middle">CHECK fail · real defect</text>
+</g>
+<g data-from="REPAIR" data-to="C" data-condition="full-verification">
+<polyline points="951.0,1260 951.0,1184" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="C" data-to="C" data-condition="re-gather">
+<polyline points="969,1140 969,1120 1049,1120 1049,1168 1016,1168" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="1009" y="1080" class="g" fill="#cbd5e1" text-anchor="middle">re-gather:</text>
+<text x="1009" y="1092" class="g" fill="#cbd5e1" text-anchor="middle">blocked</text>
+</g>
+<g data-from="C" data-to="A" data-condition="PASS">
+<polyline points="1016,1162.0 1064,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="A" data-to="EXIT" data-condition="finalized">
+<polyline points="1224,1162.0 1272,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="MERGE" data-to="ESCALATE" data-condition="merge-конфликт">
+<polyline points="713.0,1184 713.0,1260" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="621.0" y="1214.0" class="g" fill="#cbd5e1" text-anchor="middle">MERGE fail</text>
+</g>
+<g data-from="ESCALATE" data-to="MERGE" data-condition="решено/переставить/пометить incomplete" data-dispatched-by="orchestrator">
+<polyline points="743.0,1260 743.0,1184" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+</g>
+<g data-from="REPAIR" data-to="ESCALATE" data-condition="повтор дефекта после 1 фикса">
+<polyline points="896,1304 896,1340 728.0,1340 728.0,1304" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="812.0" y="1316" class="g" fill="#cbd5e1" text-anchor="middle">повтор дефекта</text>
+<text x="812.0" y="1328" class="g" fill="#cbd5e1" text-anchor="middle">после 1 фикса</text>
+</g>
+<g data-from="REPAIR" data-to="STOP" data-condition="ревизия исчерпана · нет плана">
+<polyline points="936.0,1304 936.0,1380" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="982.0" y="1336.0" class="g" fill="#cbd5e1" text-anchor="start">STOP: нет пересмотренного плана</text>
+</g>
+<text x="24" y="1486" class="nt">Одна группа — деградация: worktree и ветки не создаются, работа в текущем бранче, merge --no-ff не нужен; сделанные ранее коммиты остаются, автоотката нет · push — никогда</text>
+<text x="24" y="1502" class="nt">Коммит — только в явно разрешённом режиме автокоммита коллекции; иначе/при запрете — patch сохраняется, коммитов и цепочки незакоммиченных веток нет (исключение задаётся overlay проекта, не глобально)</text>
+<text x="24" y="1518" class="nt">≥2: барьер ждёт терминальности ВСЕХ лейнов (done | incomplete) — это готовность, не успех; MERGE только успешных (done) tip, incomplete пропускается; конфликт → abort → escalate</text>
+<text x="24" y="1534" class="nt">C: re-gather остаётся blocked (нет отчёта) — не дефект, правок кода нет; STOP корректирующего PDCA ≠ EXIT: unverified, evidence сохранён, без ACT/cleanup; ACT чистит только DONE/merged, incomplete-результаты (ветки/patch/указатели) сохраняются</text>
+<text x="24" y="1550" class="nt">Лейн (work stream) — один параллельный поток работ на группу: отдельный субагент, свой worktree и ветка, задачи строго по одной, полный pdca-цикл на каждую; параллельно идут группы (≤ cap), не задачи внутри лейна.</text>
+<text x="24" y="1566" class="nt">Fallback: pdca-orchestrator недоступен (нет агента / subagent_depth &lt; 2 / Task запрещён) → primary ведёт цикл сам · autonomous: Notice: + summary · normal: сообщение пользователю</text>
+</svg>
+</div></html>
