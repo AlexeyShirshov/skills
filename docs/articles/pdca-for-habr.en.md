@@ -28,7 +28,7 @@ Together, that's what unpredictability is: vibe coding can produce a result, but
 
 These problems share a root: the model's ordinary work is a sequence of actions ("read, fix, run, say it's done"), not a path to a verifiable result. The `pdca` skill replaces the sequence with a **cycle**. The idea is borrowed from the management cycle Plan — Do — Check — Act: plan, do, verify independently, finish — or return to the plan. In the contract it's a state machine with **gates**: a gate is a condition under which the next step is allowed. A gate checks the **presence** of the required items, not quality. The promise is modest: the cycle doesn't guarantee the right result, but it won't let you close work without verification, silently lose state, or pass off identical retries as progress.
 
-![The universal cycle contract](../../opencode/pdca/assets/diagram/pdca-contract-dark.svg)
+![The universal cycle contract](../../opencode/pdca/assets/diagram/pdca-contract-dark-en.svg)
 
 `pdca` is a **domain-neutral** skill: it names only **roles** and **phases** and imposes neither artifacts, nor task types, nor domain examples. What the result will be — a report, a document, a config, a plan — is decided by the planning phase; that's also what chooses the way to verify it. So `pdca` is worth picking for a task with a **verifiable result**: you can name the success criteria and the way to check them in advance.
 
@@ -58,7 +58,7 @@ From these rules follow three prohibitions on "self". **Self-verdict**: the exec
 
 The cycle's state machine looks like this:
 
-![The cycle state graph](../../opencode/pdca/assets/diagram/pdca-state-dark.svg)
+![The cycle state graph](../../opencode/pdca/assets/diagram/pdca-state-dark-en.svg)
 
 **PLAN.** The analyst decomposes the goal and answers what result is needed. The goal must be present at the cycle's entry: it's formulated in advance and can't be changed. The plan's mandatory fields:
 

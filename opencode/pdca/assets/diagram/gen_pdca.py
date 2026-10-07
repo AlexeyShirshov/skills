@@ -10,9 +10,9 @@ legend with the pdca-* roles, and finally the cycle state graph (START, P · PLA
 C · CHECK, A · ACT, EXIT, ЭСКАЛАЦИЯ, STOP) with every side transition.
 
 Two themes (light and dark) render into four artefacts next to this file:
-pdca-hand.svg / .html and pdca-hand-dark.svg / .html. The generator takes no
-inputs and is deterministic: no clock, no randomness, no absolute path in the
-output. Standard library only.
+pdca-hand.svg / .html and pdca-hand-dark.svg / .html; `--lang en` writes the
+same set with an `-en` suffix. The generator is deterministic: no clock, no
+randomness, no absolute path in the output. Standard library only.
 """
 import html
 import os
@@ -140,6 +140,127 @@ THEMES = {
     },
 }
 
+# --- localization (ru by default; `--lang en` selects English) --------------
+LANG = "ru"
+
+# Russian label -> English. Only the labels the diagram draws; anything not
+# listed (identifiers such as `met | unmet | unverified`, role names, `STOP`)
+# is emitted as-is. Lookup keys are the exact strings in the data above and in
+# the render sites below.
+_TR_EN = {
+    # subtitles / titles
+    "переход, не фаза": "a transition, not a phase",
+    "Универсальный контракт цикла": "The universal cycle contract",
+    "Граф состояний цикла": "The cycle state graph",
+    "pdca · оркестратор — входы по фазам · normal: primary · autonomous: pdca-orchestrator (только cheap-тир)":
+        "pdca · orchestrator — per-phase inputs · normal: primary · autonomous: pdca-orchestrator (cheap tier only)",
+    # PLAN cards
+    "Сбор · gather": "Gather",
+    "scout · факты · file:line": "scout: facts · file:line",
+    "Цель · результат": "Goal · result",
+    "что и зачем": "what and why",
+    "Ограничения · допущения": "Constraints · assumptions",
+    "границы задачи": "task boundaries",
+    "Критерии приёмки": "Acceptance criteria",
+    "каждый + способ проверки": "each + a check",
+    "Декомпозиция": "Decomposition",
+    "units · зависимости": "units · dependencies",
+    "Средства · доступ": "Means · access",
+    "чем и куда": "with what, where",
+    "Риски · стоп-условия": "Risks · stop rules",
+    "когда остановиться": "when to stop",
+    # DO cards
+    "Исполнение units": "Execute units",
+    "по принятому плану": "per the accepted plan",
+    "логи · артефакты": "logs · artifacts",
+    "фиксируются явно": "recorded explicitly",
+    "остаётся открытым": "stays open",
+    "Provisional-отчёт": "Provisional report",
+    "без вердикта · без STOP": "no verdict · no STOP",
+    # CHECK cards
+    "Критерии": "Criteria",
+    "Согласованность": "Consistency",
+    "частей между собой": "of the parts",
+    "Маршрутизация": "Routing",
+    "дефект→DO · план→PLAN": "defect→DO · plan→PLAN",
+    # ESCALATE cards
+    "Скаут": "Scout",
+    "Триггеры": "Triggers",
+    "неоднозначность · повтор": "ambiguity · repeat",
+    "3-й провал": "3rd failure",
+    "CHECK(r) исчерпан": "CHECK(r) exhausted",
+    "Необратимый trade-off": "Irreversible trade-off",
+    "цена решения": "cost of the call",
+    "Решение → роутинг": "Decision → routing",
+    "planner или STOP": "planner or STOP",
+    # ACT cards
+    "Финализация": "Finalization",
+    "принятого результата": "of the accepted result",
+    "Ограничения": "Limitations",
+    "границы финализации": "finalization bounds",
+    "Статус-файл": "Status file",
+    # orchestrator inputs
+    "PLAN ← «старт» · «реплан от DO / CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»":
+        "PLAN ← “start” · “replan from DO / CHECK” · “r+1 from ESCALATE” · “cycle N+1 from ACT”",
+    "DO ← «go от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»":
+        "DO ← “go from PLAN” · “defect from CHECK” · “r not exhausted from ESCALATE”",
+    "CHECK ← «units done от DO»": "CHECK ← “units done from DO”",
+    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после scout»":
+        "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after scout”",
+    "ACT ← «все criteria met от CHECK»": "ACT ← “all criteria met from CHECK”",
+    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в требуемом approval»":
+        "STOP ← “no doable PLAN r+1” · “unsolvable constraint” · “refused required approval”",
+    "EXIT ← «ACT закрыт»": "EXIT ← “ACT closed”",
+    # dispatch labels (per line, rendered through label())
+    "факты собраны": "facts gathered",
+    "реплан от CHECK": "replan from CHECK",
+    "план принят · go": "plan accepted · go",
+    "фикс дефекта · r активен": "defect fix · r active",
+    "все активные units done": "all active units done",
+    "неоднозначность": "ambiguity",
+    "повтор · 3-й провал": "repeat · 3rd failure",
+    "все criteria met": "all criteria met",
+    # legend
+    "дешёвая ступень": "cheap tier",
+    "средняя ступень": "medium tier",
+    "дорогая ступень": "strong tier",
+    # state-graph node subtitles
+    "начало": "start",
+    "план": "plan",
+    "исполнение": "execute",
+    "проверка": "verify",
+    "финализация": "finalize",
+    "завершение": "exit",
+    # state-graph edges
+    "старт": "start",
+    "сразу (авто)": "instant (auto)",
+    "закрыто": "closed",
+    "следующий цикл · N+1": "next cycle · N+1",
+    "новое предусловие": "new precondition",
+    "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
+    "неверный план → planner · r+1 при ревизии": "wrong plan → planner · r+1 on revision",
+    "r не исчерпан → DO": "r not exhausted → DO",
+    "исчерпан r → PLAN r+1": "r exhausted → PLAN r+1",
+    "STOP: нет плана r+1": "STOP: no plan r+1",
+    # escalation row
+    "ЭСКАЛАЦИЯ": "ESCALATION",
+    "решение": "decision",
+    "терминал": "terminal",
+    # footer
+    "сплошная стрелка — переход": "solid arrow — a transition",
+    "дуга — loop-back до ACT": "arc — loop-back before ACT",
+    "пунктир — следующий цикл": "dashed — next cycle",
+    "нижний ряд — эскалация и STOP": "bottom row — escalation and STOP",
+}
+
+
+def T(text):
+    """Translate a label for the active language; identity for `ru`/unknown."""
+    if LANG == "en" and text is not None:
+        return _TR_EN.get(text, text)
+    return text
+
+
 MAXROWS = max(len(b) for b in BLOCKS.values())
 COL_BOTTOM = COL_Y + (MAXROWS - 1) * BOX_STEP + BOX_H + 8
 LEG_Y = COL_BOTTOM + 74
@@ -161,6 +282,7 @@ def _fit(text, maxpx, cw):
 
 def render(P):
     def box(x, y, w, h, _title, sub, tier):
+        _title, sub = T(_title), T(sub)
         col = TIER_COLOR[tier]
         _bw, _bh = 58, 17
         _bx, _by = x + w - _bw - 8, y + h - _bh - 6
@@ -189,6 +311,7 @@ def render(P):
         # A secondary header is a transition, not a phase: dashed outline,
         # low-opacity fill, coloured (not white) label. `sub` is a small
         # subtitle rendered under the main label, inside the same box.
+        sub = T(sub)
         if secondary:
             _rect = (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" '
                      f'fill="{COLOR[col]}" fill-opacity="0.10" stroke="{COLOR[col]}" '
@@ -224,10 +347,12 @@ def render(P):
                 f'data-edge-id="{edge_id}" marker-end="url(#arrow)"/>')
 
     def label(x, y, text, color=None, anchor="middle"):
+        text = T(text)
         color = color or P["label"]
         return f'<text x="{x}" y="{y}" class="g" fill="{color}" text-anchor="{anchor}">{esc(text)}</text>'
 
     def stnode(x, y, w, h, main, sub, color, node_id):
+        main, sub = T(main), T(sub)
         cx = x + w / 2
         out = [
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10" fill="{color}" '
@@ -271,18 +396,18 @@ def render(P):
              '</style>')
 
     # ---- header + orchestrator strip ----
-    s.append(f'<text x="{M}" y="34" class="lt">Универсальный контракт цикла</text>')
+    s.append(f'<text x="{M}" y="34" class="lt">{esc(T("Универсальный контракт цикла"))}</text>')
     s.append(f'<rect x="{M}" y="{ORB_Y}" width="{W-M-M}" height="{ORB_H}" rx="10" class="band"/>')
-    s.append(f'<text x="{M+18}" y="{ORB_Y+26}" class="bt">'
-             f'pdca · оркестратор — входы по фазам · '
-             f'normal: primary · autonomous: pdca-orchestrator (только cheap-тир)</text>')
+    _band = ("pdca · оркестратор — входы по фазам · "
+             "normal: primary · autonomous: pdca-orchestrator (только cheap-тир)")
+    s.append(f'<text x="{M+18}" y="{ORB_Y+26}" class="bt">{esc(T(_band))}</text>')
     _oc1 = M + 18
     _oc2 = M + 18 + (W - M - M - 36) / 2
     _rows = max(1, (len(INPUTS) + 1) // 2)
     for _i, _t in enumerate(INPUTS):
         _ox = _oc1 if _i < _rows else _oc2
         _oy = ORB_Y + 52 + (_i % _rows) * 18
-        s.append(f'<text x="{_ox}" y="{_oy}" class="ol">← {esc(_t)}</text>')
+        s.append(f'<text x="{_ox}" y="{_oy}" class="ol">← {esc(T(_t))}</text>')
 
     # ---- phase columns ----
     def cx(c):
@@ -326,7 +451,7 @@ def render(P):
     for _i, (_col, _t, _model, _roles) in enumerate(LEGEND):
         _x = M + _i * _iw
         s.append(f'<rect x="{_x}" y="{ly-12}" width="15" height="15" rx="4" fill="{_col}"/>')
-        s.append(f'<text x="{_x+22}" y="{ly}" class="lt">{esc(_t)}</text>')
+        s.append(f'<text x="{_x+22}" y="{ly}" class="lt">{esc(T(_t))}</text>')
         _mw = len(_model) * 7.4 + 16
         if P["tint"]:
             s.append(f'<rect x="{_x+22}" y="{ly+8}" width="{_mw}" height="21" rx="7" fill="{_col}" '
@@ -340,7 +465,7 @@ def render(P):
         s.append(f'<text x="{_x+22+_mw+10}" y="{ly+23}" class="ls">{esc(_roles)}</text>')
 
     # ---- state graph ----
-    s.append(f'<text x="{M}" y="{SG_TITLE_Y}" class="lt">Граф состояний цикла</text>')
+    s.append(f'<text x="{M}" y="{SG_TITLE_Y}" class="lt">{esc(T("Граф состояний цикла"))}</text>')
     stx = {"START": 24, "PLAN": 256, "DO": 488, "CHECK": 720, "ACT": 952, "EXIT": 1184}
     stc = {"START": P["state_neutral"], "PLAN": P["plan"], "DO": P["do"],
            "CHECK": P["check"], "ACT": P["act"], "EXIT": P["state_neutral"]}
@@ -407,9 +532,9 @@ def render(P):
     return "\n".join(s)
 
 
-def htmlwrap(P, title, svg):
+def htmlwrap(P, title, svg, lang="ru"):
     return (
-        '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
+        f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
         f'<title>{esc(title)}</title>'
         f'<style>body{{margin:0;background:{P["bg"]};font-family:Segoe UI,system-ui,sans-serif}}'
         f'.card{{margin:16px auto;max-width:1540px;background:{P["card"]};'
@@ -420,16 +545,32 @@ def htmlwrap(P, title, svg):
     )
 
 
-VARIANTS = [
-    ("light", "pdca-hand", "pdca — ручная раскладка"),
-    ("dark", "pdca-hand-dark", "pdca — ручная раскладка (тёмная тема)"),
-]
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(description="Render the universal pdca diagram (ru/en).")
+    ap.add_argument("--lang", choices=["ru", "en"], default="ru",
+                    help="label language (default: ru)")
+    args = ap.parse_args(argv)
+    global LANG
+    LANG = args.lang
+    suffix = "" if LANG == "ru" else "-en"
+    if LANG == "ru":
+        titles = ("pdca — ручная раскладка", "pdca — ручная раскладка (тёмная тема)")
+    else:
+        titles = ("pdca — hand layout", "pdca — hand layout (dark theme)")
+    variants = [
+        ("light", "pdca-hand" + suffix, titles[0]),
+        ("dark", "pdca-hand-dark" + suffix, titles[1]),
+    ]
+    for theme, stem, title in variants:
+        palette = THEMES[theme]
+        svg = render(palette)
+        with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as fh:
+            fh.write(svg)
+        with open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8") as fh:
+            fh.write(htmlwrap(palette, title, svg, LANG))
+        print("wrote %s.{svg,html}" % stem)
 
-for theme, stem, title in VARIANTS:
-    palette = THEMES[theme]
-    svg = render(palette)
-    with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as fh:
-        fh.write(svg)
-    with open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8") as fh:
-        fh.write(htmlwrap(palette, title, svg))
-    print("wrote %s.{svg,html}" % stem)
+
+if __name__ == "__main__":
+    main()
