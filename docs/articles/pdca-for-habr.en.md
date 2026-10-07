@@ -83,7 +83,7 @@ When the set of units changes mid-work, it's important to distinguish two cases.
 
 If it turns out that one more thing must be done before the current unit, the plan simply *adds* a new active unit, and the original stays in the `blocked` status and keeps all its criteria. There's no mapping between them and none is needed: the new unit doesn't replace the old one, it merely comes before it — once it's done, the original unblocks and is brought to `done` by its own criteria. This is called an **additive precondition**.
 
-**Scope replacement** — the original unit is no longer done in its former shape: a new one supersedes it. The original is marked `superseded`, and this is a genuine substitution. So that requirements aren't lost in the supersession, a "superseded → replacement" mapping is mandatory: the new unit inherits all the criteria of the original, and CHECK still verifies them. Without such a mapping, superseding is forbidden — otherwise some requirements quietly evaporate.
+If the original unit is no longer achievable, a new one supersedes it. The original is marked `superseded`, and this is a genuine substitution. So that requirements aren't lost in the supersession, a "superseded → replacement" mapping is mandatory: the new unit inherits all the criteria of the original, and CHECK still verifies them. Without such a mapping, superseding is forbidden — otherwise some requirements quietly evaporate. This is called a **scope replacement**.
 
 In short: with an additive precondition the original unit lives on (`blocked`) and there's no mapping; with a scope replacement it dies (`superseded`), and a mapping with all its criteria is mandatory.
 
