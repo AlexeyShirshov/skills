@@ -1,4 +1,4 @@
-# When vibe coding gets old
+# Beyond vibe coding
 
 Vibe coding sped up development to an indecent degree: on a strong model a working prototype appears within minutes, and there's no need to plan or dig in — the model fills in the details itself. The price of that speed is unpredictability. Success isn't defined in advance, "done" stays a self-assessment, and the result isn't reproducible: the same request yields a different solution. The `pdca` skill doesn't cancel vibe coding; it adds a **verifiable result** to it — PLAN → DO → CHECK → ACT with gates, independent verification, and a report on disk.
 
