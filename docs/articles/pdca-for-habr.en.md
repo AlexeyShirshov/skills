@@ -81,7 +81,7 @@ A gap in the input data is closed with a fact, an explicit assumption/risk, or a
 
 When the set of units changes mid-work, it's important to distinguish two cases.
 
-**Additive precondition** — it turns out that one more thing must be done before the current unit. Then the plan simply *adds* a new active unit, and the original stays in the `blocked` status and keeps all its criteria. There's no mapping between them and none is needed: the new unit doesn't replace the old one, it merely comes before it — once it's done, the original unblocks and is brought to `done` by its own criteria.
+If it turns out that one more thing must be done before the current unit, the plan simply *adds* a new active unit, and the original stays in the `blocked` status and keeps all its criteria. There's no mapping between them and none is needed: the new unit doesn't replace the old one, it merely comes before it — once it's done, the original unblocks and is brought to `done` by its own criteria. This is called an **additive precondition**.
 
 **Scope replacement** — the original unit is no longer done in its former shape: a new one supersedes it. The original is marked `superseded`, and this is a genuine substitution. So that requirements aren't lost in the supersession, a "superseded → replacement" mapping is mandatory: the new unit inherits all the criteria of the original, and CHECK still verifies them. Without such a mapping, superseding is forbidden — otherwise some requirements quietly evaporate.
 
