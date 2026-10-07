@@ -60,7 +60,7 @@ The cycle's state machine looks like this:
 
 ![The cycle state graph](../../opencode/pdca/assets/diagram/pdca-state-dark-en.svg)
 
-**PLAN.** The analyst decomposes the goal and answers what result is needed. The decomposition goes down to atomic, indivisible tasks with clear boundaries — **units**. A unit is one verifiable piece of work with its own acceptance criteria. The goal must be present at the cycle's entry: it's formulated in advance and can't be changed. The plan's mandatory fields:
+**PLAN.** The analyst decomposes the goal and answers what result is needed. The goal must be present at the cycle's entry: it's formulated in advance and can't be changed. The decomposition goes down to atomic, indivisible tasks with clear boundaries — **units**. A unit is one verifiable piece of work with its own acceptance criteria. The plan's mandatory fields:
 
 - the goal and the expected result;
 - constraints and assumptions;
