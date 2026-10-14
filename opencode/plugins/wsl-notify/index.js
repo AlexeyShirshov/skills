@@ -29,6 +29,10 @@ const DEFAULTS = {
   // See the README: with `session.permissions: "autoaccept"` the TUI answers at
   // once, and only the events would tell you otherwise.
   graceMs: 500,
+  // A turn that starts and finishes inside this window was answered while you
+  // were still looking at the terminal, so it never reaches the desktop either.
+  // `0` notifies for every finished turn.
+  minTurnMs: 500,
   // Subagent completions are noise by default: the parent session reports the
   // turn that spawned them.
   subagentComplete: false,
@@ -53,8 +57,6 @@ const COMPLETE_EVENTS = new Set(["session.execution.succeeded", "session.idle"])
 const ERROR_EVENTS = new Set(["session.execution.failed"])
 const SESSION_START_EVENTS = new Set(["session.execution.started"])
 
-const LOOKUP_TIMEOUT_MS = 2000
-
 // Diagnostics: `WSL_NOTIFY_DEBUG=1` in the environment of the opencode process
 // writes every decision (toast/skip) to WSL_NOTIFY_DEBUG_LOG
 // (default `$TMPDIR/wsl-notify.log`).
@@ -70,11 +72,15 @@ function debug(line) {
 // the session plus turn (completion), never the event id, because V2 delivers one
 // event to several plugin instances, re-emits `permission.asked` for a pending
 // request, and can report one finished turn as both `session.execution.succeeded`
-// and the legacy `session.idle`.
+// and the legacy `session.idle`. `started` carries the turn start time for the
+// `minTurnMs` window, and `pending` the grace timers.
 const STATE_KEY = Symbol.for("opencode.wsl-notify.state")
 const state = (globalThis[STATE_KEY] ??= {
   seen: new Set(),
   pending: new Map(),
+  started: new Map(),
+  sessions: new Map(),
+  priming: new Set(),
   warned: new Set(),
   resolved: false,
   powershell: undefined,
@@ -224,11 +230,21 @@ function forget(event) {
     forgetKey(id === undefined || id === null ? undefined : `form:${id}`)
   }
 
-  // A new execution starts the next turn: allow the next completion to toast.
+  // A new execution starts the next turn: allow the next completion to toast,
+  // and remember when the turn began for the `minTurnMs` window.
   if (SESSION_START_EVENTS.has(event?.type)) {
     const sessionID = sessionIDOf(event)
     forgetKey(`done:${sessionID}`)
     forgetKey(`failed:${sessionID}`)
+    if (sessionID) {
+      state.started.set(sessionID, Date.now())
+      if (state.started.size > MAX_SEEN) {
+        for (const oldest of state.started.keys()) {
+          state.started.delete(oldest)
+          if (state.started.size <= MAX_SEEN - 64) break
+        }
+      }
+    }
   }
 }
 
@@ -302,20 +318,21 @@ function limits(options) {
   // Option wins, then the environment: a locally discovered plugin file has no
   // options, so the environment is the only knob there.
   const grace = options?.graceMs ?? numberFromEnv("WSL_NOTIFY_GRACE_MS")
+  const minTurn = options?.minTurnMs ?? numberFromEnv("WSL_NOTIFY_MIN_TURN_MS")
 
   return {
     maxTitle: Number.isFinite(options?.maxTitle) ? options.maxTitle : DEFAULTS.maxTitle,
     maxMessage: Number.isFinite(options?.maxMessage) ? options.maxMessage : DEFAULTS.maxMessage,
     graceMs: Number.isFinite(grace) ? Math.max(0, grace) : DEFAULTS.graceMs,
+    minTurnMs: Number.isFinite(minTurn) ? Math.max(0, minTurn) : DEFAULTS.minTurnMs,
     subagentComplete: options?.subagentComplete === true,
     sound: { ...DEFAULTS.sound, ...(options?.sound ?? {}) },
   }
 }
 
-function render(classified, event, session, options) {
+function render(classified, event, sessionID, options) {
   const { maxTitle, maxMessage, graceMs, subagentComplete, sound } = limits(options)
-  const sessionTitle = session?.title ? String(session.title) : undefined
-  const title = (sessionTitle || "opencode").slice(0, maxTitle)
+  const title = String(sessionTitle(sessionID) ?? "opencode").slice(0, maxTitle)
 
   switch (classified.kind) {
     case "permission":
@@ -339,7 +356,7 @@ function render(classified, event, session, options) {
     case "complete":
       return {
         title,
-        message: session?.parentID !== undefined && subagentComplete ? "Subagent finished" : "Session finished",
+        message: isSubagent(sessionID) && subagentComplete ? "Subagent finished" : "Session finished",
         sound: sound.complete,
       }
 
@@ -357,24 +374,91 @@ function render(classified, event, session, options) {
   }
 }
 
-// Resolve the session behind an event. V1 has no such call, and V1 does not emit
-// the execution events that need it.
-async function lookupSession(ctx, sessionID) {
-  if (!sessionID || typeof ctx?.session?.get !== "function") return undefined
+// Remember what the event stream says about a session. The plugin never calls
+// into the server from the event handler: a session read issued while that same
+// session is finishing does not come back (observed live — the handler stops at
+// the call and no fallback timer fires), which is exactly the moment a
+// completion toast is raised. `session.created` carries `parentID` for a subagent
+// session and omits it for a top-level one, so the stream alone is enough.
+function track(event) {
+  const type = event?.type
+  if (typeof type !== "string" || !type.startsWith("session.")) return
 
-  let timer
-  try {
-    return await Promise.race([
-      ctx.session.get({ sessionID }),
-      new Promise((resolve) => {
-        timer = setTimeout(() => resolve(undefined), LOOKUP_TIMEOUT_MS)
-      }),
-    ])
-  } catch {
-    return undefined
-  } finally {
-    if (timer !== undefined) clearTimeout(timer)
+  const sessionID = sessionIDOf(event)
+  if (!sessionID) return
+
+  if (type === "session.deleted") {
+    state.sessions.delete(sessionID)
+    return
   }
+
+  if (type !== "session.created" && type !== "session.updated" && type !== "session.renamed") return
+
+  const parentID = event.data?.parentID ?? event.properties?.parentID
+  const title = event.data?.title ?? event.properties?.title
+  rememberSession(sessionID, { parentID, title })
+}
+
+function isSubagent(sessionID) {
+  const parentID = state.sessions.get(sessionID)?.parentID
+  return typeof parentID === "string" && parentID.length > 0
+}
+
+function sessionTitle(sessionID) {
+  const title = state.sessions.get(sessionID)?.title
+  return typeof title === "string" && title.length > 0 ? title : undefined
+}
+
+function rememberSession(sessionID, session) {
+  const meta = state.sessions.get(sessionID) ?? {}
+  if (session.title !== undefined) meta.title = session.title
+  if (session.parentID !== undefined) meta.parentID = session.parentID
+  state.sessions.set(sessionID, meta)
+
+  if (state.sessions.size > MAX_SEEN) {
+    for (const oldest of state.sessions.keys()) {
+      state.sessions.delete(oldest)
+      if (state.sessions.size <= MAX_SEEN - 64) break
+    }
+  }
+}
+
+// Ask the server for a session we have never seen, so that a session created
+// before the plugin loaded (or before a reload) still gets its title and its
+// `parentID`. This is deliberately *not* awaited: a read issued while that
+// session is finishing never comes back, and the event handler must not stop on
+// it. Started when the session first appears, it has the whole turn to answer.
+const PRIME_RETRY_MS = 30_000
+
+function primeSession(ctx, sessionID) {
+  if (typeof ctx?.session?.get !== "function") return
+  if (state.priming.has(sessionID)) return
+  state.priming.add(sessionID)
+
+  const timer = setTimeout(() => state.priming.delete(sessionID), PRIME_RETRY_MS)
+  timer.unref?.()
+
+  void Promise.resolve()
+    .then(() => ctx.session.get({ sessionID }))
+    .then((session) => {
+      if (!session) return
+      rememberSession(sessionID, session)
+      debug(`primed ${sessionID} title=${JSON.stringify(session.title)} parent=${JSON.stringify(session.parentID)}`)
+    })
+    .catch((error) => debug(`prime failed ${sessionID}: ${error?.message ?? error}`))
+    .finally(() => {
+      clearTimeout(timer)
+      state.priming.delete(sessionID)
+    })
+}
+
+function primeUnknown(event, prime) {
+  if (!prime) return
+  const sessionID = sessionIDOf(event)
+  if (!sessionID) return
+  // A title is the cheapest sign of a complete record; without one, ask.
+  if (state.sessions.get(sessionID)?.title !== undefined) return
+  prime(sessionID)
 }
 
 function toast(info, options) {
@@ -408,25 +492,44 @@ function schedule(key, info, options) {
   debug(`delayed ${key} after=${delayMs}ms`)
 }
 
-async function handle(event, options, ctx) {
+async function handle(event, options, prime) {
+  track(event)
   forget(event)
+  primeUnknown(event, prime)
 
   const classified = classify(event)
   if (!classified) return
 
-  const needsSession = classified.kind === "complete" || classified.kind === "error"
-  const session = needsSession ? await lookupSession(ctx, classified.sessionID) : undefined
-
-  if (needsSession && session?.parentID !== undefined && !limits(options).subagentComplete) {
+  // Subagent completions are noise. Only completions are filtered: a failing
+  // agent is worth a toast even when it is a child session.
+  if (classified.kind === "complete" && isSubagent(classified.sessionID) && !limits(options).subagentComplete) {
     debug(`skip-subagent ${event?.type} session=${classified.sessionID}`)
     return
   }
 
-  const info = render(classified, event, session, options)
+  // How long the turn ran. `undefined` when no start event was seen (the plugin
+  // loaded mid-turn, the event was missed, or the service restarted): fail open
+  // and notify, because a missing mark says nothing about the turn.
+  let heldMs
+  if (classified.kind === "complete") {
+    const startedAt = state.started.get(classified.sessionID)
+    state.started.delete(classified.sessionID)
+    if (startedAt !== undefined) heldMs = Date.now() - startedAt
+  }
+
+  const info = render(classified, event, classified.sessionID, options)
   if (!info) return
 
+  // Claim first: `session.execution.succeeded` and the legacy `session.idle`
+  // report the same turn, and the second one must not slip past the window.
   if (!firstTime(classified.key)) {
     debug(`skip ${classified.kind} key=${classified.key} event.id=${event?.id}`)
+    return
+  }
+
+  const { minTurnMs } = limits(options)
+  if (heldMs !== undefined && heldMs < minTurnMs) {
+    debug(`skip-short ${classified.kind} session=${classified.sessionID} held=${heldMs}ms min=${minTurnMs}ms`)
     return
   }
 
@@ -440,12 +543,13 @@ export default {
   setup(ctx) {
     const options = ctx?.options ?? {}
     const controller = new AbortController()
+    const prime = (sessionID) => primeSession(ctx, sessionID)
 
     void (async () => {
       try {
         for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
           try {
-            await handle(event, options, ctx)
+            await handle(event, options, prime)
           } catch (error) {
             console.error(`[wsl-notify] handler failed: ${error?.message ?? error}`)
           }
@@ -466,7 +570,7 @@ export default {
     return {
       event: async ({ event }) => {
         try {
-          await handle(event, {}, undefined)
+          await handle(event, {})
         } catch (error) {
           console.error(`[wsl-notify] handler failed: ${error?.message ?? error}`)
         }

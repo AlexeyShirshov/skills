@@ -45,16 +45,31 @@ function resetState() {
   for (const timer of state.pending.values()) clearTimeout(timer)
   state.pending.clear()
   state.seen.clear()
+  state.started?.clear()
+  state.sessions?.clear()
+  state.priming?.clear()
   state.warned.clear()
 }
 
-async function run(events, options = {}, sessions = {}, gap = 10) {
+// The plugin must never *await* a session read inside the event handler: live, a
+// read issued while that session is finishing never returns. The fake below
+// reproduces that — it counts calls and never settles. A regression therefore
+// stalls the handler (no toast) instead of passing quietly.
+let sessionGetCalls = 0
+
+function neverSettles() {
+  sessionGetCalls += 1
+  return new Promise(() => {})
+}
+
+async function run(events, options = {}, gap = 10, sessionGetter = neverSettles) {
   await writeFile(log, "")
   resetState()
+  sessionGetCalls = 0
 
   const module = await import("../index.js")
   const ctx = {
-    options: { powershell: fake, graceMs: 40, ...options },
+    options: { powershell: fake, graceMs: 40, minTurnMs: 0, ...options },
     event: {
       subscribe: async function* () {
         for (const event of events) {
@@ -63,9 +78,7 @@ async function run(events, options = {}, sessions = {}, gap = 10) {
         }
       },
     },
-    session: {
-      get: async ({ sessionID }) => sessions[sessionID] ?? { id: sessionID, title: "Test session" },
-    },
+    session: { get: sessionGetter },
   }
 
   const dispose = module.default.setup(ctx)
@@ -76,6 +89,11 @@ async function run(events, options = {}, sessions = {}, gap = 10) {
 }
 
 const SESSION = "ses_test"
+const sessionCreated = (sessionID, parentID) => ({
+  id: `evt_created_${sessionID}`,
+  type: "session.created",
+  data: parentID ? { sessionID, parentID, title: `Title of ${sessionID}` } : { sessionID, title: `Title of ${sessionID}` },
+})
 const permissionAsked = (id, sessionID = SESSION) => ({
   id: `evt_${id}`,
   type: "permission.asked",
@@ -106,10 +124,10 @@ console.log("permission")
   // A 40ms window with a reply at ~60ms must toast; if the variable were ignored,
   // the 500ms default would swallow it.
   process.env.WSL_NOTIFY_GRACE_MS = "40"
-  const raised = await run([permissionAsked("per_4"), permissionReplied("per_4")], { graceMs: undefined }, {}, 60)
+  const raised = await run([permissionAsked("per_4"), permissionReplied("per_4")], { graceMs: undefined }, 60)
   check("WSL_NOTIFY_GRACE_MS widens/narrows the window", raised.length === 1, `got ${raised.length}`)
   process.env.WSL_NOTIFY_GRACE_MS = "2000"
-  const quiet = await run([permissionAsked("per_5"), permissionReplied("per_5")], { graceMs: undefined }, {}, 60)
+  const quiet = await run([permissionAsked("per_5"), permissionReplied("per_5")], { graceMs: undefined }, 60)
   check("a large WSL_NOTIFY_GRACE_MS suppresses the toast", quiet.length === 0, `got ${quiet.length}`)
   delete process.env.WSL_NOTIFY_GRACE_MS
 }
@@ -117,15 +135,55 @@ console.log("permission")
 console.log("completion")
 {
   const raised = await run([
+    sessionCreated(SESSION),
     { id: "e1", type: "session.execution.started", data: { sessionID: SESSION } },
     { id: "e2", type: "session.execution.succeeded", data: { sessionID: SESSION } },
   ])
   check("finished session toasts once", raised.length === 1, `got ${raised.length}`)
   check("toast says the session finished", toastText(raised[0] ?? "").includes("Session finished"))
-  check("toast carries the session title", toastText(raised[0] ?? "").includes("Test session"))
+  check("toast carries the session title", toastText(raised[0] ?? "").includes("Title of ses_test"))
+  check("a known session needs no server read", sessionGetCalls === 0, `calls=${sessionGetCalls}`)
+}
+{
+  // A session that predates the plugin: no announcement, and the read hangs
+  // exactly like the live one. The toast must not wait for it.
+  const raised = await run([{ id: "e1", type: "session.execution.succeeded", data: { sessionID: "ses_unseen" } }])
+  check("a session read that never settles does not stop the toast", raised.length === 1, `got ${raised.length}`)
+  check("the plugin asked the server about the unknown session", sessionGetCalls >= 1, `calls=${sessionGetCalls}`)
+}
+{
+  // Same pre-existing session, but this time the read answers: the title it
+  // returns is used for the toast.
+  const primed = async ({ sessionID }) => ({ id: sessionID, title: "Primed title" })
+  const raised = await run(
+    [
+      { id: "e1", type: "session.execution.started", data: { sessionID: "ses_old" } },
+      { id: "e2", type: "session.execution.succeeded", data: { sessionID: "ses_old" } },
+    ],
+    {},
+    10,
+    primed,
+  )
+  check("a title learned from the server is used", toastText(raised[0] ?? "").includes("Primed title"))
+}
+{
+  // A pre-existing subagent session: the primed record carries its parent, so it
+  // stays quiet like any other subagent.
+  const primedChild = async ({ sessionID }) => ({ id: sessionID, title: "Child", parentID: SESSION })
+  const raised = await run(
+    [
+      { id: "e1", type: "session.execution.started", data: { sessionID: "ses_old_child" } },
+      { id: "e2", type: "session.execution.succeeded", data: { sessionID: "ses_old_child" } },
+    ],
+    {},
+    10,
+    primedChild,
+  )
+  check("a pre-existing subagent is silent once primed", raised.length === 0, `got ${raised.length}`)
 }
 {
   const raised = await run([
+    sessionCreated(SESSION),
     { id: "e1", type: "session.execution.succeeded", data: { sessionID: SESSION } },
     { id: "e2", type: "session.idle", data: { sessionID: SESSION } },
   ])
@@ -133,6 +191,7 @@ console.log("completion")
 }
 {
   const raised = await run([
+    sessionCreated(SESSION),
     { id: "e1", type: "session.execution.succeeded", data: { sessionID: SESSION } },
     { id: "e2", type: "session.execution.started", data: { sessionID: SESSION } },
     { id: "e3", type: "session.execution.succeeded", data: { sessionID: SESSION } },
@@ -141,22 +200,78 @@ console.log("completion")
 }
 {
   const subagent = "ses_child"
-  const raised = await run(
-    [{ id: "e1", type: "session.execution.succeeded", data: { sessionID: subagent } }],
-    {},
-    { [subagent]: { id: subagent, title: "Subagent", parentID: SESSION } },
-  )
+  const raised = await run([
+    sessionCreated(subagent, SESSION),
+    { id: "e1", type: "session.execution.succeeded", data: { sessionID: subagent } },
+  ])
   check("subagent completion stays silent by default", raised.length === 0, `got ${raised.length}`)
 }
 {
   const subagent = "ses_child2"
   const raised = await run(
-    [{ id: "e1", type: "session.execution.succeeded", data: { sessionID: subagent } }],
+    [
+      sessionCreated(subagent, SESSION),
+      { id: "e1", type: "session.execution.succeeded", data: { sessionID: subagent } },
+    ],
     { subagentComplete: true },
-    { [subagent]: { id: subagent, title: "Subagent", parentID: SESSION } },
   )
   check("subagent completion toasts when enabled", raised.length === 1, `got ${raised.length}`)
   check("subagent toast is labelled", toastText(raised[0] ?? "").includes("Subagent finished"))
+}
+{
+  // A session the stream never announced (it predates the plugin or a reload):
+  // stay quiet only if we truly know it is a child, otherwise notify.
+  const raised = await run([
+    { id: "e1", type: "session.execution.succeeded", data: { sessionID: "ses_unseen" } },
+  ])
+  check("an unknown session is still announced", raised.length === 1, `got ${raised.length}`)
+}
+
+console.log("short turns")
+{
+  // Default is 500ms: a turn of ~10ms was answered while you were still looking.
+  const raised = await run(
+    [
+      { id: "e1", type: "session.execution.started", data: { sessionID: SESSION } },
+      { id: "e2", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+    ],
+    { minTurnMs: undefined },
+  )
+  check("a turn shorter than the default 500ms stays silent", raised.length === 0, `got ${raised.length}`)
+}
+{
+  const raised = await run(
+    [
+      { id: "e1", type: "session.execution.started", data: { sessionID: SESSION } },
+      { id: "e2", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+    ],
+    { minTurnMs: 100 },
+    120,
+  )
+  check("a turn longer than minTurnMs toasts", raised.length === 1, `got ${raised.length}`)
+}
+{
+  // No start event (plugin loaded mid-turn, service restarted): fail open.
+  const raised = await run(
+    [{ id: "e1", type: "session.execution.succeeded", data: { sessionID: SESSION } }],
+    { minTurnMs: undefined },
+  )
+  check("a completion without a start mark toasts anyway", raised.length === 1, `got ${raised.length}`)
+}
+{
+  // 50ms is below the ~120ms turn: only reading the variable can raise a toast
+  // here, because the 500ms default would suppress it.
+  process.env.WSL_NOTIFY_MIN_TURN_MS = "50"
+  const raised = await run(
+    [
+      { id: "e1", type: "session.execution.started", data: { sessionID: SESSION } },
+      { id: "e2", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+    ],
+    { minTurnMs: undefined },
+    120,
+  )
+  check("WSL_NOTIFY_MIN_TURN_MS sets the threshold", raised.length === 1, `got ${raised.length}`)
+  delete process.env.WSL_NOTIFY_MIN_TURN_MS
 }
 
 console.log("failure")
