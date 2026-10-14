@@ -297,6 +297,56 @@ console.log("question")
   check("toast carries the question", toastText(raised[0] ?? "").includes("Which?"))
 }
 
+console.log("1.18.x (V1 context)")
+{
+  // V1 nests the session under `properties.info`, and reports a finished turn as
+  // `session.idle` with the id at the top level of `properties`.
+  const raised = await run([
+    { id: "evt_v1_created", type: "session.created", properties: { info: { id: SESSION, title: "V1 title" } } },
+    { id: "evt_v1_idle", type: "session.idle", properties: { sessionID: SESSION } },
+  ])
+  check("V1 idle toasts once", raised.length === 1, `got ${raised.length}`)
+  check("V1 toast carries the title from properties.info", toastText(raised[0] ?? "").includes("V1 title"))
+}
+{
+  const raised = await run([
+    {
+      id: "evt_v1_child",
+      type: "session.created",
+      properties: { info: { id: "ses_v1_child", title: "Child", parentID: SESSION } },
+    },
+    { id: "evt_v1_child_idle", type: "session.idle", properties: { sessionID: "ses_v1_child" } },
+  ])
+  check("V1 subagent finish stays silent", raised.length === 0, `got ${raised.length}`)
+}
+{
+  // V1 reports a failure as `session.error`, text in `properties.error.data.message`.
+  const raised = await run([
+    {
+      id: "evt_v1_error",
+      type: "session.error",
+      properties: { sessionID: SESSION, error: { name: "APIError", data: { message: "V1 blew up" } } },
+    },
+  ])
+  check("V1 session.error toasts once", raised.length === 1, `got ${raised.length}`)
+  check("V1 error toast carries the message", toastText(raised[0] ?? "").includes("Error: V1 blew up"))
+}
+{
+  // 1.18.x calls `setup` with a context that has no event stream: it must neither
+  // throw nor leave anything behind, because `server()` carries the events there.
+  const module = await import("../index.js")
+  let blew = false
+  let result
+  try {
+    result = module.default.setup({ options: { powershell: fake } })
+    if (result instanceof Promise) await result
+  } catch {
+    blew = true
+  }
+  check("setup without an event stream does not throw", !blew)
+  check("setup without an event stream returns no cleanup", result === undefined)
+}
+
 await rm(dir, { recursive: true, force: true })
 
 console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`)

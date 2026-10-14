@@ -1,6 +1,6 @@
 {
   "name": "wsl-notify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows toast notifications for OpenCode — permission, question, session completion and error events. Zero dependencies, one entrypoint for OpenCode V1 and V2, works from WSL (powershell.exe interop) and native Windows.",
   "type": "module",
   "exports": {

@@ -32,19 +32,28 @@ OpenCode V2, in `opencode.json(c)`:
 }
 ```
 
-OpenCode V1, in `opencode.json`:
+OpenCode 1.18.x, in `~/.config/opencode/plugins/wsl-notify.js` (or
+`.opencode/plugins/` for one project) — **the file, not the package name**:
 
-```json
-{
-  "plugin": ["wsl-notify"]
-}
+```sh
+npm pack wsl-notify@1.0.1 && tar -xzf wsl-notify-1.0.1.tgz
+cp package/index.js ~/.config/opencode/plugins/wsl-notify.js
 ```
 
-Or drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCode
+1.18.x does accept an npm entry (`"plugin": ["wsl-notify"]`) and installs the
+package, but for a package it only calls `setup(ctx)` — whose context there has
+no event stream (`event`, `client` and `$` are absent) — and never calls
+`server()`, so a package plugin cannot see events at all. Loaded from the
+plugins directory, the same file is driven through the legacy `server()` hooks,
+which do receive `session.idle`, `permission.*`, `question.asked` and
+`session.error`. The object export (`{ id, setup, server }`) needs 1.18.29 or
+newer. Options do not reach this path — use the `WSL_NOTIFY_*` variables below.
+
+Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCode
 discover it locally. Options below need the configured form:
 `plugins: [{ "package": "wsl-notify", "options": { … } }]`.
 
-Pin a version (`wsl-notify@1.0.0`) to keep upgrades explicit.
+Pin a version (`wsl-notify@1.0.1`) to keep upgrades explicit.
 
 ## Options
 
@@ -106,6 +115,7 @@ Options win over the environment.
 | `session.execution.succeeded` | V2 | `Session finished` |
 | `session.idle` | V1, transitional V2 | `Session finished` |
 | `session.execution.failed` | V2 | `Error: <message>` |
+| `session.error` | V1 | `Error: <message>`, the text read from `properties.error.data.message` |
 | `session.execution.succeeded` (subagent) | V2 | `Subagent finished`, only with `subagentComplete: true` |
 
 Completion toasts carry the session title when one is known, falling back to
@@ -242,7 +252,7 @@ Metadata comes from the event stream first:
 
 | Event | Used for |
 | --- | --- |
-| `session.created` | `parentID` (subagent or top-level) and the title, when present |
+| `session.created` | `parentID` (subagent or top-level) and the title, when present; 1.18.x nests both under `properties.info` |
 | `session.updated`, `session.renamed` | the title |
 | `session.deleted` | forget the session |
 
@@ -257,16 +267,20 @@ the title. Nothing waits on it: if the read never settles, the toast is raised w
 The map is capped like the seen keys, and a completion for a session with no record
 is raised anyway: a missing entry means "unknown", not "subagent".
 
+1.18.x has no `ctx.session` to prime from, so titles there come from these events
+alone — which is why the session object nested under `properties.info` is read too.
+
 ## Development
 
 ```sh
 npm test        # drives setup() with synthetic events and a fake powershell
 ```
 
-The smoke test asserts on the toasts the plugin would raise (29 checks): one
+The smoke test asserts on the toasts the plugin would raise (36 checks): one
 toast per waiting permission, silence for a permission answered inside the grace
 window, coalesced completion events, silence for a turn inside `minTurnMs`,
-subagent suppression, and error text.
+subagent suppression, error text, and the 1.18.x shapes (`properties.info`, and a
+`setup` that must not fail without an event stream).
 
 ## License
 

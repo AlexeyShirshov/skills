@@ -54,7 +54,9 @@ const POWERSHELL_RELATIVE = [
 const POWERSHELL_NAMES = ["powershell.exe", "pwsh.exe", "powershell", "pwsh"]
 
 const COMPLETE_EVENTS = new Set(["session.execution.succeeded", "session.idle"])
-const ERROR_EVENTS = new Set(["session.execution.failed"])
+// `session.execution.*` is V2; 1.18.x reports a failed turn as `session.error`,
+// with the text in `properties.error.data.message`.
+const ERROR_EVENTS = new Set(["session.execution.failed", "session.error"])
 const SESSION_START_EVENTS = new Set(["session.execution.started"])
 
 // Diagnostics: `WSL_NOTIFY_DEBUG=1` in the environment of the opencode process
@@ -168,7 +170,9 @@ function powershell(options) {
 }
 
 function sessionIDOf(event) {
-  return event?.data?.sessionID ?? event?.properties?.sessionID
+  // V2 puts the session id on the event itself; 1.18.x nests the session for
+  // `session.created`/`session.updated` under `properties.info`.
+  return event?.data?.sessionID ?? event?.properties?.sessionID ?? event?.properties?.info?.id
 }
 
 // Classify the event and build its dedupe key. `undefined` means "not ours".
@@ -361,7 +365,10 @@ function render(classified, event, sessionID, options) {
       }
 
     case "error": {
-      const detail = event.data?.error?.message ?? event.properties?.error?.message
+      const detail =
+        event.data?.error?.message ??
+        event.properties?.error?.message ??
+        event.properties?.error?.data?.message
       return {
         title,
         message: (detail ? `Error: ${detail}` : "Session failed").slice(0, maxMessage),
@@ -394,8 +401,11 @@ function track(event) {
 
   if (type !== "session.created" && type !== "session.updated" && type !== "session.renamed") return
 
-  const parentID = event.data?.parentID ?? event.properties?.parentID
-  const title = event.data?.title ?? event.properties?.title
+  // 1.18.x nests the session under `properties.info`; V2 puts the fields on the
+  // event itself.
+  const info = event.properties?.info
+  const parentID = event.data?.parentID ?? event.properties?.parentID ?? info?.parentID
+  const title = event.data?.title ?? event.properties?.title ?? info?.title
   rememberSession(sessionID, { parentID, title })
 }
 
@@ -542,6 +552,18 @@ export default {
   // V2: events arrive through the server event stream.
   setup(ctx) {
     const options = ctx?.options ?? {}
+
+    // 1.18.x calls `setup` too, but its context carries no event stream (keys:
+    // options, agent, aisdk, catalog, command, integration, plugin, reference,
+    // skill — no `event`, `client` or `$`), and its package loader never calls
+    // `server()`. There is nothing to subscribe to, so leave quietly: the legacy
+    // `server()` hooks are the only event path a 1.18.x plugin can use, and that
+    // path is reached by loading this file from the plugins directory.
+    if (typeof ctx?.event?.subscribe !== "function") {
+      debug("setup: no event stream in this context (1.18.x); the server() hooks serve events")
+      return
+    }
+
     const controller = new AbortController()
     const prime = (sessionID) => primeSession(ctx, sessionID)
 
