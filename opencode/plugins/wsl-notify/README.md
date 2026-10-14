@@ -24,26 +24,80 @@ entrypoint for OpenCode V1 and V2.
 
 ## Install
 
-OpenCode V2, in `opencode.json(c)`:
+Every route below was verified against OpenCode 1.18.35 (V1) and 2.0.28 (V2):
+"loads" means the plugin writes its `loaded …` line and raises a toast. Pick one
+route per host.
+
+### OpenCode V2 — `plugins` in `opencode.json(c)`
 
 ```jsonc
 {
+  // npm, tracking latest
   "plugins": ["wsl-notify"]
+  // npm, pinned
+  // "plugins": ["wsl-notify@1.0.4"]
+  // with options (the form V2 needs for `graceMs`/`minTurnMs`)
+  // "plugins": [{ "package": "wsl-notify", "options": { "graceMs": 0 } }]
+  // a downloaded tarball, no registry involved
+  // "plugins": ["file:/path/to/wsl-notify-1.0.4.tgz"]
 }
 ```
 
-OpenCode 1.18.x, in `opencode.json(c)`:
+V2 installs such a package under `<cache>/opencode/npm/<spec>`, keyed by the
+**spec**: a bare `wsl-notify` (`latest`) can keep serving a build it fetched
+earlier, so pin the version when a fresh one matters. A plain `https://…tgz` URL
+is **not** accepted by V2 (V1 takes it).
 
-```json
+### OpenCode 1.18.x (V1) — `plugin` in `opencode.json(c)`
+
+```jsonc
 {
+  // npm
   "plugin": ["wsl-notify"]
+  // npm, pinned
+  // "plugin": ["wsl-notify@1.0.4"]
+  // the release asset — for hosts where the registry is blocked
+  // "plugin": ["https://github.com/AlexeyShirshov/skills/releases/download/wsl-notify@1.0.4/wsl-notify-1.0.4.tgz"]
+  // a local tarball
+  // "plugin": ["file:/path/to/wsl-notify-1.0.4.tgz"]
 }
 ```
 
-or from the CLI: `opencode plugin wsl-notify` — the command installs the package
-and adds it to the config. 1.18.x resolves a package's `./server` subpath export
-(or its `main`); this package declares both, and that is what makes the npm route
-work there. The same file still loads from `<config>/plugins/wsl-notify.js`.
+or let the CLI write the entry into the global config for you:
+
+```sh
+opencode plugin -g wsl-notify
+opencode plugin -g https://github.com/AlexeyShirshov/skills/releases/download/wsl-notify@1.0.4/wsl-notify-1.0.4.tgz
+```
+
+Then **restart OpenCode**: plugins are loaded when the server starts. 1.18.x
+resolves a package's `./server` subpath export (or its `main`); this package
+declares both, and that is what makes the npm route work there.
+
+### Any host — local file
+
+Drop the module in as `<config>/plugins/wsl-notify.js`
+(`~/.config/opencode/plugins/wsl-notify.js`): V1 and V2 both discover it, and on
+1.18.x it needs no package resolution at all.
+
+### Any host — vendored copy (no registry, no npm)
+
+```sh
+mkdir -p ~/.config/opencode/plugins/vendor/wsl-notify
+curl -sL https://github.com/AlexeyShirshov/skills/releases/download/wsl-notify@1.0.4/wsl-notify-1.0.4.tgz \
+  | tar xz -C ~/.config/opencode/plugins/vendor/wsl-notify --strip-components=1
+printf 'export { default } from "./vendor/wsl-notify/index.js"\n' > ~/.config/opencode/plugins/wsl-notify.js
+```
+
+### Any host — npm dependency next to the config
+
+```sh
+cd ~/.config/opencode
+npm i wsl-notify@1.0.4     # or: npm i https://github.com/AlexeyShirshov/skills/releases/download/wsl-notify@1.0.4/wsl-notify-1.0.4.tgz
+printf 'export { default } from "wsl-notify"\n' > plugins/wsl-notify.js
+```
+
+### Notes for 1.18.x
 
 1.18.x never subscribes to events inside `setup` (its context carries no event
 stream) — it drives everything through the `server()` hooks, which is what this
@@ -63,10 +117,6 @@ This path has no options channel, so both timing knobs keep the same defaults as
 everywhere else (`graceMs` 500, `minTurnMs` 500) — `WSL_NOTIFY_GRACE_MS` and
 `WSL_NOTIFY_MIN_TURN_MS` are the override.
 
-Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCode
-discover it locally. Options below need the configured form:
-`plugins: [{ "package": "wsl-notify", "options": { … } }]`.
-
 The toast script is handed to `powershell.exe` as a single `-Command` argument
 (not `-EncodedCommand`): base64 of the UTF-16LE text inflates that argument ~2.7x
 (771 characters become 2056), and a host whose interop layer caps an argument at
@@ -75,8 +125,9 @@ The script is never read from a file, so no `-ExecutionPolicy` is involved.
 
 Pin a version (`wsl-notify@1.0.4`) to keep upgrades explicit. If a corporate npm
 proxy gates packages by vulnerability scan and refuses a fresh one ("every
-version … is vulnerable"), install from git or from a tarball path instead of the
-registry — the plugin has no dependencies, so nothing else is fetched.
+version … is vulnerable"), use one of the two routes that skip the registry — the
+release-asset tarball (`https://…`, V1) or a vendored copy — the plugin has no
+dependencies, so nothing else is fetched.
 
 ## Options
 
