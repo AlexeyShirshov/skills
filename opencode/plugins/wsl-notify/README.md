@@ -32,28 +32,34 @@ OpenCode V2, in `opencode.json(c)`:
 }
 ```
 
-OpenCode 1.18.x, in `~/.config/opencode/plugins/wsl-notify.js` (or
-`.opencode/plugins/` for one project) — **the file, not the package name**:
+OpenCode 1.18.x, in `opencode.json(c)`:
 
-```sh
-npm pack wsl-notify@1.0.1 && tar -xzf wsl-notify-1.0.1.tgz
-cp package/index.js ~/.config/opencode/plugins/wsl-notify.js
+```json
+{
+  "plugin": ["wsl-notify"]
+}
 ```
 
-1.18.x does accept an npm entry (`"plugin": ["wsl-notify"]`) and installs the
-package, but for a package it only calls `setup(ctx)` — whose context there has
-no event stream (`event`, `client` and `$` are absent) — and never calls
-`server()`, so a package plugin cannot see events at all. Loaded from the
-plugins directory, the same file is driven through the legacy `server()` hooks,
-which do receive `session.idle`, `permission.*`, `question.asked` and
-`session.error`. The object export (`{ id, setup, server }`) needs 1.18.29 or
-newer. Options do not reach this path — use the `WSL_NOTIFY_*` variables below.
+or from the CLI: `opencode plugin wsl-notify` — the command installs the package
+and adds it to the config. 1.18.x resolves a package's `./server` subpath export
+(or its `main`); this package declares both, and that is what makes the npm route
+work there. The same file still loads from `<config>/plugins/wsl-notify.js`.
+
+1.18.x never subscribes to events inside `setup` (its context carries no event
+stream) — it drives everything through the `server()` hooks, which is what this
+package returns: `session.idle` is the completion event, `session.error` a
+failure, titles and `parentID` come from the session nested under
+`properties.info`. Options do not reach that path, so use the `WSL_NOTIFY_*`
+variables below.
 
 Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCode
 discover it locally. Options below need the configured form:
 `plugins: [{ "package": "wsl-notify", "options": { … } }]`.
 
-Pin a version (`wsl-notify@1.0.1`) to keep upgrades explicit.
+Pin a version (`wsl-notify@1.0.2`) to keep upgrades explicit. If a corporate npm
+proxy gates packages by vulnerability scan and refuses a fresh one ("every
+version … is vulnerable"), install from git or from a tarball path instead of the
+registry — the plugin has no dependencies, so nothing else is fetched.
 
 ## Options
 
