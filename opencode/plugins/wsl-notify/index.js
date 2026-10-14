@@ -533,10 +533,23 @@ function toast(info, options) {
   const executable = powershell(options)
   if (!executable) return
 
-  const encoded = Buffer.from(buildScript(info.title, info.message, info.sound), "utf16le").toString("base64")
+  // The script travels through `-Command`, not `-EncodedCommand`: base64 of the
+  // UTF-16LE text inflates the single argument ~2.7x, and a host whose interop
+  // layer caps an argument at ~2 KB kills the spawn with EINVAL (`powershell.exe:
+  // Invalid argument`, exit 1) — invisibly, because stdio is ignored. Spawned
+  // without a shell the script is one argv element, so the single quoting
+  // `buildScript` applies is all it needs; `-ExecutionPolicy` is unnecessary
+  // because the script never comes from a file.
   const child = spawn(
     executable,
-    ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-EncodedCommand", encoded],
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-WindowStyle",
+      "Hidden",
+      "-Command",
+      buildScript(info.title, info.message, info.sound),
+    ],
     { stdio: "ignore" },
   )
   child.on("error", (error) => console.error(`[wsl-notify] "${executable}" failed: ${error.message}`))

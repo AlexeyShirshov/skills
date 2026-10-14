@@ -13,12 +13,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const dir = await mkdtemp(join(tmpdir(), "wsl-notify-test-"))
 const fake = join(dir, "fake-powershell.sh")
 const log = join(dir, "toasts.log")
+const argvLog = join(dir, "argv.log")
 // The startup line goes to `WSL_NOTIFY_DEBUG_LOG`, read when the module is first
 // imported — point it at a temp file before any test imports the plugin.
 const loadLog = join(dir, "loaded.log")
 process.env.WSL_NOTIFY_DEBUG_LOG = loadLog
 
-await writeFile(fake, `#!/bin/sh\nprintf '%s\\n' "$*" >> '${log}'\n`)
+// Every argument goes to `argv.log`; the *last* one is the toast script itself
+// (one argv element, no base64), so it is written to the toast log as a line.
+await writeFile(
+  fake,
+  `#!/bin/sh\n{ for arg in "$@"; do printf '%s\\n' "$arg"; done; } >> '${argvLog}'\nfor arg in "$@"; do last="$arg"; done\nprintf '%s\\n' "$last" >> '${log}'\n`,
+)
 await chmod(fake, 0o755)
 
 let failures = 0
@@ -37,10 +43,9 @@ async function toasts() {
 }
 
 // Each toast is one invocation of the fake executable: the last argument is the
-// base64 UTF-16LE script, whose XML carries the title and the message.
+// PowerShell script itself, whose XML carries the title and the message.
 function toastText(line) {
-  const encoded = line.split(" ").at(-1)
-  return Buffer.from(encoded, "base64").toString("utf16le")
+  return line
 }
 
 function resetState() {
@@ -68,6 +73,7 @@ function neverSettles() {
 
 async function run(events, options = {}, gap = 10, sessionGetter = neverSettles) {
   await writeFile(log, "")
+  await writeFile(argvLog, "")
   resetState()
   sessionGetCalls = 0
 
@@ -96,6 +102,7 @@ async function run(events, options = {}, gap = 10, sessionGetter = neverSettles)
 // all, so whatever `v1Limits()` defaults to is what the host gets.
 async function runV1(events, gap = 10) {
   await writeFile(log, "")
+  await writeFile(argvLog, "")
   resetState()
 
   const module = await import("../index.js")
@@ -452,6 +459,19 @@ console.log("1.18.x server() limits")
     { id: "v1_def_idle", type: "session.idle", properties: { sessionID: SESSION } },
   ])
   check("a short turn is filtered on the V1 path too", raised.length === 0, `got ${raised.length}`)
+}
+
+console.log("invocation")
+{
+  // The script must reach powershell as one `-Command` argument: `-EncodedCommand`
+  // doubles it through base64 UTF-16LE and a host that caps an argument at ~2 KB
+  // then fails the spawn with EINVAL (exit 1, nothing on screen).
+  const raised = await run([permissionAsked("per_invocation")])
+  const args = (await readFile(argvLog, "utf8").catch(() => "")).split("\n").filter(Boolean)
+  check("the toast script is passed after -Command", args.at(-2) === "-Command", args.slice(0, -1).join(" "))
+  check("-EncodedCommand is never used", !args.includes("-EncodedCommand"))
+  check("the script travels unencoded", (args.at(-1) ?? "").startsWith("$ErrorActionPreference="))
+  check("the toast still goes out", raised.length === 1, `got ${raised.length}`)
 }
 
 await rm(dir, { recursive: true, force: true })

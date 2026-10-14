@@ -67,6 +67,12 @@ Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCod
 discover it locally. Options below need the configured form:
 `plugins: [{ "package": "wsl-notify", "options": { … } }]`.
 
+The toast script is handed to `powershell.exe` as a single `-Command` argument
+(not `-EncodedCommand`): base64 of the UTF-16LE text inflates that argument ~2.7x
+(771 characters become 2056), and a host whose interop layer caps an argument at
+~2 KB then fails the spawn with `Invalid argument` (exit 1) and shows nothing.
+The script is never read from a file, so no `-ExecutionPolicy` is involved.
+
 Pin a version (`wsl-notify@1.0.3`) to keep upgrades explicit. If a corporate npm
 proxy gates packages by vulnerability scan and refuses a fresh one ("every
 version … is vulnerable"), install from git or from a tarball path instead of the
