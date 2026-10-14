@@ -5,10 +5,22 @@ mode: subagent
 # tier: medium
 steps: 40
 permission:
-  # Default-deny: any MCP tool of any server (`<server>_<tool>`), plus read/grep/
-  # glob/bash/webfetch/websearch/edit/write/task. check judges the brief only;
-  # no need to enumerate MCP servers (context7_*, mslearn_*, …).
+  # Default-deny: any MCP tool of any server (`<server>_<tool>`), plus grep/bash/
+  # webfetch/websearch/edit/write/task. check judges the supplied brief, but may open the
+  # cycle's own evidence artifacts directly to reconcile the contract rows: the status dir
+  # `docs/specs/status/**` and the evidence dir `artifacts/**` (§Frozen evidence manifest;
+  # the overlay may override). Product code/diffs stay unavailable; enumerate MCP servers
+  # is not needed (context7_*, mslearn_*, …).
   "*": deny
+  read:
+    "docs/specs/status/**": allow
+    "artifacts/**": allow
+  glob:
+    "docs/specs/status/**": allow
+    "artifacts/**": allow
+  list:
+    "docs/specs/status/**": allow
+    "artifacts/**": allow
 ---
 
 # check — CHECK Triage

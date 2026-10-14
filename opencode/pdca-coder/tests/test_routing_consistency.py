@@ -116,6 +116,20 @@ class RoleAssetTest(unittest.TestCase):
         self.assertEqual({"scout"}, allowed)
         self.assertEqual("deny", sec.get("*"))
 
+    def test_check_may_read_only_the_cycle_evidence(self):
+        # The description and §CHECK promise a scoped read of the cycle's own evidence
+        # (status + frozen manifest), never product code — the permissions must grant it.
+        check = frontmatter(ASSET_AGENTS / "check.md")["permission"]
+        self.assertEqual("deny", check.get("*"))
+        for tool in ("read", "glob", "list"):
+            with self.subTest(tool=tool):
+                self.assertIn(tool, check)
+                allowed = {k for k, v in check[tool].items() if v == "allow"}
+                self.assertEqual({"docs/specs/status/**", "artifacts/**"}, allowed)
+        self.assertNotIn("bash", check)
+        self.assertNotIn("edit", check)
+        self.assertNotIn("write", check)
+
 
 class LensSelectionWordingTest(unittest.TestCase):
     def test_lenses_are_selected_per_task(self):
