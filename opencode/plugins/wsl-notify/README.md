@@ -73,7 +73,7 @@ The toast script is handed to `powershell.exe` as a single `-Command` argument
 ~2 KB then fails the spawn with `Invalid argument` (exit 1) and shows nothing.
 The script is never read from a file, so no `-ExecutionPolicy` is involved.
 
-Pin a version (`wsl-notify@1.0.3`) to keep upgrades explicit. If a corporate npm
+Pin a version (`wsl-notify@1.0.4`) to keep upgrades explicit. If a corporate npm
 proxy gates packages by vulnerability scan and refuses a fresh one ("every
 version … is vulnerable"), install from git or from a tarball path instead of the
 registry — the plugin has no dependencies, so nothing else is fetched.
