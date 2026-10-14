@@ -23,7 +23,8 @@ These rules are addressed to you as the orchestrator. Subagents (`pdca-planner`,
 `pdca-executor`, `pdca-check`, `pdca-escalate`, `scout`) do NOT apply them: the
 executor must act and run commands; the planner reads the brief and produces a plan; the check
 reads the brief **and may open the cycle's evidence artifacts directly** (its scoped `read` of the
-status/evidence/manifest files — never product code) to reconcile the contract rows, then produces
+status/evidence/manifest files — never the product artefact) to reconcile the contract rows, then
+produces
 a verdict.
 
 **Two paths, one contract.** In **normal mode you drive the cycle yourself, invoking subagents
@@ -60,15 +61,18 @@ A medium/strong primary still neither drives the cycle nor dispatches `pdca-orch
 | RUNNER | `pdca-orchestrator` | cheap dispatcher, `task`-allowlist (shared) | flat cheap primary + `Notice:` |
 
 Ready-made definitions: this skill's `assets/agents/` (the four plan/do/check/escalate role
-files); the RUNNER is the shared host agent `pdca-orchestrator`. Model bindings come from the
+files plus the gatherer `scout`, which is **not** specialized per task and stays the same for every
+cycle); the RUNNER is the shared host agent `pdca-orchestrator`. A host that already ships its own
+`scout` may keep it — this copy exists so the skill is self-contained. Model bindings come from the
 **host profile's `agent` block** (or a project config `agent.<name>.model`) — **never a model-id
 field in the role markdown**. Each asset carries only a `# tier:` label
 (`pdca-executor`/`scout` = cheap; `pdca-planner`/`pdca-check` = medium;
 `pdca-escalate` = strong; `pdca-orchestrator` = cheap). By default a subagent inherits the
 invoking primary's model; bind ids in the profile `agent` block for routing.
 
-**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents directory (the four role
-agents; the RUNNER `pdca-orchestrator` is the shared host agent, not shipped here); (2) restart
+**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents directory (the four `pdca-*`
+role agents **and** `scout`; the RUNNER `pdca-orchestrator` is the shared host agent, not shipped
+here); (2) restart
 the host (agents load at startup); (3) allow the cheap orchestrator's
 `agent.<primary>.permission.task` for `scout`/`pdca-planner`/`pdca-check`/`pdca-executor`/
 `pdca-escalate`, and `pdca-orchestrator` for autonomous delegation. A cheap `pdca-orchestrator`
@@ -249,8 +253,8 @@ non-obvious trade-off, present 2–3 alternatives with pros/cons and a recommend
 solution minimal and first-principles: reuse what exists before adding anything; an
 abstraction without a second consumer is a PLAN finding. Prefer the existing approach in the
 surrounding context before designing new, with a reason when it does not fit. A binding
-acceptance criterion whose verification is **state-dependent** (e.g. the negative arm of a
-regression) must name a **reproducible** evidence source, and its decisive probe must be
+acceptance criterion whose verification is **state-dependent** (e.g. a negative arm that holds only
+from a particular prior state) must name a **reproducible** evidence source, and its decisive probe must be
 **demonstrated to run** against the declared baseline before gate 1 — a merely declared source
 is not enough; an unprovable criterion is a **gap** (report / re-scope the oracle), never a
 `ready` placeholder. **Re-entry after a terminal `incomplete`/STOP** is a required PLAN input:
@@ -311,7 +315,7 @@ Each entry maps one **required criterion ID** to its evidence **by reference, no
   for `open` a `reason`; for `na` an observed `predicate`.
 Every `required` ID must appear; a criterion without a resolving reference is `open`, never
 dropped, and logs stay references — the manifest is a thin index, not a copy. **No PASS while any
-`required` entry is `open`.** If the project ships a manifest validator, run it (row coverage +
+`required` entry is `open`.** If the project ships a manifest validator, run it (row completeness +
 shape).
 
 **Default evidence dir:** **`.pdca/<task>/rv<k>/`** — `<task>` = kebab-slug, `<k>` = plan/criterion

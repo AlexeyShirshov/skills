@@ -300,7 +300,7 @@
 <text x="411" y="1190.0" class="g" fill="#cbd5e1" text-anchor="middle">r exhausted → PLAN r+1</text>
 <polyline points="644,1200.0 1184,1200.0" fill="none" stroke="#f87171" data-edge-id="escalate_stop" marker-end="url(#arrow)"/>
 <text x="914" y="1190.0" class="g" fill="#cbd5e1" text-anchor="middle">STOP: no plan r+1</text>
-<text x="24" y="1290" class="g" fill="#94a3b8" text-anchor="start">solid arrow — a transition</text>
+<text x="24" y="1290" class="g" fill="#94a3b8" text-anchor="start">plain arrow — a transition</text>
 <text x="320" y="1290" class="g" fill="#94a3b8" text-anchor="start">arc — loop-back before ACT</text>
 <text x="600" y="1290" class="g" fill="#94a3b8" text-anchor="start">dashed — next cycle</text>
 <text x="860" y="1290" class="g" fill="#94a3b8" text-anchor="start">bottom row — escalation and STOP</text>

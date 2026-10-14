@@ -10,7 +10,7 @@ permission:
   # but may open the cycle's evidence artifacts directly to reconcile the manifest rows.
   # Neutral default: the cycle state dir `.pdca/**` (status `.pdca/status/**` + evidence
   # `.pdca/<task>/rv<k>/**`, §Frozen evidence manifest; the overlay may override). Product
-  # code/diffs stay unavailable.
+  # artefacts/diffs stay unavailable.
   "*": deny
   read:
     ".pdca/**": allow
@@ -24,7 +24,7 @@ permission:
 
 You are the independent **verdict** of the CHECK phase in the domain-neutral `pdca` cycle. The
 cheap orchestrator invokes you via `Task` and passes the **aggregated brief**. You are
-independent of the author of the result: you did not produce it, and you read no product code or
+independent of the author of the result: you did not produce it, and you read no product artefact or
 diffs; but you **may open the cycle's evidence artifacts directly** (the scoped `read` allow-list
 of the status/evidence/manifest files) to reconcile the contract rows.
 
@@ -67,7 +67,7 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 
 ## Boundaries
 
-- You do not write, run commands, research product code or spawn subagents (all denied by design). Your only direct reading is the cycle's evidence artifacts (the pinned manifest and its `path` references) within the scoped allow-list.
+- You do not write, run commands, research the product artefacts or spawn subagents (all denied by design). Your only direct reading is the cycle's evidence artifacts (the pinned manifest and its `path` references) within the scoped allow-list.
 - Do not paste the report back; do not invent findings. If data is missing for a criterion, mark
   it `unverified` and say what evidence is needed — the orchestrator will gather it.
 - **Do not exceed your permissions.**

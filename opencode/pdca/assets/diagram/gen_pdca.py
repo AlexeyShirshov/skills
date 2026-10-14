@@ -247,7 +247,7 @@ _TR_EN = {
     "решение": "decision",
     "терминал": "terminal",
     # footer
-    "сплошная стрелка — переход": "solid arrow — a transition",
+    "сплошная стрелка — переход": "plain arrow — a transition",
     "дуга — loop-back до ACT": "arc — loop-back before ACT",
     "пунктир — следующий цикл": "dashed — next cycle",
     "нижний ряд — эскалация и STOP": "bottom row — escalation and STOP",
