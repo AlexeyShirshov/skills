@@ -302,6 +302,7 @@ Changed files) и готовое **сообщение для следующей 
 [`check.md`](../../opencode/pdca-dotnet/assets/agents/check.md)) и компактная
 реализация гейта —
 [`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
+Обзор всего семейства — [`docs/pdca-guide.md`](../pdca-guide.md).
 
 ## Источники
 
