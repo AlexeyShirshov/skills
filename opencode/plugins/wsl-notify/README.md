@@ -70,7 +70,7 @@ Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCod
 discover it locally. Options below need the configured form:
 `plugins: [{ "package": "wsl-notify", "options": { … } }]`.
 
-Pin a version (`wsl-notify@1.0.2`) to keep upgrades explicit. If a corporate npm
+Pin a version (`wsl-notify@1.0.3`) to keep upgrades explicit. If a corporate npm
 proxy gates packages by vulnerability scan and refuses a fresh one ("every
 version … is vulnerable"), install from git or from a tarball path instead of the
 registry — the plugin has no dependencies, so nothing else is fetched.
