@@ -542,21 +542,9 @@ function toast(info, options) {
   child.on("error", (error) => console.error(`[wsl-notify] "${executable}" failed: ${error.message}`))
 }
 
-// 1.18.x has no options channel — its `setup` context carries no event stream and
-// no options reach the `server()` hooks — and its TUI is interactive. The V2-era
-// defaults are a regression there, so both timing knobs start at zero on this
-// path (exactly what the old standalone V1 file did) and the environment still
-// overrides them:
-//   * a 500 ms grace window silently swallows an ask the user answers quickly;
-//     the window exists for V2, where an autoaccept flow replies instantly;
-//   * a short-turn filter hides completions the V1 file always toasted.
-function v1Limits() {
-  return {
-    graceMs: numberFromEnv("WSL_NOTIFY_GRACE_MS") ?? 0,
-    minTurnMs: numberFromEnv("WSL_NOTIFY_MIN_TURN_MS") ?? 0,
-  }
-}
-
+// 1.18.x has no options channel: its `setup` context carries no event stream and
+// no options reach the `server()` hooks, so both timing knobs keep the same
+// defaults as everywhere else and `WSL_NOTIFY_*` is the override.
 function schedule(key, info, options) {
   const delayMs = Number.isFinite(info.delayMs) ? info.delayMs : 0
   if (delayMs <= 0) {
@@ -667,7 +655,7 @@ export default {
     return {
       event: async ({ event }) => {
         try {
-          await handle(event, v1Limits())
+          await handle(event, {})
         } catch (error) {
           console.error(`[wsl-notify] handler failed: ${error?.message ?? error}`)
         }

@@ -426,30 +426,32 @@ console.log("1.18.x (V1 context)")
   )
   check("V1 turn inside minTurnMs stays silent", raised.length === 0, `got ${raised.length}`)
 }
-console.log("1.18.x server() defaults")
+console.log("1.18.x server() limits")
 {
-  // An ask toasts at once on this path: a 500ms grace window silently swallows
-  // any request the user answers within it, and the old standalone V1 file had
-  // no such window. Both knobs default to 0 here, the environment still overrides.
+  // The V1 path keeps the same defaults as everywhere else: an ask waits out the
+  // grace window, and an answer inside it cancels the toast.
   const raised = await runV1([
-    { id: "v1_default_ask", type: "permission.asked", properties: { id: "per_v1", sessionID: SESSION, permission: "bash" } },
+    { id: "v1_def_ask", type: "permission.asked", properties: { id: "per_v1", sessionID: SESSION, permission: "bash" } },
   ])
-  check("an ask toasts immediately through the V1 hooks", raised.length === 1, `got ${raised.length}`)
+  check("an ask waits out the grace window on the V1 path", raised.length === 0, `got ${raised.length}`)
 }
 {
-  const raised = await runV1([
-    { id: "v1_default_user", type: "message.updated", properties: { sessionID: SESSION, info: { id: "msg_s1", role: "user" } } },
-    { id: "v1_default_idle", type: "session.idle", properties: { sessionID: SESSION } },
-  ])
-  check("a short turn still toasts through the V1 hooks", raised.length === 1, `got ${raised.length}`)
-}
-{
-  process.env.WSL_NOTIFY_GRACE_MS = "400"
+  // `WSL_NOTIFY_GRACE_MS=0` makes it immediate — the environment is the override,
+  // as it was for the old standalone V1 file (which had no window at all).
+  process.env.WSL_NOTIFY_GRACE_MS = "0"
   const raised = await runV1([
     { id: "v1_env_ask", type: "permission.asked", properties: { id: "per_v1b", sessionID: SESSION, permission: "bash" } },
   ])
   delete process.env.WSL_NOTIFY_GRACE_MS
-  check("WSL_NOTIFY_GRACE_MS still widens the V1 window", raised.length === 0, `got ${raised.length}`)
+  check("WSL_NOTIFY_GRACE_MS=0 makes the V1 ask immediate", raised.length === 1, `got ${raised.length}`)
+}
+{
+  // A short turn is filtered by the same `minTurnMs` default on this path too.
+  const raised = await runV1([
+    { id: "v1_def_user", type: "message.updated", properties: { sessionID: SESSION, info: { id: "msg_s1", role: "user" } } },
+    { id: "v1_def_idle", type: "session.idle", properties: { sessionID: SESSION } },
+  ])
+  check("a short turn is filtered on the V1 path too", raised.length === 0, `got ${raised.length}`)
 }
 
 await rm(dir, { recursive: true, force: true })
