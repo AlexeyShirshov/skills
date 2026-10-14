@@ -5,7 +5,7 @@ model or a real cycle.  The skill targets software-engineering tasks and must
 not advertise non-code deliverables (presentations, research reports, ...).
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-coder/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-coder/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-SKILL_PATH = REPO / "config/skills/pdca-coder/SKILL.md"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SKILL_PATH = SKILL_DIR / "SKILL.md"
 
 
 def _cat(*fragments):

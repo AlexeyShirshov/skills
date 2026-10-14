@@ -1,11 +1,11 @@
 """Artifact guards for the pdca-coder hand diagram.
 
 These tests read the generated diagram files under
-``config/skills/pdca-coder/assets/diagram/`` only; they never re-run the generator.
+``opencode/pdca-coder/assets/diagram/`` only; they never re-run the generator.
 Reproducibility is proven by command evidence in the cycle status file.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-coder/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-coder/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-DIAGRAM = REPO / "config/skills/pdca-coder/assets/diagram"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+DIAGRAM = SKILL_DIR / "assets/diagram"
 
 # Assembled at runtime; the contiguous bad token is never written as one literal.
 BAD_TOKEN = "dot" + "net"

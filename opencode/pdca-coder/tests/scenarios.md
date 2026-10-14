@@ -6,12 +6,16 @@ production-автомат не создавался. Присутствие пр
 `test_contract_consistency.py`, и она тоже лишь фиксирует наличие правил, а не поведение.
 Поведенческий разбор проходит независимый `escalate` по полным соответствующим контрактам.
 
-Источник правил (действующая норма): `config/skills/pdca-coder/SKILL.md` (§State machine,
+Источник правил (действующая норма): `opencode/pdca-coder/SKILL.md` (§State machine,
 §Transition gates, §Orchestrator role, §Host requirements, §PLAN selects the toolchain and lenses),
-EN-роли `config/skills/pdca-coder/assets/agents/*.md` с зеркалами `config/agents/*.md` и источник
-диаграммы `config/skills/pdca-coder/assets/diagram/gen_pdca.py`. Счётчики: цикл `<N>` (растёт
+EN-роли `opencode/pdca-coder/assets/agents/*.md` с зеркалами `config/agents/*.md` и источник
+диаграммы `opencode/pdca-coder/assets/diagram/gen_pdca.py`. Счётчики: цикл `<N>` (растёт
 только в ACT), ревизия плана `r`, попытка `n/3` в пределах
 ревизии; отвергнутый кандидат **без смены плана** не новая ревизия и не сбрасывает ретраи.
+
+Хостовые артефакты (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`, хостовый
+`README.md`) живут в репозитории `opencode-config`; тесты обращаются к ним только при
+`OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе эти проверки пропускаются.
 
 | # | Кратко | Требуемый исход |
 | --- | --- | --- |
@@ -30,12 +34,12 @@ EN-роли `config/skills/pdca-coder/assets/agents/*.md` с зеркалами 
 | L | Fallback: `pdca-orchestrator` недоступен | Flat primary ведёт цикл сам, fallback зафиксирован (`Notice:`); гейты/no-4th/scope/security не отменяются |
 
 Общая оперативная база (применяется ко всем кейсам, если ниже не уточнено):
-`config/skills/pdca-coder/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
+`opencode/pdca-coder/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
 §Phase todo tracker, §Escalation (`escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
-§Orchestrator role, §PLAN selects the toolchain and lenses; `config/skills/pdca-coder/assets/agents/*.md`
+§Orchestrator role, §PLAN selects the toolchain and lenses; `opencode/pdca-coder/assets/agents/*.md`
 и зеркала `config/agents/*.md` (`planner`, `coder`, `check`, `escalate`, `scout`, `security-auditor`,
-`architect`); `README.md`; метки диаграммы `config/skills/pdca-coder/assets/diagram/pdca-coder-hand.svg`.
+`architect`); `README.md`; метки диаграммы `opencode/pdca-coder/assets/diagram/pdca-coder-hand.svg`.
 
 ---
 

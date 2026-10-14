@@ -8,19 +8,29 @@ per-group totals reconcile with the overall totals, and that the session-tree
 walk resolves a root plus its descendants.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import importlib.util
+import os
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-SCRIPT = REPO / "config/skills/pdca/scripts/pdca_cost.py"
-PROFILES = REPO / "config/profiles"
-AGENTS = REPO / "config/agents"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
+
+# Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
+# not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
+# they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
+PROFILES = (CONFIG / "profiles") if CONFIG else None
+AGENTS = (CONFIG / "agents") if CONFIG else None
 
 # Universal roles -> phase (the generic `classify` table).
 ROLE_PHASE = {
@@ -82,6 +92,7 @@ class CostAccountingTest(unittest.TestCase):
                 self.assertEqual(phase, self.mod.classify(role))
                 self.assertNotEqual(self.mod.UNCLASSIFIED, self.mod.phase_of(role))
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_models_derive_valid_tiers(self):
         tiers = self.mod.load_tiers(str(PROFILES), str(AGENTS))
         self.assertTrue(tiers)
@@ -89,6 +100,7 @@ class CostAccountingTest(unittest.TestCase):
             with self.subTest(model=model):
                 self.assertIn(tier, VALID_TIERS)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_tier_grouping_uses_the_resolved_table(self):
         tiers = self.mod.load_tiers(str(PROFILES), str(AGENTS))
         self.mod.TIERS.update(tiers)

@@ -9,11 +9,13 @@ are not an instruction that end users must write code or tests.
 
 The runtime surface is exactly:
 
-* ``config/skills/pdca/SKILL.md``
-* ``config/skills/pdca/assets/agents/*.md``
-* ``config/skills/pdca/assets/diagram/*``
-* the four host agents ``config/agents/pdca-{planner,executor,check,escalate}.md``
-  (the RUNNER is the shared host agent ``config/agents/pdca-orchestrator.md``, not scanned here)
+* ``opencode/pdca/SKILL.md``
+* ``opencode/pdca/assets/agents/*.md``
+* ``opencode/pdca/assets/diagram/*``
+* optionally the four host agents ``<host>/config/agents/pdca-{planner,executor,check,escalate}.md``
+  (the RUNNER is the shared host agent ``<host>/config/agents/pdca-orchestrator.md``, not scanned
+  here); these live in the separate ``opencode-config`` repo and are hidden behind
+  ``OPENCODE_CONFIG_REPO``
 
 The ``tests/`` directory itself is deliberately **not** scanned.
 
@@ -22,24 +24,34 @@ domain/stack tokens and asserts zero occurrences, and that no runtime file
 carries a ``model:`` field.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
+import os
 import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
+SKILL_DIR = Path(__file__).resolve().parents[1]
 
-SKILL_PATH = REPO / "config/skills/pdca/SKILL.md"
-ASSET_AGENTS = REPO / "config/skills/pdca/assets/agents"
-DIAGRAM = REPO / "config/skills/pdca/assets/diagram"
+SKILL_PATH = SKILL_DIR / "SKILL.md"
+ASSET_AGENTS = SKILL_DIR / "assets/agents"
+DIAGRAM = SKILL_DIR / "assets/diagram"
+
+# Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
+# not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
+# they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
 HOST_AGENTS = tuple(
-    REPO / ("config/agents/pdca-%s.md" % name)
+    CONFIG / ("agents/pdca-%s.md" % name)
     for name in ("planner", "executor", "check", "escalate")
-)
+) if CONFIG else ()
 
 # Word-boundary (where applicable) domain/stack tokens that must never appear
 # in the universal runtime surface.
@@ -267,10 +279,11 @@ class ForbiddenTokenGuardTest(unittest.TestCase):
         self.assertFalse(boundary_regex("code").search("encoding"))
         self.assertFalse(boundary_regex("xml").search("xmlns"))
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_scan_is_limited_to_expected_files(self):
         scanned = {str(p) for p in runtime_files()}
         self.assertIn(str(SKILL_PATH), scanned)
-        self.assertIn(str(REPO / "config/agents/pdca-planner.md"), scanned)
+        self.assertIn(str(CONFIG / "agents/pdca-planner.md"), scanned)
         self.assertNotIn("tests", str(SKILL_PATH))
         for p in scanned:
             self.assertNotIn("/tests/", p)

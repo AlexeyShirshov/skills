@@ -7,29 +7,39 @@ execute a model and do not prove that an agent follows the contract.  Behavioral
 scenario review is a separate step.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-dotnet/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-dotnet/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-SKILL_PATH = REPO / "config/skills/pdca-dotnet/SKILL.md"
+REPO = Path(__file__).resolve().parents[3]
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SKILL_PATH = SKILL_DIR / "SKILL.md"
 ASSET_BRIEFS = [
-    REPO / f"config/skills/pdca-dotnet/assets/agents/{name}.md"
+    SKILL_DIR / f"assets/agents/{name}.md"
     for name in ("planner", "coder", "check", "escalate")
 ]
+# Host config (agents/profiles/AGENTS.md/README) lives in the `opencode-config` repo, not in this
+# one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_ROOT = HOST_REPO  # host repo root, for its README
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
 CONFIG_BRIEFS = [
-    REPO / f"config/agents/{name}.md"
+    CONFIG_AGENTS / f"{name}.md"
     for name in ("planner", "coder", "check", "escalate")
-]
+] if CONFIG_AGENTS else []
 # Task 2: the six published EN assets and the tier each must carry (no `model:`).
 PUBLISHED_ASSETS = [
-    REPO / f"config/skills/pdca-dotnet/assets/agents/{name}.md"
+    SKILL_DIR / f"assets/agents/{name}.md"
     for name in ("planner", "coder", "check", "escalate", "scout", "security-auditor")
 ]
 ROLE_TIER = {
@@ -40,13 +50,18 @@ ROLE_TIER = {
     "scout": "cheap",
     "security-auditor": "medium",
 }
-# Task 3: cross-artifact label sources (README + diagram source) and the
+# Task 3: cross-artifact label sources (host README + diagram source) and the
 # non-executable scenario matrix.  These are text/JSON presence guards only.
-README_PATH = REPO / "README.md"
-DIAGRAM_DIR = REPO / "config/skills/pdca-dotnet/assets/diagram"
+# The host README differs from this (skills) repo's own README, so it stays gated.
+README_PATH = (HOST_ROOT / "README.md") if HOST_ROOT else None
+DIAGRAM_DIR = SKILL_DIR / "assets/diagram"
 WORKFLOW_PATH = DIAGRAM_DIR / "workflow.json"
 GEN_PDCA_PATH = DIAGRAM_DIR / "gen_pdca.py"
-SCENARIOS_PATH = REPO / "config/skills/pdca-dotnet/tests/scenarios.md"
+SCENARIOS_PATH = SKILL_DIR / "tests/scenarios.md"
+# Host plan document (docs/superpowers/plans lives in the `opencode-config` repo).
+PLAN_PATH = (
+    HOST_ROOT / "docs/superpowers/plans/2026-10-01-pdca-consistency-plan.md"
+) if HOST_ROOT else None
 
 
 def norm(text: str) -> str:
@@ -327,25 +342,33 @@ class ContractConsistencyTest(unittest.TestCase):
             with self.subTest(path=path.name):
                 self._assert_brief_contract(path)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_config_briefs_mirror_scoped_contract(self):
         for path in CONFIG_BRIEFS:
             with self.subTest(path=path.name):
                 self._assert_brief_contract(path)
 
+    def _assert_escalator_brief_revision_scoped(self, path: Path) -> None:
+        en = "assets/agents" in str(path)
+        para = self._scoped(
+            path,
+            "The counter is scoped" if en else "Счётчик привязан",
+            "## What you do" if en else "## Что делаешь",
+        )
+        self.assertRegex(
+            para,
+            r"third failed CHECK of the same revision|"
+            r"третьего провального CHECK той же ревизии",
+        )
+
     def test_escalator_briefs_revision_scoped(self):
-        for path in (ASSET_BRIEFS[3], CONFIG_BRIEFS[3]):
-            with self.subTest(path=str(path)):
-                en = "assets/agents" in str(path)
-                para = self._scoped(
-                    path,
-                    "The counter is scoped" if en else "Счётчик привязан",
-                    "## What you do" if en else "## Что делаешь",
-                )
-                self.assertRegex(
-                    para,
-                    r"third failed CHECK of the same revision|"
-                    r"третьего провального CHECK той же ревизии",
-                )
+        with self.subTest(path=str(ASSET_BRIEFS[3])):
+            self._assert_escalator_brief_revision_scoped(ASSET_BRIEFS[3])
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_escalator_briefs_revision_scoped_host_brief(self):
+        with self.subTest(path=str(CONFIG_BRIEFS[3])):
+            self._assert_escalator_brief_revision_scoped(CONFIG_BRIEFS[3])
 
     # --- Task 2: autonomous mode is question-free -------------------------
 
@@ -391,30 +414,44 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertNotIn("escalate is called only if", self.escalation)
         self.assertIn("provisional candidate", self.escalation)
 
+    def _assert_planner_classification(self, path: Path) -> None:
+        step = self._scoped(path, "10.", "11.")
+        self._assert_patterns(step, f"planner classification {path}", [
+            r"insufficient evidence|недостат\w* доказательств",
+            r"scout",
+            r"low confidence|низк\w* уверенност",
+            r"trigger 5|триггер\w* 5",
+            r"even without|даже без|без доказанной",
+        ])
+
     def test_planner_four_way_classification_includes_insufficient_evidence(self):
-        for path in (ASSET_BRIEFS[0], CONFIG_BRIEFS[0]):
-            with self.subTest(path=str(path)):
-                step = self._scoped(path, "10.", "11.")
-                self._assert_patterns(step, f"planner classification {path}", [
-                    r"insufficient evidence|недостат\w* доказательств",
-                    r"scout",
-                    r"low confidence|низк\w* уверенност",
-                    r"trigger 5|триггер\w* 5",
-                    r"even without|даже без|без доказанной",
-                ])
+        with self.subTest(path=str(ASSET_BRIEFS[0])):
+            self._assert_planner_classification(ASSET_BRIEFS[0])
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_planner_four_way_classification_includes_insufficient_evidence_host_brief(self):
+        with self.subTest(path=str(CONFIG_BRIEFS[0])):
+            self._assert_planner_classification(CONFIG_BRIEFS[0])
+
+    def _assert_planner_response_format(self, path: Path) -> None:
+        resp = self._scoped(
+            path,
+            "## Response format" if "assets/agents" in str(path) else "## Формат ответа",
+            "A missing item" if "assets/agents" in str(path) else "Пропущенный пункт",
+        )
+        self._assert_patterns(resp, f"planner response {path}", [
+            r"(?i)confidence and gaps|уверенность и пробелы",
+            r"(?i)classif|классифик",
+        ])
 
     def test_planner_response_format_has_confidence_and_classification_slot(self):
-        for path in (ASSET_BRIEFS[0], CONFIG_BRIEFS[0]):
-            with self.subTest(path=str(path)):
-                resp = self._scoped(
-                    path,
-                    "## Response format" if "assets/agents" in str(path) else "## Формат ответа",
-                    "A missing item" if "assets/agents" in str(path) else "Пропущенный пункт",
-                )
-                self._assert_patterns(resp, f"planner response {path}", [
-                    r"(?i)confidence and gaps|уверенность и пробелы",
-                    r"(?i)classif|классифик",
-                ])
+        with self.subTest(path=str(ASSET_BRIEFS[0])):
+            self._assert_planner_response_format(ASSET_BRIEFS[0])
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_planner_response_format_has_confidence_and_classification_slot_host_brief(self):
+        with self.subTest(path=str(CONFIG_BRIEFS[0])):
+            self._assert_planner_response_format(CONFIG_BRIEFS[0])
 
     # --- Task 2: primary is a dispatcher incl. architect ------------------
 
@@ -442,6 +479,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("build is the shorthand throughout", self.skill)
         self.assertNotIn("the orchestrator (primary)", self.skill)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_architect_outside_cycle_and_central_cheap_dispatcher(self):
         # Architect is a universal decision primary, not a PDCA-specific role: the
         # PDCA paragraph was deliberately removed from its body. The cheap-only
@@ -449,7 +487,7 @@ class ContractConsistencyTest(unittest.TestCase):
         # SKILL, not by the architect prompt. Assertions keep the architect identity
         # and pin the rule where it now lives (full normalized clauses, not mere
         # keyword co-occurrence).
-        raw = read(REPO / "config/agents/architect.md")
+        raw = read(CONFIG_AGENTS / "architect.md")
         body = norm(between(raw, "# architect", "## Скиллы"))
         self.assertTrue(body, "architect body not found")
         self.assertNotIn("внутри pdca ты", body.lower())
@@ -461,16 +499,18 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("только coder (cheap-тир)", body.lower())
         self.assertIn("brainstorming", body.lower())
         # The cheap-only exclusion and the no-widen rule are authoritative centrally
-        # (config/AGENTS.md tier routing) and in the SKILL own role — they must not
-        # be restored into the architect prose.
-        central = norm(read(REPO / "config/AGENTS.md")).lower()
+        # (config/AGENTS.md tier routing) — they must not be restored into the
+        # architect prose.
+        central = norm(read(CONFIG / "AGENTS.md")).lower()
         self.assertIn("cheap-оркестратор", central)
         self.assertIn("medium/strong primary", central)
         self.assertIn("цикл не диспетчеризует", central)
         self.assertIn("права дорогих ролей не расширяются", central)
+
+    def test_skill_owns_cheap_only_orchestration_architect_excluded(self):
+        # The SKILL owns cheap-only orchestration; architect is excluded, never an
+        # "every primary" dispatcher.
         self.assertIn("cheap-only", self.skill.lower())
-        # The central SKILL owns cheap-only orchestration; architect is excluded,
-        # never an "every primary" dispatcher.
         self.assertIn(
             "you are a dispatcher, not a reader and not a decider",
             self.orchestrator.lower(),
@@ -511,25 +551,32 @@ class ContractConsistencyTest(unittest.TestCase):
 
     # --- Task 2 fix round 1: user-go boundary + authority invocation ------
 
+    def _assert_planner_plan_disk_paragraph(self, path: Path) -> None:
+        en = "assets/agents" in str(path)
+        para = self._scoped(
+            path,
+            "11. Take into account" if en else "11. Учти",
+            "## Boundaries" if en else "## Границы",
+        )
+        self._assert_patterns(para, f"planner plan-disk {path}", [
+            r"(?i)normal mode|обычн\w* режим",
+            r"(?i)user's go-ahead|go пользователя",
+            r"(?i)autonomous mode|автономн\w* режим",
+            r"(?i)no question|no questions|ни вопроса|без вопрос|вопросов нет",
+            r"(?i)no waiting|без ожидания|ни ожидания|не жд",
+            r"(?i)gate-1|gate 1|гейт\w* 1",
+        ])
+
     def test_planner_plan_disk_paragraph_scopes_user_go_to_normal_mode(self):
         # The planner sub-brief's "plan goes to disk" paragraph must scope the user
         # go-ahead to the normal mode and state the autonomous no-go/no-question path.
-        for path in (ASSET_BRIEFS[0], CONFIG_BRIEFS[0]):
-            with self.subTest(path=str(path)):
-                en = "assets/agents" in str(path)
-                para = self._scoped(
-                    path,
-                    "11. Take into account" if en else "11. Учти",
-                    "## Boundaries" if en else "## Границы",
-                )
-                self._assert_patterns(para, f"planner plan-disk {path}", [
-                    r"(?i)normal mode|обычн\w* режим",
-                    r"(?i)user's go-ahead|go пользователя",
-                    r"(?i)autonomous mode|автономн\w* режим",
-                    r"(?i)no question|no questions|ни вопроса|без вопрос|вопросов нет",
-                    r"(?i)no waiting|без ожидания|ни ожидания|не жд",
-                    r"(?i)gate-1|gate 1|гейт\w* 1",
-                ])
+        with self.subTest(path=str(ASSET_BRIEFS[0])):
+            self._assert_planner_plan_disk_paragraph(ASSET_BRIEFS[0])
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_planner_plan_disk_paragraph_scopes_user_go_to_normal_mode_host_brief(self):
+        with self.subTest(path=str(CONFIG_BRIEFS[0])):
+            self._assert_planner_plan_disk_paragraph(CONFIG_BRIEFS[0])
 
     def test_plan_authority_invocation_unambiguous(self):
         # The cheap orchestrator forwards the request/evidence; planner authors the
@@ -707,7 +754,9 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.workflow = json.loads(read(WORKFLOW_PATH))
         cls.gen = read(GEN_PDCA_PATH)
-        cls.readme = read(README_PATH)
+        # The README summary guards below read the *host* README (this repo's own
+        # README has different content) and are host-gated.
+        cls.readme = read(README_PATH) if HOST_AVAILABLE else ""
         cls.scenarios = read(SCENARIOS_PATH)
 
     def _node(self, node_id: str) -> dict:
@@ -758,8 +807,9 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
         self.assertIn("неверный план", self.gen)
         self.assertIn("новое предусловие/блокер", self.gen)
 
-    # --- README concise summary -------------------------------------------
+    # --- README concise summary (host README — gated) ----------------------
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_readme_scoped_attempts_no_brittle_line_count(self):
         self.assertNotIn("~1460", self.readme)
         self.assertNotRegex(self.readme, r"контракт\s+~?\d+\s+строк")
@@ -768,10 +818,12 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
         self.assertIn("ревизи", self.readme)
         self.assertNotIn("макс. 3 итераци", self.readme)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_readme_single_active_phase_and_no_questions(self):
         self.assertIn("ровно одна активная", self.readme)
         self.assertIn("без вопросов", self.readme)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_readme_assets_tier_labels_not_model(self):
         self.assertNotIn("пустым `model:`", self.readme)
         self.assertIn("# tier:", self.readme)
@@ -844,15 +896,17 @@ class FinalFixGuardTest(unittest.TestCase):
             between(cls.skill_raw, "**Unit states**", "In parallel-worktree mode")
         )
         cls.planner_en = norm(read(ASSET_BRIEFS[0]))
-        cls.planner_ru = norm(read(CONFIG_BRIEFS[0]))
+        # The RU host briefs / host README / host plan live in the `opencode-config`
+        # repo; the guards that read them are host-gated (empty string otherwise).
+        cls.planner_ru = norm(read(CONFIG_BRIEFS[0])) if HOST_AVAILABLE else ""
         cls.coder_en = norm(read(ASSET_BRIEFS[1]))
-        cls.coder_ru = norm(read(CONFIG_BRIEFS[1]))
+        cls.coder_ru = norm(read(CONFIG_BRIEFS[1])) if HOST_AVAILABLE else ""
         cls.check_en = norm(read(ASSET_BRIEFS[2]))
-        cls.check_ru = norm(read(CONFIG_BRIEFS[2]))
-        cls.scout_en = norm(read(REPO / "config/skills/pdca-dotnet/assets/agents/scout.md"))
+        cls.check_ru = norm(read(CONFIG_BRIEFS[2])) if HOST_AVAILABLE else ""
+        cls.scout_en = norm(read(SKILL_DIR / "assets/agents/scout.md"))
         cls.scenarios = read(SCENARIOS_PATH)
-        cls.plan = norm(read(REPO / "docs/superpowers/plans/2026-10-01-pdca-consistency-plan.md"))
-        cls.readme = norm(read(README_PATH))
+        cls.plan = norm(read(PLAN_PATH)) if HOST_AVAILABLE else ""
+        cls.readme = norm(read(README_PATH)) if HOST_AVAILABLE else ""
 
     # --- F4: additive prerequisite != replacement -------------------------
 
@@ -877,10 +931,13 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("never completes", self.skill)
 
     def test_planner_and_coder_briefs_distinguish_additive_from_replacement(self):
-        # RU inflects/capitalizes ("Аддитивное предусловие"); compare case-insensitively.
         self.assertIn("additive", self.planner_en)
-        self.assertIn("аддитив", self.planner_ru.lower())
         self.assertIn("additive", self.coder_en)
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_host_briefs_distinguish_additive_from_replacement(self):
+        # RU inflects/capitalizes ("Аддитивное предусловие"); compare case-insensitively.
+        self.assertIn("аддитив", self.planner_ru.lower())
         self.assertIn("аддитив", self.coder_ru.lower())
 
     def test_scenarios_split_b_into_additive_and_replacement(self):
@@ -947,6 +1004,9 @@ class FinalFixGuardTest(unittest.TestCase):
     def test_coder_briefs_mandate_durable_state_and_defect_history(self):
         self.assertIn("defect history", self.coder_en)
         self.assertIn("Plan revision r", self.coder_en)
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_host_coder_brief_mandates_durable_state_and_defect_history(self):
         self.assertIn("историю дефект", self.coder_ru)
         # RU keeps the literal durable-state field name "Plan revision r".
         self.assertIn("Plan revision r", self.coder_ru)
@@ -956,6 +1016,9 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("revision r", self.check_en)
         self.assertIn("not evidence for the current CHECK", self.check_en)
         self.assertIn("current full aggregated report", self.check_en)
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_host_check_brief_carries_defect_history(self):
         self.assertIn("историю дефект", self.check_ru)
 
     def test_scout_brief_can_report_status_snapshot_and_defect_history(self):
@@ -1047,11 +1110,14 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("effective host-profile tier is cheap", self.skill)
 
     # --- artifact: source change (incl label-only) allows delivery --------
+    # (the plan document and the README summary are host artifacts → gated)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_plan_delivery_condition_is_source_change_incl_labels(self):
         self.assertIn("including a label-only change", self.plan)
         self.assertIn("approved spec supersedes the stale structure-only wording", self.plan)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_readme_sync_row_follows_source_change_condition(self):
         self.assertIn("включая правку только меток", self.readme)
 

@@ -7,7 +7,7 @@ role.  They assert the generic classification (unknown stays explicitly
 reconcile with the overall totals.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-coder/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-coder/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-SCRIPT = REPO / "config/skills/pdca-coder/scripts/pdca_cost.py"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
 
 # The generic roles the skill names.  All must classify.
 KNOWN_ROLES = (

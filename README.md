@@ -48,6 +48,23 @@ Invoke a skill by name, e.g. in an opencode session:
 - `pdca-dotnet` — for .NET/C# work.
 - `pdca-collection` — for a list of independent tasks / a milestone.
 
+## Tests
+
+Each skill ships a `tests/` suite (plain `unittest`, standard library only). Run one skill:
+
+```sh
+python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
+```
+
+Some checks compare the skill against host-side artifacts that live in a separate config
+repository (`config/agents/`, `config/profiles/`, `config/AGENTS.md`, the host `README.md`). Those
+checks skip unless you point at that checkout:
+
+```sh
+OPENCODE_CONFIG_REPO=/path/to/opencode-config \
+  python3 -m unittest discover -s opencode/pdca-dotnet/tests -p 'test_*.py'
+```
+
 ## Plugins
 
 Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per package.

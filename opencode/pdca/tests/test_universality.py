@@ -12,23 +12,33 @@ The runtime surface is the SKILL plus the role assets/host agents; the
 ``tests/`` directory itself is not scanned.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
+import os
 import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
+SKILL_DIR = Path(__file__).resolve().parents[1]
 
-SKILL_PATH = REPO / "config/skills/pdca/SKILL.md"
-ASSET_AGENTS = REPO / "config/skills/pdca/assets/agents"
+SKILL_PATH = SKILL_DIR / "SKILL.md"
+ASSET_AGENTS = SKILL_DIR / "assets/agents"
+
+# Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
+# not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
+# they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
 HOST_AGENTS = tuple(
-    REPO / ("config/agents/pdca-%s.md" % name)
+    CONFIG / ("agents/pdca-%s.md" % name)
     for name in ("planner", "executor", "check", "escalate")
-)
+) if CONFIG else ()
 
 ALLOWED_ROLES = frozenset(
     ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",

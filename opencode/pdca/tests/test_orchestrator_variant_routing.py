@@ -22,17 +22,28 @@ The rule is read from the agent document, so the document stays the single sourc
 of truth: reordering or rewording the mapping breaks these tests.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
+import os
 import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-ORCHESTRATOR = REPO / "config/agents/pdca-orchestrator.md"
+REPO = Path(__file__).resolve().parents[3]
+SKILLS = REPO / "opencode"
+
+# Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
+# not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
+# they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
+ORCHESTRATOR = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
 CYCLE_SKILLS = ("pdca", "pdca-coder", "pdca-dotnet")
 
 ROUTING_HEADER = "**Выбор варианта цикла.**"
@@ -114,11 +125,12 @@ class CycleSkillsExistTest(unittest.TestCase):
     def test_each_target_cycle_skill_exists_and_is_named(self):
         for name in CYCLE_SKILLS:
             with self.subTest(skill=name):
-                path = REPO / "config/skills" / name / "SKILL.md"
+                path = SKILLS / name / "SKILL.md"
                 self.assertTrue(path.is_file(), "%s missing" % name)
                 self.assertEqual(name, skill_name(path))
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class OrchestratorMayLoadCycleSkillsTest(unittest.TestCase):
     def test_skill_permission_allows_cycles_and_denies_brainstorming(self):
         block = skill_permission_block()
@@ -132,6 +144,7 @@ class OrchestratorMayLoadCycleSkillsTest(unittest.TestCase):
         self.assertNotRegex(read(ORCHESTRATOR), r"(?m)^\s*model\s*:")
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class RoutingRuleTest(unittest.TestCase):
     def test_variants_listed_in_precedence_order(self):
         self.assertEqual(["pdca-dotnet", "pdca-coder", "pdca"], documented_order())

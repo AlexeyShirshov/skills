@@ -7,13 +7,13 @@ documented CLI contract (argv, exit codes, `FAIL:`/`ERROR:` output) and that no
 supplied command is ever executed.
 
 Run:
-    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
-        -s config/skills/pdca-dotnet/tests -p test_inner_loop_gate.py -v
+    python3 -m unittest discover -s opencode/pdca-dotnet/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -21,11 +21,20 @@ import tempfile
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-SCRIPT = REPO / "config/skills/pdca-dotnet/scripts/validate_inner_loop.py"
-SKILL = Path(__file__).resolve().parents[1] / "SKILL.md"
-EN_CODER = Path(__file__).resolve().parents[1] / "assets/agents/coder.md"
-RU_CODER = Path(__file__).resolve().parents[3] / "agents/coder.md"
+REPO = Path(__file__).resolve().parents[3]
+SKILL_DIR = Path(__file__).resolve().parents[1]
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_ROOT = HOST_REPO  # host repo root, for its README
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
+
+SCRIPT = SKILL_DIR / "scripts/validate_inner_loop.py"
+SKILL = SKILL_DIR / "SKILL.md"
+EN_CODER = SKILL_DIR / "assets/agents/coder.md"
+# The RU coder brief is a host artifact (config/agents) and needs the host repo.
+RU_CODER = CONFIG_AGENTS / "coder.md" if CONFIG_AGENTS else None
 
 SELECTOR = "FullyQualifiedName~Foo.Tests.BarTests"
 SELECTOR_2 = "FullyQualifiedName~Shared.Tests.ContractTests"
@@ -929,22 +938,19 @@ class ContractWiringTests(unittest.TestCase):
         )
 
 
-class CoderParityTests(unittest.TestCase):
-    """D3 guards: both coder bodies carry the equivalent inner-loop bullet.
+class _CoderParityMixin:
+    """Shared D3 inner-loop bullet guards for the coder bodies in ``ANCHORS``.
 
-    Rule-presence only: reads the two coder Markdown bodies as text (paths
-    resolved relative to this test file) and asserts the standalone bullet is
-    present, that it sits between the Evidence and Git bullets, and that it
+    Rule-presence only: reads the coder Markdown bodies as text (paths resolved
+    relative to this test file / the host repo) and asserts the standalone bullet
+    is present, that it sits between the Evidence and Git bullets, and that it
     encodes the key concepts with wording-robust RU+EN regexes.  It never
     executes an agent or the cycle.
     """
 
     # Stable bold prefixes introduced by D3 (RU and EN wording).
-    ANCHORS = {EN_CODER: "**Inner loop", RU_CODER: "**Внутренний цикл"}
-    EVIDENCE = {
-        EN_CODER: "Evidence, not claims",
-        RU_CODER: "Доказательства, а не заявления",
-    }
+    ANCHORS: dict = {}
+    EVIDENCE: dict = {}
 
     @classmethod
     def setUpClass(cls):
@@ -1000,6 +1006,29 @@ class CoderParityTests(unittest.TestCase):
         self.assertNotEqual(mutated[EN_CODER], self.texts[EN_CODER])
         with self.assertRaises(AssertionError):
             self.assert_parity(mutated)
+
+
+class CoderParityTests(_CoderParityMixin, unittest.TestCase):
+    """D3 guards: the published EN coder asset carries the inner-loop bullet.
+
+    The RU host body (``config/agents/coder.md``) lives in the `opencode-config`
+    repo, so the two-body RU+EN parity guards are host-gated in
+    ``HostCoderParityTests`` below.
+    """
+
+    ANCHORS = {EN_CODER: "**Inner loop"}
+    EVIDENCE = {EN_CODER: "Evidence, not claims"}
+
+
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+class HostCoderParityTests(_CoderParityMixin, unittest.TestCase):
+    """D3 guards: both coder bodies (EN asset + RU host brief) stay in parity."""
+
+    ANCHORS = {EN_CODER: "**Inner loop", RU_CODER: "**Внутренний цикл"}
+    EVIDENCE = {
+        EN_CODER: "Evidence, not claims",
+        RU_CODER: "Доказательства, а не заявления",
+    }
 
 
 if __name__ == "__main__":

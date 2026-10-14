@@ -7,23 +7,30 @@ immutable, so it never creates `-wal`/`-shm` sidecars and rejects any write on
 the connection; malformed profile JSON is handled in a controlled way.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-coder/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-coder/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-PDCA_DIR = REPO / "config/skills/pdca-coder"
-SCRIPT = PDCA_DIR / "scripts/pdca_cost.py"
-ASSET_AGENTS = PDCA_DIR / "assets/agents"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
+ASSET_AGENTS = SKILL_DIR / "assets/agents"
+
+# Host config (agents/profiles/AGENTS.md) lives in the `opencode-config` repo, not in this one.
+# Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
 
 READ_ONLY_ROLES = ("escalate", "security-auditor", "scout")
 
@@ -262,8 +269,13 @@ class WriteProofAllowlistTest(unittest.TestCase):
         self.assertEqual(blocks[0], blocks[1])
         self.assertEqual(blocks[1], blocks[2])
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_installed_mirror_matches_source(self):
-        installed = Path.home() / ".config/opencode/skills/pdca-coder/assets/agents"
+        # Host-parity check: the deployed copy of the skill ships with the host
+        # config repo (`opencode-config`), not with this published-skills repo.
+        installed = CONFIG / "skills/pdca-coder/assets/agents"
+        if not installed.is_dir():
+            installed = Path.home() / ".config/opencode/skills/pdca-coder/assets/agents"
         if not installed.is_dir():
             self.skipTest("installed mirror not present")
         for role in READ_ONLY_ROLES:

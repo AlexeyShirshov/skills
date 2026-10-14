@@ -11,25 +11,35 @@ models while leaving the existing keys intact; the shared RUNNER
 `pdca-orchestrator` is asserted separately; the integration is additive.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
+SKILL_DIR = Path(__file__).resolve().parents[1]
 
-SKILL = REPO / "config/skills/pdca/SKILL.md"
-ASSET_AGENTS = REPO / "config/skills/pdca/assets/agents"
-HOST_DIR = REPO / "config/agents"
-PROFILES = REPO / "config/profiles"
-SKILLS_KEEP = REPO / "config/skills-keep.txt"
-AGENTS_MD = REPO / "config/AGENTS.md"
-ORCHESTRATOR = REPO / "config/agents/pdca-orchestrator.md"
+SKILL = SKILL_DIR / "SKILL.md"
+ASSET_AGENTS = SKILL_DIR / "assets/agents"
+
+# Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
+# not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
+# they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
+HOST_DIR = (CONFIG / "agents") if CONFIG else None
+PROFILES = (CONFIG / "profiles") if CONFIG else None
+SKILLS_KEEP = (CONFIG / "skills-keep.txt") if CONFIG else None
+AGENTS_MD = (CONFIG / "AGENTS.md") if CONFIG else None
+ORCHESTRATOR = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
 
 ROLE_TIER = {
     "pdca-planner": "medium",
@@ -37,6 +47,9 @@ ROLE_TIER = {
     "pdca-escalate": "strong",
     "pdca-executor": "cheap",
 }
+# The skill also ships the shared gatherer `scout` as a portable asset (flat name,
+# cheap tier) alongside the four cycle roles.
+ASSET_TIER = dict(ROLE_TIER, scout="cheap")
 
 # The universal roles mirror the host roles' routing: `pdca-<role>` binds the
 # same model/variant as its host counterpart. Asserted against the profiles
@@ -98,17 +111,20 @@ def allow_keys(mapping: dict) -> set:
 
 
 class RoleParityTest(unittest.TestCase):
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_four_host_agents_exist(self):
         for name in ROLE_TIER:
             with self.subTest(role=name):
                 self.assertTrue((HOST_DIR / ("%s.md" % name)).is_file())
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_frontmatter_name_equals_filename_stem(self):
         for name in ROLE_TIER:
             with self.subTest(role=name):
                 data = frontmatter(HOST_DIR / ("%s.md" % name))
                 self.assertEqual(name, data.get("name"))
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_each_role_carries_expected_tier_and_no_model(self):
         for name, tier in ROLE_TIER.items():
             with self.subTest(role=name):
@@ -116,11 +132,22 @@ class RoleParityTest(unittest.TestCase):
                 self.assertRegex(raw, r"(?m)^# tier: %s\s*$" % tier)
                 self.assertNotRegex(raw, r"(?m)^\s*model\s*:")
 
-    def test_exactly_four_assets_with_same_names(self):
+    def test_assets_are_the_four_roles_plus_scout(self):
         assets = sorted(p.name for p in ASSET_AGENTS.glob("*.md"))
-        expected = sorted("%s.md" % n for n in ROLE_TIER)
+        expected = sorted("%s.md" % n for n in ASSET_TIER)
         self.assertEqual(expected, assets)
 
+    def test_each_asset_carries_expected_tier_and_no_model(self):
+        for name, tier in ASSET_TIER.items():
+            with self.subTest(role=name):
+                path = ASSET_AGENTS / ("%s.md" % name)
+                self.assertTrue(path.is_file(), "%s missing" % name)
+                self.assertEqual(name, frontmatter(path).get("name"))
+                raw = read(path)
+                self.assertRegex(raw, r"(?m)^# tier: %s\s*$" % tier)
+                self.assertNotRegex(raw, r"(?m)^\s*model\s*:")
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_assets_match_host_except_external_directory(self):
         # The portable asset mirrors the host agent's body and settings, but must
         # not carry the host-specific `external_directory` (local-env paths).
@@ -143,6 +170,7 @@ class RoleParityTest(unittest.TestCase):
                 )
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class PermissionRoutingTest(unittest.TestCase):
     def test_planner_and_check_are_default_deny(self):
         for name in ("pdca-planner", "pdca-check"):
@@ -157,6 +185,7 @@ class PermissionRoutingTest(unittest.TestCase):
         self.assertEqual({"scout"}, allow_keys(task))
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class ProfileBindingTest(unittest.TestCase):
     def test_deepseek_pdca_roles_mirror_host_routing(self):
         agents = load_jsonc(PROFILES / "deepseek.jsonc")["agent"]
@@ -181,6 +210,7 @@ class ProfileBindingTest(unittest.TestCase):
                 self.assertTrue((agents.get(role) or {}).get("model"), "%s has no model" % role)
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class AdditiveIntegrationTest(unittest.TestCase):
     def test_skills_keep_has_pdca_and_pdca_coder(self):
         lines = {
@@ -197,6 +227,7 @@ class AdditiveIntegrationTest(unittest.TestCase):
         self.assertIn("pdca-dotnet", text)
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class OrchestratorVariantSelectionTest(unittest.TestCase):
     """The shared cheap driver `pdca-orchestrator` picks the cycle variant per task."""
 

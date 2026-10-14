@@ -1,1 +1,5 @@
 opencode/plugins/*/*.tgz
+
+# Python bytecode left behind by the skill test suites
+__pycache__/
+*.pyc

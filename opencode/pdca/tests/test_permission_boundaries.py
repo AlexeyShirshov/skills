@@ -10,21 +10,31 @@ rejects any write on the connection; a malformed profile is handled without an
 unhandled exception.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-HOST_DIR = REPO / "config/agents"
-SCRIPT = REPO / "config/skills/pdca/scripts/pdca_cost.py"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
+
+# Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
+# not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
+# they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
+HOST_DIR = (CONFIG / "agents") if CONFIG else None
 
 # Forbidden escalation commands: state-changing build/test/run shapes.  Built
 # from fragments so this guard itself does not carry the literals it forbids
@@ -106,6 +116,7 @@ def make_db(path: Path) -> None:
         con.close()
 
 
+@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class ReadOnlyRoleBoundaryTest(unittest.TestCase):
     def test_planner_check_runner_do_not_grant_edit_or_write(self):
         for role in ("pdca-planner", "pdca-check", "pdca-orchestrator"):

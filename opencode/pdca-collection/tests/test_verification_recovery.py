@@ -27,12 +27,13 @@ It is *not* a card below `C`, and `C` never launches it directly; the
 `C→orchestrator→REPAIR` mediation stays visible.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-collection/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
 
 import importlib.util
+import os
 import re
 import subprocess
 import sys
@@ -41,8 +42,16 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-GEN = REPO / "config/skills/pdca-collection/assets/diagram/gen_collection.py"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+
+# Host config (agents/profiles/AGENTS.md) lives in the `opencode-config` repo, not in this one.
+# Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
+HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
+CONFIG = (HOST_REPO / "config") if HOST_REPO else None
+HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
+SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+
+GEN = SKILL_DIR / "assets/diagram/gen_collection.py"
 
 THEME_STEMS = {
     "light": "collection-hand",
@@ -77,15 +86,15 @@ KNOWN_TIERS = {"cheap", "medium", "strong"}
 # tests dir are untracked on this branch), so this scan is explicit and has no
 # hidden suppressions.
 IN_SCOPE_TEXT_FILES = [
-    "config/skills/pdca-collection/assets/diagram/gen_collection.py",
-    "config/skills/pdca-collection/tests/test_verification_recovery.py",
-    "config/skills/pdca-collection/tests/scenarios.md",
-    "config/skills/pdca-collection/SKILL.md",
-    "config/agents/pdca-orchestrator.md",
-    "config/skills/pdca-collection/assets/diagram/collection-hand.svg",
-    "config/skills/pdca-collection/assets/diagram/collection-hand.html",
-    "config/skills/pdca-collection/assets/diagram/collection-hand-dark.svg",
-    "config/skills/pdca-collection/assets/diagram/collection-hand-dark.html",
+    SKILL_DIR / "assets/diagram/gen_collection.py",
+    SKILL_DIR / "tests/test_verification_recovery.py",
+    SKILL_DIR / "tests/scenarios.md",
+    SKILL_DIR / "SKILL.md",
+    (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None,
+    SKILL_DIR / "assets/diagram/collection-hand.svg",
+    SKILL_DIR / "assets/diagram/collection-hand.html",
+    SKILL_DIR / "assets/diagram/collection-hand-dark.svg",
+    SKILL_DIR / "assets/diagram/collection-hand-dark.html",
 ]
 
 # Step 5 mutation: remove the REPAIR->C full-verification edge from a *copied*
@@ -930,10 +939,13 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                         f"legend {key} has no swatch rect",
                     )
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_in_scope_text_files_have_clean_whitespace(self):
         problems = []
-        for rel in IN_SCOPE_TEXT_FILES:
-            path = REPO / rel
+        for path in IN_SCOPE_TEXT_FILES:
+            if path is None:
+                continue
+            rel = str(path)
             self.assertTrue(path.exists(), f"missing in-scope file: {rel}")
             raw = path.read_bytes()
             if b"\r" in raw:
@@ -967,9 +979,9 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
 # the production change and pass after it.
 # ---------------------------------------------------------------------------
 
-SKILL_PATH = REPO / "config/skills/pdca-collection/SKILL.md"
-LANE_PATH = REPO / "config/agents/pdca-orchestrator.md"
-SCENARIOS_PATH = REPO / "config/skills/pdca-collection/tests/scenarios.md"
+SKILL_PATH = SKILL_DIR / "SKILL.md"
+LANE_PATH = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
+SCENARIOS_PATH = SKILL_DIR / "tests/scenarios.md"
 
 # Target lower merge model: node set and edge count are *counted from the
 # render* in the tests, never read from a generator constant.
@@ -2273,7 +2285,9 @@ class CollectionContractSemanticsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.skill = SKILL_PATH.read_text(encoding="utf-8")
-        cls.lane = LANE_PATH.read_text(encoding="utf-8")
+        # host RUNNER prompt — only read when OPENCODE_CONFIG_REPO is set; every
+        # test that consumes `cls.lane` is gated by HOST_AVAILABLE below.
+        cls.lane = LANE_PATH.read_text(encoding="utf-8") if HOST_AVAILABLE else ""
 
     @staticmethod
     def _plain(text: str) -> str:
@@ -2284,6 +2298,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
 
     # --- definitive incomplete stops the group, not just the task ---------
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_definitive_incomplete_stops_whole_group(self):
         lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
         self.assertTrue(lane_sec, "SKILL §Лейн not found")
@@ -2305,6 +2320,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         )
         self.assertIn("группа остановлена", lane)
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_remaining_tasks_incomplete_reason_not_blocked(self):
         lane = self._plain(self.lane)
         m = re.search(r"оставшиеся[^.]*?incomplete[^.]*?»", lane, re.I)
@@ -2322,6 +2338,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
             lane_sec, r"blocked остаётся только состоянием родительской верификации"
         )
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_other_groups_continue(self):
         lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
         self.assertRegex(lane_sec, r"другие группы продолжают")
@@ -2333,6 +2350,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
 
     # --- single-group degradation ----------------------------------------
 
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_single_group_exemption(self):
         p = self._skill_plain("### P —", "### D —")
         d = self._skill_plain("### D —", "### C —")

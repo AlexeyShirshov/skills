@@ -5,7 +5,7 @@ role carries a `# tier:` label (no `model:`).  They never execute a model or the
 live PDCA cycle, so they prove structure, not behavior.
 
 Run:
-    python3 -m unittest discover -s config/skills/pdca-coder/tests -p 'test_*.py' -v
+    python3 -m unittest discover -s opencode/pdca-coder/tests -p 'test_*.py' -v
 """
 
 from __future__ import annotations
@@ -14,10 +14,9 @@ import re
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
-PDCA_DIR = REPO / "config/skills/pdca-coder"
-SKILL = PDCA_DIR / "SKILL.md"
-ASSET_AGENTS = PDCA_DIR / "assets/agents"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SKILL = SKILL_DIR / "SKILL.md"
+ASSET_AGENTS = SKILL_DIR / "assets/agents"
 
 ROLE_TIER = {
     "planner": "medium",

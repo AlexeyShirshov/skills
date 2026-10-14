@@ -5,9 +5,9 @@
 коллекции **не** исполнялся, production-автомат не создавался. (Историческая стадия: фраза
 «ни один агент/модель … не запускался» относится ко времени составления матрицы
 `2026-10-02T04:28Z`; поведенческие сэмплы появились позже и записаны ниже.) Рендер-выходные
-тесты Task 2 — `config/skills/pdca-collection/tests/test_verification_recovery.py` —
+тесты Task 2 — `opencode/pdca-collection/tests/test_verification_recovery.py` —
 **созданы**; на **исторической** стадии Task 2 их прогон
-`python3 -m unittest discover -s config/skills/pdca-collection/tests -p 'test_*.py' -v`
+`python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v`
 давал `Ran 11 tests` / `OK` (11 passed / 0 failed / 0 skipped), exit 0 — это
 **исторический счёт Task 2** (`2026-10-02T05:02Z`), а не текущее активное число. Текущий
 результат после ревизии v2 зафиксирован в `…/check-owner-v2/report-v2.md`
@@ -17,6 +17,11 @@
 составлении матрицы файл был помечен «ещё не создан (pending Task 2)»; это относилось к
 моменту до Task 2, а не к текущему состоянию.) Поведенческий разбор этой матрицы — read-only
 сэмплы `baseline-*`/`after-*` по рубрике (см. ниже); они тоже симуляция, а не живой прогон.
+
+Хостовые артефакты (`config/agents/pdca-orchestrator.md` — промпт общего RUNNER,
+`config/profiles/*.jsonc`, `config/AGENTS.md`) живут в репозитории `opencode-config`; тесты
+обращаются к ним только при `OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе эти проверки
+пропускаются.
 
 > **Ревизия v2 (user-approved, 2026-10-02).** Раздел C общей верификации переведён на
 > **стандартный CHECK `pdca-dotnet`** (Gather cheap → вердикт `check` medium); отдельная
@@ -56,11 +61,11 @@
 Источник правил: `docs/superpowers/specs/2026-10-01-pdca-collection-verification-recovery-design.md`
 и план `docs/superpowers/plans/2026-10-01-pdca-collection-verification-recovery-plan.md`.
 Скилл коллекции **не переопределяет** state machine/гейты/правила ревизий базы кодового
-PDCA-контракта (`config/skills/pdca-coder/SKILL.md`; для .NET — идентичная `pdca-dotnet`).
+PDCA-контракта (`opencode/pdca-coder/SKILL.md`; для .NET — идентичная `pdca-dotnet`).
 
 Общая оперативная база (применяется ко всем кейсам, если ниже не уточнено):
-`config/skills/pdca-collection/SKILL.md` — §C (верификация), §Сбой, §Статус коллекции, §D
-(инфраструктура/merge); база кодового контракта (`config/skills/pdca-coder/SKILL.md`; для .NET —
+`opencode/pdca-collection/SKILL.md` — §C (верификация), §Сбой, §Статус коллекции, §D
+(инфраструктура/merge); база кодового контракта (`opencode/pdca-coder/SKILL.md`; для .NET —
 идентичная `pdca-dotnet`) — §State machine (счётчики
 `r`/`n`/3), §Escalation (`escalate`), §Cycle status file. Роли не изобретаются:
 `coder`/`scout` — cheap, `planner`/`check`/security — medium, `escalate` — strong; `pdca-orchestrator` —
@@ -76,14 +81,14 @@ PDCA-контракта (`config/skills/pdca-coder/SKILL.md`; для .NET — и
 ## Протокол поведенческого сэмплирования
 
 - **Замороженный baseline-контракт:** `.superpowers/sdd/2026-10-01-pdca-collection-verification-recovery-plan/baseline-SKILL.md` —
-  дословная копия pre-change `config/skills/pdca-collection/SKILL.md`
+  дословная копия pre-change `opencode/pdca-collection/SKILL.md`
   (sha256 `f9e5e789dbd87bcde80bf6a6e2296e3e7ca6dbb660d1973614a4ad351f792de4`).
 - **Идентичные промпты:** `.superpowers/sdd/2026-10-01-pdca-collection-verification-recovery-plan/scenario-a-prompt.md`
   … `scenario-d-prompt.md`. Каждый ссылается **только** на плейсхолдер `{{SkillPath}}` для
-  проверяемого контракта и на базу `config/skills/pdca-dotnet/SKILL.md` по её исходному
+  проверяемого контракта и на базу `opencode/pdca-dotnet/SKILL.md` по её исходному
   полному пути (если читателю base нужна). Промпты baseline и after **побайтово идентичны**.
 - **Подстановка:** baseline-прогон → `{{SkillPath}}` = замороженный `baseline-SKILL.md`;
-  GREEN-прогон → `{{SkillPath}}` = обновлённый `config/skills/pdca-collection/SKILL.md`.
+  GREEN-прогон → `{{SkillPath}}` = обновлённый `opencode/pdca-collection/SKILL.md`.
   Больше ничего в промптах не меняется.
 - **Read-only:** один свежий контекст на кейс; читает только контракт под тестом (и, при
   желании, базу); **не** читает план/спеку/эту матрицу/рубрику; не исполняет код, не меняет
@@ -199,7 +204,7 @@ PASS, один фикс F1 применён к тому же дефекту D1.
 сохраняют прежние статусы; локальный PASS корректирующей задачи **не** означает успех
 коллекции.
 **Оперативные источники:** spec §Эскалация, ревизии и STOP, §Шаг 5; SKILL §Сбой; база
-`config/skills/pdca-dotnet/SKILL.md` §State machine / §Escalation (правило того же дефекта).
+`opencode/pdca-dotnet/SKILL.md` §State machine / §Escalation (правило того же дефекта).
 
 ---
 
@@ -267,7 +272,7 @@ baseline/after-сэмпл и **не** живой прогон (промпт `sce
   `incomplete` и никогда не `merged`.
 
 **Оперативные источники:** SKILL §C, §A, §Статус, §Сбой, §P/§Лейн; база кодового
-контракта `config/skills/pdca-coder/SKILL.md` (для .NET — идентичная `pdca-dotnet`; счётчики/эскалация не меняются).
+контракта `opencode/pdca-coder/SKILL.md` (для .NET — идентичная `pdca-dotnet`; счётчики/эскалация не меняются).
 
 ---
 
@@ -412,7 +417,7 @@ after-сэмплы и их вердикты — в §GREEN ниже.)
 ## GREEN (after) results — observed
 
 Собраны контроллером `2026-10-02T04:32Z` теми же идентичными промптами с `{{SkillPath}}` =
-`config/skills/pdca-collection/SKILL.md`. Дословные сэмплы:
+`opencode/pdca-collection/SKILL.md`. Дословные сэмплы:
 `.superpowers/sdd/2026-10-01-pdca-collection-verification-recovery-plan/samples/after-<a|b|c|d>.md`.
 Независимая проверка **`ses_f051a9991ffeJGhWTAOT2ZkJPI`**: общий итог **Spec PASS,
 Quality CHANGES_REQUIRED** (документальные правки), при этом по каждому из четырёх
@@ -454,7 +459,7 @@ after-кейсов — **Spec PASS / APPROVED** (см. `task-1-review-verdict.md
   поведения (согласуется с дисклеймером выше).
 - Комбинированный случай «`incomplete` задачи внутри лейна ↔ корректирующий STOP» **не**
   разыгрывался напрямую — это coverage limitation. Контракт содержит разделение
-  (`config/skills/pdca-collection/SKILL.md`: «Это **не** смешивается с механизмом `incomplete`
+  (`opencode/pdca-collection/SKILL.md`: «Это **не** смешивается с механизмом `incomplete`
   задачи внутри лейна»), но сэмплом/тестом это **не** проверено и как проверенное не заявляется.
 - Семантика v3 «определяющий `incomplete` задачи останавливает всю группу (остаток →
   `incomplete` «группа остановлена»); `incomplete`-группа никогда не мержится и её результаты
@@ -486,7 +491,7 @@ CHANGES_REQUIRED** из-за устаревшего репортинга; это
 > продолжает сохранённый PLAN с DO. Источник — спека
 > `docs/superpowers/specs/2026-10-06-pdca-collection-plan-barrier-design.md` и план
 > `docs/superpowers/plans/2026-10-06-pdca-collection-plan-barrier-plan.md`. Контрактные
-> регрессии: `config/skills/pdca-collection/tests/test_plan_barrier.py` (текст/статус/агент)
+> регрессии: `opencode/pdca-collection/tests/test_plan_barrier.py` (текст/статус/агент)
 > и `CollectionPlanBarrierDiagramTest` в `test_verification_recovery.py` (рендер).
 > Ранние разделы a–e и их сэмплы остаются дословной историей и не переписываются.
 

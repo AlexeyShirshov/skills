@@ -4,14 +4,18 @@
 `test_contract_consistency.py`, и она тоже лишь фиксирует наличие правил, а не поведение.
 Поведенческий разбор проходит независимый `escalate` по полным соответствующим контрактам.
 
-Источник правил (действующая норма): `config/skills/pdca-dotnet/SKILL.md` (§State machine,
+Источник правил (действующая норма): `opencode/pdca-dotnet/SKILL.md` (§State machine,
 §Transition gates, §Orchestrator role, §Host requirements), EN-роли
-`config/skills/pdca-dotnet/assets/agents/*.md` с зеркалами `config/agents/*.md` и исходники диаграммы
-`config/skills/pdca-dotnet/assets/diagram/{workflow.json,gen_pdca.py}`. Исторический дизайн
+`opencode/pdca-dotnet/assets/agents/*.md` с зеркалами `config/agents/*.md` и исходники диаграммы
+`opencode/pdca-dotnet/assets/diagram/{workflow.json,gen_pdca.py}`. Исторический дизайн
 `docs/superpowers/specs/2026-10-01-pdca-consistency-design.md` — только контекст, не норма (в нём
 допустим любой primary, включая `architect`; действует cheap-only). Счётчики: цикл `<N>` (растёт
 только в ACT), ревизия плана `r`, попытка `n/3` в пределах
 ревизии; отвергнутый кандидат **без смены плана** не новая ревизия и не сбрасывает ретраи.
+
+Хостовые артефакты (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`, хостовый
+`README.md`, спеки в `docs/superpowers/…`) живут в репозитории `opencode-config`; тесты обращаются
+к ним только при `OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе эти проверки пропускаются.
 
 | # | Кратко | Требуемый исход |
 | --- | --- | --- |
@@ -30,12 +34,12 @@
 | L | Fallback: `pdca-orchestrator` недоступен | Flat primary ведёт цикл сам, fallback зафиксирован (`Notice:`); гейты/no-4th/scope/security не отменяются |
 
 Общая оперативная база (применяется ко всем кейсам, если ниже не уточнено):
-`config/skills/pdca-dotnet/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
+`opencode/pdca-dotnet/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
 §Phase todo tracker, §Escalation (`escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
-§Orchestrator role; `config/skills/pdca-dotnet/assets/agents/*.md` и зеркала
+§Orchestrator role; `opencode/pdca-dotnet/assets/agents/*.md` и зеркала
 `config/agents/*.md` (`planner`, `coder`, `check`, `escalate`, `scout`, `security-auditor`,
-`architect`); `README.md`; метки диаграммы `config/skills/pdca-dotnet/assets/diagram/{workflow.json,gen_pdca.py}`.
+`architect`); `README.md`; метки диаграммы `opencode/pdca-dotnet/assets/diagram/{workflow.json,gen_pdca.py}`.
 
 ---
 
