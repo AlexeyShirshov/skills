@@ -59,6 +59,13 @@ the `minTurnMs` window is measured from that prompt. Without this a long-lived
 process (the TUI keeps one server for the whole session) would toast only the very
 first finished turn, every later completion being deduplicated away.
 
+Both timing knobs default to `0` on this path: an ask toasts at once and no
+completion is filtered, which is what the old standalone V1 file did. 1.18.x has no
+options channel, and its TUI is interactive — a 500 ms grace window there silently
+swallows any request the user answers quickly, and an idle `WSL_NOTIFY_GRACE_MS`
+looks exactly like a plugin that never saw the event. `WSL_NOTIFY_GRACE_MS` and
+`WSL_NOTIFY_MIN_TURN_MS` still apply when set.
+
 Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCode
 discover it locally. Options below need the configured form:
 `plugins: [{ "package": "wsl-notify", "options": { … } }]`.
@@ -289,13 +296,13 @@ alone — which is why the session object nested under `properties.info` is read
 npm test        # drives setup() with synthetic events and a fake powershell
 ```
 
-The smoke test asserts on the toasts the plugin would raise (41 checks): one
+The smoke test asserts on the toasts the plugin would raise (44 checks): one
 toast per waiting permission, silence for a permission answered inside the grace
 window, coalesced completion events, silence for a turn inside `minTurnMs`,
 subagent suppression, error text, and the 1.18.x shapes (`properties.info`, a
-`setup` that must not fail without an event stream, and two turns inside one
-long-lived process toasting twice, with the re-emitted user message not
-re-arming the completion).
+`setup` that must not fail without an event stream, two turns inside one
+long-lived process toasting twice, the re-emitted user message not re-arming
+the completion, and the V1 `server()` defaults of an immediate ask).
 
 ## License
 

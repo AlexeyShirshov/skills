@@ -88,6 +88,22 @@ async function run(events, options = {}, gap = 10, sessionGetter = neverSettles)
   return toasts()
 }
 
+// 1.18.x drives the plugin through the `server()` hooks — no options channel at
+// all, so whatever `v1Limits()` defaults to is what the host gets.
+async function runV1(events, gap = 10) {
+  await writeFile(log, "")
+  resetState()
+
+  const module = await import("../index.js")
+  const hooks = await module.default.server()
+  for (const event of events) {
+    await hooks.event({ event })
+    await sleep(gap)
+  }
+  await sleep(60)
+  return toasts()
+}
+
 const SESSION = "ses_test"
 const sessionCreated = (sessionID, parentID) => ({
   id: `evt_created_${sessionID}`,
@@ -394,6 +410,31 @@ console.log("1.18.x (V1 context)")
     10,
   )
   check("V1 turn inside minTurnMs stays silent", raised.length === 0, `got ${raised.length}`)
+}
+console.log("1.18.x server() defaults")
+{
+  // An ask toasts at once on this path: a 500ms grace window silently swallows
+  // any request the user answers within it, and the old standalone V1 file had
+  // no such window. Both knobs default to 0 here, the environment still overrides.
+  const raised = await runV1([
+    { id: "v1_default_ask", type: "permission.asked", properties: { id: "per_v1", sessionID: SESSION, permission: "bash" } },
+  ])
+  check("an ask toasts immediately through the V1 hooks", raised.length === 1, `got ${raised.length}`)
+}
+{
+  const raised = await runV1([
+    { id: "v1_default_user", type: "message.updated", properties: { sessionID: SESSION, info: { id: "msg_s1", role: "user" } } },
+    { id: "v1_default_idle", type: "session.idle", properties: { sessionID: SESSION } },
+  ])
+  check("a short turn still toasts through the V1 hooks", raised.length === 1, `got ${raised.length}`)
+}
+{
+  process.env.WSL_NOTIFY_GRACE_MS = "400"
+  const raised = await runV1([
+    { id: "v1_env_ask", type: "permission.asked", properties: { id: "per_v1b", sessionID: SESSION, permission: "bash" } },
+  ])
+  delete process.env.WSL_NOTIFY_GRACE_MS
+  check("WSL_NOTIFY_GRACE_MS still widens the V1 window", raised.length === 0, `got ${raised.length}`)
 }
 
 await rm(dir, { recursive: true, force: true })
