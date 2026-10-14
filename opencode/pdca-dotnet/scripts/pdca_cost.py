@@ -61,7 +61,6 @@ PHASE = {
     "judge": "CHECK·линзы",
     "dotnet-code-review-agent": "CHECK·линзы",
     "dotnet-testing-specialist": "CHECK·линзы",
-    "nextorm-code-auditor": "CHECK·линзы",
     "general": "прочее",
 }
 
@@ -135,7 +134,7 @@ def phase_of(agent, title=""):
         return "прочее"
     if agent in PHASE:
         return PHASE[agent]
-    if agent.startswith(("dotnet-", "nextorm-", "docfx")):
+    if agent.startswith(("dotnet-", "docfx")):
         return "Специалисты"
     return "прочее"
 

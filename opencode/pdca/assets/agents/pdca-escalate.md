@@ -27,10 +27,8 @@ permission:
     "wc *": allow
     "stat *": allow
     "file *": allow
-  external_directory:
-    "/mnt/c/Users/user/source/**": allow
-    "/mnt/c/Users/user/Pictures/Screenshots/**": allow
-    "/tmp/**": allow
+  # external_directory: add extra allowed paths if the task needs them, e.g.
+  #   "/tmp/**": allow
   skill:
     "*": deny
   question: allow

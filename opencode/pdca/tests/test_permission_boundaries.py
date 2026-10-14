@@ -98,7 +98,7 @@ def make_db(path: Path) -> None:
         )
         con.execute(
             "insert into session values "
-            "('s0', null, 'pdca-executor', 'task', 'deepseek-flash', "
+            "('s0', null, 'pdca-executor', 'task', 'test-model', "
             "1.0, 1, 1, 0, 0, 0, 0)"
         )
         con.commit()

@@ -2264,7 +2264,7 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 #   * `incomplete` results (refs/branches/commits/patch) survive ACT cleanup;
 #     current-branch earlier commits stay with no auto-rollback;
 #   * the autocommit/merge right needs an explicitly authorized collection mode
-#     (a project overlay such as nextorm, or an explicit user request); the
+#     (a project overlay, or an explicit user request); the
 #     skill grants no universal right and does not widen global AGENTS.md.
 # ---------------------------------------------------------------------------
 
@@ -2400,7 +2400,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         header = self._skill_plain("## Роль", "## Коллекция")
         self.assertRegex(header, r"явно разрешённый автокоммит")
         self.assertRegex(header, r"проектный overlay")
-        self.assertIn("nextorm", header)
+        self.assertRegex(header, r"конкретного проекта")
         self.assertRegex(
             header,
             r"сам скилл .{0,40}универсального права на коммит/merge не даёт",

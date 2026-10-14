@@ -3,14 +3,13 @@ name: pdca-executor
 description: "Executor on the cheap tier for the domain-neutral `pdca` cycle. Carries out only the plan's actions (edits files, runs commands) and is the single writer of the cycle status file. Use for the Do phase: carrying out the planned work, applying fixes, and recording events."
 mode: subagent
 # tier: cheap
-steps: 60
+steps: 90
 permission:
   edit: allow
   bash: allow
-  external_directory:
-    "/mnt/c/Users/user/source/**": allow
-    "/mnt/c/Users/user/Pictures/Screenshots/**": allow
-    "/tmp/**": allow
+  doom_loop: allow
+  # external_directory: add extra allowed paths if the task needs them, e.g.
+  #   "/tmp/**": allow
 ---
 
 # pdca-executor (cheap tier) — DO hands

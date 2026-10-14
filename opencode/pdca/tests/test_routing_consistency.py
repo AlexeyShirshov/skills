@@ -38,23 +38,16 @@ ROLE_TIER = {
     "pdca-executor": "cheap",
 }
 
-DEEPSEEK_NEW = {
-    "pdca-planner": {"model": "opencode/gpt-6.1-sol", "variant": "high"},
-    "pdca-check": {"model": "opencode/gpt-6.1-sol", "variant": "high"},
-    "pdca-escalate": {"model": "opencode/claude-sonnet-5-5"},
-    "pdca-executor": {"model": "deepseek/deepseek-flash"},
+# The universal roles mirror the host roles' routing: `pdca-<role>` binds the
+# same model/variant as its host counterpart. Asserted against the profiles
+# themselves, so the shared skill names no concrete model id.
+PDCA_MIRROR = {
+    "pdca-planner": "planner",
+    "pdca-check": "check",
+    "pdca-escalate": "escalate",
+    "pdca-executor": "coder",
 }
-DEEPSEEK_EXISTING = {
-    "architect": {"model": "opencode/gpt-6.1-sol", "variant": "high"},
-    "planner": {"model": "opencode/gpt-6.1-sol", "variant": "high"},
-    "check": {"model": "opencode/gpt-6.1-sol", "variant": "high"},
-    "escalate": {"model": "opencode/claude-sonnet-5-5"},
-    "security-auditor": {"model": "opencode/gpt-6.1-sol", "variant": "high"},
-    "coder": {"model": "deepseek/deepseek-flash"},
-    "scout": {"model": "deepseek/deepseek-flash"},
-    "pdca-orchestrator": {"model": "deepseek/deepseek-flash"},
-}
-GP_EXISTING = (
+HOST_ROLES = (
     "architect", "planner", "check", "escalate", "security-auditor",
     "coder", "scout", "pdca-orchestrator",
 )
@@ -128,13 +121,25 @@ class RoleParityTest(unittest.TestCase):
         expected = sorted("%s.md" % n for n in ROLE_TIER)
         self.assertEqual(expected, assets)
 
-    def test_assets_are_byte_identical_to_host(self):
+    def test_assets_match_host_except_external_directory(self):
+        # The portable asset mirrors the host agent's body and settings, but must
+        # not carry the host-specific `external_directory` (local-env paths).
         for name in ROLE_TIER:
             with self.subTest(role=name):
+                host = read(HOST_DIR / ("%s.md" % name))
+                asset = read(ASSET_AGENTS / ("%s.md" % name))
                 self.assertEqual(
-                    read(HOST_DIR / ("%s.md" % name)),
-                    read(ASSET_AGENTS / ("%s.md" % name)),
-                    "%s host/asset differ" % name,
+                    host.split("\n---\n", 1)[1],
+                    asset.split("\n---\n", 1)[1],
+                    "%s host/asset body differ" % name,
+                )
+                hperm = frontmatter(HOST_DIR / ("%s.md" % name))["permission"]
+                aperm = frontmatter(ASSET_AGENTS / ("%s.md" % name))["permission"]
+                self.assertNotIn("external_directory", aperm)
+                self.assertEqual(
+                    {k: v for k, v in hperm.items() if k != "external_directory"},
+                    {k: v for k, v in aperm.items() if k != "external_directory"},
+                    "%s host/asset settings differ" % name,
                 )
 
 
@@ -153,24 +158,27 @@ class PermissionRoutingTest(unittest.TestCase):
 
 
 class ProfileBindingTest(unittest.TestCase):
-    def test_deepseek_new_role_bindings(self):
-        cfg = load_jsonc(PROFILES / "deepseek.jsonc")
-        agents = cfg["agent"]
-        for role, expected in DEEPSEEK_NEW.items():
-            with self.subTest(role=role):
-                self.assertEqual(expected, agents.get(role))
-
-    def test_deepseek_existing_keys_unchanged(self):
+    def test_deepseek_pdca_roles_mirror_host_routing(self):
         agents = load_jsonc(PROFILES / "deepseek.jsonc")["agent"]
-        for role, expected in DEEPSEEK_EXISTING.items():
+        for role, host in PDCA_MIRROR.items():
             with self.subTest(role=role):
-                self.assertEqual(expected, agents.get(role))
+                spec = agents.get(role)
+                self.assertIsInstance(spec, dict)
+                self.assertTrue(spec.get("model"), "%s has no model" % role)
+                self.assertEqual(spec.get("model"), (agents.get(host) or {}).get("model"))
+                self.assertEqual(spec.get("variant"), (agents.get(host) or {}).get("variant"))
 
-    def test_gp_new_roles_and_existing_keys(self):
-        agents = load_jsonc(PROFILES / "gp.jsonc")["agent"]
-        for role in list(DEEPSEEK_NEW) + list(GP_EXISTING):
+    def test_deepseek_existing_roles_keep_a_model(self):
+        agents = load_jsonc(PROFILES / "deepseek.jsonc")["agent"]
+        for role in HOST_ROLES:
             with self.subTest(role=role):
-                self.assertEqual({"model": "opencode-go/kimi-k3"}, agents.get(role))
+                self.assertTrue((agents.get(role) or {}).get("model"), "%s has no model" % role)
+
+    def test_gp_roles_keep_a_model(self):
+        agents = load_jsonc(PROFILES / "gp.jsonc")["agent"]
+        for role in list(PDCA_MIRROR) + list(HOST_ROLES):
+            with self.subTest(role=role):
+                self.assertTrue((agents.get(role) or {}).get("model"), "%s has no model" % role)
 
 
 class AdditiveIntegrationTest(unittest.TestCase):

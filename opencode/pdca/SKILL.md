@@ -21,8 +21,10 @@ medium-tier planning and verdict, a strong escalation role used sparingly.
 
 These rules are addressed to you as the orchestrator. Subagents (`pdca-planner`,
 `pdca-executor`, `pdca-check`, `pdca-escalate`, `scout`) do NOT apply them: the
-executor must act and run commands; the planner and the check read only the brief and produce
-a plan or a verdict.
+executor must act and run commands; the planner reads the brief and produces a plan; the check
+reads the brief **and may open the cycle's evidence artifacts directly** (its scoped `read` of the
+status/evidence/manifest files — never product code) to reconcile the contract rows, then produces
+a verdict.
 
 **Two paths, one contract.** In **normal mode you drive the cycle yourself, invoking subagents
 via `Task`** — PLAN and the CHECK → PLAN / DO → PLAN loop-back → `pdca-planner`; execution →
@@ -53,7 +55,7 @@ A medium/strong primary still neither drives the cycle nor dispatches `pdca-orch
 | GATHER (facts) | `scout` | read-only, cheap, reused unchanged | resource blocker |
 | PLAN (decisions) | `pdca-planner` | read-only, no `Task`, default-deny | resource blocker |
 | DO (hands) | `pdca-executor` | `edit`/`bash`/`read` allow | resource blocker |
-| CHECK (verdict) | `pdca-check` | read-only, no `Task`, default-deny | resource blocker |
+| CHECK (verdict) | `pdca-check` | read-only (brief + cycle evidence artifacts), no `Task`, default-deny | resource blocker |
 | ESCALATE | `pdca-escalate` | read-only, facts via `scout` | resource blocker |
 | RUNNER | `pdca-orchestrator` | cheap dispatcher, `task`-allowlist (shared) | flat cheap primary + `Notice:` |
 
@@ -246,7 +248,14 @@ assumption/risk, (c) a blocker/`pdca-escalate`; a silent guess is forbidden. For
 non-obvious trade-off, present 2–3 alternatives with pros/cons and a recommendation. Keep the
 solution minimal and first-principles: reuse what exists before adding anything; an
 abstraction without a second consumer is a PLAN finding. Prefer the existing approach in the
-surrounding context before designing new, with a reason when it does not fit.
+surrounding context before designing new, with a reason when it does not fit. A binding
+acceptance criterion whose verification is **state-dependent** (e.g. the negative arm of a
+regression) must name a **reproducible** evidence source, and its decisive probe must be
+**demonstrated to run** against the declared baseline before gate 1 — a merely declared source
+is not enough; an unprovable criterion is a **gap** (report / re-scope the oracle), never a
+`ready` placeholder. **Re-entry after a terminal `incomplete`/STOP** is a required PLAN input:
+the criterion whose proof failed may not be re-run unchanged — either demonstrate it is now
+obtainable or re-scope it.
 
 **Unit** has: ID, expected result, criteria/evidence, dependencies, owner, status in
 `pending | running | blocked | done | superseded`. Parallel DO is allowed only for
@@ -285,6 +294,30 @@ required approval; it **does not bypass the no-4th rule**. STOP is recorded and 
 the permitted writer-executor **without a false PASS/ACT-success**: the reasons, evidence,
 remaining `unmet`/`unverified` criteria, counters and defect history, and the handoff are
 recorded.
+
+### Frozen evidence manifest
+
+One object reconciles CHECK with DO: a single machine-readable **evidence manifest**. DO writes it
+at the path PLAN pins in the status file; CHECK reads it first. It is **frozen at the DO→CHECK
+boundary** and bound to the frozen result identity (plan revision `r` + the frozen input/artefact
+identity, e.g. commit/tree or output hash). During CHECK it is **append-only**: a re-gather adds
+evidence or an `open` reason to existing entries; entries are never rewritten and no second
+manifest is started. A new plan revision starts a new manifest version; the superseded one is kept.
+Each entry maps one **required criterion ID** to its evidence **by reference, not by copy**:
+- `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria
+  / unit criteria) of the pinned plan;
+- `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
+  `evidence[]` of `{kind, path, command?, exit?, value?}` (path, command, exit status, key number);
+  for `open` a `reason`; for `na` an observed `predicate`.
+Every `required` ID must appear; a criterion without a resolving reference is `open`, never
+dropped, and logs stay references — the manifest is a thin index, not a copy. **No PASS while any
+`required` entry is `open`.** If the project ships a manifest validator, run it (row coverage +
+shape).
+
+**Default evidence dir:** **`.pdca/<task>/rv<k>/`** — `<task>` = kebab-slug, `<k>` = plan/criterion
+revision `rv`; the frozen manifest, its logs and per-row artifacts live here; a **default** the
+overlay may override (the status dir is `.pdca/status/`, §Durable status). The check role's scoped
+`read` grants `.pdca/**` generically, so the concrete path is defined only here.
 
 ## Normal and autonomous modes
 

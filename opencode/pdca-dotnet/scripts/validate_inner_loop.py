@@ -7,7 +7,9 @@ boundary.  This helper validates the two JSON artifacts that make that
 enforceable:
 
   * a **brief** scope, produced before dispatch to `coder`;
-  * a **report** (brief + `executions`), produced before CHECK passes.
+  * a **report** (brief + `executions`), produced before CHECK passes;
+  * a **manifest** — the frozen evidence manifest (contract row ID -> evidence by
+    reference), written at the DO->CHECK boundary and reconciled by CHECK.
 
 It never executes any supplied command: it only inspects the recorded argument
 arrays.  A violation is printed as a `FAIL: ` line and exits 2.  A usage error,
@@ -35,6 +37,16 @@ rejected) — the number of tests the run actually selected; a zero/missing
 count is rejected for every execution, including boundary sweeps and
 non-dotnet commands.
 
+``manifest``: ``task`` / ``tree`` / ``status_file`` (nonempty str); ``contract_rv``
+(int >= 1, bool rejected); ``required_rows`` (nonempty list[nonempty str], unique);
+``rows`` (nonempty list). Each row: ``id`` (nonempty str, unique); ``status`` in
+``met`` | ``open`` | ``na``; ``met`` requires a nonempty ``evidence`` list whose items have
+``kind`` and ``path`` (nonempty str) and an optional integer ``exit`` (bool rejected);
+``open`` requires a nonempty ``reason``; ``na`` requires a nonempty ``predicate``. The row
+IDs must cover ``required_rows`` exactly — a missing or undeclared ID is a violation. A row
+is NOT required to be ``met``: an ``open`` row is valid input and is exactly what forbids PASS
+in CHECK.
+
 Examples
 --------
   # validate the mandatory DO scope before dispatch
@@ -42,6 +54,9 @@ Examples
 
   # validate scope + execution evidence before CHECK
   validate_inner_loop.py report /tmp/evidence.json
+
+  # validate the frozen evidence manifest (row coverage + row/evidence shape)
+  validate_inner_loop.py manifest artifacts/pdca/<task>/rv1/manifest.json
 
   # exit 0 = valid, 2 = violation(s), 1 = usage / unreadable / malformed JSON
   validate_inner_loop.py report /tmp/evidence.json; echo $?
@@ -58,6 +73,9 @@ BROAD_SELECTORS = {"", "*", "*.*", "all", "All"}
 
 # Extensions that make a changed file a compiled input (rule 12).
 COMPILED_EXT = (".cs", ".fs", ".vb")
+
+# Allowed per-row statuses in the frozen evidence manifest.
+ROW_STATUSES = ("met", "open", "na")
 
 # Shell wrappers and flags whose presence means the real command cannot be
 # verified statically (rule 7).
@@ -458,6 +476,92 @@ def validate_report(data):
     return violations
 
 
+def _validate_evidence_item(item, row_id, idx):
+    violations = []
+    if not isinstance(item, dict):
+        return ["row %s evidence %d must be an object" % (row_id, idx)]
+    if not _nonempty_str(item.get("kind")):
+        violations.append("row %s evidence %d kind must be a nonempty string" % (row_id, idx))
+    if not _nonempty_str(item.get("path")):
+        violations.append("row %s evidence %d path must be a nonempty string" % (row_id, idx))
+    exit_code = item.get("exit")
+    if exit_code is not None and (
+        not isinstance(exit_code, int) or isinstance(exit_code, bool)
+    ):
+        violations.append("row %s evidence %d exit must be an integer when present" % (row_id, idx))
+    return violations
+
+
+def validate_manifest(data):
+    """Validate the frozen evidence manifest: row coverage + row/evidence shape.
+
+    Structural/coverage only: the manifest is *allowed* to carry ``open`` rows (that is
+    what forbids PASS in CHECK). This function does not decide pass/fail of the task.
+    """
+    violations = []
+    for key in ("task", "tree", "status_file"):
+        if not _nonempty_str(data.get(key)):
+            violations.append("%s must be a nonempty string" % key)
+    contract_rv = data.get("contract_rv")
+    if not isinstance(contract_rv, int) or isinstance(contract_rv, bool) or contract_rv < 1:
+        violations.append("contract_rv must be an integer >= 1")
+
+    required = data.get("required_rows")
+    req_ok = _is_nonempty_str_list(required)
+    if not req_ok:
+        violations.append("required_rows must be a nonempty list of nonempty strings")
+    elif len(set(required)) != len(required):
+        violations.append("required_rows contains duplicate IDs")
+        req_ok = False
+
+    rows = data.get("rows")
+    if not isinstance(rows, list) or not rows:
+        violations.append("rows must be a nonempty list")
+        return violations
+
+    seen = {}
+    for idx, row in enumerate(rows):
+        if not isinstance(row, dict):
+            violations.append("row %d must be an object" % idx)
+            continue
+        row_id = row.get("id")
+        if not _nonempty_str(row_id):
+            violations.append("row %d id must be a nonempty string" % idx)
+            continue
+        if row_id in seen:
+            violations.append("duplicate row id: %r" % row_id)
+            continue
+        seen[row_id] = row
+        status = row.get("status")
+        if status not in ROW_STATUSES:
+            violations.append(
+                "row %s status must be one of %s" % (row_id, "/".join(ROW_STATUSES))
+            )
+        elif status == "met":
+            evidence = row.get("evidence")
+            if not isinstance(evidence, list) or not evidence:
+                violations.append("row %s (met) must have a nonempty evidence list" % row_id)
+            else:
+                for ev_idx, item in enumerate(evidence):
+                    violations.extend(_validate_evidence_item(item, row_id, ev_idx))
+        elif status == "open":
+            if not _nonempty_str(row.get("reason")):
+                violations.append("row %s (open) must have a nonempty reason" % row_id)
+        elif status == "na":
+            if not _nonempty_str(row.get("predicate")):
+                violations.append("row %s (na) must have an observed predicate" % row_id)
+
+    if req_ok:
+        required_set = set(required)
+        for row_id in required:
+            if row_id not in seen:
+                violations.append("required row missing from manifest: %r" % row_id)
+        for row_id in seen:
+            if row_id not in required_set:
+                violations.append("manifest row not declared in required_rows: %r" % row_id)
+    return violations
+
+
 def _load_json(path):
     try:
         with open(path, encoding="utf-8") as handle:
@@ -479,11 +583,12 @@ def main(argv=None):
         epilog=__doc__,
     )
     parser.add_argument(
-        "mode", choices=("brief", "report"),
+        "mode", choices=("brief", "report", "manifest"),
         help="brief: validate the mandatory scope before dispatch; "
-             "report: validate scope + execution evidence before CHECK",
+             "report: validate scope + execution evidence before CHECK; "
+             "manifest: validate the frozen evidence manifest (row coverage)",
     )
-    parser.add_argument("path", help="path to the scope/evidence JSON object")
+    parser.add_argument("path", help="path to the scope/evidence/manifest JSON object")
     args = parser.parse_args(argv)
 
     try:
@@ -492,7 +597,12 @@ def main(argv=None):
         print("ERROR: %s" % exc, file=sys.stderr)
         return 1
 
-    violations = validate_brief(data) if args.mode == "brief" else validate_report(data)
+    if args.mode == "brief":
+        violations = validate_brief(data)
+    elif args.mode == "report":
+        violations = validate_report(data)
+    else:
+        violations = validate_manifest(data)
     if violations:
         for message in violations:
             print("FAIL: %s" % message)

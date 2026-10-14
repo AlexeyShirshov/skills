@@ -30,12 +30,9 @@ ROLE_PHASE = {
     "pdca-check": "CHECK",
     "pdca-escalate": "ESCALATE",
 }
-# Model (basename) -> tier, as derived from profiles + `# tier:` labels.
-MODEL_TIER = {
-    "gpt-6.1-sol": "medium",
-    "claude-sonnet-5-5": "strong",
-    "deepseek-flash": "cheap",
-}
+# Tiers are read from the host profiles + `# tier:` labels; the shared tests
+# name no concrete model id.
+VALID_TIERS = {"cheap", "medium", "strong"}
 UNKNOWN_ROLE = "mystery-role"
 
 
@@ -85,18 +82,24 @@ class CostAccountingTest(unittest.TestCase):
                 self.assertEqual(phase, self.mod.classify(role))
                 self.assertNotEqual(self.mod.UNCLASSIFIED, self.mod.phase_of(role))
 
-    def test_models_derive_expected_tiers(self):
+    def test_models_derive_valid_tiers(self):
         tiers = self.mod.load_tiers(str(PROFILES), str(AGENTS))
-        for model, tier in MODEL_TIER.items():
+        self.assertTrue(tiers)
+        for model, tier in tiers.items():
             with self.subTest(model=model):
-                self.assertEqual(tier, tiers.get(model))
+                self.assertIn(tier, VALID_TIERS)
 
     def test_tier_grouping_uses_the_resolved_table(self):
-        self.mod.TIERS.update(self.mod.load_tiers(str(PROFILES), str(AGENTS)))
+        tiers = self.mod.load_tiers(str(PROFILES), str(AGENTS))
+        self.mod.TIERS.update(tiers)
+        by_tier = {}
+        for model, tier in tiers.items():
+            by_tier.setdefault(tier, model)
+        self.assertEqual(VALID_TIERS, set(by_tier), "host binds every tier")
         records = [
-            record(0, "pdca-executor", model="deepseek-flash"),
-            record(1, "pdca-planner", model="gpt-6.1-sol"),
-            record(2, "pdca-escalate", model="claude-sonnet-5-5"),
+            record(0, "pdca-executor", model=by_tier["cheap"]),
+            record(1, "pdca-planner", model=by_tier["medium"]),
+            record(2, "pdca-escalate", model=by_tier["strong"]),
         ]
         result = self.mod.summarize(records, "tier")
         self.assertEqual({"cheap", "medium", "strong"}, set(result["groups"]))

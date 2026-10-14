@@ -3,7 +3,7 @@ name: coder
 description: "Implementer on the cheap tier. Writes and edits code, tests, docs and config, runs commands. Use for the Do-phase: applying a plan, generating artifacts, bug fixes, refactoring — anything that changes files or runs shells."
 mode: subagent
 # tier: cheap
-steps: 60
+steps: 90
 permission:
   edit: allow
   bash: allow

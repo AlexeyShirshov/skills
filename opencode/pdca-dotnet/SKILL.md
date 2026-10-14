@@ -20,8 +20,10 @@ cycle still works — just without the cost/quality split.
 
 These rules are addressed to you as the orchestrator. Subagents (`scout`, `coder`, `explore`,
 `general`, `dotnet-*`, `check`, `planner`, `escalate`) do NOT apply them: `coder`,
-on the contrary, must edit files and run commands; `check`/`planner` only
-read the summary and produce a verdict/plan (no pulling code).
+on the contrary, must edit files and run commands; `planner` reads the summary and produces
+a plan; `check` reads the summary **and may open the cycle's evidence artifacts directly**
+(its scoped `read` of the status/evidence/manifest files — never product code) to reconcile
+the contract rows. Neither pulls product code into context.
 
 **Two paths, one contract.** In **normal mode you drive the cycle yourself, invoking subagents via
 Task:** PLAN Decide (including starting the cycle) and the CHECK → PLAN / DO → PLAN loop-back —
@@ -62,7 +64,7 @@ medium/strong primary still neither drives the cycle nor dispatches `pdca-orches
 | GATHER (facts) | `scout` | read-only, cheap | built-in `explore` |
 | PLAN (decisions) | `planner` | read-only, no `Task` | built-in `general` |
 | DO (hands) | `coder` | `edit`/`bash` allow | built-in `general` |
-| CHECK (verdict) | `check` | read-only, no `Task` | built-in `general` |
+| CHECK (verdict) | `check` | read-only (report + cycle evidence artifacts), no `Task` | built-in `general` |
 | ESCALATE | `escalate` | read-only, facts via `scout` | `general` (+ warn the user) |
 | SECURITY | `security-auditor` | read-only, facts via `scout` | built-in `explore` |
 
@@ -713,6 +715,12 @@ A thin requirement is no excuse for a happy-path plan. An unenumerated execution
 gate 1 fails, and if found in CHECK it is a **CHECK → PLAN** loop-back. A weak statement raises PLAN's burden,
 it does not lower the bar.
 
+**Re-entry after a terminal `incomplete` / STOP.** When a task resumes after a terminal `incomplete`, the prior
+terminal reason is a **required input** to PLAN. It may not re-run the criterion whose proof failed
+**unchanged**: it must either (a) show that the failed proof is now obtainable (new evidence or a fixed harness,
+demonstrated per §Test strategy → "decisive evidence") or (b) **re-scope the criterion** to a reproducible
+oracle. A plan that silently re-attempts the same failed proof is **not** `ready`.
+
 ### Minimal solution and first principles
 
 For a non-trivial plan, record in the plan answers to: (1) the goal **in essence** (which result, not which
@@ -772,6 +780,9 @@ seam shape). A silent skip or "decide as we go" fails gate 1; **asserting withou
 `planner` collects nothing (`read:false`, `edit/write/task:deny`): the experiment runs on cheap models —
 `coder` (commands, harness, numbers) and `scout` (facts, versions, docs) — `build` only dispatches, `planner`
 judges (the same "measure cheaply → judge on medium").
+- **Regression / red-arm reconnaissance.** If the plan's decisive evidence is a red↔green proof, the decisive
+  probe must be shown to **run and fail (red)** from the declared source before the plan is frozen; a deferred
+  red-arm demonstration is a gate-1 failure (§Test strategy → "decisive evidence").
 - **A spike task in the normal cycle** — the unknown blocks the fix choice; a separate `D:` with an acceptance
   criterion = an **observable fact**; the result is evidence, then usual DO → CHECK.
 - **An experiment-only iteration** — the unknown blocks even the decision; the whole cycle is the experiment,
@@ -836,6 +847,16 @@ that matter (input kinds; `null`/default/uninitialized; value vs reference types
 explicit projection vs whole object; per provider/backend; on/off flags) and close **every** row: test, guard,
 or `deferred` with a trigger. A happy-path list is not a strategy; unenumerated edges hide coverage gaps and
 silent corruption. The matrix is PLAN's deliverable; CHECK verifies each row.
+
+**Decisive evidence must be provably obtainable before gate 1 (no undemonstrated arms).** A binding acceptance
+criterion whose proof is state-dependent — the negative/baseline arm of a regression (red↔green), or any
+criterion that reproduces a specific state — must be shown **obtainable from committed or otherwise
+reproducible sources before the plan is frozen**, by a reconnaissance run of the decisive probe against the
+declared baseline (§Prototype / reconnaissance). A *declared* source identity is not enough: a valid-looking
+commit can still not contain the required arm. If the arm cannot be reproduced — e.g. the only "red" lives in a
+rejected/uncommitted artifact, or the probe does not execute against the declared baseline — the criterion is a
+**GAP** (like "no consumer"): **not** `ready`, gate 1 fails, and the plan must **re-scope it to a reproducible
+oracle**, never carry it as an in-cycle prerequisite or a `ready` placeholder.
 
 **Coverage comes from the project, mandatory.** Find the project's coverage config/threshold (gather via
 `scout`/`dotnet-testing-specialist`): `Directory.Build.props`/`Directory.Packages.props`, `.runsettings`,
@@ -917,12 +938,39 @@ Every contract row must contain:
 **No optional slots:** PLAN may choose the layout, but must not omit slots or weaken required
 checks. Planned artifact locations are expectations, not evidence. Do not fabricate future
 test symbols or `file:line`; use verified existing references or explicitly planned sources.
-PLAN must also pin a finite CHECK re-gather budget and its owner in the status file.
+PLAN must also pin a finite CHECK re-gather budget and its owner, and the frozen evidence
+manifest path, in the status file.
+
+**Default evidence dir (defined by the skill, not by overlays or agent settings):**
+`artifacts/pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
+revision `rv`; the frozen manifest, its logs and per-row artifacts live here. Like the status
+path it is a **default** the overlay may override. The check role's scoped `read` grants it
+generically (`artifacts/**`), so the concrete path is defined **only here** — never repeated in
+an overlay or an agent's settings.
 
 **DO ledger:** record actual evidence against each row ID and `rv`: verified test symbols or
 `file:line`, results, executed commands or invocations, exit codes or invocation results, and
 log/artifact paths. Record failed, not-run, missing, and blocked evidence explicitly. N/A
 requires an observed applicability predicate; it must never waive an unconditional obligation.
+
+**Frozen evidence manifest (one per task — the single object CHECK reconciles):** DO writes one
+machine-readable manifest at the path PLAN pins in the status file, and CHECK reads it first. It
+is **frozen at the DO→CHECK boundary** (after the boundary sweep), bound to the frozen tree
+revision (`commit`/sha) and the contract revision `rv` under CHECK. During CHECK it is
+**append-only**: re-gather adds evidence or an `open` reason to existing rows; it never rewrites a
+row or starts a second manifest. A contract revision (`rv` → `rv+1`) starts a new manifest version;
+the superseded one is kept. Minimum content — each entry maps one contract row to its evidence
+**by reference, not by copy**:
+- `task`, `tree`, `contract_rv`, `status_file`;
+- `required_rows` — the mandatory row IDs of the pinned contract;
+- `rows[]` — one per required row: `id`, `status` (`met` | `open` | `na`), and for `met` an
+  `evidence[]` of `{kind, path, command?, exit?, value?}` (repo-relative/absolute path, exit code,
+  key number, test symbol); for `open` a `reason`; for `na` an observed `predicate`.
+Every `required_rows` entry must appear; a row without a resolving reference is `open`, never
+silently dropped. Logs stay references — the manifest is a thin index, not a copy of artifacts.
+**No PASS while any `required_rows` entry is `open`;** CHECK resolves a row by opening its `path`,
+not by re-deriving it from the brief. Validate the manifest with
+`scripts/validate_inner_loop.py manifest <manifest.json>` (row coverage + row/evidence shape).
 
 **Revision:** a newly discovered required variant must return CHECK → PLAN with a justification.
 PLAN explicitly supersedes the previous contract revision, retains existing row IDs, adds IDs
@@ -945,9 +993,11 @@ Check proceeds in two beats, so as **not to load code into the orchestrator's co
    "needed": `dotnet-benchmark-designer` + `coder` commands (suite/case, runs, baseline) → **raw numbers, no
    verdict**; async hot paths + `dotnet-async-performance-specialist`; `dotnet-performance-analyst` only with
    ready artifacts; "not needed" → the `file:line` one-time/not-per-row facts.
-2. **Triage (the `check` subagent).** Reads **only the aggregated report**, judges the code audit (real
+2. **Triage (the `check` subagent).** Reads the **aggregated report** and may open the cycle's
+   evidence artifacts directly (its scoped `read`: status/evidence/manifest files, never product
+   code) to reconcile each contract row's `path`; judges the code audit (real
    defect? severity? fix now vs accepted) and issues the verdict (pass/fail, ranking, loop-back). Do not pull
-   the diff/files into context; a missing datum goes to the gatherer. `build` executes the loop-back: `D:`
+   the product code/diff into context; a missing datum goes to the gatherer. `build` executes the loop-back: `D:`
    via `coder`, the `P:` via `planner` — no manual agent switching.
 
 **Keep CHECK within one approved PLAN.** `build` holds the active task, the approved PLAN and the `task_id`
@@ -1096,9 +1146,11 @@ merged check did not pass — return to DO (a `D:` task "resolve the
 conflict/regression"), do not close the cycle.
 ### CHECK completeness gate — mandatory evidence contract
 
-**Before PASS:** reconcile the current pinned contract with the DO ledger and inspect the
-required evidence. Every applicable required row must be satisfied by actual evidence for the
-current `rv`. Required artifacts must exist and support the reported result. N/A is valid only
+**Before PASS:** reconcile the current pinned contract with the frozen evidence manifest (the
+reconciliation object — one contract row → evidence by reference; §Versioned evidence contract)
+and inspect the referenced evidence. Every applicable required row must be satisfied by actual
+evidence for the current `rv`; every `required_rows` entry must be `met` or `na`, and any `open`
+row forbids PASS. Required artifacts must exist and support the reported result. N/A is valid only
 when its pinned observable predicate is demonstrated; unconditional obligations cannot be waived.
 
 **Missing evidence is not a product defect:** re-gather reports, logs, artifacts, or missing
