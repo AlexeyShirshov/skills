@@ -13,6 +13,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const dir = await mkdtemp(join(tmpdir(), "wsl-notify-test-"))
 const fake = join(dir, "fake-powershell.sh")
 const log = join(dir, "toasts.log")
+// The startup line goes to `WSL_NOTIFY_DEBUG_LOG`, read when the module is first
+// imported — point it at a temp file before any test imports the plugin.
+const loadLog = join(dir, "loaded.log")
+process.env.WSL_NOTIFY_DEBUG_LOG = loadLog
 
 await writeFile(fake, `#!/bin/sh\nprintf '%s\\n' "$*" >> '${log}'\n`)
 await chmod(fake, 0o755)
@@ -120,6 +124,17 @@ const permissionReplied = (id, sessionID = SESSION) => ({
   type: "permission.replied",
   data: { requestID: id, sessionID },
 })
+
+console.log("startup line")
+{
+  // Registration must leave a trace even without WSL_NOTIFY_DEBUG: that is what
+  // separates "the plugin never loaded" from "it loaded and stayed quiet".
+  const module = await import("../index.js")
+  await module.default.server()
+  await sleep(50)
+  const content = await readFile(loadLog, "utf8").catch(() => "")
+  check("registration writes a loaded line", /loaded path=v1/.test(content), content.trim().slice(0, 90))
+}
 
 console.log("permission")
 {

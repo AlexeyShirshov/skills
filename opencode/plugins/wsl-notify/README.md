@@ -123,6 +123,19 @@ Passed through the configured plugin form and read from `ctx.options` (V2):
 | `WSL_NOTIFY_DEBUG=1` | Write every decision (`toast`/`skip`) to the debug log. |
 | `WSL_NOTIFY_DEBUG_LOG` | Debug log path, default `$TMPDIR/wsl-notify.log`. |
 
+Registering the plugin already writes one line there, with or without
+`WSL_NOTIFY_DEBUG`:
+
+```
+2026-10-14T08:12:44.318Z 6f07a535 loaded path=v1 powershell=/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe
+```
+
+`path=` is which entry point the host used (`v1` = the `server()` hooks, `v2` = the
+event stream). An absent line means the plugin never loaded in that process —
+usually the host was not restarted after installing it, or the config entry landed
+in a scope the host does not read (`opencode plugin` without `-g` writes the
+current directory's `.opencode/opencode.json`).
+
 Options win over the environment.
 
 ## Events
@@ -296,13 +309,14 @@ alone — which is why the session object nested under `properties.info` is read
 npm test        # drives setup() with synthetic events and a fake powershell
 ```
 
-The smoke test asserts on the toasts the plugin would raise (44 checks): one
+The smoke test asserts on the toasts the plugin would raise (45 checks): one
 toast per waiting permission, silence for a permission answered inside the grace
 window, coalesced completion events, silence for a turn inside `minTurnMs`,
 subagent suppression, error text, and the 1.18.x shapes (`properties.info`, a
 `setup` that must not fail without an event stream, two turns inside one
 long-lived process toasting twice, the re-emitted user message not re-arming
-the completion, and the V1 `server()` defaults of an immediate ask).
+the completion, the V1 `server()` defaults of an immediate ask, and the startup
+line registration writes).
 
 ## License
 

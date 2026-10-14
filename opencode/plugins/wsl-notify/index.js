@@ -100,6 +100,26 @@ function debug(line) {
   void appendFile(DEBUG_LOG, `${new Date().toISOString()} ${INSTANCE} ${line}\n`).catch(() => {})
 }
 
+// One line per process as soon as the plugin is actually registered, written
+// whether or not debugging is on. It is the only way to tell "the plugin never
+// loaded" (no line at all) apart from "it loaded and stayed quiet", which is
+// otherwise indistinguishable from the outside — the question that came up when a
+// toast went missing on a host where the plugin had simply not been refreshed.
+function noteLoaded(where) {
+  if (state.loadedAt) return
+  state.loadedAt = new Date().toISOString()
+  let powershell = ""
+  try {
+    powershell = resolvePowerShell() ?? "none"
+  } catch {
+    powershell = "error"
+  }
+  void appendFile(
+    DEBUG_LOG,
+    `${state.loadedAt} ${INSTANCE} loaded path=${where} powershell=${powershell}\n`,
+  ).catch(() => {})
+}
+
 // Dedupe: one toast per request. The key is the request id (form/permission) or
 // the session plus turn (completion), never the event id, because V2 delivers one
 // event to several plugin instances, re-emits `permission.asked` for a pending
@@ -114,6 +134,7 @@ const state = (globalThis[STATE_KEY] ??= {
   sessions: new Map(),
   priming: new Set(),
   userMessage: new Map(),
+  loadedAt: undefined,
   warned: new Set(),
   resolved: false,
   powershell: undefined,
@@ -618,6 +639,7 @@ export default {
 
     const controller = new AbortController()
     const prime = (sessionID) => primeSession(ctx, sessionID)
+    noteLoaded("v2")
 
     void (async () => {
       try {
@@ -641,6 +663,7 @@ export default {
   // V1: the server calls this and uses the returned hooks. V1 loads the plugin
   // once per process, and its `session.idle` is the completion event.
   async server() {
+    noteLoaded("v1")
     return {
       event: async ({ event }) => {
         try {
