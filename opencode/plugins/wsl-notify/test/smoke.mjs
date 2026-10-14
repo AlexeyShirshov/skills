@@ -346,6 +346,55 @@ console.log("1.18.x (V1 context)")
   check("setup without an event stream does not throw", !blew)
   check("setup without an event stream returns no cleanup", result === undefined)
 }
+{
+  // Several turns in one long-lived process (the TUI keeps one server for the
+  // whole session). 1.18.x has no `session.execution.started`, so the turn
+  // boundary has to come from a new user message — otherwise only the first
+  // finished turn of a session would ever toast.
+  const raised = await run([
+    { id: "v1_turn1", type: "session.idle", properties: { sessionID: SESSION } },
+    { id: "v1_user2", type: "message.updated", properties: { sessionID: SESSION, info: { id: "msg_u2", role: "user" } } },
+    { id: "v1_busy2", type: "session.status", properties: { sessionID: SESSION, status: { type: "busy" } } },
+    { id: "v1_turn2", type: "session.idle", properties: { sessionID: SESSION } },
+  ])
+  check("a second turn in the same process toasts too", raised.length === 2, `got ${raised.length}`)
+}
+{
+  // 1.18.x re-emits the same user message with its summary right before the turn
+  // ends. That re-emission must not release the completion key, or the re-emitted
+  // `session.idle` would toast a second time for the same turn.
+  const raised = await run([
+    { id: "v1_reemit1", type: "message.updated", properties: { sessionID: SESSION, info: { id: "msg_same", role: "user" } } },
+    { id: "v1_reemit2", type: "session.idle", properties: { sessionID: SESSION } },
+    {
+      id: "v1_reemit3",
+      type: "message.updated",
+      properties: { sessionID: SESSION, info: { id: "msg_same", role: "user", summary: { diffs: [] } } },
+    },
+    { id: "v1_reemit4", type: "session.idle", properties: { sessionID: SESSION } },
+  ])
+  check("a re-emitted user message does not re-arm the completion", raised.length === 1, `got ${raised.length}`)
+}
+{
+  // No turn boundary between them: the legacy re-emission stays coalesced.
+  const raised = await run([
+    { id: "v1_dup1", type: "session.idle", properties: { sessionID: SESSION } },
+    { id: "v1_dup2", type: "session.idle", properties: { sessionID: SESSION } },
+  ])
+  check("idle re-emitted without a new turn stays quiet", raised.length === 1, `got ${raised.length}`)
+}
+{
+  // The user message is the turn-start mark, so `minTurnMs` works on 1.18.x too.
+  const raised = await run(
+    [
+      { id: "v1_short_start", type: "message.updated", properties: { sessionID: SESSION, info: { role: "user" } } },
+      { id: "v1_short_end", type: "session.idle", properties: { sessionID: SESSION } },
+    ],
+    { minTurnMs: 500 },
+    10,
+  )
+  check("V1 turn inside minTurnMs stays silent", raised.length === 0, `got ${raised.length}`)
+}
 
 await rm(dir, { recursive: true, force: true })
 

@@ -59,6 +59,36 @@ const COMPLETE_EVENTS = new Set(["session.execution.succeeded", "session.idle"])
 const ERROR_EVENTS = new Set(["session.execution.failed", "session.error"])
 const SESSION_START_EVENTS = new Set(["session.execution.started"])
 
+// When does a new turn begin? V2 says so with `session.execution.started`; 1.18.x
+// never emits that, so there a turn begins with a user message — but only with a
+// *new* one: 1.18.x re-emits the same message later with its summary, and treating
+// that re-emission as a new turn would both release the completion key and reset
+// the short-turn mark right before the turn ends (observed live: held=2ms, so
+// `minTurnMs` swallowed the toast). Without any turn boundary the completion key
+// is never released and a long-lived process (the TUI keeps one server for the
+// whole session) would toast only the very first finished turn.
+function turnStart(event) {
+  const type = event?.type
+  if (SESSION_START_EVENTS.has(type)) return true
+  if (type !== "message.updated") return false
+
+  const info = event.data?.info ?? event.properties?.info ?? event.data ?? event.properties
+  if (info?.role !== "user") return false
+
+  const sessionID = sessionIDOf(event)
+  const id = info.id ?? event.data?.messageID ?? event.properties?.messageID
+  if (!sessionID || id === undefined) return true
+  if (state.userMessage.get(sessionID) === id) return false
+  state.userMessage.set(sessionID, id)
+  if (state.userMessage.size > MAX_SEEN) {
+    for (const oldest of state.userMessage.keys()) {
+      state.userMessage.delete(oldest)
+      if (state.userMessage.size <= MAX_SEEN - 64) break
+    }
+  }
+  return true
+}
+
 // Diagnostics: `WSL_NOTIFY_DEBUG=1` in the environment of the opencode process
 // writes every decision (toast/skip) to WSL_NOTIFY_DEBUG_LOG
 // (default `$TMPDIR/wsl-notify.log`).
@@ -83,6 +113,7 @@ const state = (globalThis[STATE_KEY] ??= {
   started: new Map(),
   sessions: new Map(),
   priming: new Set(),
+  userMessage: new Map(),
   warned: new Set(),
   resolved: false,
   powershell: undefined,
@@ -234,13 +265,14 @@ function forget(event) {
     forgetKey(id === undefined || id === null ? undefined : `form:${id}`)
   }
 
-  // A new execution starts the next turn: allow the next completion to toast,
-  // and remember when the turn began for the `minTurnMs` window.
-  if (SESSION_START_EVENTS.has(event?.type)) {
+  // A new turn begins: release the completion key so the next completion can
+  // toast, and remember when the turn began for the `minTurnMs` window. The mark
+  // is never reset while a turn is running, so a late event cannot shorten it.
+  if (turnStart(event)) {
     const sessionID = sessionIDOf(event)
     forgetKey(`done:${sessionID}`)
     forgetKey(`failed:${sessionID}`)
-    if (sessionID) {
+    if (sessionID && !state.started.has(sessionID)) {
       state.started.set(sessionID, Date.now())
       if (state.started.size > MAX_SEEN) {
         for (const oldest of state.started.keys()) {
@@ -396,6 +428,7 @@ function track(event) {
 
   if (type === "session.deleted") {
     state.sessions.delete(sessionID)
+    state.userMessage.delete(sessionID)
     return
   }
 
