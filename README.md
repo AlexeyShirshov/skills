@@ -92,7 +92,7 @@ Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per p
 
 | Plugin | Description |
 | --- | --- |
-| [`wsl-notify`](opencode/plugins/wsl-notify) | Windows toast notifications for OpenCode — permission, question, completion and error events. Zero dependencies, one entrypoint for OpenCode V1 and V2, works from WSL (`powershell.exe` interop) and native Windows. |
+| [`wsl-notify`](opencode/plugins/wsl-notify) [![npm](https://img.shields.io/npm/v/wsl-notify)](https://www.npmjs.com/package/wsl-notify) | Windows toast notifications for OpenCode — permission, question, completion and error events. Zero dependencies, one entrypoint for OpenCode V1 and V2, works from WSL (`powershell.exe` interop) and native Windows. |
 
 Install the published package in `opencode.json(c)` (`plugins` on V2, `plugin` on V1), or copy a plugin's
 `index.js` into `<config>/plugins/` and let opencode discover it locally. See each plugin's README for
