@@ -277,7 +277,7 @@ templates that reference them
 [`check.md`](../../opencode/pdca-dotnet/assets/agents/check.md)) and the compact implementation of
 the gate —
 [`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
-An overview of the whole family is in [`docs/pdca-guide.md`](../pdca-guide.md).
+An overview of the whole family is in [`docs/articles/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 

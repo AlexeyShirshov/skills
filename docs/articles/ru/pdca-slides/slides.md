@@ -475,7 +475,7 @@ layout: end
 - Инженерный цикл для кода, тестов и конфигурации — <code style="white-space: nowrap">pdca-coder</code>
 - .NET-вариант со своими гейтами — <code style="white-space: nowrap">pdca-dotnet</code>
 - Пакет задач с параллельными лейнами — <code style="white-space: nowrap">pdca-collection</code>
-- Полный разбор всего семейства — путеводитель <code>docs/ru/pdca-guide.md</code>
+- Полный разбор всего семейства — путеводитель <code>docs/articles/ru/pdca-guide.md</code>
 
 <div class="pt-8 text-sm opacity-60">
 Нормативные утверждения сверены со статьёй и репозиторием на коммите <code>065e2b8</code>.

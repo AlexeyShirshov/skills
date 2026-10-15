@@ -248,7 +248,7 @@ not carried through.
   tests of the skill's text and the diagram rendering, plus a scenario matrix **marked as
   static** (not proof of behaviour); the diagram — `assets/diagram/` (generator
   `gen_collection.py`).
-- An overview of the whole family is the guide [`docs/pdca-guide.md`](../pdca-guide.md).
+- An overview of the whole family is the guide [`docs/articles/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 

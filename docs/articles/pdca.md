@@ -233,7 +233,7 @@ after an escalation as well.
 ## Where to go next
 
 - A full walkthrough of the whole family — gates, counters, roles, modes, memory and evidence — is
-  in the guide [`docs/pdca-guide.md`](../pdca-guide.md).
+  in the guide [`docs/articles/pdca-guide.md`](pdca-guide.md).
 - The normative contract of the domain-neutral cycle is the skill file
   [`opencode/pdca/SKILL.md`](../../opencode/pdca/SKILL.md).
 - The engineering cycle of the same core for code, tests, documentation and configuration is the

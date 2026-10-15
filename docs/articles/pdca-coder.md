@@ -198,7 +198,7 @@ domain-neutral [`pdca`](pdca.md); if there are many independent tasks — [`pdca
 The family's common mechanics — gates, the `N`/`r`/`n/3` counters, memory and evidence — are
 covered in the article about the domain-neutral [`pdca`](pdca.md); the full text of the contract
 lives in [`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md), and an overview of the
-whole family is in the guide [`docs/pdca-guide.md`](../pdca-guide.md).
+whole family is in the guide [`docs/articles/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 

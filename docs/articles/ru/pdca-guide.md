@@ -1281,12 +1281,12 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 
 Четыре самостоятельные статьи разбирают каждый скилл семейства отдельно: назначение и выбор,
 запуск, роли, ход цикла, учебный сценарий, ограничения. Путеводитель остаётся сводом общего ядра;
-сам он лежит в этом репозитории — `docs/pdca-guide.md`; русские статьи — в `docs/articles/ru/`,
+сам он лежит в этом репозитории — `docs/articles/ru/pdca-guide.md`; русские статьи — в `docs/articles/ru/`,
 их английский перевод — в `docs/articles/`.
 
-- [`articles/ru/pdca.md`](../articles/ru/pdca.md) — доменно-нейтральный цикл с проверяемым результатом.
-- [`articles/ru/pdca-coder.md`](../articles/ru/pdca-coder.md) — инженерный цикл: код, тесты, документация.
-- [`articles/ru/pdca-dotnet.md`](../articles/ru/pdca-dotnet.md) — .NET-вариант с дополнительными гейтами.
-- [`articles/ru/pdca-collection.md`](../articles/ru/pdca-collection.md) — пакет задач параллельными группами.
+- [`articles/ru/pdca.md`](pdca.md) — доменно-нейтральный цикл с проверяемым результатом.
+- [`articles/ru/pdca-coder.md`](pdca-coder.md) — инженерный цикл: код, тесты, документация.
+- [`articles/ru/pdca-dotnet.md`](pdca-dotnet.md) — .NET-вариант с дополнительными гейтами.
+- [`articles/ru/pdca-collection.md`](pdca-collection.md) — пакет задач параллельными группами.
 
 

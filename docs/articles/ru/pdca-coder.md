@@ -206,7 +206,7 @@ PLAN сформулировать критерии до того, как что-
 `N`/`r`/`n/3`, память и доказательства — разобрана в статье про доменно-нейтральный
 [`pdca`](pdca.md); полный текст контракта лежит в
 [`opencode/pdca-coder/SKILL.md`](../../../opencode/pdca-coder/SKILL.md), а обзор всего семейства —
-в путеводителе [`docs/pdca-guide.md`](../../ru/pdca-guide.md).
+в путеводителе [`docs/articles/ru/pdca-guide.md`](pdca-guide.md).
 
 ## Источники
 
