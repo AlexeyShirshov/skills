@@ -1,5 +1,7 @@
 # skills
 
+[![skills.sh](https://skills.sh/b/AlexeyShirshov/skills)](https://skills.sh/AlexeyShirshov/skills)
+
 Reusable agent skills for [opencode](https://opencode.ai). Each skill is a directory with a
 `SKILL.md` entry point (YAML frontmatter: `name`, `description`) plus optional `assets/`,
 `scripts/`, and `tests/`.
@@ -21,7 +23,26 @@ be obtained is a STOP rather than an open question.
 
 ## Install
 
-Copy the skill(s) you want into your opencode skills directory.
+Install a single skill with the [skills](https://skills.sh) CLI — one command per skill:
+
+```sh
+npx skills add AlexeyShirshov/skills@pdca
+npx skills add AlexeyShirshov/skills@pdca-coder
+npx skills add AlexeyShirshov/skills@pdca-dotnet
+npx skills add AlexeyShirshov/skills@pdca-collection
+```
+
+Add `-g` for a user-level install (all projects) and `-y` to skip prompts:
+
+```sh
+npx skills add AlexeyShirshov/skills@pdca-coder -g -y
+```
+
+Without `-g` the CLI targets the current project.
+
+### From a checkout
+
+Clone the repository and copy the skill(s) you want into an opencode skills directory.
 
 Global (all projects):
 
