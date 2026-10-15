@@ -1,278 +1,276 @@
-# Коллекция задач: как `pdca-collection` координирует несколько PDCA-циклов
+# A batch of tasks: how `pdca-collection` coordinates several PDCA cycles
 
-## 1. Проблема: один цикл — одна задача
+## 1. The problem: one cycle — one task
 
-Цикл PDCA (PLAN → DO → CHECK → ACT) устроен как дисциплина вокруг **одной** задачи с
-проверяемым результатом: планируем, делаем, проверяем, завершаем. Пока задача одна, всё
-хорошо. Но настоящая работа редко приходит поштучно. Чаще это **пакет**: список задач,
-milestone (крупная цель, разбитая на пункты), набор правок, которые можно делать
-параллельно. Внутри пакета пункты бывают независимы, бывают связаны, а бывает и так, что
-две задачи лезут в одни и те же файлы.
+The PDCA cycle (PLAN → DO → CHECK → ACT) is built as a discipline around **one** task with a
+verifiable result: plan, do, verify, finish. While there is one task, all is well. But real work
+rarely arrives one piece at a time. More often it is a **batch**: a list of tasks, a milestone (a
+large goal split into items), a set of edits that can be done in parallel. Inside a batch the items
+are sometimes independent, sometimes related, and sometimes two tasks reach into the same files.
 
-Если гнать такой список через одиночный PDCA-цикл **последовательно**, вы теряете всё,
-что даёт параллелизм, и растягиваете работу. Если запускать несколько циклов **руками**,
-начинается хаос: циклы конкурируют за одни файлы, непонятно, какие ветки слиты, какие
-брошены, а какие ещё в работе. Ответ на эту проблему — скилл `pdca-collection`.
+If such a list is driven through a single PDCA cycle **sequentially**, you lose everything that
+parallelism offers and stretch the work out. If several cycles are launched **by hand**, chaos
+begins: the cycles compete for the same files, and it is unclear which branches are merged, which
+were abandoned and which are still in progress. The answer to this problem is the `pdca-collection`
+skill.
 
-`pdca-collection` — это **стек-нейтральный верхний уровень над PDCA-циклом**: список
-задач, разбитый на **группы**. Он не дублирует и не переопределяет базовую машину
-состояний и гейты (переходы между фазами цикла), а добавляет три вещи:
-кластеризацию (разбиение списка на параллельные группы), изоляцию (каждая группа в своём
-рабочем каталоге) и корректное завершение (слияние только того, что действительно готово).
-Стек-нейтральность означает, что .NET не требуется: подойдёт любой язык и любая задача с
-проверяемым результатом.
+`pdca-collection` is a **stack-neutral level above the PDCA cycle**: a list of tasks split into
+**groups**. It does not duplicate or redefine the base state machine and gates (the transitions
+between the cycle's phases) but adds three things: clustering (splitting the list into parallel
+groups), isolation (each group in its own working directory) and correct completion (merging only
+what is genuinely done). Stack-neutrality means .NET is not required: any language and any task
+with a verifiable result will do.
 
-**Когда выбирать `pdca-collection`:**
+**When to pick `pdca-collection`:**
 
-- у вас **пакет задач** или milestone, который нужно провести через PDCA;
-- задачи **независимы** либо распадаются на небольшие связные цепочки;
-- их **footprint** (какие файлы и модули они трогают) в основном не пересекается;
-- вы хотите **параллельный** прогон, а не длинную последовательность.
+- you have a **batch of tasks** or a milestone that must be taken through PDCA;
+- the tasks are **independent** or fall into small related chains;
+- their **footprint** (which files and modules they touch) mostly does not intersect;
+- you want a **parallel** run rather than a long sequence.
 
-**Когда не выбирать:** если задача ровно одна и независимых пунктов нет — это обычный
-PDCA-цикл (`pdca-coder`, `pdca-dotnet` или универсальный `pdca`). Пустой вход — тоже не
-случай для коллекции: правильный ответ — сообщить, что делать нечего.
+**When not to pick it:** if there is exactly one task and no independent items, that is an ordinary
+PDCA cycle (`pdca-coder`, `pdca-dotnet` or the universal `pdca`). An empty input is not a case for
+the collection either: the right answer is to report that there is nothing to do.
 
-## 2. Запуск
+## 2. Launching
 
-Скилл вызывается **явно по имени** — `pdca-collection` — либо по фразам-триггерам, которые
-описывают именно пакетную работу: «**список задач**», «**milestone**» / «**милстоун**»,
-«**параллельные группы**» — они перечислены в описании скилла; разведение с одиночным циклом
-(«по циклу» без уточнения ведёт в `pdca-coder`) задаёт хост-правило `AGENTS.md` репозитория
-`opencode-config`, в этот репозиторий не входящее. Вход — список задач **в любом виде**:
-строгий формат не требуется, потому что разбиением на группы занимается коллекционный PLAN —
-и то лишь после собственного PLAN каждой задачи, а не вы.
+The skill is invoked **explicitly by name** — `pdca-collection` — or by the phrase triggers that
+describe precisely batch work: "**список задач**", "**milestone**" / "**милстоун**", "**параллельные
+группы**" — they are listed in the skill's description; the separation from the single cycle ("по
+циклу" without qualification leads into `pdca-coder`) is set by the host rule `AGENTS.md` of the
+`opencode-config` repository, which is not part of this repository. The input is a list of tasks
+**in any form**: no strict format is required, because splitting into groups is the collection
+PLAN's job — and that only after each task has had its own PLAN, not yours.
 
-## 3. Участники: базовые роли плюс один агент-обёртка
+## 3. Participants: the base roles plus one wrapper agent
 
-Коллекция **не вводит новых ролей**. У `pdca-coder` и `pdca-dotnet` планирует по-прежнему
-`planner`, делает `coder`, выносит вердикт `check`, эскалирует `escalate`, собирает факты
-`scout`; у универсального `pdca` те же роли называются `pdca-planner`, `pdca-executor`,
-`pdca-check` и `pdca-escalate`, а факты по-прежнему собирает `scout`. Единственное
-добавление — **агент-обёртка `pdca-orchestrator`** (дешёвый тир), который исполняет **одну**
-группу: ведёт её как один параллельный поток работ. Собственный PLAN каждой задачи он
-проводит ещё на фазе P (вход `COLLECTION TASK PLAN`) и останавливается на границе PLAN→DO,
-передавая управление коллекции (`plan_handoff`); в лейне **тот же** цикл продолжается с DO —
-повторного PLAN по умолчанию нет.
+The collection **introduces no new roles**. For `pdca-coder` and `pdca-dotnet`, `planner` still
+plans, `coder` does, `check` renders the verdict, `escalate` escalates and `scout` gathers facts;
+for the universal `pdca` the same roles are called `pdca-planner`, `pdca-executor`, `pdca-check` and
+`pdca-escalate`, and facts are still gathered by `scout`. The only addition is the **wrapper agent
+`pdca-orchestrator`** (the cheap tier), which runs **one** group: it drives that group as a single
+parallel stream of work. It conducts each task's own PLAN already in phase P (the `COLLECTION TASK
+PLAN` input) and stops at the PLAN→DO boundary, handing control to the collection
+(`plan_handoff`); in the lane **the same** cycle continues from DO — by default there is no second
+PLAN.
 
-У обёртки жёсткие ограничения, и это важно: `pdca-orchestrator` **не принимает решений**.
-Он не решает, что задача невыполнима, не готова или независима, не выбирает объём и не
-судит результат — любой вопрос адресует `planner` (в фазе PLAN), а не пользователю. Он
-также **не правит файлы и не запускает команды**: инфраструктуру (worktree, ветки),
-`git merge` и обязательные проверки исполняет `coder` по команде **primary-оркестратора
-коллекции** — именно он ведёт трекинг, следит за гейтами и принимает решение о слиянии.
+The wrapper has hard constraints, and this matters: `pdca-orchestrator` **does not make
+decisions**. It does not decide that a task is infeasible, not ready or independent, does not choose
+the scope and does not judge the result — any question is addressed to `planner` (in the PLAN
+phase), not to the user. It also **does not edit files or run commands**: the infrastructure
+(worktree, branches), `git merge` and the mandatory checks are performed by `coder` on the command
+of the collection's **primary orchestrator** — that is who keeps the tracking, watches the gates and
+makes the merge decision.
 
-Отдельно выбирается **вариант цикла на каждую задачу**: `.NET/C#` → `pdca-dotnet`, другой
-код → `pdca-coder`, иначе → универсальный `pdca` (по умолчанию `pdca`). База у
-`pdca-coder` и `pdca-dotnet` идентична, так что коллекция действительно стек-нейтральна.
-Верхнеуровневый primary-оркестратор (главная сессия, ведущая всю коллекцию) тоже не правит
-файлы и не запускает команды.
+Separately, the **cycle variant is chosen per task**: `.NET/C#` → `pdca-dotnet`, other code →
+`pdca-coder`, otherwise → the universal `pdca` (`pdca` by default). The base of `pdca-coder` and
+`pdca-dotnet` is identical, so the collection really is stack-neutral. The top-level primary
+orchestrator (the main session driving the whole collection) also does not edit files or run
+commands.
 
-## 4. Как это работает
+## 4. How it works
 
-### P — собственные PLAN задач, барьер, кластеризация
+### P — the tasks' own PLANs, the barrier, clustering
 
-Порядок жёсткий: **сначала настоящий PLAN каждой задачи, затем ALL-barrier, и только потом
-DAG и группы.** `pdca-orchestrator` проводит собственную фазу PLAN задачи (её варианта) во
-входе **COLLECTION TASK PLAN**: `scout` собирает факты, `planner` принимает решения,
-`coder` персистит статус. Задача останавливается на границе PLAN→DO и отдаёт управление
-коллекции (handoff `plan_handoff`); код на этом шаге не пишется. Пока собственный PLAN
-**всех** задач не готов (`plan_state=ready`), DAG не строится и ранний DO запрещён; задача
-без осмысленного плана остаётся gap'ом и барьер не проходит.
+The order is strict: **first the real PLAN of every task, then the ALL-barrier, and only then the
+DAG and the groups.** `pdca-orchestrator` conducts the task's own PLAN phase (of its variant) in the
+**COLLECTION TASK PLAN** input: `scout` gathers facts, `planner` makes decisions, `coder` persists
+the status. The task stops at the PLAN→DO boundary and hands control to the collection (a
+`plan_handoff`); no code is written at this step. Until the own PLAN of **all** tasks is ready
+(`plan_state=ready`), the DAG is not built and an early DO is forbidden; a task without a
+meaningful plan remains a gap and does not pass the barrier.
 
-Отдельно контракт закрывает **повторный заход**: после терминального `incomplete`/STOP прежняя
-терминальная причина — **обязательный вход** собственного PLAN задачи, и `planner` либо
-доказывает, что провалившееся доказательство теперь получаемо, либо переопределяет оракул.
-Молчаливый перезапуск того же критерия запрещён — иначе задача снова остаётся gap'ом.
+Separately, the contract closes the **re-entry** case: after a terminal `incomplete`/STOP the
+previous terminal cause is a **mandatory input** to the task's own PLAN, and `planner` either proves
+that the failed evidence is now obtainable or redefines the oracle. A silent re-run of the same
+criterion is forbidden — otherwise the task again remains a gap.
 
-После барьера валидируются противоречия из handoff-метаданных (плановый footprint,
-требования к результатам предшественников, допущения) и `planner` строит **DAG** —
-направленный ациклический граф зависимостей — и режет его на группы. Группа — это связная
-компонента или линия по зависимостям и общим файлам; **footprint групп не пересекается**, а
-внутри группы задачи упорядочены **топологически** (сначала те, от которых зависят
-остальные). Список групп, порядок и вектор ревизий PLAN хранятся в файле статуса коллекции.
+After the barrier, contradictions from the handoff metadata (the planned footprint, requirements on
+predecessors' results, assumptions) are validated, and `planner` builds the **DAG** — a directed
+acyclic dependency graph — and cuts it into groups. A group is a connected component or a line by
+dependencies and shared files; the **footprints of the groups do not intersect**, and inside a group
+the tasks are ordered **topologically** (those that others depend on come first). The list of
+groups, the order and the PLAN revision vector are kept in the collection status file.
 
-Последний шаг фазы P — **туду-список в сайдбаре** (`todowrite`), и ведёт его только
-primary-оркестратор коллекции: при двух и более группах пункт заводится на группу, при
-одной — на каждую её задачу в топологическом порядке. Это сессионное зеркало, а не источник
-истины: истина — файл статуса коллекции, из него список пересобирается после компакции.
+The last step of phase P is the **todo list in the sidebar** (`todowrite`), and only the
+collection's primary orchestrator keeps it: with two or more groups, an item is created per group;
+with one group, per task in topological order. This is a session mirror, not the source of truth:
+the truth is the collection status file, and the list is rebuilt from it after compaction.
 
-Если группа получилась **одна** — это не сбой, а **деградация к одному лейну**: никакой
-изоляции не нужно (см. ниже). Уже существующие коммиты текущей ветки при этом остаются на
-месте.
+If the result is a **single** group, that is not a failure but a **degradation to one lane**: no
+isolation is needed (see below). The current branch's existing commits stay in place.
 
-### D — инфраструктура, трекинг и слияние
+### D — infrastructure, tracking and merging
 
-Лейны (worktree, ветки группы/задач, исполнители) аллоцируются **только** после ALL-barrier
-и персистентной привязки расписания — до этого шага их нет. При **двух и более** группах
-`coder` создаёт для каждой свой **worktree** — изолированную
-рабочую копию репозитория в отдельном каталоге `<repo>-worktrees/<collection-id>/<group>` —
-и свою ветку `collection/<id>/group-<g>`. Внутри группы задачи идут **последовательно**:
-ветка задачи `collection/<id>/task-<g>-<k>` ответвляется от **закоммиченного tip**
-(последнего коммита) предыдущей задачи. Каждая задача входит в лейн уже с готовым
-собственным PLAN: `pdca-orchestrator` проверяет применимость плана к текущему состоянию и
-продолжает **тот же** цикл с DO (не запуская новый PLAN).
+The lanes (worktrees, group/task branches, executors) are allocated **only** after the ALL-barrier
+and a persistent binding of the schedule — before that step they do not exist. With **two or more**
+groups, `coder` creates for each its own **worktree** — an isolated working copy of the repository
+in a separate directory `<repo>-worktrees/<collection-id>/<group>` — and its own branch
+`collection/<id>/group-<g>`. Inside a group the tasks go **sequentially**: a task branch
+`collection/<id>/task-<g>-<k>` branches off the **committed tip** (the last commit) of the previous
+task. Each task enters the lane already with its own PLAN ready: `pdca-orchestrator` checks the
+plan's applicability to the current state and continues **that same** cycle from DO (without
+launching a new PLAN).
 
-Группы запускаются параллельно — по одному `pdca-orchestrator` на группу, не больше
-**cap** одновременно. По умолчанию `cap = 4` (настраивается), фактический потолок —
-`min(#групп, cap)`. После каждой задачи в разрешённом режиме `coder` делает **автокоммит** —
-и только файлов задачи (`git add <paths>`, никогда `git add -A`, чтобы не прихватить чужое).
-При одной группе worktree, ветки группы/задач и слияние **не создаются**: работа идёт
-в текущем каталоге на текущей ветке.
+The groups run in parallel — one `pdca-orchestrator` per group, no more than **cap** at a time. By
+default `cap = 4` (configurable), and the actual ceiling is `min(#groups, cap)`. After each task, in
+the permitted mode, `coder` makes an **auto-commit** — and only of the task's files (`git add
+<paths>`, never `git add -A`, so as not to pick up someone else's). With one group, no worktree,
+group/task branches or merging are created: the work goes on in the current directory on the current
+branch.
 
-Ключевой элемент — **барьер merge**. Слияние начинается только тогда, когда **все** лейны
-(параллельные потоки работ) достигли терминального состояния: `done` или `incomplete` с
-явным исходом; работающий лейн рано не мержится. Готовность здесь означает
-**терминальность, а не успех**. После этого `coder`
-последовательно выполняет `git merge --no-ff` (слияние с принудительным созданием коммита
-слияния, чтобы сохранить историю ветки) **только для групп `done`**; у issue-задач сообщение
-merge начинается с `#<n>`. Успешно влитая группа
-переходит `done` → `merged`. Группа `incomplete` **не мержится никогда**, даже если до сбоя
-у неё были успешные задачи и коммиты: её tip в интеграцию не входит.
+The key element is the **merge barrier**. Merging begins only when **all** lanes (parallel streams
+of work) have reached a terminal state: `done`, or `incomplete` with an explicit outcome; a running
+lane is not merged early. Readiness here means **terminality, not success**. After that, `coder`
+sequentially runs `git merge --no-ff` (a merge with a forced merge commit, to preserve the branch
+history) **only for the `done` groups**; for issue tasks the merge message begins with `#<n>`. A
+successfully merged group goes `done` → `merged`. An `incomplete` group is **never merged**, even if
+it had successful tasks and commits before the failure: its tip does not enter the integration.
 
-Если слияние конфликтует, `coder` делает `git merge --abort` (откат незавершённого
-слияния). Группа **эскалируется**: `escalate` (сильная роль) решает — разрешить вручную,
-переставить порядок или пометить группу `incomplete`. Эскалация **не исполняет**: решение
-«разрешить вручную» или «переставить» возвращает управление в фазу слияния, и оркестратор сам
-диспетчит `coder` на повторный `git merge --no-ff` **незамерженного** tip. Порядок можно
-менять только у ещё не интегрированных групп; ранее влитые tip не трогаются — никаких
-rerun/reset/revert/remerge. Повторный конфликт снова ведёт к `abort` и эскалации, без нового
-счётчика попыток.
+If a merge conflicts, `coder` runs `git merge --abort` (rolling back the unfinished merge). The
+group is **escalated**: `escalate` (the strong role) decides — to resolve manually, to reorder, or
+to mark the group `incomplete`. The escalation **does not execute**: a decision to "resolve
+manually" or "reorder" returns control to the merge phase, and the orchestrator itself dispatches
+`coder` to repeat `git merge --no-ff` on the **unmerged** tip. The order can only be changed for
+groups not yet integrated; previously merged tips are not touched — no rerun/reset/revert/remerge. A
+repeated conflict again leads to `abort` and an escalation, with no new attempt counter.
 
-### C — общая верификация
+### C — the common verification
 
-Общая проверка коллекции — это **штатный CHECK базового контракта** (два такта: дешёвый сбор
-сырых измерений → вердикт `check`), а не отдельный самодельный этап. Полный CHECK родительской
-коллекции идёт, когда все выбранные `done`-группы интегрированы и нет активного конфликта или
-незавершённого merge-состояния. Оркестратор **всегда** — даже когда все проверки зелёные —
-собирает через `coder` и `scout` обязательные отчёты (тесты универсально плюс проверки по типу
-работы: сборка/линтер для кода, рендер для дизайна и презентаций, замеры — если hot path, и
-отчёты review-линз) и передаёт агрегат `check`. Сырые измерения никогда сами не решают PASS:
-вердикт выдаёт `check`.
+The collection's common verification is the **standard CHECK of the base contract** (two beats: a
+cheap gathering of raw measurements → the `check` verdict), not a separate home-made stage. The full
+CHECK of the parent collection runs when all the selected `done` groups are integrated and there is
+no active conflict or unfinished merge state. The orchestrator **always** — even when all checks are
+green — gathers through `coder` and `scout` the mandatory reports (tests universally plus checks by
+type of work: build/linter for code, rendering for design and presentations, measurements if there
+is a hot path, and the review lenses' reports) and passes the aggregate to `check`. Raw
+measurements never decide a PASS by themselves: the verdict is rendered by `check`.
 
-**PASS может сосуществовать с `incomplete`-группами**. Отчёт о завершении
-(сколько задач и групп доведено) и вердикт верификации интегрированного дерева — раздельные
-поля. Даже если выбранных `done`-групп нет, штатная проверка всё равно выполняется на
-интегрированном дереве, а исходные задачи не помечаются `done` задним числом.
+**A PASS can coexist with `incomplete` groups.** The completion report (how many tasks and groups
+were carried through) and the verification verdict of the integrated tree are separate fields. Even
+if there are no selected `done` groups, the standard check is still performed on the integrated
+tree, and the original tasks are not marked `done` retroactively.
 
-Если проверка нашла **реальный дефект**, открывается **стандартная корректирующая задача**
-на текущем интегрированном дереве/бранче (вариант цикла — по общему правилу выбора задачи)
-со своим связанным статус-файлом. Её ACT возвращает управление в **полный** родительский
-CHECK — перезапускаются все обязательные гейты, а не только упавший тест. Если обязательный
-отчёт отсутствует, недостоверен или сломалось окружение — это **не дефект кода** и не повод
-править код: выполняется **re-gather** (повторный сбор отчёта), а состояние проверки может
-остаться `blocked`. Правила ревизий/эскалации — базовые (`r`, `n/3`), без коллекционного
-счётчика.
+If the check finds a **real defect**, a **standard corrective task** is opened on the current
+integrated tree/branch (the cycle variant by the general task-selection rule) with its own linked
+status file. Its ACT returns control to the **full** parent CHECK — all mandatory gates are re-run,
+not just the failed test. If a mandatory report is missing, unreliable, or the environment broke,
+that is **not a code defect** and no reason to edit code: a **re-gather** (a repeated gathering of
+the report) is performed, and the check state may remain `blocked`. The revision/escalation rules
+are the base ones (`r`, `n/3`), with no collection counter.
 
-### A — завершение
+### A — completion
 
-Завершение разрешает **только PASS общей проверки**. Отчёт перечисляет группы, задачи, ветки,
-`merged`/`incomplete`, evidence и результат корректирующих задач. `coder` сносит **только
-одноразовые** worktree и временные ветки групп/задач, которые `done`/`merged`. Worktree, ветки,
-коммиты и patch'и (применяемые «заплатки» с незакоммиченными изменениями) **`incomplete`-групп
-не удаляются никогда**: их refs (ссылки на ветки), patch-пути, статус- и evidence-пути
-сохраняются, проще всего — оставить всё на месте и явно записать это в статусе. Пока проверка
-красная, успеха и cleanup нет. **STOP до PASS — cleanup запрещён.**
+Completion is permitted **only by a PASS of the common verification**. The report lists the groups,
+tasks, branches, `merged`/`incomplete`, the evidence and the outcome of the corrective tasks.
+`coder` removes **only the one-off** worktrees and temporary group/task branches that are
+`done`/`merged`. The worktrees, branches, commits and patches (applied "band-aids" with uncommitted
+changes) of **`incomplete` groups are never deleted**: their refs (branch pointers), patch paths,
+status and evidence paths are preserved — most simply, leave everything in place and record that
+explicitly in the status. While the check is red, there is no success and no cleanup. **STOP before
+a PASS — no cleanup.**
 
-## 5. Учебный сценарий (помечен)
+## 5. A teaching scenario (marked)
 
-> Ниже — **учебный пример**, а не описание реального прогона.
+> Below is a **teaching example**, not a description of a real run.
 
-Представьте коллекцию из трёх групп: A, B, C. Группа B на второй задаче упирается в
-невозможность по контракту. Сбой сначала идёт в `planner` (PLAN): он пробует вернуть в DO
-(обычные loop-back и счётчики базового контракта) и, не сумев, **окончательно** закрывает
-задачу как `incomplete` — `coder` сохраняет её изменения как patch, возвращает только её
-пути к последнему зелёному tip и пишет причину в статус.
+Imagine a collection of three groups: A, B, C. Group B, on its second task, hits an impossibility by
+the contract. The failure first goes to `planner` (PLAN): it tries to return to DO (the base
+contract's usual loop-back and counters) and, having failed, **finally** closes the task as
+`incomplete` — `coder` saves its changes as a patch, returns only its paths to the last green tip,
+and writes the reason into the status.
 
-Что происходит дальше — и это главная идея:
+What happens next is the main idea:
 
-- **окончательный `incomplete` останавливает всю группу**: следующую задачу
-  `pdca-orchestrator` не берёт; все оставшиеся `pending` задачи группы B помечаются
-  `incomplete` с причиной «группа остановлена» и **не исполняются**;
-- **уже сделанные коммиты группы B и patch упавшей задачи сохраняются**;
-- **группа B не мержится** — её tip в интеграцию не входит;
-- **другие группы (A и C) продолжают** работу: остановка одной группы не останавливает
-  остальные лейны.
+- **a final `incomplete` stops the whole group**: `pdca-orchestrator` does not take the next task;
+  all remaining `pending` tasks of group B are marked `incomplete` with the reason "the group is
+  stopped" and are **not executed**;
+- **group B's already-made commits and the failed task's patch are preserved**;
+- **group B is not merged** — its tip does not enter the integration;
+- **the other groups (A and C) keep working**: one group stopping does not stop the other lanes.
 
-Когда все лейны терминальны, барьер merge пропускает только группы A и C (если они `done`):
-они последовательно вливаются `git merge --no-ff` и переходят `done` → `merged`. Группа B
-остаётся `incomplete`. Общая проверка выполняется на интегрированном дереве — и её вердикт
-описывает **интегрированный результат**, тогда как отчёт о завершении честно говорит, что
-часть групп не доведена.
+When all lanes are terminal, the merge barrier passes only groups A and C (if they are `done`): they
+are merged sequentially with `git merge --no-ff` and go `done` → `merged`. Group B stays
+`incomplete`. The common verification is performed on the integrated tree — and its verdict
+describes the **integrated result**, while the completion report honestly says that some groups were
+not carried through.
 
-## 6. Ограничения и неверные ожидания
+## 6. Limitations and false expectations
 
-- **Готовность ≠ успех.** Барьер merge ждёт терминальности всех лейнов, но это не значит,
-  что все они успешны. `incomplete` — нормальный терминальный исход.
-- **`incomplete` не мержится никогда**, даже при успешных коммитах внутри. Её результаты
-  сохраняются как refs/коммиты/patch, но в интеграцию не входят.
-- **Скилл сам не даёт права на commit/merge.** Разрешение на автокоммит для веток
-  `collection/**` и `merge --no-ff` даёт **проектный оверлей** (например, проектное
-  правило) или **явный запрос пользователя**; глобальные `AGENTS.md` скилл не расширяет. Без
-  разрешения коммитов и merge нет: группа идёт без них, а незавершённые результаты
-  сохраняются patch'ем и группа помечается `incomplete`.
-- **Push — никогда.** Это не часть коллекции ни в каком режиме.
-- **Конфликт merge → abort → escalate.** Автоматического «решения» конфликта нет; эскалация
-  только возвращает решение, исполняет снова `coder`.
-- **`blocked` — не статус группы или задачи.** Это состояние общей верификации: у групп и задач
-  статуса `blocked` нет, `incomplete` — следствие сбоя по контракту, не суждение лейна. Статусов
-  у группы ровно пять — `pending`, `in-progress`, `done`, `incomplete`, `merged`; `skipped`
-  («не выбрана к интеграции») — примечание интеграции, не статус; у задачи `merged` не бывает.
-- **Два механизма сбоя не смешиваются.** Терминальный `incomplete` задачи внутри лейна —
-  сбой отдельной задачи и решение `planner` её цикла; STOP корректирующей задачи — повтор
-  дефекта **общей** проверки по базовым `r`/`n`.
-- **Никаких автоматических rerun/remerge/recluster/reset/revert** и новых цепочек веток;
-  корректирующая задача — отдельная запись, а не дополнительный лейн.
-- **Успех корректирующей задачи не означает успех коллекции.** При STOP без допустимого
-  пересмотренного плана коллекция остаётся `unverified`, а исходные задачи — с прежними
-  статусами.
-- **Fallback.** Плоский primary включается, когда `pdca-orchestrator` недоступен: агента нет,
-  `subagent_depth` < 2 или хост запрещает субагенту вызывать `Task` (нет вложенной делегации).
-  Тогда оркестрировать некому, и primary берёт группы на себя: сам ведёт по одной задаче каждой
-  группы и запускает следующую по завершении, а на фазе P так же сам проводит `COLLECTION TASK
-  PLAN` каждой задачи (через `planner`/`coder`/`scout` её варианта), соблюдая ALL-barrier, и
-  продолжает сохранённый PLAN в лейне с DO. В автономном режиме fallback помечается строкой
-  `Notice:` и записанной причиной, в обычном — сообщением пользователю; запрет хоста не
-  обходится.
+- **Readiness ≠ success.** The merge barrier waits for all lanes to be terminal, but that does not
+  mean they all succeeded. `incomplete` is a normal terminal outcome.
+- **`incomplete` is never merged**, even with successful commits inside. Its results are preserved
+  as refs/commits/patch, but do not enter the integration.
+- **The skill itself does not grant the right to commit/merge.** Permission for auto-commits on
+  `collection/**` branches and for `merge --no-ff` is given by the **project overlay** (for example,
+  a project rule) or by an **explicit user request**; the skill does not extend global `AGENTS.md`.
+  Without permission there are no commits or merges: the group proceeds without them, unfinished
+  results are saved as a patch, and the group is marked `incomplete`.
+- **Push — never.** That is not part of the collection in any mode.
+- **Merge conflict → abort → escalate.** There is no automatic "resolution" of a conflict; an
+  escalation only returns a decision, and `coder` executes again.
+- **`blocked` is not a group or task status.** It is a state of the common verification: groups and
+  tasks have no `blocked` status; `incomplete` is a consequence of a contract failure, not a lane's
+  judgement. A group has exactly five statuses — `pending`, `in-progress`, `done`, `incomplete`,
+  `merged`; `skipped` ("not selected for integration") is an integration note, not a status; a task
+  never has `merged`.
+- **The two failure mechanisms are not mixed.** A task's terminal `incomplete` inside a lane is a
+  single task's failure and a decision of that cycle's `planner`; a STOP of a corrective task is a
+  recurrence of a defect of the **common** verification under the base `r`/`n`.
+- **No automatic rerun/remerge/recluster/reset/revert** and no new branch chains; a corrective task
+  is a separate record, not an extra lane.
+- **The success of a corrective task does not mean the collection succeeded.** On a STOP without an
+  admissible revised plan, the collection remains `unverified` and the original tasks keep their
+  previous statuses.
+- **Fallback.** The flat primary kicks in when `pdca-orchestrator` is unavailable: the agent is
+  absent, `subagent_depth` < 2, or the host forbids a subagent to call `Task` (no nested
+  delegation). Then there is no one to orchestrate, and the primary takes the groups on itself: it
+  drives one task per group itself and starts the next when the previous finishes, and in phase P it
+  likewise conducts each task's `COLLECTION TASK PLAN` itself (through its variant's
+  `planner`/`coder`/`scout`), respecting the ALL-barrier, and continues the saved PLAN in the lane
+  from DO. In autonomous mode the fallback is marked with a `Notice:` line and the recorded reason,
+  in normal mode with a message to the user; a host prohibition is not bypassed.
 
-## 7. Куда дальше
+## 7. Where to go next
 
-- Полный текст скилла, его роль (агент-обёртка `pdca-orchestrator`, вход `COLLECTION TASK PLAN`,
-  лейн группы), фазы P/D/C/A, статус, git-модель и семантика сбоя —
-  [`opencode/pdca-collection/SKILL.md`](../../opencode/pdca-collection/SKILL.md). Промпт-раннер
-  агента (`config/agents/pdca-orchestrator.md`), профили и `AGENTS.md` — хостовые артефакты
-  репозитория `opencode-config`; в этот репозиторий они не входят.
-- База цикла: [`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md) (для .NET —
-  идентичная база [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md)).
-  Соседние статьи семейства: [`pdca.md`](pdca.md) — доменно-нейтральное ядро,
-  [`pdca-coder.md`](pdca-coder.md) и [`pdca-dotnet.md`](pdca-dotnet.md) — инженерные варианты.
-- Проверки контракта — [`opencode/pdca-collection/tests/`](../../opencode/pdca-collection/tests/):
-  тесты текста скилла и рендера диаграммы плюс сценарная матрица, **помеченная как
-  статическая** (не доказательство поведения); диаграмма — `assets/diagram/` (генератор
+- The full text of the skill, its role (the wrapper agent `pdca-orchestrator`, the `COLLECTION TASK
+  PLAN` input, the group lane), the P/D/C/A phases, the status, the git model and the failure
+  semantics —
+  [`opencode/pdca-collection/SKILL.md`](../../opencode/pdca-collection/SKILL.md). The agent's prompt
+  runner (`config/agents/pdca-orchestrator.md`), the profiles and `AGENTS.md` are host artifacts of
+  the `opencode-config` repository; they are not part of this repository.
+- The cycle base: [`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md) (for .NET, the
+  identical base [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md)).
+  The family's neighbouring articles: [`pdca.md`](pdca.md) — the domain-neutral core,
+  [`pdca-coder.md`](pdca-coder.md) and [`pdca-dotnet.md`](pdca-dotnet.md) — the engineering
+  variants.
+- The contract checks — [`opencode/pdca-collection/tests/`](../../opencode/pdca-collection/tests/):
+  tests of the skill's text and the diagram rendering, plus a scenario matrix **marked as
+  static** (not proof of behaviour); the diagram — `assets/diagram/` (generator
   `gen_collection.py`).
-- Обзор всего семейства — путеводитель [`docs/pdca-guide.md`](../pdca-guide.md).
+- An overview of the whole family is the guide [`docs/pdca-guide.md`](../pdca-guide.md).
 
-## Источники
+## Sources
 
-Карта «утверждение → источник». Нормативные утверждения статьи сверены с текущими файлами
-репозитория (коммит `065e2b8`); при расхождении приоритет у
-`opencode/pdca-collection/SKILL.md`.
+The "claim → source" map. The article's normative claims were reconciled with the repository's
+current files (commit `065e2b8`); where they disagree, `opencode/pdca-collection/SKILL.md` takes
+precedence.
 
-| Утверждение в статье | Источник |
+| Claim in the article | Source |
 | --- | --- |
-| Роль верхнего уровня и стек-нейтральность; вариант цикла выбирается на задачу; собственный PLAN останавливается на границе PLAN→DO и продолжается в лейне; primary не правит файлы | `opencode/pdca-collection/SKILL.md:10-33` |
-| Автокоммит только по проектному оверлею или явному запросу; `push` никогда; режим одной группы | `opencode/pdca-collection/SKILL.md:35-45` |
-| P: собственный PLAN каждой задачи до DAG, ALL-barrier, gap без `ready`-placeholder, группы у `planner`, вектор ревизий, аллокация лейнов только после привязки расписания; повторный заход после терминального `incomplete`/STOP требует доказательства или нового оракула | `opencode/pdca-collection/SKILL.md:51-82` |
-| P: туду-список в сайдбаре (пункт на группу или на задачу), одна группа → один лейн, пустой вход | `opencode/pdca-collection/SKILL.md:83-105` |
-| D: worktree и ветки, cap, привязка расписания, барьер merge, `done → merged`, `#<n>` в сообщении merge, `incomplete` не мержится, конфликт/abort/эскалация; пять статусов группы, `skipped` — примечание интеграции, `blocked` — не статус | `opencode/pdca-collection/SKILL.md:109-155` |
-| C: штатный CHECK в два такта, обязательные отчёты и review-линзы, полная проверка после интеграции всех выбранных `done`-групп, PASS вместе с `incomplete`, корректирующая задача, re-gather, базовые `r`/`n`, STOP и `unverified`; механизм `incomplete` задачи в лейне со STOP корректирующей задачи не смешивается | `opencode/pdca-collection/SKILL.md:159-218` |
-| A: завершение только по PASS, состав отчёта, cleanup только `done`/`merged`, сохранение `incomplete`-результатов и статус/evidence-путей, STOP | `opencode/pdca-collection/SKILL.md:222-233` |
-| Лейн: ветки задач от tip, продолжение сохранённого PLAN с DO, остановка группы, сохранение коммитов/patch, другие группы продолжают, `blocked` не статус группы | `opencode/pdca-collection/SKILL.md:237-282` |
-| Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `opencode/pdca-collection/SKILL.md:284-304` |
-| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `opencode/pdca-collection/SKILL.md:306-336` |
-| Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `opencode/pdca-collection/SKILL.md:338-393` |
-| Параметры: cap = 4, worktree-каталог, merge-право, туду | `opencode/pdca-collection/SKILL.md:402-413` |
-| Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md:439-448` |
-| Тиры ролей (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
-| База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:936-970,120-146,552-614,49-91` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md:981-1015,118-144,600-662,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
-| Тексты контракта проверяются тестами, а сценарная матрица помечена как статическая (не доказательство поведения); хостовые артефакты (промпт-раннер `pdca-orchestrator`, профили, `AGENTS.md`) — вне этого репозитория | `opencode/pdca-collection/tests/test_plan_barrier.py` (в т.ч. `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |
+| The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md:10-33` |
+| Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md:35-45` |
+| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `planner`, the revision vector, lane allocation only after the schedule is bound; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md:51-82` |
+| P: the sidebar todo list (an item per group or per task), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md:83-105` |
+| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md:109-155` |
+| C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md:159-218` |
+| A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `opencode/pdca-collection/SKILL.md:222-233` |
+| The lane: task branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `opencode/pdca-collection/SKILL.md:237-282` |
+| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md:284-304` |
+| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md:306-336` |
+| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md:338-393` |
+| Parameters: cap = 4, the worktree directory, the merge right, the todo | `opencode/pdca-collection/SKILL.md:402-413` |
+| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md:439-448` |
+| The role tiers (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
+| The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:936-970,120-146,552-614,49-91` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md:981-1015,118-144,600-662,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
+| The contract texts are checked by tests, and the scenario matrix is marked as static (not proof of behaviour); the host artifacts (the `pdca-orchestrator` prompt runner, the profiles, `AGENTS.md`) are outside this repository | `opencode/pdca-collection/tests/test_plan_barrier.py` (including `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

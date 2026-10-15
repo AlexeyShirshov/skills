@@ -1,258 +1,268 @@
-# `pdca`: цикл, который доводит задачу до проверяемого результата
+# `pdca`: the cycle that carries a task to a verifiable result
 
-## Зачем нужен цикл и когда выбирать `pdca`
+## Why the cycle exists and when to pick `pdca`
 
-Обычная работа ассистента — последовательность действий: прочитал, поправил, запустил, сказал
-«готово». В ней три прорехи. Непонятно, что считалось успехом: критерий не сформулирован
-заранее, и «готово» — самооценка автора, а не проверенный факт. Состояние живёт в контексте
-сессии. После компакции (хост сжимает контекст) или в новой сессии ассистент не помнит, где он, что сделано и почему.
-И ошибки не наказываются: неудача не мешает «попробовать ещё раз» тем же способом.
+An assistant's ordinary work is a sequence of actions: read, fix, run, say "done". It has three
+holes. It is unclear what counted as success: the criterion was not stated in advance, and "done"
+is the author's self-assessment, not a verified fact. State lives in the session context. After
+compaction (the host compresses the context) or in a new session the assistant does not remember
+where it is, what was done and why. And mistakes go unpunished: a failure does not stop it from
+"trying again" the same way.
 
-Скилл `pdca` заменяет последовательность на **путь к проверяемому результату**. Идея взята у
-управленческого цикла Plan — Do — Check — Act: планируем, делаем, независимо проверяем,
-завершаем — или возвращаемся к плану. В контракте это машина состояний с **гейтами**: гейт —
-условие, при котором разрешён следующий шаг. Гейт проверяет **присутствие** нужных пунктов, а
-не качество. Обещание скромное: цикл не гарантирует правильный результат в реальном мире, но не даёт
-закрыть работу без проверки, молча потерять состояние или выдать однотипные повторы за
-прогресс.
+The `pdca` skill replaces the sequence with a **path to a verifiable result**. The idea is borrowed
+from the management cycle Plan — Do — Check — Act: plan, do, verify independently, finish — or
+return to the plan. In the contract this is a state machine with **gates**: a gate is a condition
+under which the next step is allowed. A gate checks the **presence** of the required items, not
+quality. The promise is modest: the cycle does not guarantee the right result in the real world,
+but it does not let you close work without verification, silently lose state, or pass off identical
+retries as progress.
 
-![Схема доменно-нейтрального цикла pdca: входы фаз, роли по тирам, граф состояний](../../opencode/pdca/assets/diagram/pdca-hand-dark.svg)
+![Diagram of the domain-neutral pdca cycle: phase inputs, roles by tier, state graph](../../opencode/pdca/assets/diagram/pdca-hand-dark-en.svg)
 
-`pdca` — **доменно-нейтральный** скилл: он называет только **роли** и **фазы** и не навязывает
-ни артефактов, ни типов задач, ни предметных примеров. Чем будет результат — отчётом,
-документом, конфигурацией, планом — решает фаза планирования; она же выбирает способ проверки.
-Поэтому `pdca` стоит выбирать для задачи с **проверяемым результатом**: заранее можно назвать
-критерии успеха и способ их проверки.
+`pdca` is a **domain-neutral** skill: it names only **roles** and **phases** and imposes neither
+artifacts, nor task types, nor domain examples. What the result will be — a report, a document, a
+config, a plan — is decided by the planning phase; that phase also chooses the way to verify it.
+So `pdca` is worth picking for a task with a **verifiable result**: you can name the success
+criteria and the way to check them in advance.
 
-Отдельно: `pdca` не включается сам собой — без явного вызова контракт не действует. И это не
-единственный вариант: `pdca`, `pdca-coder` и `pdca-dotnet` — три варианта одного цикла с разным
-уровнем конкретики, а `pdca-collection` стоит **над** циклом: он координирует несколько циклов
-и не переопределяет машину состояний. `pdca` задаёт общее ядро, соседние варианты описаны в
-соседних статьях. Если цикл запущен как PLAN задачи внутри коллекции, он останавливается на
-границе **PLAN → DO** и возвращает управление коллекционному родителю как `plan_handoff` —
-та же задача, те же `N`/`r`/`n`, DO не начинается.
+Separately: `pdca` does not turn itself on — without an explicit invocation the contract does not
+apply. And it is not the only option: `pdca`, `pdca-coder` and `pdca-dotnet` are three variants of
+one cycle with different levels of concreteness, while `pdca-collection` sits **above** the cycle:
+it coordinates several cycles and does not redefine the state machine. `pdca` sets the common core;
+the neighbouring variants are described in the neighbouring articles. If the cycle is launched as a
+collection task's PLAN, it stops at the **PLAN → DO** boundary and returns control to the
+collection parent as a `plan_handoff` — same task, same `N`/`r`/`n`, DO does not start.
 
-## Как запустить: только явно и по имени
+## How to launch it: explicitly and by name only
 
-У `pdca` **нет собственного фразового триггера**. Его вызывают явно по имени — командой вида
-`skill pdca`; этим он отличается от `pdca-coder` (фразы «по циклу», «через PDCA», «по pdca») и
-`pdca-dotnet` (фраза «по pdca-dotnet»). Доменно-нейтральный `pdca` — «эталон» семейства: он
-остаётся за тем, кто осознанно назвал его сам, и не переопределяет чужие триггеры.
+`pdca` has **no phrase trigger of its own**. It is invoked explicitly by name — with a command like
+`skill pdca`; this is how it differs from `pdca-coder` (the phrases "by the cycle", "via PDCA", "по
+pdca") and `pdca-dotnet` (the phrase "по pdca-dotnet"). The domain-neutral `pdca` is the family's
+"reference": it stays with whoever named it deliberately, and it does not redefine other skills'
+triggers.
 
-## Кто делает какую работу
+## Who does what work
 
-В цикле есть фиксированный набор **ролей**. Роль — это не человек и не конкретная модель, а
-функция с правами. **Тир** (cheap / medium / strong) — ярлык стоимости и качества модели, а
-**не** полномочие: дешёвая роль может иметь больше прав, чем дорогая. Конкретных
-агентов и модели привязывает хост; скилл называет только роли.
+The cycle has a fixed set of **roles**. A role is not a person and not a specific model, but a
+function with permissions. A **tier** (cheap / medium / strong) is a label for a model's cost and
+quality, **not** an authority: a cheap role can have more permissions than an expensive one. The
+host binds specific agents and models; the skill names only roles.
 
-| Роль | Что делает | Агент доменно-нейтрального `pdca` | Тир |
+| Role | What it does | Agent of the domain-neutral `pdca` | Tier |
 |---|---|---|---|
-| GATHER — сбор фактов | Собирает указатели `file:line`, URL, числа; без рекомендаций | `scout` | cheap |
-| PLAN — решения | Цель, критерии приёмки, декомпозиция, риски, способ проверки | `pdca-planner` | medium |
-| DO — «руки» | Правит файлы, запускает команды, ведёт статус-файл (состояние цикла на диске) | `pdca-executor` | cheap |
-| CHECK — вердикт | Независимо проверяет каждый критерий по фактическим свидетельствам | `pdca-check` | medium |
-| ESCALATE | Второй тир для трудных решений | `pdca-escalate` | strong |
-| RUNNER — оркестратор | Ведёт цикл, ничего не читая и не правя | `pdca-orchestrator` | cheap |
+| GATHER — fact gathering | Collects `file:line` pointers, URLs, numbers; no recommendations | `scout` | cheap |
+| PLAN — decisions | Goal, acceptance criteria, decomposition, risks, verification method | `pdca-planner` | medium |
+| DO — hands | Edits files, runs commands, keeps the status file (the cycle's state on disk) | `pdca-executor` | cheap |
+| CHECK — verdict | Independently verifies every criterion against actual evidence | `pdca-check` | medium |
+| ESCALATE | The second tier for hard decisions | `pdca-escalate` | strong |
+| RUNNER — orchestrator | Drives the cycle, reading and editing nothing | `pdca-orchestrator` | cheap |
 
-Несколько правил держат таблицу в рабочем состоянии. **Оркестратор — диспетчер, а не читатель и
-не решающий**: он вызывает роли через `Task` и передаёт им отчёты друг друга, но сам не пишет
-план, не читает файлы и не запускает команды; исключение — список задач (`todowrite`) как
-оркестрация. **PLAN всегда за планировщиком**: и стартовый план, и пересмотр формулирует
-`pdca-planner`. **Писать и запускать может только исполнитель**, включая статус-файл.
-**Проверяющий независим от автора**: он судит по агрегированному отчёту со свежими прогонами и
-фактами от `scout`, но может и **напрямую открыть артефакты доказательств цикла** — статус-файл
-и манифест с их ссылками (scoped `read`), никогда сам продукт. Отсюда запрет на
-саморедактирование, самочтение и самовердикт: исполнитель не выносит вердикт и не объявляет
-STOP, проверяющий не проверяет собственную работу, оркестратор не подменяет роли.
+A few rules keep the table working. **The orchestrator is a dispatcher, not a reader and not a
+decision maker**: it calls the roles through `Task` and passes their reports to one another, but it
+does not write the plan, read files or run commands; the exception is the task list (`todowrite`) as
+orchestration. **PLAN always belongs to the planner**: both the initial plan and a revision are
+formulated by `pdca-planner`. **Only the executor may write and run**, including the status file.
+**The checker is independent of the author**: it judges by the aggregated report with fresh runs and
+facts from `scout`, but it may also **open the cycle's evidence artifacts directly** — the status
+file and the manifest with their pointers (scoped `read`), never the product itself. Hence the
+prohibition on self-editing, self-reading and self-verdict: the executor does not render a verdict
+and does not declare STOP, the checker does not verify its own work, the orchestrator does not
+substitute for the roles.
 
-Цикл ведёт **только `cheap-primary`** (primary — главная сессия) — по эффективному тиру профиля, а не по имени агента.
-Medium/strong primary (например, `architect`) цикл не диспетчеризует. В автономном режиме
-cheap-primary делегирует весь цикл cheap-агенту **`pdca-orchestrator`** через `Task`.
-`pdca-orchestrator` — **не пятый скилл**, а агент-драйвер: он загружает выбранный вариант
-(`pdca`, `pdca-coder` или `pdca-dotnet`) и ведёт один дочерний цикл либо одну группу коллекции.
-Недоступная обязательная роль — **resource blocker**: в обычном режиме сообщают пользователю, в
-автономном пишут `Notice:`; запрещённый хостом fallback не обходят. Если недоступен сам
-`pdca-orchestrator`, в автономном режиме cheap-primary ведёт цикл сам (flat primary fallback) с
-записью `Notice:`.
+The cycle is driven by the **cheap primary only** (the primary is the main session) — by the
+profile's effective tier, not by the agent's name. A medium/strong primary (for example,
+`architect`) does not dispatch the cycle. In autonomous mode the cheap primary delegates the whole
+cycle to the cheap **`pdca-orchestrator`** agent through `Task`. `pdca-orchestrator` is **not a
+fifth skill** but a driver agent: it loads the chosen variant (`pdca`, `pdca-coder` or
+`pdca-dotnet`) and runs one child cycle or one collection group. An unavailable mandatory role is a
+**resource blocker**: in normal mode it is reported to the user, in autonomous mode it is written
+as `Notice:`; a fallback forbidden by the host is not bypassed. If `pdca-orchestrator` itself is
+unavailable, in autonomous mode the cheap primary drives the cycle itself (flat primary fallback)
+and records a `Notice:`.
 
-## Как идёт цикл
+## How the cycle runs
 
-Машина состояний цикла выглядит так:
+The cycle's state machine looks like this:
 
 ```text
-PLAN → (normal: явный «go»/«го») → DO → CHECK → ACT → (EXIT | PLAN)
+PLAN → (normal: an explicit "go"/"го") → DO → CHECK → ACT → (EXIT | PLAN)
                     ▲                      │
                     └──────── DO → PLAN ───┘
 ```
 
-Плюс отдельный терминальный путь **STOP** — ни «зелёный» гейт, ни успешный ACT.
+Plus a separate terminal path, **STOP** — neither a "green" gate nor a successful ACT.
 
-**PLAN.** Планировщик восстанавливает цель по сути — «какой результат нужен», а не «какое
-действие выполнить» — и возвращает обязательные поля: цель/ожидаемый результат, ограничения,
-допущения, критерии приёмки **каждый со способом проверки**, декомпозицию с зависимостями или
-явное решение не дробить, средства и доступ, риски и условия остановки. Пробел закрывается
-фактом, явным допущением/риском либо блокером/эскалацией; молчаливая догадка запрещена.
-Особый случай — критерий, чья проверка **зависит от состояния** (например, негативная ветка,
-верная лишь из определённого предшествующего состояния): он обязан назвать **воспроизводимый**
-источник доказательств, а решающий прогон показывают на заявленном baseline **ещё до гейта 1**;
-недоказуемый критерий — это пробел (сообщить или переопределить оракул), а не пометка «готово».
-И возврат после терминального `incomplete`/STOP — тоже вход PLAN: критерий, чьё доказательство
-провалилось, нельзя перезапускать без изменений — либо показывают, что оно теперь получаемо,
-либо переопределяют область.
+**PLAN.** The planner restores the goal by essence — "what result is needed", not "what action to
+perform" — and returns the mandatory fields: goal/expected result, constraints, assumptions,
+acceptance criteria **each with a way to verify it**, a decomposition with dependencies or an
+explicit decision not to split, means and access, risks and stop conditions. A gap is closed with a
+fact, an explicit assumption/risk, or a blocker/escalation; a silent guess is forbidden. A special
+case is a criterion whose verification **depends on state** (for example, a negative branch that
+holds only from a certain prior state): it must name a **reproducible** source of evidence, and the
+decisive run is shown on the declared baseline **before gate 1**; an unprovable criterion is a gap
+(report it or redefine the oracle), not a "done" mark. And a return after a terminal
+`incomplete`/STOP is also a PLAN entry: a criterion whose evidence failed cannot be re-run
+unchanged — either show that it is now obtainable, or redefine the scope.
 
-**DO.** Исполнитель делает только то, что сказано в плане; изменение за пределами единицы —
-«Over-Reach» — отдельная задача. Вердикт и STOP не его: он возвращает **предварительного
-кандидата со свидетельствами**, и кандидат «результат достигнут» никогда не закрывает единицу —
-вердикт принадлежит CHECK.
+**DO.** The executor does only what the plan says; a change beyond the unit is "Over-Reach" — a
+separate task. The verdict and STOP are not its own: it returns a **preliminary candidate with
+evidence**, and the candidate "the result is achieved" never closes the unit — the verdict belongs
+to CHECK.
 
-**CHECK.** Проверяющий судит каждый критерий по фактическим свидетельствам и проверяет
-согласованность частей. Статусы: `met` (выполнен), `unmet` (не выполнен), `unverified` (не
-проверен). Отсутствие проверки — не пропуск: без чисел и указателей критерий получает
-`unverified`, а не `met`. На выходе — вердикт, матрица критериев, находки и маршрутизация:
-дефект реализации → DO, неверный план → PLAN.
+**CHECK.** The checker judges every criterion by actual evidence and checks the consistency of the
+parts. Statuses: `met` (satisfied), `unmet` (not satisfied), `unverified` (not verified). A missing
+check is not a pass: without numbers and pointers a criterion gets `unverified`, not `met`. The
+output is a verdict, a criteria matrix, findings and routing: an implementation defect → DO, a
+wrong plan → PLAN.
 
-**ACT.** Завершает только результат, принятый текущим CHECK: фиксирует выводы, ограничения,
-статус и передачу дел, финализирует статус-файл. Без ACT цикл не закрыть, а без принятой
-проверки нет ACT; `rework`/`replan` — не часть ACT, а **возвраты до** него.
+**ACT.** It completes only a result accepted by the current CHECK: it records conclusions,
+constraints, status and handover, and finalizes the status file. Without ACT the cycle cannot be
+closed, and without an accepted check there is no ACT; `rework`/`replan` are not part of ACT but
+**returns before** it.
 
-**Возвраты.** `CHECK → DO` — дефект реализации: исправить и проверить снова. `CHECK → PLAN` —
-неверный план: планировщик выдаёт новую ревизию. `DO → PLAN` — новое предусловие или блокер: не
-самовольный пересмотр, а кандидат на разбор планировщиком. **Аддитивное предусловие** (новая
-активная единица, исходная остаётся `blocked` со своими критериями, маппинга нет) отличается от
-**замены области** (настоящее вытеснение: `superseded` и обязательный маппинг «вытесненная →
-замена» со всеми исходными критериями).
+**Returns.** `CHECK → DO` — an implementation defect: fix it and verify again. `CHECK → PLAN` — a
+wrong plan: the planner issues a new revision. `DO → PLAN` — a new precondition or a blocker: not a
+unilateral revision but a candidate for the planner to review. An **additive precondition** (a new
+active unit, the original one stays `blocked` with its own criteria, no mapping) differs from a
+**scope replacement** (a genuine supersession: `superseded` and a mandatory "superseded →
+replacement" mapping covering all the original criteria).
 
-**Пять гейтов** разрешают переходы:
+**Five gates** permit the transitions:
 
-1. **План → DO:** все обязательные поля на месте, план записан в статус-файл, получен `go` —
-   либо автономный режим.
-2. **DO → CHECK:** все активные, не вытесненные единицы `done` со свидетельствами.
-3. **CHECK → ACT:** все критерии `met` на фактических данных, ни одного `unmet`/`unverified`.
-4. **ACT → EXIT:** результат и статус-файл финализированы.
-5. **STOP:** отдельная финализация, вне ряда переходов выше.
+1. **Plan → DO:** all mandatory fields are in place, the plan is written into the status file, a
+   `go` has been received — or autonomous mode.
+2. **DO → CHECK:** all active, non-superseded units are `done` with evidence.
+3. **CHECK → ACT:** all criteria are `met` on actual data, none `unmet`/`unverified`.
+4. **ACT → EXIT:** the result and the status file are finalized.
+5. **STOP:** a separate finalization, outside the series of transitions above.
 
-Нерушимы два инварианта: **нельзя пропустить CHECK** и **нельзя закрыть цикл без ACT**.
+Two invariants are unbreakable: **CHECK cannot be skipped** and **the cycle cannot be closed
+without ACT**.
 
-Прогресс считают **три счётчика**. `N` — номер цикла задания в имени файла
-`.pdca/status/<task>-<N>.md`; растёт только в ACT, когда планируется следующий цикл того же
-задания. `r` — ревизия плана; растёт только при действительно другом плане. `n/3` — попытка
-исполнения текущей ревизии: старт с 1, `CHECK → DO` увеличивает, новая ревизия сбрасывает в 1.
-Отклонённый кандидат с неизменным планом — **не** ревизия: `r` и `n` не меняются; переименование
-или сброс сессии ревизию не «производят». Рядом живёт **история дефектов** — по строке на
-стабильный ключ дефекта (ревизии/попытки, число исправлений, указатели, исход эскалации); она не
-стирается пересмотром или новой сессией. Счётчики и история живут в статус-файле. Они помогают
-отличить «ещё одну попытку» от пересмотра и вовремя позвать эскалацию: **повтор того же дефекта
-после одного исправления** — сигнал раньше, чем три разные неудачи; после третьего провала CHECK
-одной ревизии четвёртой попытки нет.
+Progress is counted by **three counters**. `N` is the number of the task's cycle in the file name
+`.pdca/status/<task>-<N>.md`; it grows only in ACT, when the next cycle of the same task is
+planned. `r` is the plan revision; it grows only for a genuinely different plan. `n/3` is the
+execution attempt of the current revision: it starts at 1, `CHECK → DO` increments it, a new
+revision resets it to 1. A rejected candidate with an unchanged plan is **not** a revision: `r` and
+`n` do not change; renaming or resetting the session does not "produce" a revision. Alongside lives
+the **defect history** — one row per stable defect key (revisions/attempts, number of fixes,
+pointers, escalation outcome); it is not erased by a revision or a new session. The counters and
+the history live in the status file. They help tell "one more attempt" from a revision and call an
+escalation in time: **the same defect returning after one fix** is a signal earlier than three
+different failures; after the third failed CHECK of one revision there is no fourth attempt.
 
-**Режимы.** В **normal** режиме после записи плана оркестратор показывает его суть, даёт путь к
-статус-файлу и просит написать `go` (или `го`) — **единственный** сигнал старта. «OK» без `go`
-подтверждает, но не запускает; без `go` ничего не создаётся и не редактируется, кроме
-статус-файла. В **autonomous** режиме тот же контракт идёт без пауз и вопросов: переходы — в тот
-же ход, когда пройден гейт, ничего «для пользователя» не печатается, а уведомления (недоступная
-роль, восстановление после компакции, допущение вместо вопроса) пишутся в статус-файл как
-`Notice:`. Вопросов не задаётся: неразрешимое уводит в STOP.
+**Modes.** In **normal** mode, after the plan is written the orchestrator shows its gist, gives the
+path to the status file and asks you to type `go` (or `го`) — the **only** start signal. "OK"
+without `go` confirms but does not start; without `go` nothing is created or edited except the
+status file. In **autonomous** mode the same contract runs without pauses or questions: transitions
+happen in the same turn in which the gate is passed, nothing "for the user" is printed, and
+notifications (an unavailable role, recovery after compaction, an assumption instead of a question)
+are written into the status file as `Notice:`. No questions are asked: the unresolvable leads to
+STOP.
 
-**Память и доказательства.** **Статус-файл цикла** — источник истины по плану и прогрессу. Он
-живёт на диске, переживает компакцию и новую сессию, и исполнитель обновляет его на каждом событии.
-**Todo-список** в сайдбаре — лишь сессионное зеркало, теряющееся в новой сессии; он никогда не
-источник истины. После компакции состояние восстанавливают из статус-файла (через `scout`), а не
-по памяти. Цикл закрывается только на **свежих свидетельствах** — код выхода, числа, путь к
-логу, `file:line`, — и никогда на утверждении, включая отчёты субагентов. Слова-маркеры
-«должно работать», «вероятно» — сигнал назначить повторный прогон: **отчёт ≠ результат**.
+**Memory and evidence.** The **cycle status file** is the source of truth on the plan and progress.
+It lives on disk, survives compaction and a new session, and the executor updates it on every
+event. The **todo list** in the sidebar is only a session mirror that is lost in a new session; it
+is never the source of truth. After compaction the state is restored from the status file (through
+`scout`), not from memory. The cycle closes only on **fresh evidence** — an exit code, numbers, a
+log path, `file:line` — and never on an assertion, including subagent reports. Marker words like
+"should work", "probably" are a signal to schedule a re-run: **a report ≠ a result**.
 
-DO и CHECK примиряет **замороженный манифест доказательств**: DO пишет его на границе
-DO → CHECK и привязывает к зафиксированной идентичности результата (ревизия `r` плюс снятый
-вход/артефакт), CHECK читает его **первым**. Дальше манифест только дополняют, не переписывают;
-на каждый обязательный критерий в нём одна строка со статусом `met` / `open` / `na`, и **пока
-хоть одна обязательная строка `open`, PASS не выносится**. Если в проекте есть валидатор
-манифеста, его запускают. По умолчанию манифест и его логи живут в `.pdca/<task>/rv<k>/` — рядом
-с каталогом статуса `.pdca/status/`.
+DO and CHECK are reconciled by the **frozen evidence manifest**: DO writes it at the DO → CHECK
+boundary and ties it to the fixed identity of the result (revision `r` plus the captured
+input/artifact), and CHECK reads it **first**. Afterwards the manifest is only appended to, never
+rewritten; every mandatory criterion has one row in it with the status `met` / `open` / `na`, and
+**while even one mandatory row is `open`, no PASS is rendered**. If the project has a manifest
+validator, it is run. By default the manifest and its logs live in `.pdca/<task>/rv<k>/` — next to
+the status directory `.pdca/status/`.
 
-## Учебная история: когда цикл останавливается
+## A teaching story: when the cycle stops
 
-> Это **учебная иллюстрация**, а не источник правила. Она показывает переходы и STOP
-> схематично; реальные формулировки и линии — в источниках в конце статьи.
+> This is a **teaching illustration**, not a source of a rule. It shows the transitions and STOP
+> schematically; the real wordings and lines are in the sources at the end of the article.
 
-Представим задачу: ответить, ускоряет ли кэширование промежуточных результатов ночной отчёт.
-Планировщик в PLAN r1 формулирует критерии: (1) времена прогона с кэшем и без него на одном
-наборе данных; (2) вывод следует из чисел; (3) методика воспроизводима. Единицы: базовый замер,
-замер с кэшем, оформление вывода. План записан, пользователь пишет `go` — начинается DO
-(`N=1`, `r=1`, `n=1`).
+Imagine a task: answer whether caching intermediate results speeds up a nightly report. In PLAN r1
+the planner formulates the criteria: (1) run times with and without the cache on the same data set;
+(2) the conclusion follows from the numbers; (3) the methodology is reproducible. Units: the
+baseline measurement, the measurement with the cache, writing up the conclusion. The plan is
+written, the user types `go` — DO begins (`N=1`, `r=1`, `n=1`).
 
-Во время DO исполнитель обнаруживает, что обещанного набора данных нужного объёма нет.
-Самовольно чинить план нельзя: DO возвращает предварительного кандидата, и планировщик
-классифицирует его как **аддитивное предусловие** — единица «замер с кэшем» остаётся активной,
-но `blocked` на зависимости, и добавляется новая активная единица «получить набор данных». Это
-не замена области, маппинг не нужен. Предусловие закрывается, замеры сняты, вывод оформлен,
-DO → CHECK.
+During DO the executor discovers that the promised data set of the required size is not available.
+It may not unilaterally fix the plan: DO returns a preliminary candidate, and the planner classifies
+it as an **additive precondition** — the "measurement with the cache" unit stays active but
+`blocked` on a dependency, and a new active unit, "obtain the data set", is added. This is not a
+scope replacement, no mapping is needed. The precondition is closed, the measurements are taken,
+the conclusion is written up, DO → CHECK.
 
-CHECK в ревизии r1 даёт по критерию «методика воспроизводима» `unmet`: числа есть, а методика
-описана неполно. Это дефект реализации, цикл возвращается `CHECK → DO`, `n`=2. Исполнитель
-дополняет описание; повторная проверка той же ревизии снова даёт `unmet` по тому же критерию.
-Тот же дефект вернулся после одного исправления — сигнал **эскалации до второго исправления**,
-и оркестратор зовёт `pdca-escalate`. Эскалация выясняет, что нужный набор данных в разрешённой
-среде получить нельзя, а без него критерий не выполнить; пересмотренного плана, сохраняющего
-исходный критерий, нет. Цикл заканчивается **STOP**: фиксируются оставшиеся
-`unmet`/`unverified` критерии, счётчики (`N=1`, `r=1`, `n=2/3`) и история дефекта — **без
-ложного PASS и успеха ACT**. Четвёртой попытки нет, и STOP её не обходит.
+CHECK in revision r1 returns `unmet` for the criterion "the methodology is reproducible": the
+numbers are there, but the methodology is described incompletely. This is an implementation defect,
+the cycle returns `CHECK → DO`, `n`=2. The executor expands the description; a re-check of the same
+revision again returns `unmet` for the same criterion. The same defect came back after one fix — a
+signal for **escalation before a second fix**, and the orchestrator calls `pdca-escalate`. The
+escalation establishes that the required data set cannot be obtained in the permitted environment,
+and without it the criterion cannot be met; there is no revised plan that preserves the original
+criterion. The cycle ends in **STOP**: the remaining `unmet`/`unverified` criteria, the counters
+(`N=1`, `r=1`, `n=2/3`) and the defect history are recorded — **without a false PASS and without a
+successful ACT**. There is no fourth attempt, and STOP does not bypass that.
 
-Этот исход — не провал дисциплины: цикл остановился там, где
-исчерпался проверяемый результат, и сохранил запись почему. И это не «ещё немного
-постараться»: правило «нет четвёртой попытки» действует и после эскалации.
+This outcome is not a failure of discipline: the cycle stopped where the verifiable result ran out,
+and kept a record of why. And it is not "try a little harder": the "no fourth attempt" rule holds
+after an escalation as well.
 
-## Ограничения и неверные ожидания
+## Limitations and false expectations
 
-- **«Задача слишком простая для цикла».** Размер задачи не отменяет гейты: на «простых» задачах
-  чаще всего переделывают. Отказ от дробления — решение планировщика внутри PLAN, а не
-  освобождение от критериев и проверки.
-- **Цикл ведёт только cheap-primary.** Medium/strong primary (например, `architect`) цикл не
-  диспетчеризует; вне цикла он остаётся решающим.
-- **Нет фразового триггера.** `pdca` не ловится на «по циклу» — это делает `pdca-coder`.
-  Доменно-нейтральный вариант вызывается явно по имени, иначе контракт не действует.
-- **Недоступная роль — не повод работать без неё.** Отсутствие обязательного агента — resource
-  blocker: в обычном режиме сообщают, в автономном пишут `Notice:` и причину.
-- **Гейт — это допуск, а не качество и не гарантия успеха.** Цикл не делает план правильным и
-  не заменяет предметную экспертизу; он лишь не даёт закрыть работу без проверки.
-- **Отчёт ≠ результат.** «Исполнитель сказал `done`» не закрывает единицу; нужны свежие
-  свидетельства и независимый вердикт. Самопроверенный вердикт — «театр проверяющего».
-- **STOP — не успех и не провал.** Отдельный терминальный исход без ложного PASS.
-- **Статус-файл не удаляют.** Он финализируется и сохраняется в любом случае.
+- **"The task is too simple for the cycle."** The size of a task does not cancel the gates: it is
+  on "simple" tasks that rework happens most often. Declining to split is a decision of the planner
+  inside PLAN, not an exemption from criteria and verification.
+- **Only a cheap primary drives the cycle.** A medium/strong primary (for example, `architect`)
+  does not dispatch the cycle; outside the cycle it remains the decision maker.
+- **There is no phrase trigger.** `pdca` is not caught by "by the cycle" — that is `pdca-coder`'s
+  job. The domain-neutral variant is invoked explicitly by name, otherwise the contract does not
+  apply.
+- **An unavailable role is not a reason to work without it.** A missing mandatory agent is a
+  resource blocker: in normal mode it is reported, in autonomous mode a `Notice:` and the reason
+  are written.
+- **A gate is an admission, not quality and not a guarantee of success.** The cycle does not make a
+  plan correct and does not replace domain expertise; it merely does not let you close work without
+  verification.
+- **A report ≠ a result.** "The executor said `done`" does not close a unit; fresh evidence and an
+  independent verdict are required. A self-verified verdict is "checker theater".
+- **STOP is neither success nor failure.** A separate terminal outcome without a false PASS.
+- **The status file is not deleted.** It is finalized and kept in any case.
 
-## Куда дальше
+## Where to go next
 
-- Полный разбор всего семейства — гейты, счётчики, роли, режимы, память и доказательства —
-  в путеводителе [`docs/pdca-guide.md`](../pdca-guide.md).
-- Нормативный контракт доменно-нейтрального цикла — файл скилла
+- A full walkthrough of the whole family — gates, counters, roles, modes, memory and evidence — is
+  in the guide [`docs/pdca-guide.md`](../pdca-guide.md).
+- The normative contract of the domain-neutral cycle is the skill file
   [`opencode/pdca/SKILL.md`](../../opencode/pdca/SKILL.md).
-- Инженерный цикл того же ядра для кода, тестов, документации и конфигурации — статья
-  [`pdca-coder.md`](pdca-coder.md).
-- .NET-специфичный вариант с собственными гейтами (ноль предупреждений, покрытие и мутации,
-  обязательный test scope) — статья [`pdca-dotnet.md`](pdca-dotnet.md).
-- Пакет независимых задач, разбитый на параллельные группы-лейны (барьер слияния,
-  терминальный `incomplete`) — статья [`pdca-collection.md`](pdca-collection.md).
+- The engineering cycle of the same core for code, tests, documentation and configuration is the
+  article [`pdca-coder.md`](pdca-coder.md).
+- The .NET-specific variant with its own gates (zero warnings, coverage and mutations, a mandatory
+  test scope) is the article [`pdca-dotnet.md`](pdca-dotnet.md).
+- A batch of independent tasks split into parallel group lanes (a merge barrier, a terminal
+  `incomplete`) is the article [`pdca-collection.md`](pdca-collection.md).
 
-## Источники
+## Sources
 
-Нормативные утверждения статьи сверены с репозиторием на коммите `065e2b8`; при расхождении
-статьи и скилла приоритет у файла скилла. Карта «утверждение → источник»:
+The article's normative claims were reconciled with the repository at commit `065e2b8`; where the
+article and the skill disagree, the skill file takes precedence. The "claim → source" map:
 
-| Утверждение | Источник |
+| Claim | Source |
 |---|---|
-| `pdca` доменно-нейтрален: называет только роли и фазы; чем проверять — решает PLAN | `opencode/pdca/SKILL.md:6-14` |
-| Роли, тиры, fallback; недоступная роль — resource blocker | `opencode/pdca/SKILL.md:38-88` |
-| `pdca-orchestrator` — cheap-диспетчер, а не пятый скилл (промпт агента — в конфиге хоста, здесь не поставляется) | `opencode/pdca/SKILL.md:48-52,63-71` |
-| CHECK видит артефакты доказательств цикла напрямую (scoped `read`), но не продукт | `opencode/pdca/SKILL.md:22-28,59`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
-| Оркестратор-диспетчер; запрет саморедактирования/самочтения/самовердикта | `opencode/pdca/SKILL.md:89-118` |
-| Машина состояний и ветка `DO → PLAN` | `opencode/pdca/SKILL.md:119-146` |
-| Счётчики `N`, `r`, `n/3` и история дефектов | `opencode/pdca/SKILL.md:133-145` |
-| Кандидат DO → PLAN; аддитивное предусловие vs замена области | `opencode/pdca/SKILL.md:186-201,264-273` |
-| Гейты 1–5 и финализация STOP | `opencode/pdca/SKILL.md:203-242` |
-| Фазовые контракты PLAN/DO/CHECK/ACT/STOP, критерий, зависящий от состояния, и возврат после `incomplete` | `opencode/pdca/SKILL.md:243-301` |
-| Замороженный манифест доказательств и каталог `.pdca/<task>/rv<k>/` | `opencode/pdca/SKILL.md:302-324` |
-| Режимы normal (`go`/`го`) и autonomous (`Notice:`, без вопросов) | `opencode/pdca/SKILL.md:327-351` |
-| Коллекционный `plan_handoff` на границе PLAN → DO | `opencode/pdca/SKILL.md:343-350` |
-| Статус-файл, todo-зеркало, доказательства, восстановление | `opencode/pdca/SKILL.md:146-184,368-391,392-408,410-436` |
-| Эскалация, триггеры 1–5, правило «нет четвёртой попытки» | `opencode/pdca/SKILL.md:438-493` |
-| Ограничения: права, инструкции, инъекции, секреты, авторизация | `opencode/pdca/SKILL.md:494-518` |
+| `pdca` is domain-neutral: it names only roles and phases; what to verify with is decided by PLAN | `opencode/pdca/SKILL.md:6-14` |
+| Roles, tiers, fallback; an unavailable role is a resource blocker | `opencode/pdca/SKILL.md:38-88` |
+| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill (the agent prompt lives in the host config and is not shipped here) | `opencode/pdca/SKILL.md:48-52,63-71` |
+| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `opencode/pdca/SKILL.md:22-28,59`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
+| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md:89-118` |
+| The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md:119-146` |
+| The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md:133-145` |
+| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:186-201,264-273` |
+| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:203-242` |
+| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:243-301` |
+| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:302-324` |
+| The normal (`go`/`го`) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:327-351` |
+| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:343-350` |
+| The status file, the todo mirror, evidence, recovery | `opencode/pdca/SKILL.md:146-184,368-391,392-408,410-436` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:438-493` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:494-518` |

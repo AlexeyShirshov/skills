@@ -3,7 +3,7 @@ theme: default
 layout: cover
 title: 'pdca: цикл, который доводит задачу до проверяемого результата'
 info: |
-  Дека по статье docs/articles/pdca.md — доменно-нейтральный контракт цикла
+  Дека по статье docs/articles/ru/pdca.md — доменно-нейтральный контракт цикла
   PLAN → DO → CHECK → ACT (скилл pdca).
 class: text-center
 colorSchema: dark
@@ -18,7 +18,7 @@ themeConfig:
 
 <div class="pt-10 opacity-60 text-sm">
 доменно-нейтральный контракт: <b>PLAN → DO → CHECK → ACT</b><br>
-по статье <code>docs/articles/pdca.md</code>
+по статье <code>docs/articles/ru/pdca.md</code>
 </div>
 
 <!--
