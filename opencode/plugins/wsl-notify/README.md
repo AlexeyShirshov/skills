@@ -1,5 +1,7 @@
 # wsl-notify
 
+[![npm](https://img.shields.io/npm/v/wsl-notify)](https://www.npmjs.com/package/wsl-notify)
+
 Windows toast notifications for [OpenCode](https://opencode.ai) — on permission
 requests, questions, session completion, and errors. Built for WSL (where the
 Linux side has no notification daemon, but `powershell.exe` interop can raise a
