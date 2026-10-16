@@ -236,19 +236,19 @@ not carried through.
 - The full text of the skill, its role (the wrapper agent `pdca-orchestrator`, the `COLLECTION TASK
   PLAN` input, the group lane), the P/D/C/A phases, the status, the git model and the failure
   semantics —
-  [`opencode/pdca-collection/SKILL.md`](../../opencode/pdca-collection/SKILL.md). The agent's prompt
+  [`opencode/pdca-collection/SKILL.md`](../opencode/pdca-collection/SKILL.md). The agent's prompt
   runner (`config/agents/pdca-orchestrator.md`), the profiles and `AGENTS.md` are host artifacts of
   the `opencode-config` repository; they are not part of this repository.
-- The cycle base: [`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md) (for .NET, the
-  identical base [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md)).
+- The cycle base: [`opencode/pdca-coder/SKILL.md`](../opencode/pdca-coder/SKILL.md) (for .NET, the
+  identical base [`opencode/pdca-dotnet/SKILL.md`](../opencode/pdca-dotnet/SKILL.md)).
   The family's neighbouring articles: [`pdca.md`](pdca.md) — the domain-neutral core,
   [`pdca-coder.md`](pdca-coder.md) and [`pdca-dotnet.md`](pdca-dotnet.md) — the engineering
   variants.
-- The contract checks — [`opencode/pdca-collection/tests/`](../../opencode/pdca-collection/tests/):
+- The contract checks — [`opencode/pdca-collection/tests/`](../opencode/pdca-collection/tests/):
   tests of the skill's text and the diagram rendering, plus a scenario matrix **marked as
   static** (not proof of behaviour); the diagram — `assets/diagram/` (generator
   `gen_collection.py`).
-- An overview of the whole family is the guide [`docs/articles/pdca-guide.md`](pdca-guide.md).
+- An overview of the whole family is the guide [`docs/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 

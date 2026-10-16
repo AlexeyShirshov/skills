@@ -239,18 +239,18 @@ CHECK — перезапускаются все обязательные гей�
 
 - Полный текст скилла, его роль (агент-обёртка `pdca-orchestrator`, вход `COLLECTION TASK PLAN`,
   лейн группы), фазы P/D/C/A, статус, git-модель и семантика сбоя —
-  [`opencode/pdca-collection/SKILL.md`](../../../opencode/pdca-collection/SKILL.md). Промпт-раннер
+  [`opencode/pdca-collection/SKILL.md`](../../opencode/pdca-collection/SKILL.md). Промпт-раннер
   агента (`config/agents/pdca-orchestrator.md`), профили и `AGENTS.md` — хостовые артефакты
   репозитория `opencode-config`; в этот репозиторий они не входят.
-- База цикла: [`opencode/pdca-coder/SKILL.md`](../../../opencode/pdca-coder/SKILL.md) (для .NET —
-  идентичная база [`opencode/pdca-dotnet/SKILL.md`](../../../opencode/pdca-dotnet/SKILL.md)).
+- База цикла: [`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md) (для .NET —
+  идентичная база [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md)).
   Соседние статьи семейства: [`pdca.md`](pdca.md) — доменно-нейтральное ядро,
   [`pdca-coder.md`](pdca-coder.md) и [`pdca-dotnet.md`](pdca-dotnet.md) — инженерные варианты.
-- Проверки контракта — [`opencode/pdca-collection/tests/`](../../../opencode/pdca-collection/tests/):
+- Проверки контракта — [`opencode/pdca-collection/tests/`](../../opencode/pdca-collection/tests/):
   тесты текста скилла и рендера диаграммы плюс сценарная матрица, **помеченная как
   статическая** (не доказательство поведения); диаграмма — `assets/diagram/` (генератор
   `gen_collection.py`).
-- Обзор всего семейства — путеводитель [`docs/articles/ru/pdca-guide.md`](pdca-guide.md).
+- Обзор всего семейства — путеводитель [`docs/ru/pdca-guide.md`](pdca-guide.md).
 
 ## Источники
 

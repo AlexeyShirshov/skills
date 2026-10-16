@@ -211,8 +211,8 @@ PLAN сформулировать критерии до того, как что-
 [`pdca-collection`](pdca-collection.md). Общая механика семейства — гейты, счётчики
 `N`/`r`/`n/3`, память и доказательства — разобрана в статье про доменно-нейтральный
 [`pdca`](pdca.md); полный текст контракта лежит в
-[`opencode/pdca-coder/SKILL.md`](../../../opencode/pdca-coder/SKILL.md), а обзор всего семейства —
-в путеводителе [`docs/articles/ru/pdca-guide.md`](pdca-guide.md).
+[`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md), а обзор всего семейства —
+в путеводителе [`docs/ru/pdca-guide.md`](pdca-guide.md).
 
 ## Источники
 

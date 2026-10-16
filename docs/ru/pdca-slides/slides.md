@@ -3,7 +3,7 @@ theme: default
 layout: cover
 title: 'pdca: цикл, который доводит задачу до проверяемого результата'
 info: |
-  Дека по статье docs/articles/ru/pdca.md — доменно-нейтральный контракт цикла
+  Дека по статье docs/ru/pdca.md — доменно-нейтральный контракт цикла
   PLAN → DO → CHECK → ACT (скилл pdca).
 class: text-center
 colorSchema: dark
@@ -18,7 +18,7 @@ themeConfig:
 
 <div class="pt-10 opacity-60 text-sm">
 доменно-нейтральный контракт: <b>PLAN → DO → CHECK → ACT</b><br>
-по статье <code>docs/articles/ru/pdca.md</code>
+по статье <code>docs/ru/pdca.md</code>
 </div>
 
 <!--
@@ -475,7 +475,7 @@ layout: end
 - Инженерный цикл для кода, тестов и конфигурации — <code style="white-space: nowrap">pdca-coder</code>
 - .NET-вариант со своими гейтами — <code style="white-space: nowrap">pdca-dotnet</code>
 - Пакет задач с параллельными лейнами — <code style="white-space: nowrap">pdca-collection</code>
-- Полный разбор всего семейства — путеводитель <code>docs/articles/ru/pdca-guide.md</code>
+- Полный разбор всего семейства — путеводитель <code>docs/ru/pdca-guide.md</code>
 
 <div class="pt-8 text-sm opacity-60">
 Нормативные утверждения сверены со статьёй и репозиторием на коммите <code>69685b8</code>.

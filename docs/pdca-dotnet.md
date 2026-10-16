@@ -357,13 +357,13 @@ domain lenses and the additional gates (and if there are many independent tasks 
 [`pdca-collection.md`](pdca-collection.md)).
 The primary source of behaviour is the contract itself: the sections "Versioned evidence contract"
 and "CHECK completeness gate — mandatory evidence contract" in
-[`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md), as well as the role
+[`opencode/pdca-dotnet/SKILL.md`](../opencode/pdca-dotnet/SKILL.md), as well as the role
 templates that reference them
-([`planner.md`](../../opencode/pdca-dotnet/assets/agents/planner.md),
-[`check.md`](../../opencode/pdca-dotnet/assets/agents/check.md)) and the compact implementation of
+([`planner.md`](../opencode/pdca-dotnet/assets/agents/planner.md),
+[`check.md`](../opencode/pdca-dotnet/assets/agents/check.md)) and the compact implementation of
 the gate —
-[`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
-An overview of the whole family is in [`docs/articles/pdca-guide.md`](pdca-guide.md).
+[`scripts/validate_inner_loop.py`](../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
+An overview of the whole family is in [`docs/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 

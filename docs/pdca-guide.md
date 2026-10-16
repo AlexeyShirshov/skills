@@ -1255,10 +1255,10 @@ Below are topics with their supporting sections (no new normative claims).
 Four standalone articles examine each skill of the family separately: its purpose and selection, its
 launch, its roles, the course of the cycle, a teaching scenario and its limitations. This guide
 remains a summary of the common core; the guide itself lives in this repository at
-`docs/articles/pdca-guide.md`; the Russian articles are in `docs/articles/ru/`, and their English translation
-is in `docs/articles/`.
+`docs/pdca-guide.md`; the Russian articles are in `docs/ru/`, and their English translation
+is in `docs/`.
 
-- [`articles/pdca.md`](pdca.md) — the domain-neutral cycle with a verifiable result.
-- [`articles/pdca-coder.md`](pdca-coder.md) — the engineering cycle: code, tests, documentation.
-- [`articles/pdca-dotnet.md`](pdca-dotnet.md) — the .NET variant with additional gates.
-- [`articles/pdca-collection.md`](pdca-collection.md) — a batch of tasks in parallel groups.
+- [`docs/pdca.md`](pdca.md) — the domain-neutral cycle with a verifiable result.
+- [`docs/pdca-coder.md`](pdca-coder.md) — the engineering cycle: code, tests, documentation.
+- [`docs/pdca-dotnet.md`](pdca-dotnet.md) — the .NET variant with additional gates.
+- [`docs/pdca-collection.md`](pdca-collection.md) — a batch of tasks in parallel groups.

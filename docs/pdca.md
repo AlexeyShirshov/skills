@@ -17,7 +17,7 @@ quality. The promise is modest: the cycle does not guarantee the right result in
 but it does not let you close work without verification, silently lose state, or pass off identical
 retries as progress.
 
-![Diagram of the domain-neutral pdca cycle: phase inputs, roles by tier, state graph](../../opencode/pdca/assets/diagram/pdca-hand-dark-en.svg)
+![Diagram of the domain-neutral pdca cycle: phase inputs, roles by tier, state graph](../opencode/pdca/assets/diagram/pdca-hand-dark-en.svg)
 
 `pdca` is a **domain-neutral** skill: it names only **roles** and **phases** and imposes neither
 artifacts, nor task types, nor domain examples. What the result will be — a report, a document, a
@@ -241,9 +241,9 @@ after an escalation as well.
 ## Where to go next
 
 - A full walkthrough of the whole family — gates, counters, roles, modes, memory and evidence — is
-  in the guide [`docs/articles/pdca-guide.md`](pdca-guide.md).
+  in the guide [`docs/pdca-guide.md`](pdca-guide.md).
 - The normative contract of the domain-neutral cycle is the skill file
-  [`opencode/pdca/SKILL.md`](../../opencode/pdca/SKILL.md).
+  [`opencode/pdca/SKILL.md`](../opencode/pdca/SKILL.md).
 - The engineering cycle of the same core for code, tests, documentation and configuration is the
   article [`pdca-coder.md`](pdca-coder.md).
 - The .NET-specific variant with its own gates (zero warnings, coverage and mutations, a mandatory

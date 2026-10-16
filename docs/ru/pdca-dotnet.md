@@ -383,13 +383,13 @@ Changed files) и готовое **сообщение для следующей 
 много и они независимы — [`pdca-collection.md`](pdca-collection.md)).
 Первоисточник поведения — сам контракт: разделы «Versioned evidence contract» и
 «CHECK completeness gate — mandatory evidence contract» в
-[`opencode/pdca-dotnet/SKILL.md`](../../../opencode/pdca-dotnet/SKILL.md), а также
+[`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md), а также
 ссылающиеся на них шаблоны ролей
-([`planner.md`](../../../opencode/pdca-dotnet/assets/agents/planner.md),
-[`check.md`](../../../opencode/pdca-dotnet/assets/agents/check.md)) и компактная
+([`planner.md`](../../opencode/pdca-dotnet/assets/agents/planner.md),
+[`check.md`](../../opencode/pdca-dotnet/assets/agents/check.md)) и компактная
 реализация гейта —
-[`scripts/validate_inner_loop.py`](../../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
-Обзор всего семейства — [`docs/articles/ru/pdca-guide.md`](pdca-guide.md).
+[`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
+Обзор всего семейства — [`docs/ru/pdca-guide.md`](pdca-guide.md).
 
 ## Источники
 
