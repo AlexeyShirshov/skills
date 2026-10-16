@@ -46,7 +46,7 @@ BLOCKS = {
         ("Контракт vN", "evidence · row ID · rv", "medium"),
     ],
     "D": [
-        ("DO", "журнал · план до go", "weak"),
+        ("DO", "журнал · план до апрува", "weak"),
         ("Test scope", "структурир. · affected subset", "medium"),
         ("Brief-гейт", "validate_inner_loop · fail-closed", "weak"),
         ("Код", "из плана", "weak"),
@@ -106,7 +106,7 @@ TAIL = {"D": [
 # orchestrator inputs, per phase
 INPUTS = [
     "PLAN ← «старт» · «реплан от check/DO» · «цикл N+1 от ACT»",
-    "DO ← «план готов · go/сразу» · «фикс дефекта от check (вкл. security)» · «фикс от escalate при r не исчерпан»",
+    "DO ← «план готов · апрув/сразу» · «фикс дефекта от check (вкл. security)» · «фикс от escalate при r не исчерпан»",
     "CHECK ← «потоки закрыты»",
     "CHECK · security ← «условно: auth / секреты / ввод / crypto» · «отчёт → CHECK»",
     "ACT ← «check pass»",
@@ -114,7 +114,7 @@ INPUTS = [
     "STOP ← «нет выполнимого PLAN r+1»",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "старт\nреплан check/DO\nцикл N+1", "D": "план готов · go/сразу\nфикс от check (с security)\nфикс от escalate (r активен)", "C": "потоки закрыты",
+DISPATCH = {"P": "старт\nреплан check/DO\nцикл N+1", "D": "план готов · апрув/сразу\nфикс от check (с security)\nфикс от escalate (r активен)", "C": "потоки закрыты",
             "SEC": "из CHECK · условно\nauth/секр/ввод/crypto\nсбор (gather)\nотчёт → CHECK", "E": "Т1 неоднозначность\nТ2 счётчик · 3-й CHECK(r)\nТ3 trade-off · Т4 risky-diff\nТ5 low-confidence", "S": "нет плана r+1", "A": "check pass"}
 
 # per-phase state-graph node colors (shared by both themes)
@@ -339,7 +339,7 @@ def render(P, title):
         s.append(poly([(_x1, _y), (_x2, _y)], edge_id=_eid))
         if _eid == "plan_do":
             # stacked in the narrow PLAN→DO gap so the line never overflows the nodes
-            for _k, _ln in enumerate(("go (normal)", "сразу (авто)", "n=1/3")):
+            for _k, _ln in enumerate(("апрув (normal)", "сразу (авто)", "n=1/3")):
                 s.append(label((_x1 + _x2) / 2, _y - 23 + _k * 11, _ln, P["label"]))
         else:
             s.append(label((_x1 + _x2) / 2, _y - 7, _lab, P["label"]))

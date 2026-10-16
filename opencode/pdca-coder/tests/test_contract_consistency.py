@@ -181,7 +181,7 @@ class ContractConsistencyTest(unittest.TestCase):
         for token in ("acceptance criteria", "test strategy", "docs plan",
                       "perf-measurement decision", "unit execution mode"):
             self.assertIn(token, self.gate1)
-        self.assertIn("go", self.gate1)
+        self.assertIn("the user's approval of the plan", self.gate1)
 
     def test_gate2_conditions(self):
         self.assertIn("all D: tasks and all DO streams", self.gate2)

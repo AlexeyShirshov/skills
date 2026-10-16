@@ -85,7 +85,7 @@ and records a `Notice:`.
 The cycle's state machine looks like this:
 
 ```text
-PLAN → (normal: an explicit "go"/"го") → DO → CHECK → ACT → (EXIT | PLAN)
+PLAN → (normal: the user approves the plan) → DO → CHECK → ACT → (EXIT | PLAN)
                     ▲                      │
                     └──────── DO → PLAN ───┘
 ```
@@ -129,8 +129,8 @@ replacement" mapping covering all the original criteria).
 
 **Five gates** permit the transitions:
 
-1. **Plan → DO:** all mandatory fields are in place, the plan is written into the status file, a
-   `go` has been received — or autonomous mode.
+1. **Plan → DO:** all mandatory fields are in place, the plan is written into the status file, the
+   user **has approved the plan** — or autonomous mode.
 2. **DO → CHECK:** all active, non-superseded units are `done` with evidence.
 3. **CHECK → ACT:** all criteria are `met` on actual data, none `unmet`/`unverified`.
 4. **ACT → EXIT:** the result and the status file are finalized.
@@ -151,10 +151,12 @@ the history live in the status file. They help tell "one more attempt" from a re
 escalation in time: **the same defect returning after one fix** is a signal earlier than three
 different failures; after the third failed CHECK of one revision there is no fourth attempt.
 
-**Modes.** In **normal** mode, after the plan is written the orchestrator shows its gist, gives the
-path to the status file and asks you to type `go` (or `го`) — the **only** start signal. "OK"
-without `go` confirms but does not start; without `go` nothing is created or edited except the
-status file. In **autonomous** mode the same contract runs without pauses or questions: transitions
+**Modes.** In **normal** mode, after the plan is written the orchestrator states that the **plan is
+ready and recorded in the status file**, gives the path to it and asks you to **read the plan and
+approve it** — the **only** start signal. A question, a request to change the plan or a
+non-committal reply ("OK" without an approval) does not start; without an approval nothing is
+created or edited except the status file. In **autonomous** mode the same contract runs without
+pauses or questions: transitions
 happen in the same turn in which the gate is passed, nothing "for the user" is printed, and
 notifications (an unavailable role, recovery after compaction, an assumption instead of a question)
 are written into the status file as `Notice:`. No questions are asked: the unresolvable leads to
@@ -185,7 +187,7 @@ Imagine a task: answer whether caching intermediate results speeds up a nightly 
 the planner formulates the criteria: (1) run times with and without the cache on the same data set;
 (2) the conclusion follows from the numbers; (3) the methodology is reproducible. Units: the
 baseline measurement, the measurement with the cache, writing up the conclusion. The plan is
-written, the user types `go` — DO begins (`N=1`, `r=1`, `n=1`).
+written, the user approves the plan — DO begins (`N=1`, `r=1`, `n=1`).
 
 During DO the executor discovers that the promised data set of the required size is not available.
 It may not unilaterally fix the plan: DO returns a preliminary candidate, and the planner classifies
@@ -257,12 +259,12 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 | The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md:89-118` |
 | The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md:119-146` |
 | The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md:133-145` |
-| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:186-201,264-273` |
-| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:203-242` |
-| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:243-301` |
-| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:302-324` |
-| The normal (`go`/`го`) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:327-351` |
-| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:343-350` |
-| The status file, the todo mirror, evidence, recovery | `opencode/pdca/SKILL.md:146-184,368-391,392-408,410-436` |
-| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:438-493` |
-| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:494-518` |
+| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:186-201,266-275` |
+| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:203-244` |
+| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:245-303` |
+| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:304-326` |
+| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:329-353` |
+| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:345-352` |
+| The status file, the todo mirror, evidence, recovery | `opencode/pdca/SKILL.md:146-184,371-394,395-411,413-439` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:441-496` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:497-521` |

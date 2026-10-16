@@ -91,7 +91,7 @@ BLOCKS = {
 # orchestrator strip: the per-phase inputs (as in the sibling diagrams)
 INPUTS = [
     "PLAN ← «старт» · «реплан от DO / CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»",
-    "DO ← «go от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
+    "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
     "CHECK ← «units done от DO»",
     "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после scout»",
     "ACT ← «все criteria met от CHECK»",
@@ -102,7 +102,7 @@ INPUTS = [
 # down-arrow (dispatch) label per column
 DISPATCH = {
     "P": "факты собраны\nреплан от CHECK",
-    "D": "план принят · go\nфикс дефекта · r активен",
+    "D": "план принят · апрув\nфикс дефекта · r активен",
     "C": "все активные units done",
     "E": "неоднозначность\nповтор · 3-й провал",
     "A": "все criteria met",
@@ -202,8 +202,8 @@ _TR_EN = {
     # orchestrator inputs
     "PLAN ← «старт» · «реплан от DO / CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»":
         "PLAN ← “start” · “replan from DO / CHECK” · “r+1 from ESCALATE” · “cycle N+1 from ACT”",
-    "DO ← «go от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»":
-        "DO ← “go from PLAN” · “defect from CHECK” · “r not exhausted from ESCALATE”",
+    "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»":
+        "DO ← “approval from PLAN” · “defect from CHECK” · “r not exhausted from ESCALATE”",
     "CHECK ← «units done от DO»": "CHECK ← “units done from DO”",
     "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после scout»":
         "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after scout”",
@@ -214,7 +214,7 @@ _TR_EN = {
     # dispatch labels (per line, rendered through label())
     "факты собраны": "facts gathered",
     "реплан от CHECK": "replan from CHECK",
-    "план принят · go": "plan accepted · go",
+    "план принят · апрув": "plan accepted · approval",
     "фикс дефекта · r активен": "defect fix · r active",
     "все активные units done": "all active units done",
     "неоднозначность": "ambiguity",
@@ -477,11 +477,11 @@ def render(P):
     for _k, _v in stx.items():
         s.append(stnode(_v, R1_TOP, NW, NH, st_name[_k], st_sub[_k], stc[_k], _k))
     ym = R1_TOP + NH / 2
-    # plan_do has both mode paths (normal `go` / autonomous immediate) and the
+    # plan_do has both mode paths (normal approval / autonomous immediate) and the
     # 3-iteration cap; it is stacked on short lines so it fits the 76px gap.
     for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", ["старт"]),
                                ("plan_do", "PLAN", "DO",
-                                ["go (normal)", "сразу (авто)", "· n=1/3"]),
+                                ["апрув (normal)", "сразу (авто)", "· n=1/3"]),
                                ("do_check", "DO", "CHECK", ["units done"]),
                                ("check_act", "CHECK", "ACT", ["criteria met"]),
                                ("act_exit", "ACT", "EXIT", ["закрыто"])]:

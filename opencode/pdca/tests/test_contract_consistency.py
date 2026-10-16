@@ -312,13 +312,14 @@ class RuntimeContractEvidenceTest(unittest.TestCase):
 
     # --- K3: normal-mode explicit start signal ---------------------------
 
-    def test_normal_mode_requires_explicit_plan_confirmation(self):
+    def test_normal_mode_requires_plan_approval(self):
         self.assertIn(
-            "Normal mode requires the user's explicit confirmation of the plan after it is on disk",
+            "Normal mode requires the user's approval of the plan after it is on disk",
             self.skill,
         )
         self.assertIn("the only start signal", self.skill)
-        self.assertIn("non-committal reply does not start", self.skill)
+        self.assertIn("no keyword is required", self.skill)
+        self.assertIn("non-committal reply is not an approval", self.skill)
 
     # --- K9: four generic operating constraints --------------------------
 

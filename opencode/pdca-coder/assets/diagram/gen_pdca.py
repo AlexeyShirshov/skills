@@ -45,7 +45,7 @@ BLOCKS = {
         ("Юнит-режим", "послед. · дерево · worktrees", "medium"),
     ],
     "D": [
-        ("DO", "журнал · план до go", "weak"),
+        ("DO", "журнал · план до апрува", "weak"),
         ("Код", "из плана", "weak"),
         ("Тесты", "из плана", "weak"),
         ("Доки · проза", "README · документация", "weak"),
@@ -329,7 +329,7 @@ def render(P, title):
         s.append(f'<text x="{_v+NW/2}" y="{R1_TOP+NH/2+5}" class="st" fill="{stc[_k]}" text-anchor="middle">{esc(_k)}</text>')
     _y = R1_TOP + NH / 2
     for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", "старт"),
-                               ("plan_do", "PLAN", "DO", "go (normal) / сразу\n(autonomous) · n=1/3"),
+                               ("plan_do", "PLAN", "DO", "апрув (normal) / сразу\n(autonomous) · n=1/3"),
                                ("do_check", "DO", "CHECK", "потоки закрыты"),
                                ("check_act", "CHECK", "ACT", "pass"),
                                ("act_exit", "ACT", "EXIT", "закрыто")]:

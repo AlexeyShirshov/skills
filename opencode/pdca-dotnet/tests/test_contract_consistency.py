@@ -397,12 +397,12 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("Normal mode with no acceptance criteria", self.gate1)
         self.assertIn("autonomous → route through planner/escalate", self.gate1)
 
-    def test_normal_mode_retains_questions_and_go(self):
-        self.assertIn("explicit go/го", self.gate1)
+    def test_normal_mode_retains_questions_and_approval(self):
+        self.assertIn("the user's approval of the plan", self.gate1)
         self.assertIn("Normal mode", self.gate1)
         self.assertIn("ask the user", self.gate1)
         self.assertIn(
-            "DO starts only on an explicit go/го in the normal mode", self.skill
+            "DO starts only after the user approves the plan in the normal mode", self.skill
         )
 
     # --- Task 2: DO-candidate fourth branch + trigger 5 -------------------
@@ -560,21 +560,21 @@ class ContractConsistencyTest(unittest.TestCase):
         )
         self._assert_patterns(para, f"planner plan-disk {path}", [
             r"(?i)normal mode|обычн\w* режим",
-            r"(?i)user's go-ahead|go пользователя",
+            r"(?i)user approves|user's approval|пользователь утверждает",
             r"(?i)autonomous mode|автономн\w* режим",
             r"(?i)no question|no questions|ни вопроса|без вопрос|вопросов нет",
             r"(?i)no waiting|без ожидания|ни ожидания|не жд",
             r"(?i)gate-1|gate 1|гейт\w* 1",
         ])
 
-    def test_planner_plan_disk_paragraph_scopes_user_go_to_normal_mode(self):
+    def test_planner_plan_disk_paragraph_scopes_user_approval_to_normal_mode(self):
         # The planner sub-brief's "plan goes to disk" paragraph must scope the user
-        # go-ahead to the normal mode and state the autonomous no-go/no-question path.
+        # approval to the normal mode and state the autonomous no-approval/no-question path.
         with self.subTest(path=str(ASSET_BRIEFS[0])):
             self._assert_planner_plan_disk_paragraph(ASSET_BRIEFS[0])
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_planner_plan_disk_paragraph_scopes_user_go_to_normal_mode_host_brief(self):
+    def test_planner_plan_disk_paragraph_scopes_user_approval_to_normal_mode_host_brief(self):
         with self.subTest(path=str(CONFIG_BRIEFS[0])):
             self._assert_planner_plan_disk_paragraph(CONFIG_BRIEFS[0])
 
@@ -597,7 +597,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertNotIn("every primary", section)
         self.assertNotIn("architect", section)
 
-    def test_cycle_quickref_marks_go_ahead_normal_mode_only(self):
+    def test_cycle_quickref_marks_approval_normal_mode_only(self):
         cycle = norm(between(
             self.skill_raw,
             "Cycle: `PLAN",
@@ -663,16 +663,16 @@ class TwoPathContractTest(unittest.TestCase):
         self.assertIn("pdca-orchestrator (autonomous delegation)", self.host)
 
 
-class GoGateAndFallbackGuardTest(unittest.TestCase):
-    """D8 negative guards: the normal-mode go-gate and the no-silent-bypass fallback.
+class ApprovalGateAndFallbackGuardTest(unittest.TestCase):
+    """D8 negative guards: the normal-mode approval gate and the no-silent-bypass fallback.
 
     Rule-presence only.  These read Markdown text and never execute a model.
     Each guard pins a *short tokens* phrase whose removal (or whose flip in the
     opposite section) makes the assertion fail, so the guard is negative in
-    direction: deleting the go clause, requiring `go` in autonomous mode, or
-    dropping the "not a silent run" clause turns a test red.  Scoped to the
-    operative SKILL sections with short tokens (`go`, `normal`, `autonomous`,
-    `pause`, `go-ahead`, `Notice:`) rather than brittle full sentences.
+    direction: deleting the approval clause, requiring an approval in autonomous
+    mode, or dropping the "not a silent run" clause turns a test red.  Scoped to
+    the operative SKILL sections with short tokens (`approval`, `normal`,
+    `autonomous`, `pause`, `Notice:`) rather than brittle full sentences.
     """
 
     @classmethod
@@ -694,32 +694,32 @@ class GoGateAndFallbackGuardTest(unittest.TestCase):
             )
         )
 
-    # --- go-gate: mandatory in normal mode, absent in autonomous ----------
+    # --- approval gate: mandatory in normal mode, absent in autonomous ------
 
-    def test_normal_mode_requires_explicit_go_before_do(self):
-        # Normal path: DO is gated on an explicit user `go`/`го`. Removing the
-        # clause from gate 1 or the go-ahead section breaks this test.
-        self.assertIn("explicit go/го", self.gate1)
+    def test_normal_mode_requires_explicit_approval_before_do(self):
+        # Normal path: DO is gated on an explicit user approval of the plan.
+        # Removing the clause from gate 1 or the approval section breaks this test.
+        self.assertIn("the user's approval of the plan", self.gate1)
         self.assertIn("Normal mode", self.gate1)
         self.assertIn(
-            "DO starts only on an explicit go/го in the normal mode", self.skill
+            "DO starts only after the user approves the plan in the normal mode", self.skill
         )
-        # The state-machine cycle line still names the normal-mode plan confirmation.
-        self.assertIn("normal mode: user reviews and confirms the plan", self.state_machine)
+        # The state-machine cycle line still names the normal-mode plan approval.
+        self.assertIn("normal mode: the user reads and approves the plan", self.state_machine)
 
-    def test_autonomous_mode_has_no_go_and_no_pause(self):
-        # Autonomous path: no `go`, no confirmation pause. If autonomous began
-        # requiring a go, the negated clauses would disappear.
-        self.assertIn("no go and no invitation", self.autonomous)
-        self.assertIn("no go invitation", self.autonomous)
-        self.assertIn("without confirmation pauses", self.autonomous)
+    def test_autonomous_mode_has_no_approval_and_no_pause(self):
+        # Autonomous path: no approval, no pause. If autonomous began
+        # requiring an approval, the negated clauses would disappear.
+        self.assertIn("no approval and no invitation", self.autonomous)
+        self.assertIn("no approval request", self.autonomous)
+        self.assertIn("without approval pauses", self.autonomous)
         self.assertNotIn("explicit go/го", self.autonomous)
-        self.assertNotIn("go-ahead is required", self.autonomous)
+        self.assertNotIn("approval is required", self.autonomous)
 
-    def test_gate1_excludes_autonomous_from_the_go_requirement(self):
-        # The gate-1 go requirement must explicitly carve out autonomous mode.
+    def test_gate1_excludes_autonomous_from_the_approval_requirement(self):
+        # The gate-1 approval requirement must explicitly carve out autonomous mode.
         self.assertIn(
-            "except in autonomous mode, where DO starts right after PLAN", self.gate1
+            "except in autonomous mode, where no approval is required", self.gate1
         )
 
     # --- fallback: explicit marking, never a silent bypass ----------------
@@ -783,8 +783,8 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
         self.assertNotIn("×3", sub)
         self.assertNotIn("×2", sub)
 
-    def test_workflow_go_label_starts_attempt_one(self):
-        self.assertIn("n=1", self._edge("e_go")["label"])
+    def test_workflow_approval_label_starts_attempt_one(self):
+        self.assertIn("n=1", self._edge("e_approval")["label"])
 
     def test_workflow_escalate_edge_not_generic_2_3x(self):
         label = self._edge("e_orb_escalate")["label"]

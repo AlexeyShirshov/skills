@@ -34,9 +34,10 @@ pdca". The phrase "по pdca-dotnet" selects a related but separate skill with .
 .NET gates — that is not `pdca-coder`.
 
 There are two modes. In **normal** mode the cycle is interactive. First the plan is written into the
-status file on disk (the source of truth on the cycle), then its gist is shown — and only after an
-explicit `go` (or `го`) does execution begin; a question, a request to change the plan or an
-optional reply does not count as a start. In **autonomous** mode (the user has explicitly asked to
+status file on disk (the source of truth on the cycle), then the orchestrator states that the plan
+is ready and recorded — and only after the user **reads and approves** the plan does execution
+begin; a question, a request to change the plan or an optional reply does not count as a start. In
+**autonomous** mode (the user has explicitly asked to
 work without questions) there are no pauses: transitions happen in the same turn in which the gate
 is passed, and all communication goes into the status file as `Notice:` marks. Autonomy reduces
 questions but **does not expand permissions** and does not cancel the mandatory gate items.
@@ -126,7 +127,7 @@ and does not cancel the other streams.
 **The project overlay.** A repository may add its own cycle rules: a file in `instructions`, a
 project skill `*-pdca`, or `.opencode/skills/<name>/SKILL.md`. The overlay refines invariants,
 finding registries, report formats and thresholds, and takes precedence over the general
-recommendation, but **does not cancel** the state machine and the gates — `go`, "everything green",
+recommendation, but **does not cancel** the state machine and the gates — the plan approval, "everything green",
 returns, autonomous mode. Before PLAN, `scout` looks for such an overlay and brings back its rules.
 
 ## A teaching scenario (an illustration, not a rule)
@@ -144,7 +145,7 @@ exit code; with the flag, they do; an empty config does not crash. A matrix of v
 warnings, with one, with several, a missing file. Lenses are chosen: correctness and error
 handling, CLI/UX, security — if an untrusted file is read. Performance decision: not needed, the
 work is not on a line-by-line hot path, with `file:line` given. Documentation decision: update the
-README and the guide section. `coder` writes the plan into the status file. After `go`, DO begins.
+README and the guide section. `coder` writes the plan into the status file. After the approval, DO begins.
 
 **DO.** Three streams start in one turn: the code adds the flag and changes the exit code; the tests
 write the cases from the matrix; the prose docs describe the flag. All three rely only on the plan.
@@ -212,39 +213,39 @@ configuration repository.
 |---|---|
 | Stack-agnosticism: code, tests, documentation, refactoring, configuration; the choice of toolchain and lenses belongs to PLAN | `:8-15` |
 | The contract applies only with the skill loaded; a gate checks the presence of items, not their quality | `:8-9`, `:116-118` |
-| Roles, tiers and economics (cheap / medium / strong) | `:17-21`, `:1289-1295` |
+| Roles, tiers and economics (cheap / medium / strong) | `:17-21`, `:1292-1298` |
 | The host defines the roles; only a `# tier:` label, no `model:` is written into a role | `:51-57`, `:73-77` |
 | Only a cheap-tier primary drives the cycle (by the profile's effective tier) | `:52-57`, `:99-103` |
 | The role table, the fallback to `explore`/`general`; an unavailable role is a resource blocker | `:64-71`, `:86-90` |
 | The project overlay and its boundaries (it does not cancel the gates or the state machine) | `:38-47` |
 | State: the status file is the source of truth, the todo is a session mirror | `:125-132` |
 | The three counters `N`, `r`, `n/3` | `:134-145` |
-| Gates 1–4 (PLAN → DO → CHECK → ACT) | `:190-227` |
-| The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `:179-188`, `:1178-1188` |
-| Re-entry after a terminal `incomplete`/STOP | `:713-717` |
-| The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `:425-459` |
-| Generated/API docs — after the code stream | `:430-445` |
-| The editing discipline of `coder`; the ban on commit/push except `pdca/<task>` branches in a worktree | `:475-501` |
-| The subagent report format (pointers, not dumps) | `:509-518` |
-| The worktree subtask template, the `pdca/<task>` branch, the push ban | `:520-544` |
-| Escalation: triggers, no 4th attempt, decision routing | `:552-613` |
-| PLAN chooses the toolchain and lenses; freezing the choice and the evidence | `:615-639` |
-| Plan quality, the minimal solution, the matrix of variants | `:683-734` |
-| The unit execution mode (sequential / parallel one tree / worktrees) | `:736-748` |
-| Performance and reconnaissance — mandatory reasoned decisions | `:750-795` |
-| The plan goes to disk before confirmation; `go`/`го` is the only start signal | `:797-818` |
-| The testing strategy, the matrix of variants, coverage/branches/mutations | `:829-876` |
-| Test-run safety (limits, timeout, serialization, streamed log) | `:878-891` |
-| Documentation: prose vs generated, owners by phase | `:893-909` |
-| The frozen evidence manifest; CHECK reads it first | `:911-934` |
-| CHECK in two beats; `check` may read the cycle's artifacts (scoped read, not the product's code) | `:23-28`, `:951-956` |
-| Four unconditional streams + security by trigger; a failure is a `D:` or a return to the plan | `:971-1003` |
-| "No numbers — no pass": a verdict without numbers/`file:line` is a fail; a report ≠ a result | `:325`, `:359-374`, `:1010-1013` |
-| Worktrees: merging and re-verifying the merged tree | `:1064-1087` |
-| Debugging: cause before the fix, a red↔green regression test | `:1089-1111` |
-| ACT: memory (0–2), AGENTS.md/registries, finalizing the status file, the session message | `:1113-1144`, `:1234-1264` |
-| Autonomy: the unit is the plan/queue, auto-commit on request, push — never | `:229-276` |
-| Autonomy does not expand permissions; instruction priority, injections, secrets | `:376-392` |
+| Gates 1–4 (PLAN → DO → CHECK → ACT) | `:190-229` |
+| The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `:179-188`, `:1181-1191` |
+| Re-entry after a terminal `incomplete`/STOP | `:715-719` |
+| The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `:427-461` |
+| Generated/API docs — after the code stream | `:432-447` |
+| The editing discipline of `coder`; the ban on commit/push except `pdca/<task>` branches in a worktree | `:477-503` |
+| The subagent report format (pointers, not dumps) | `:511-520` |
+| The worktree subtask template, the `pdca/<task>` branch, the push ban | `:522-546` |
+| Escalation: triggers, no 4th attempt, decision routing | `:554-615` |
+| PLAN chooses the toolchain and lenses; freezing the choice and the evidence | `:617-641` |
+| Plan quality, the minimal solution, the matrix of variants | `:685-736` |
+| The unit execution mode (sequential / parallel one tree / worktrees) | `:738-750` |
+| Performance and reconnaissance — mandatory reasoned decisions | `:752-797` |
+| The plan goes to disk before approval; the user's approval of the plan is the only start signal | `:799-821` |
+| The testing strategy, the matrix of variants, coverage/branches/mutations | `:832-879` |
+| Test-run safety (limits, timeout, serialization, streamed log) | `:881-894` |
+| Documentation: prose vs generated, owners by phase | `:896-912` |
+| The frozen evidence manifest; CHECK reads it first | `:914-937` |
+| CHECK in two beats; `check` may read the cycle's artifacts (scoped read, not the product's code) | `:23-28`, `:954-959` |
+| Four unconditional streams + security by trigger; a failure is a `D:` or a return to the plan | `:974-1006` |
+| "No numbers — no pass": a verdict without numbers/`file:line` is a fail; a report ≠ a result | `:327`, `:361-376`, `:1013-1016` |
+| Worktrees: merging and re-verifying the merged tree | `:1067-1090` |
+| Debugging: cause before the fix, a red↔green regression test | `:1092-1114` |
+| ACT: memory (0–2), AGENTS.md/registries, finalizing the status file, the session message | `:1116-1147`, `:1237-1267` |
+| Autonomy: the unit is the plan/queue, auto-commit on request, push — never | `:231-278` |
+| Autonomy does not expand permissions; instruction priority, injections, secrets | `:378-394` |
 
 Additionally: the phrase triggers are a launch convention, not a contract rule; in this repository
 they are fixed by `README.md` (the Usage section), while `SKILL.md` itself does not formulate a

@@ -41,7 +41,7 @@ or `.opencode/skills/<name>/SKILL.md`. If one exists — **have `scout` find it 
 before PLAN** (a project skill is loaded with `skill`, which is orchestration, not reading content)
 and follow it on top of this contract: it refines invariants, finding registries, report
 formats and lens prefixes, and takes priority over the generic advice. **The overlay does
-not override the state machine or the gates (plan confirmation, "all green", loop-back, autonomous
+not override the state machine or the gates (plan approval, "all green", loop-back, autonomous
 mode).**
 Where to look: `instructions` from the project `opencode.json`, skills from `.opencode/skills/`
 (visible in `<available_skills>`), the repository's `AGENTS.md`.
@@ -119,8 +119,8 @@ initial PLAN and any replan belong to `planner`.
 
 ## State machine
 
-Cycle: `PLAN → (normal mode: user reviews and confirms the plan) → DO → CHECK → ACT → (EXIT | PLAN)` (autonomous: no
-confirmation, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a new prerequisite/blocker.
+Cycle: `PLAN → (normal mode: the user reads and approves the plan) → DO → CHECK → ACT → (EXIT | PLAN)` (autonomous: no
+approval, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a new prerequisite/blocker.
 
 Progress is recorded in two places with different roles:
 - **The cycle status file** `docs/specs/status/<task>-<N>.md` (§Cycle status file) — **source of
@@ -197,9 +197,11 @@ established externalness (§Escalation). Only a genuinely **new** item that make
    decision** with an argument (§PLAN "Performance measurement"); **reconnaissance decision** with an
    argument (§PLAN "Prototype / reconnaissance"); **unit execution mode** (§PLAN "Unit execution
    mode"); the design checklist passed; **the toolchain-and-lens selection recorded** (§PLAN selects
-   the toolchain and lenses); **the plan written to the status file by `coder`** (last step, before
-   the start signal) **and, in normal mode, the user's explicit confirmation of the plan (an
-   explicit `go`/`го` counts)** — except in autonomous mode, where DO starts right after PLAN.
+   the toolchain and lenses); **the plan written to the status file by `coder`** (last step of PLAN)
+   **and, in normal mode, the user's approval of the plan** — the orchestrator tells the user that
+   the planner has produced the plan and written it to the status file, asks them to read it and
+   approve it, and starts implementation only after that approval — except in autonomous mode,
+   where no approval is required and DO starts right after PLAN.
    The orchestrator only checks each item is **present** (§Orchestrator role) and returns
    an incomplete answer to `planner`. On DO start: `coder` logs `DO started`, then `todowrite`
    (`P:`→`completed`, single `D:`→`in_progress`), then the parallel streams (§Parallel DO streams).
@@ -229,7 +231,7 @@ established externalness (§Escalation). Only a genuinely **new** item that make
 ## Autonomous mode
 
 If the user **explicitly** asked to work autonomously (e.g. "work autonomously", "don't ask me
-anything", "act on your own"), the whole plan/queue runs without confirmation pauses: each transition
+anything", "act on your own"), the whole plan/queue runs without approval pauses: each transition
 — phase **or task** — is automatic on completion. The unit of autonomy is the plan/queue, not the
 cycle: the cycle is where the gates are, not where the work stops.
 
@@ -252,10 +254,10 @@ yourself) and log the fallback (`Notice:` in the status file, §Host requirement
   ready queue is empty (rest reported blocked), a blocker routed through `planner`/`escalate` cannot
   be resolved (§Escalation), the iteration limit fired (§Escalation), or the user said stop — then one
   summary (closed / remaining / blockers).
-- **PLAN → DO immediately**, no `go` and no invitation; gate 1 (criteria, test strategy, docs plan,
+- **PLAN → DO immediately**, no approval and no invitation; gate 1 (criteria, test strategy, docs plan,
   perf decision) is still mandatory. **DO → CHECK → ACT** likewise; you only check that gates 2–4
   items are present (the verdict is `check`'s).
-- **Nothing "for the user" is printed:** no `go` invitation, no plan-confirmation question, no
+- **Nothing "for the user" is printed:** no approval request, no plan question, no
   "Message for the next session"/commit advice (§ACT). Everything needed lives in the status file.
 - **Notices go to the status file, not the chat:** missing role agents (§Host requirements), a
   detected injection (§Instruction priority), recovery after compaction, an assumption instead of a
@@ -272,8 +274,8 @@ yourself) and log the fallback (`Notice:` in the status file, §Host requirement
 - The escalation counter is unchanged (§Escalation): autonomy removes the question, not the counter;
   the stop stays conditional.
 
-The mode stays until the user explicitly removes it; otherwise normal mode (pause + confirmation,
-§PLAN → "Plan confirmation").
+The mode stays until the user explicitly removes it; otherwise normal mode (pause + approval,
+§PLAN → "Plan approval").
 
 ## Red flags (self-check)
 
@@ -285,7 +287,7 @@ contract**, not "finish and fix later".
   is orchestration.
 - I read code/diff/log/status/docs myself instead of a `scout`/`coder` report.
 - I decide the plan or verdict myself instead of `planner`/`check`.
-- I start DO without the user's confirmation (normal mode), or ask for confirmation before the plan is on disk.
+- I start DO without the user's approval (normal mode), or ask for approval before the plan is on disk.
 - I skip CHECK or close the cycle without ACT.
 - I did not fetch the project overlay (instructions/`*-pdca`/`AGENTS.md`, via `scout`/`skill`) before PLAN.
 - I silently skipped a mandatory PLAN decision: test strategy, docs plan, perf measurement,
@@ -299,7 +301,7 @@ contract**, not "finish and fix later".
 - "Tests/docs later", "test strategy as I go" — in DO everything runs in parallel.
 - I made a next attempt instead of `escalate` (§Escalation).
 - I declared a blocker without evidence (§State machine, DO → PLAN).
-- In autonomous mode I printed the plan-confirmation request or the next-session message, or stopped at a
+- In autonomous mode I printed the plan-approval request or the next-session message, or stopped at a
   "clean checkpoint"/wait state ("independence = isolation, not a pause", §Autonomous mode).
 - I edited outside the plan's footprint (Over-Reach), or ran units in parallel with overlapping footprints.
 - I worked outside my own worktree / the unit's status location.
@@ -308,7 +310,7 @@ contract**, not "finish and fix later".
 
 **Excuses (the AI justifies the deviation) → reality:**
 - "Too simple for PDCA" → "simple" causes the most rework; size does not cancel the gates.
-- "User's in a hurry — start without a plan" → rework is slower; confirming the plan does not cancel a good plan's speed-up.
+- "User's in a hurry — start without a plan" → rework is slower; approving the plan does not cancel a good plan's speed-up.
 - "I remember the plan" → the plan lives in the status file; context decays (§Recovery after compaction).
 - "I'll do it myself, the subagent is slow" → delegation is the contract; self-work runs worse and burns context.
 - "`check` will approve anyway" → the verdict is its job; a self-verified verdict is Verifier Theater.
@@ -398,7 +400,7 @@ to check, use "set/not set".
   cheap; **decisions and decomposition** — the `planner` subagent, which `build`
   invokes via Task (both when starting the cycle and on the CHECK → PLAN / DO → PLAN return); do not load code into your
   context. **The last step of PLAN** — `coder` writes `planner`'s plan into the status file
-  (`planner` has no file permissions), and only then is the user asked to confirm the plan.
+  (`planner` has no file permissions), and only then is the user asked to approve the plan.
 - **DO** — code, tests and prose docs are written in parallel right after the plan (not "test then
   code", not "docs later"); generated/API docs follow the finished code. All through `coder`
   (a docs/format specialist selected by PLAN when one is available); each closed `D:` is logged in the
@@ -430,7 +432,7 @@ ordering in DO — the only red→green requirement is the regression test of a 
 **Generated/API docs** are not part of this launch — they follow the finished code (step 4):
 
 1. **Status file.** The plan is already written there (the last step of PLAN, §PLAN → "Plan
-   confirmation"); on confirmation `coder` records `DO started` in its progress log.
+   approval"); on approval `coder` records `DO started` in its progress log.
 2. **Shared contract — only if the streams need it.** If the tests or docs rely
    on an abstraction/DTO/signature, **first** only the contract is fixed: signatures and
    types **without implementation** (a single `coder` Task or a sketch in the status file). The
@@ -745,7 +747,7 @@ PLAN splits the feature into **units** (`D:` tasks/streams) and **explicitly dec
 
 Independence invariant: units **do not share mutable files or a shared contract**; any footprint overlap ⇒
 sequential, or **one** cycle with a shared contract (step 2 of §Parallel DO streams). "Looks independent"
-without a footprint is not a reason. The mode is **visible at gate 1** (plan + confirmation); the user can override.
+without a footprint is not a reason. The mode is **visible at gate 1** (plan + approval); the user can override.
 
 ### Performance measurement (mandatory decision)
 
@@ -794,28 +796,29 @@ Utilization: **delete** it or turn it into a test/benchmark — "kept just in ca
 the answer → return to PLAN (`planner` re-plans) — a DO → PLAN or CHECK → PLAN loop-back. A PoC may precede the
 plan but must not be the plan: for a shipping change gate 1 is not cancelled.
 
-### Plan confirmation (PLAN → DO)
+### Plan approval (PLAN → DO)
 
-**The plan goes to disk before the user confirms it, in both modes.** Last step of PLAN: the primary passes
+**The plan goes to disk before the user approves it, in both modes.** Last step of PLAN: the primary passes
 `planner`'s plan to `coder`, which writes the **status file** (`docs/specs/status/<task>-<N>.md`) — goal,
 acceptance criteria, test strategy with the variant matrix, docs plan, perf/recon/unit-mode decisions, the
 toolchain/lens selection, DO
-task list, risks — and the log entry `PLAN ready — awaiting confirmation` (`planner` never writes files). A compaction
-while awaiting confirmation loses nothing.
+task list, risks — and the log entry `PLAN ready — awaiting user approval` (`planner` never writes files). A compaction
+while awaiting approval loses nothing.
 
 **Autonomous mode: no pause** — DO starts immediately. Normal mode ends with a **pause**: show the plan
 (goal, criteria, test strategy, docs plan, perf decision, unit mode, toolchain/lenses, tasks, risks), give the
-status-file path, and ask the user to review the implementation plan and confirm it (substitute the gist for `<…>`):
+status-file path, and ask the user to read the implementation plan and approve it (substitute the gist for `<…>`):
 
 > The plan is ready: <1–2 lines of the gist>. Plan file: `docs/specs/status/<task>-<N>.md`.
-> Please review the implementation plan; if you accept it, **confirm it** (write `go`/`го` or
-> "подтверждаю"). Implementation starts only after your confirmation.
+> The planner has produced the plan and written it to the status file — please read it and
+> **approve it**. Implementation starts only after your approval.
 
-The user's explicit confirmation is the **only start signal** (`go`/`го` counts); on it `coder` logs
-`plan confirmed — DO started` and the **parallel**
+The user's approval is the **only start signal** (no keyword is required — any explicit approval of the
+plan counts); on it `coder` logs
+`plan approved — DO started` and the **parallel**
 streams launch (§Parallel DO streams). Without it nothing is created/edited **except the status file** —
 wait, clarify, or rewrite the plan (via `planner`, same file by `coder`). A question, a change request or a
-non-committal reply does not start — ask for confirmation again when ready. From here the status file is the **progress log**.
+non-committal reply is not an approval — ask for approval again when ready. From here the status file is the **progress log**.
 
 **Collection caller handoff.** When this cycle is a single task's own PLAN invoked by
 `pdca-collection` (its `COLLECTION TASK PLAN` entry), the collection caller owns the
@@ -823,8 +826,8 @@ PLAN → DO boundary: the cycle finishes PLAN, persists the status file, and yie
 back to the collection parent with a `plan_handoff` — same task identity, same `N`/`r`/`n`,
 same `selected_variant` — instead of starting DO. The parent later resumes **the same
 cycle** from DO after an applicability check. This is a caller-driven handoff, not a
-standalone-autonomous pause and not a `go`: standalone normal mode still starts only on the
-explicit confirmation, and standalone autonomous still starts DO immediately.
+standalone-autonomous pause and not a user approval: standalone normal mode still starts only after the
+user approves the plan, and standalone autonomous still starts DO immediately.
 
 ### Test strategy (PLAN → TEST)
 
@@ -1156,7 +1159,7 @@ Lifecycle (finalization in ACT — see "Lifetime"):
 1. **Creation, last step of PLAN before the start signal:** the plan — goal, acceptance criteria, test
    strategy with the variant and priority matrices, docs plan, perf/recon/unit-mode decisions, the
    toolchain/lens selection, DO task
-   list, risks — plus the log opened with `PLAN ready — awaiting confirmation`.
+   list, risks — plus the log opened with `PLAN ready — awaiting user approval`.
 2. **Progress — every event** of DO/CHECK.
 3. **Replan** (CHECK → PLAN / DO → PLAN): a real revised plan bumps `r`, resets `n` to 1; an unchanged
    plan does not. The **same** file's plan section is rewritten; the outgoing failed attempt is recorded
@@ -1167,7 +1170,7 @@ Lifecycle (finalization in ACT — see "Lifetime"):
 ```text
 <UTC time> | <phase> | revision r | iteration n/3 | <event> | <evidence pointer>
 ```
-Must log: `PLAN ready — awaiting confirmation`; `plan confirmed — DO started`; each `D:` unit/stream state change;
+Must log: `PLAN ready — awaiting user approval`; `plan approved — DO started`; each `D:` unit/stream state change;
 each `D:` closed (exit code + log path); DO → CHECK; each CHECK stream report; the `check` verdict; each
 CHECK failure/fix/loop-back with its defect key and applied fix count (pointers, not logs); loop-back to
 DO / `Replanned` (with the outgoing failed attempt); an additive-prerequisite addition or a
@@ -1272,11 +1275,11 @@ The `Status:` line always names the kept status file, including a closed flow
   model). Either pin a model for it in the agent config/profile, or embed its instructions into
   the project checklist and do not invoke the agent itself.
 
-## PLAN → DO transition (confirmation)
+## PLAN → DO transition (approval)
 
-DO starts only on an explicit `go`/`го` in the normal mode — the user's confirmation after reviewing the
+DO starts only after the user approves the plan in the normal mode — the user's approval after reading the
 implementation plan; in autonomous mode (§Autonomous mode)
-right after PLAN. The plan is already on disk (last step of PLAN), so on confirmation perform ONLY what is
+right after PLAN. The plan is already on disk (last step of PLAN), so on approval perform ONLY what is
 in it: **do not repeat PLAN's research**; a missing detail goes to `planner`, not a reopened design.
 Allowed in DO: root-cause investigation (§Debugging) and the plan's own spikes (§PLAN →
 "Prototype / reconnaissance").

@@ -15,7 +15,7 @@
           "check",
           "act"
         ],
-        "note": "PLAN → DO → CHECK → ACT по гейтам; ACT только после зелёного CHECK; go — начало DO."
+        "note": "PLAN → DO → CHECK → ACT по гейтам; ACT только после зелёного CHECK; апрув плана — начало DO."
       },
       {
         "id": "branches",
@@ -80,7 +80,7 @@
       "col": 0,
       "type": "security",
       "label": "PLAN",
-      "sublabel": "дизайн · план → go",
+      "sublabel": "дизайн · план → апрув",
       "width": 150
     },
     {
@@ -179,10 +179,10 @@
       "role": "main"
     },
     {
-      "id": "e_go",
+      "id": "e_approval",
       "from": "plan",
       "to": "do",
-      "label": "`go` · n=1 / авто: сразу",
+      "label": "`апрув` · n=1 / авто: сразу",
       "role": "main"
     },
     {

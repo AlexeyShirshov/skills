@@ -48,7 +48,7 @@ BASE_VARIANTS = {
 # The contract fixes the token families, not one exact sentence.
 _OWN_PLAN_TOKENS = ("собственный PLAN", "собственного PLAN")
 _PLAN_STATE_VALUES = ("pending", "running", "ready")
-_GO_CONTEXT = re.compile(r"go\s*/\s*го|го\s*/\s*go", re.I)
+_APPROVAL_CONTEXT = re.compile(r"approv\w*|апрув", re.I)
 
 
 def _plain(text: str) -> str:
@@ -182,13 +182,13 @@ class OrchestratorCollectionPlanHandoffTest(unittest.TestCase):
 class StandaloneVariantCollectionHandoffTest(unittest.TestCase):
     """Base variants keep standalone semantics AND gain a collection caller note."""
 
-    def test_variants_keep_standalone_go_and_autonomous_immediate(self):
+    def test_variants_keep_standalone_approval_and_autonomous_immediate(self):
         for name, path in BASE_VARIANTS.items():
             with self.subTest(variant=name):
                 low = _plain(path.read_text(encoding="utf-8")).lower()
                 self.assertTrue(
-                    _GO_CONTEXT.search(low),
-                    f"{name}: lost the explicit normal-mode 'go'/'го' confirmation "
+                    _APPROVAL_CONTEXT.search(low),
+                    f"{name}: lost the explicit normal-mode plan-approval "
                     f"context",
                 )
                 self.assertTrue(

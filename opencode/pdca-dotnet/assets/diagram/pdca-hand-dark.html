@@ -19,7 +19,7 @@
 <rect x="24" y="24" width="1604" height="138" rx="10" class="band"/>
 <text x="42" y="48" class="bt">Оркестратор · cheap — normal: primary · autonomous: pdca-orchestrator</text>
 <text x="42" y="76" class="ol">← PLAN ← «старт» · «реплан от check/DO» · «цикл N+1 от ACT»</text>
-<text x="42" y="94" class="ol">← DO ← «план готов · go/сразу» · «фикс дефекта от check (вкл. security)» · «фикс от escalate при r не исчерпан»</text>
+<text x="42" y="94" class="ol">← DO ← «план готов · апрув/сразу» · «фикс дефекта от check (вкл. security)» · «фикс от escalate при r не исчерпан»</text>
 <text x="42" y="112" class="ol">← CHECK ← «потоки закрыты»</text>
 <text x="42" y="130" class="ol">← CHECK · security ← «условно: auth / секреты / ввод / crypto» · «отчёт → CHECK»</text>
 <text x="844.0" y="76" class="ol">← ACT ← «check pass»</text>
@@ -104,7 +104,7 @@
 <rect x="422" y="287" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="447.0" y="299.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
 <text x="261" y="303" class="t">DO</text>
-<text x="261" y="322" class="s">журнал · план до go</text>
+<text x="261" y="322" class="s">журнал · план до апрува</text>
 <rect x="278" y="342" width="202" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="279" y="349" width="3" height="36" rx="1.5" fill="#4f46e5"/>
 <rect x="422" y="349" width="50" height="18" rx="6" fill="#4f46e5"/>
@@ -389,7 +389,7 @@
 <text x="0" y="209.0" class="g" fill="#94a3b8" text-anchor="start">цикл N+1</text>
 <polyline points="138.0,224 138.0,162" fill="none" stroke="#94a3b8" data-edge-id="return_p" marker-end="url(#arrow)"/>
 <polyline points="348.0,162 348.0,224" fill="none" stroke="#94a3b8" data-edge-id="dispatch_d" marker-end="url(#arrow)"/>
-<text x="340.0" y="183.0" class="g" fill="#94a3b8" text-anchor="end">план готов · go/сразу</text>
+<text x="340.0" y="183.0" class="g" fill="#94a3b8" text-anchor="end">план готов · апрув/сразу</text>
 <text x="340.0" y="196.0" class="g" fill="#94a3b8" text-anchor="end">фикс от check (с security)</text>
 <text x="340.0" y="209.0" class="g" fill="#94a3b8" text-anchor="end">фикс от escalate (r активен)</text>
 <polyline points="380.0,224 380.0,162" fill="none" stroke="#94a3b8" data-edge-id="return_d" marker-end="url(#arrow)"/>
@@ -444,7 +444,7 @@
 <polyline points="184,1354.0 295,1354.0" fill="none" stroke="#94a3b8" data-edge-id="start_plan" marker-end="url(#arrow)"/>
 <text x="239.5" y="1347.0" class="g" fill="#cbd5e1" text-anchor="middle">старт</text>
 <polyline points="455,1354.0 566,1354.0" fill="none" stroke="#94a3b8" data-edge-id="plan_do" marker-end="url(#arrow)"/>
-<text x="510.5" y="1331.0" class="g" fill="#cbd5e1" text-anchor="middle">go (normal)</text>
+<text x="510.5" y="1331.0" class="g" fill="#cbd5e1" text-anchor="middle">апрув (normal)</text>
 <text x="510.5" y="1342.0" class="g" fill="#cbd5e1" text-anchor="middle">сразу (авто)</text>
 <text x="510.5" y="1353.0" class="g" fill="#cbd5e1" text-anchor="middle">n=1/3</text>
 <polyline points="726,1354.0 837,1354.0" fill="none" stroke="#94a3b8" data-edge-id="do_check" marker-end="url(#arrow)"/>

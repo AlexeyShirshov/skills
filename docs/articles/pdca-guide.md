@@ -109,7 +109,7 @@ in the current worktree, returning a compact summary (no longer than 8 lines).
 One more important detail: `pdca-coder` and `pdca-dotnet` are extended by a **project overlay** —
 a repository may add its own rules through a file in `instructions`, a project skill `*-pdca`, or
 `.opencode/skills/<name>/SKILL.md`. The overlay refines invariants, finding registries, report
-formats and thresholds, but **does not cancel** the state machine and the gates (plan confirmation,
+formats and thresholds, but **does not cancel** the state machine and the gates (plan approval,
 "everything green", loop-back, autonomous mode). The domain-neutral `pdca` describes no such
 overlay.
 
@@ -174,7 +174,7 @@ prohibition, not an obstacle to be "outsmarted".
 The cycle's state machine looks like this:
 
 ```text
-PLAN → (normal: the user confirms the plan) → DO → CHECK → ACT → (EXIT | PLAN)
+PLAN → (normal: the user approves the plan) → DO → CHECK → ACT → (EXIT | PLAN)
                     ▲                      │
                     └──────── DO → PLAN ───┘
 ```
@@ -241,8 +241,8 @@ so" but a concrete artifact: a status-file record, an exit code, a log path, a g
 
 | What | Content |
 |---|---|
-| **Entry condition** | The planner's answer contains **all the mandatory plan fields**; the plan is **written into the status file**; in normal mode the user's **explicit confirmation of the plan** has been received (`go`/`го` counts) — or we are in autonomous mode, where DO starts right after PLAN |
-| **Evidence** | A status file with the plan and the record `PLAN ready — awaiting confirmation`; the textual plan with its fields; the user's confirmation (normal) |
+| **Entry condition** | The planner's answer contains **all the mandatory plan fields**; the plan is **written into the status file**; in normal mode the user's **approval of the plan** has been received — or we are in autonomous mode, where no approval is required and DO starts right after PLAN |
+| **Evidence** | A status file with the plan and the record `PLAN ready — awaiting user approval`; the textual plan with its fields; the user's approval (normal) |
 | **Responsible** | The planner formulates; the executor/coder writes the plan into the status file; the orchestrator checks that the items are present and returns an incomplete answer to the planner |
 | **Permitted next step** | DO; if acceptance criteria are missing, in normal mode ask the user, in autonomous mode route through planner/escalate and STOP |
 
@@ -433,11 +433,13 @@ scope while we are at it" is not a new circumstance but scope creep.
 One and the same contract has two modes.
 
 **Normal mode** is interactive. The order is: the plan is written into the status file **before**
-permission; the orchestrator shows the gist of the plan, gives the path to the status file and asks
-you to **review the plan and confirm it** (typing `go`/`го` counts as an explicit confirmation).
-**The only start signal is the user's explicit confirmation of the plan**: a question, a request to
-change the plan or a non-committal reply ("OK", "yes") does not start DO — the confirmation has to
-be asked for again once the plan is ready. Without confirmation **nothing is created or edited
+permission; the orchestrator states that the plan is ready and recorded, gives the path to the
+status file and asks you to **read the plan and approve it**.
+**The only start signal is the user's approval of the plan** (no keyword is required — any explicit
+approval counts): a question, a request to
+change the plan or a non-committal reply ("OK", "yes") is not an approval and does not start DO —
+the approval has to
+be asked for again once the plan is ready. Without approval **nothing is created or edited
 except the status file**: waiting, clarifying or rewriting the plan (through the planner; the same
 file, written by the executor) is allowed.
 
@@ -450,8 +452,8 @@ primary drives the cycle itself and records a `Notice:` and a durable reason.
 In autonomous mode:
 
 - **Transitions happen in the same turn in which the gate is passed**, with no invitations or
-  pauses; PLAN → DO immediately, without `go` — but all the items of gate 1 remain mandatory.
-- **Nothing "for the user" is printed**: no `go` invitation, no question to confirm the plan, no
+  pauses; PLAN → DO immediately, without an approval pause — but all the items of gate 1 remain mandatory.
+- **Nothing "for the user" is printed**: no approval request, no question about the plan, no
   message for the next session. Everything needed lives in the status file.
 - **Notifications (`Notice:`) go into the status file, not the chat**: an unavailable role, a
   detected injection, recovery after compaction, an assumption instead of a question. The executor
@@ -469,8 +471,8 @@ The mode holds until the user explicitly lifts it; otherwise normal applies.
 **A separate case — an invocation from a collection.** When a task's PLAN is launched by the
 `pdca-collection` driver (the `COLLECTION TASK PLAN` input), the PLAN → DO boundary belongs to the
 calling side: the cycle finishes PLAN, keeps the status file and returns control to the parent
-through `plan_handoff` with the same `N`/`r`/`n`, rather than starting DO. This is **not** a `go`
-and not an autonomous pause: a single normal cycle still starts only on confirmation, a single
+through `plan_handoff` with the same `N`/`r`/`n`, rather than starting DO. This is **not** an approval
+and not an autonomous pause: a single normal cycle still starts only after the user approves the plan, a single
 autonomous one right after PLAN. The parent resumes **the same cycle** from DO after checking
 applicability.
 
@@ -507,7 +509,7 @@ do it.
 <UTC time> | <phase> | revision r | iteration n/3 | <event> | <evidence pointer>
 ```
 
-It records: `PLAN ready — awaiting confirmation`; `plan confirmed — DO started`; every status
+It records: `PLAN ready — awaiting user approval`; `plan approved — DO started`; every status
 change of a `D:` unit; the closure of every unit (exit code + log path); `DO → CHECK`; CHECK
 reports; the check's verdict; every failure/fix/loop-back with the defect key and the number of
 applied fixes; a return to DO or `Replanned` (with the failed attempt recorded); the addition of
@@ -945,7 +947,7 @@ in parallel without orchestrator agents.
 
 *Task:* update a documentation section. PLAN formulates the goal, constraints, assumptions and
 criteria (each with a way to verify it), decides not to split the task, and chooses the means and
-risks. The plan is written into the status file, and the user types `go`. DO makes exactly the
+risks. The plan is written into the status file, and the user approves it. DO makes exactly the
 planned change and returns changed/completed/evidence/blockers/unfinished. CHECK verifies the
 criteria against fresh data and renders all `met`. ACT records Done/Verified, the `Next plan` and
 the changed artifacts; the file is kept and a message for the next session is printed. Gates 1–4
@@ -1084,15 +1086,15 @@ identical retries will not be passed off as progress.
 | **Scoped read in `check`** | The check's right to open the cycle's own artifacts (status/evidence/manifest), but not the product artifact |
 | **Escalation** | The second (strong) tier for hard decisions; it returns a decision that the orchestrator only routes |
 | **Resource blocker** | The absence of a mandatory role/resource; not a reason to work without it |
-| **Normal / autonomous** | An interactive mode with `go` versus a mode without pauses and questions |
-| **`go` / `го`** | The only signal to start DO in normal mode |
+| **Normal / autonomous** | An interactive mode with the user's plan approval versus a mode without pauses and questions |
+| **Plan approval** | The only signal to start DO in normal mode: the user has read the plan and approved it |
 | **`Notice:`** | A record in the status log in autonomous mode instead of a message to the user |
 | **Runner / `pdca-orchestrator`** | The cheap dispatcher agent: it drives a cycle or one collection group |
 | **Overlay** | Project additions to `pdca-coder`/`pdca-dotnet` that refine but do not cancel the gates |
 | **Worktree** | An isolated git working tree per group/unit |
 | **Lane / stream** | A parallel stream of work per group (a lane) or a phase stream (code/test/docs) |
 | **Collection / group** | A batch of tasks and its group (a connected component by dependencies/files) |
-| **`plan_handoff`** | Handing control to the collection parent at a task's PLAN → DO boundary with the same `N`/`r`/`n`; not a `go` and not a stop |
+| **`plan_handoff`** | Handing control to the collection parent at a task's PLAN → DO boundary with the same `N`/`r`/`n`; not an approval and not a stop |
 | **`merged` / `incomplete` / `skipped`** | The status of an integrated `done` group; a stopped group; the note "not selected for integration" |
 | **`tip`** | The last commit of a group's branch |
 | **Footprint** | The set of files/modules touched |
@@ -1128,7 +1130,7 @@ The guide's normative claims were reconciled with the repository's current files
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-117`; `opencode/pdca-coder/SKILL.md:92-118`
 - `check` may open the evidence artifacts (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:951-956`; `opencode/pdca-dotnet/SKILL.md:996-999`
+  `opencode/pdca-coder/SKILL.md:954-959`; `opencode/pdca-dotnet/SKILL.md:999-1002`
 
 **The state machine, the counters, the todo**
 - the state machine → `opencode/pdca/SKILL.md:119-145`; `opencode/pdca-coder/SKILL.md:120-146`
@@ -1137,47 +1139,47 @@ The guide's normative claims were reconciled with the repository's current files
 - the DO → PLAN candidate (a–d) → `opencode/pdca/SKILL.md:186-201`
 
 **Gates and escalation**
-- gates 1–5 → `opencode/pdca/SKILL.md:203-241`
-- the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:243-300`
-- re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md:260-262`;
-  `opencode/pdca-coder/SKILL.md:713-717`; `opencode/pdca-dotnet/SKILL.md:718-722`
-- the normal/autonomous modes → `opencode/pdca/SKILL.md:326-366`
-- the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
-  `opencode/pdca-coder/SKILL.md:820-827`
-- escalation and its triggers → `opencode/pdca/SKILL.md:438-492`; `opencode/pdca-coder/SKILL.md:552-661`
+- gates 1–5 → `opencode/pdca/SKILL.md:203-243`
+- the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:245-302`
+- re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md:262-264`;
+  `opencode/pdca-coder/SKILL.md:715-719`; `opencode/pdca-dotnet/SKILL.md:720-724`
+- the normal/autonomous modes → `opencode/pdca/SKILL.md:328-369`
+- the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:345-352`;
+  `opencode/pdca-coder/SKILL.md:823-830`
+- escalation and its triggers → `opencode/pdca/SKILL.md:441-495`; `opencode/pdca-coder/SKILL.md:554-663`
 
 **Memory, evidence, recovery, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md:368-390,599-667`
-- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:302-324`
-- evidence over assertion → `opencode/pdca/SKILL.md:392-408`
-- recovery → `opencode/pdca/SKILL.md:410-436`
-- ACT / status / message → `opencode/pdca/SKILL.md:578-691`
+- durable status / progress log / unit states → `opencode/pdca/SKILL.md:371-393,602-670`
+- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:304-326`
+- evidence over assertion → `opencode/pdca/SKILL.md:395-411`
+- recovery → `opencode/pdca/SKILL.md:413-439`
+- ACT / status / message → `opencode/pdca/SKILL.md:581-694`
 
 **Limitations, security, red flags**
-- generic constraints → `opencode/pdca/SKILL.md:494-517`
-- instruction priority / injection → `opencode/pdca-coder/SKILL.md:376-392`;
-  `opencode/pdca-dotnet/SKILL.md:375-391`
-- red flags / failure modes → `opencode/pdca/SKILL.md:519-576`
+- generic constraints → `opencode/pdca/SKILL.md:497-520`
+- instruction priority / injection → `opencode/pdca-coder/SKILL.md:378-394`;
+  `opencode/pdca-dotnet/SKILL.md:377-393`
+- red flags / failure modes → `opencode/pdca/SKILL.md:522-579`
 
 **pdca-coder: engineering streams**
 - the project overlay → `opencode/pdca-coder/SKILL.md:38-47`
-- toolchain/lenses → `:615-656`; parallel DO → `:425-473`; editing discipline → `:475-507`
-- the test strategy/variant matrix → `:829-876`; test-run safety → `:878-891`; doc owners → `:893-909`
-- the frozen evidence manifest + `artifacts/pdca/<task>/rv<k>/` → `:911-934`
-- the CHECK audit/streams → `:936-1013`; debugging → `:1089-1111`
-- ACT → `:1113-1144`; the economics → `:1289-1299`
+- toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
+- the test strategy/variant matrix → `:832-879`; test-run safety → `:881-894`; doc owners → `:896-912`
+- the frozen evidence manifest + `artifacts/pdca/<task>/rv<k>/` → `:914-937`
+- the CHECK audit/streams → `:939-1016`; debugging → `:1092-1114`
+- ACT → `:1116-1147`; the economics → `:1292-1302`
 
 **pdca-dotnet: .NET gates**
-- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:535-564`
-- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:919-949,956-973`
-- the CHECK completeness gate (`open` forbids a PASS) → `:971-973,1147-1168`
-- the inner-loop evidence gate → `:1091-1101`; zero warnings → `:985,1070,1138-1139`
-- coverage/branches/mutations → `:861-870`; run safety → `:889-902`
-- the `dotnet-*` lenses → `:393-398,666-671,985-994,1039-1044`
-- `security-auditor` — a conditional gathering, its report into the `check` aggregate → `:1030-1037`
-- ACT → `:1194-1225`
+- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:537-566`
+- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:922-952,959-976`
+- the CHECK completeness gate (`open` forbids a PASS) → `:974-976,1150-1171`
+- the inner-loop evidence gate → `:1094-1104`; zero warnings → `:988,1073,1141-1142`
+- coverage/branches/mutations → `:864-873`; run safety → `:892-905`
+- the `dotnet-*` lenses → `:395-400,668-673,988-997,1042-1047`
+- `security-auditor` — a conditional gathering, its report into the `check` aggregate → `:1033-1040`
+- ACT → `:1197-1228`
 - `validate_inner_loop.py`: modes/codes → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-17`;
-  the manifest (`required_rows` ↔ `rows[]`) → `:495-562`; mode parsing → `:578-610`
+  the manifest (`required_rows` ↔ `rows[]`) → `:497-564`; mode parsing → `:580-612`
 
 **pdca-collection**
 - the role/variant → `opencode/pdca-collection/SKILL.md:12-21`; P → `:49-105`; D/merge → `:107-155`;
@@ -1203,7 +1205,7 @@ Below are topics with their supporting sections (no new normative claims).
    no fourth attempt.
 4. **"Evidence instead of a report"** — §9, §12 (stories 3 and 5). A re-run, red↔green, the marker
    words.
-5. **"Normal and autonomous: where interactivity ends"** — §8. `go`, delegation, the fallback,
+5. **"Normal and autonomous: where interactivity ends"** — §8. The plan approval, delegation, the fallback,
    `Notice:`.
 6. **"The engineering cycle: code, tests and docs at once"** — §10.2. Parallel DO streams, the
    variant matrix, run safety.

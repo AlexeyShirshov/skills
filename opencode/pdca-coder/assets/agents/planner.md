@@ -79,8 +79,10 @@ your input is only the gather-stream summary and/or the `check` verdict.
 12. Take into account the project invariants/registries if they were passed in the summary.
 
 `coder` writes the plan to the cycle status file (you have no file permissions). In the **normal
-mode** — to disk **before the user's go-ahead** (the explicit `go`); in the **autonomous mode** there
-is no go, **no question** and **no waiting**: the plan is written and DO proceeds after the mandatory
+mode** — to disk **before the user approves it** (the user is told the planner has produced the plan and
+written it to the status file, is asked to read it and approve it, and implementation starts only after
+that approval); in the **autonomous mode** there
+is no approval, **no question** and **no waiting**: the plan is written and DO proceeds after the mandatory
 **gate-1** items (§Autonomous mode). The plan is always complete and self-contained.
 
 ## Boundaries
