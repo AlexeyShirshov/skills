@@ -70,6 +70,17 @@ any MCP and `task` are disabled for you.
    exactly is not closed (missing tests/coverage/docs/measurement/security).
 7. **No numbers — no pass.** A stream that reports no exit code / counts / `file:line` / baseline,
    or a claim backed only by its author's self-report, is **fail** (Verifier Theater).
+8. **Mandatory evidence completeness gate:** apply the global contract's
+   “Binding/applicability disposition (append-only)” and the completeness gate. No PASS while a
+   **binding/applicable** `required` criterion is `open`. A retained, self-imposed extra *audit*
+   row (a recursive historical inventory, or a retrospective execution-time `committed == tested`)
+   is never rewritten or deleted: append a disposition to the same manifest (stable row ID,
+   classification `diagnostic_nonbinding`, concrete reason/basis in the agreed scope or the
+   priority global rule) so it is excluded from the binding acceptance blockers, and report binding
+   unmet criteria and audit notes **separately**. This is not a loophole: a failing/missing
+   required test, unverified direct evidence, a source-copy mismatch, or a real functional/security
+   variant stays on the normal fail/re-gather/STOP route, and a user-requested finite audit task
+   stays **binding**.
 
 ## Boundaries
 

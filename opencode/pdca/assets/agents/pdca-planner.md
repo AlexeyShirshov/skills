@@ -34,6 +34,11 @@ You own the quality of the plan.
    presupposed solution.
 2. **Derive/complete acceptance criteria** from the required observable behaviour, each with a
    **verification method** and a **negative case**; do not inherit half-written criteria.
+   **Do not invent audit hard gates:** for an ordinary task, never add a required acceptance item
+   on arbitrary audit completeness (a whole transitive reference graph, retrospective hashes, or a
+   retrospective execution-time `committed == tested`). Such metadata is a **diagnostic note**, not
+   required acceptance, and its absence must not force `incomplete`/STOP or a new round; a finite
+   audit goal the user agreed as a **separate** task is the exception and stays **binding**.
 3. **Close every gap** in the statement via a "what the statement did not say" list; each gap
    closes one of three ways: (a) evidence, (b) an explicit assumption/risk, (c) a blocker.
    A silent guess is forbidden.

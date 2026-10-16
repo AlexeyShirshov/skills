@@ -317,8 +317,29 @@ Each entry maps one **required criterion ID** to its evidence **by reference, no
   for `open` a `reason`; for `na` an observed `predicate`.
 Every `required` ID must appear; a criterion without a resolving reference is `open`, never
 dropped, and logs stay references — the manifest is a thin index, not a copy. **No PASS while any
-`required` entry is `open`.** If the project ships a manifest validator, run it (row completeness +
-shape).
+BINDING/APPLICABLE `required` entry is `open`.** If the project ships a manifest validator, run it
+(row completeness + shape).
+
+**Binding/applicability disposition (append-only).** The frozen manifest is never rewritten and no
+row is ever deleted: a pre-existing, self-imposed extra *audit* row stays in place with its
+original `status`/text and is never quietly turned into `met`. CHECK appends an explicit
+applicability disposition to that row inside the same canonical manifest — a stable row ID, the
+classification `diagnostic_nonbinding`, and the concrete reason/basis in the agreed scope or the
+priority global rule (the plan fixes the exact field names; no second competing manifest). A raw
+row may thus stay `open` while it is **excluded from the set of binding acceptance blockers**: the
+final receipt shows binding unmet criteria and audit notes separately, so a PASS on the genuine
+gates does not contradict a retained historical audit `open`.
+This path is **not** a loophole. It covers only unsupported *extra* audit demands that do not
+follow from the agreed goal — a recursive historical inventory, or a retrospective/unrequested
+execution-time `committed == tested`. A failing or missing required test, unverified direct
+evidence, a source-copy mismatch, or a real functional/security variant stays on the normal
+fail/re-gather/STOP route, and a finite audit goal the user explicitly agreed as a **separate**
+audit task stays **binding**. The scope basis and reason are checked by the role decision, not
+merely asserted by the author; an extra gate does not acquire normative force from the word
+`frozen`. PLAN must not, on its own initiative, freeze a hard gate on arbitrary audit
+completeness (a whole transitive reference graph, retrospective hashes, execution-time
+`committed == tested`) for an ordinary task; such metadata belongs in the plan as separate
+**diagnostic notes**, and its absence never forces `incomplete`/STOP or a new round.
 
 **Default evidence dir:** **`.pdca/<task>/rv<k>/`** — `<task>` = kebab-slug, `<k>` = plan/criterion
 revision `rv`; the frozen manifest, its logs and per-row artifacts live here; a **default** the

@@ -1126,5 +1126,114 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertNotIn("§Escalation (security-fail)", self.scenarios)
 
 
+class AuditGateBoundaryTest(unittest.TestCase):
+    """#238 guards: the PASS gate is BINDING/APPLICABLE, extra audit rows are diagnostic.
+
+    Rule-presence only (reads Markdown text; never executes a model), so it proves
+    the wording, not the behavior.  The behavioral pressure scenarios live in
+    ``tests/scenarios.md`` (A–H) and must not be reported as executed from here.
+    """
+
+    MANIFEST_ENTRY = "required_rows"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill_raw = read(SKILL_PATH)
+        cls.skill = norm(cls.skill_raw)
+
+    def test_gate_replaced_with_binding_applicable(self):
+        # The gate line may wrap in the raw Markdown; compare normalised text.
+        self.assertIn("No PASS while any BINDING/APPLICABLE", self.skill)
+
+    def test_old_absolute_gate_is_gone(self):
+        # The old absolute prohibition must not survive anywhere in the contract.
+        self.assertNotIn(
+            "No PASS while any `%s` entry is `open`" % self.MANIFEST_ENTRY,
+            self.skill_raw,
+        )
+
+    def test_append_only_disposition_section_present(self):
+        self.assertIn("Binding/applicability disposition (append-only)", self.skill_raw)
+        self.assertIn("diagnostic_nonbinding", self.skill_raw)
+        self.assertIn("never rewritten", self.skill_raw)
+        self.assertIn("excluded from the set of binding acceptance blockers", self.skill)
+
+    def test_exclusion_is_not_a_loophole(self):
+        self.assertIn("not a loophole", self.skill)
+        self.assertIn("stays binding", self.skill)
+        self.assertIn("fail/re-gather/STOP route", self.skill)
+        self.assertIn("source-copy mismatch", self.skill)
+
+    def test_plan_may_not_invent_audit_hard_gates(self):
+        self.assertIn("diagnostic notes", self.skill)
+
+    def test_completeness_gate_is_binding_qualified(self):
+        gate = norm(between(
+            self.skill_raw,
+            "### CHECK completeness gate",
+            "## Debugging (loop-back CHECK → DO)",
+        ))
+        self.assertTrue(gate, "CHECK completeness gate section not found")
+        self.assertIn("binding/applicable", gate.lower())
+        self.assertNotIn("any open row forbids PASS", gate)
+
+    def test_reviewer_evidence_pack_present(self):
+        # #235 (E07): the changed registry full bodies are staged inside the
+        # allowed roots, with a source-side receipt — not a diffstat-only pack.
+        pack = norm(between(
+            self.skill_raw,
+            "### Reviewer evidence pack",
+            "## CHECK: audit checklist",
+        ))
+        self.assertTrue(pack, "reviewer evidence pack section not found")
+        self.assertIn("stages the full bodies", pack)
+        self.assertIn("copy, not a move", pack)
+        self.assertIn("source identity", pack)
+        self.assertIn("content equality", pack)
+        self.assertIn("Roslyn resolution runs in that source-side gather", pack)
+        self.assertIn("row-level result/reason", pack)
+        self.assertIn("evidence open/blocked", pack)
+        self.assertIn("not a proof of execution-time", pack)
+
+    def test_execution_policy_and_journal_present(self):
+        # #235 (E10): unit unlimited, integration boundary-only, mandatory capture.
+        section = norm(between(
+            self.skill_raw,
+            "### Execution journal and the unit/integration policy",
+            "### Worktree sub-tasks of one cycle",
+        ))
+        self.assertTrue(section, "execution journal section not found")
+        self.assertIn("not on the number of report entries", section)
+        self.assertIn("not a unit-vs-integration criterion", section)
+        self.assertIn("no separate universal numeric cap", section)
+        self.assertIn("projected from that journal", section)
+        self.assertIn("omits a started execution is rejected", section)
+        self.assertIn("failed-to-start", section)
+        self.assertIn("never invented", section)
+        self.assertIn("blocked/unresolved", section)
+
+    def test_act_cleanup_receipt_present(self):
+        # #235 (g/l): the terminal-closure cleanup is gated by a machine-checkable
+        # receipt; premature cleanup is rejected and the manifest is immutable.
+        section = norm(between(
+            self.skill_raw,
+            "### ACT cleanup receipt",
+            "### Message for the next session",
+        ))
+        self.assertTrue(section, "ACT cleanup receipt section not found")
+        self.assertIn("machine-checkable receipt", section)
+        self.assertIn("premature cleanup", section)
+        self.assertIn("prior hashes", section)
+        self.assertIn("frozen manifest is not rewritten", section)
+        self.assertIn("planned lifecycle", section)
+
+    def test_validator_exposes_the_new_subcommands(self):
+        script = read(SKILL_DIR / "scripts/validate_inner_loop.py")
+        for mode in ("journal", "project", "cleanup", "archived"):
+            self.assertIn('"%s"' % mode, script, "validator missing mode %r" % mode)
+        self.assertIn("--journal", script)
+        self.assertIn("--cleanup", script)
+
+
 if __name__ == "__main__":
     unittest.main()

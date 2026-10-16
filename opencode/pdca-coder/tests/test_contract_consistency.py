@@ -294,5 +294,45 @@ class ForbiddenTokenGuardTest(unittest.TestCase):
         self.assertEqual(9, len(forbidden_tokens()))
 
 
+class AuditGateBoundaryTest(unittest.TestCase):
+    """#238 guards: the PASS gate is BINDING/APPLICABLE, extra audit rows are diagnostic.
+
+    Rule-presence only (reads Markdown text; never executes a model), so it proves
+    the wording, not the behavior.
+    """
+
+    MANIFEST_ENTRY = "required"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill_raw = read(SKILL_PATH)
+        cls.skill = norm(cls.skill_raw)
+
+    def test_gate_replaced_with_binding_applicable(self):
+        # The gate line may wrap in the raw Markdown; compare normalised text.
+        self.assertIn("No PASS while any BINDING/APPLICABLE", self.skill)
+
+    def test_old_absolute_gate_is_gone(self):
+        self.assertNotIn(
+            "No PASS while any `%s` entry is `open`" % self.MANIFEST_ENTRY,
+            self.skill_raw,
+        )
+
+    def test_append_only_disposition_section_present(self):
+        self.assertIn("Binding/applicability disposition (append-only)", self.skill_raw)
+        self.assertIn("diagnostic_nonbinding", self.skill_raw)
+        self.assertIn("never rewritten", self.skill_raw)
+        self.assertIn("excluded from the set of binding acceptance blockers", self.skill)
+
+    def test_exclusion_is_not_a_loophole(self):
+        self.assertIn("not a loophole", self.skill)
+        self.assertIn("stays binding", self.skill)
+        self.assertIn("fail/re-gather/STOP route", self.skill)
+        self.assertIn("source-copy mismatch", self.skill)
+
+    def test_plan_may_not_invent_audit_hard_gates(self):
+        self.assertIn("diagnostic notes", self.skill)
+
+
 if __name__ == "__main__":
     unittest.main()

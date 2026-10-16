@@ -75,13 +75,18 @@ any MCP and `task` are disabled for you.
 8. **Mandatory evidence completeness gate:** apply the global `pdca-dotnet` skill's
    “CHECK completeness gate — mandatory evidence contract”. Reconcile every applicable required
    row with actual evidence for the current `rv`; verify artifacts and observable N/A predicates.
-   Re-gather missing evidence inside CHECK within the pinned budget and existing permissions:
-   missing reporting alone is neither product FAIL nor a DO iteration. A verified product defect
-   still requires FAIL; a new required variant requires justified CHECK → PLAN revision with
-   explicit contract supersession and preserved obligations. Unconditional obligations cannot be
-   waived. If the gather budget is exhausted, report open row IDs and follow existing
-   blocker/escalation rules. No PASS while an applicable required row is open; no new phase,
-   silent contract weakening, or priority downgrade.
+   **Separate binding rows from audit noise:** for a retained, self-imposed extra *audit* row append
+   an **append-only** disposition to the same manifest (stable row ID, classification
+   `diagnostic_nonbinding`, and the concrete reason/basis in the agreed scope or the priority global
+   rule); the row's original status/text is never rewritten or removed. It stays `open` yet is
+   excluded from the set of binding acceptance blockers — report binding unmet rows and audit notes
+   **separately**. Re-gather missing evidence inside CHECK within the pinned budget and existing
+   permissions: missing reporting alone is neither product FAIL nor a DO iteration. A verified
+   product defect still requires FAIL; a new required variant requires justified CHECK → PLAN
+   revision with explicit contract supersession and preserved obligations. Unconditional
+   obligations cannot be waived. If the gather budget is exhausted, report open row IDs and follow
+   existing blocker/escalation rules. No PASS while a **binding/applicable** required row is open;
+   no new phase, silent contract weakening, or priority downgrade.
 
 ## Boundaries
 

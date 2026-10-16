@@ -349,7 +349,10 @@ class ReportGateTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
         self.assertIn("broad selector", output(proc))
 
-    def test_whole_project_inner_rejected(self):
+    def test_unfiltered_unit_project_inner_allowed(self):
+        # E10: the presence/absence of `--filter` is NOT a unit-vs-integration
+        # criterion.  An unfiltered run of an affected *unit* project inside DO
+        # is a legitimate unit run (unlimited), not a comprehensive sweep.
         report = valid_report(
             executions=[
                 exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
@@ -357,8 +360,8 @@ class ReportGateTests(unittest.TestCase):
             ]
         )
         proc = run_gate("report", report)
-        self.assertEqual(proc.returncode, 2)
-        self.assertIn("broad", output(proc))
+        self.assertEqual(proc.returncode, 0, output(proc))
+        self.assertNotIn("FAIL:", output(proc))
 
     def test_whole_solution_build_inner_rejected(self):
         report = valid_report(
@@ -564,14 +567,19 @@ class ReportGateTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 2)
         self.assertIn("exit_code", output(proc))
 
-    def test_omitted_selector_rejected(self):
+    def test_integration_project_inner_rejected(self):
+        # E10 (c): an integration run *inside DO* is an actual policy violation —
+        # recorded in the ledger, not masked by the phase or a rename.
         report = valid_report(
-            scope=docs_scope(),
-            executions=[exec_(["dotnet", "test", "proj"])],
+            scope=valid_scope(integration_projects=["tests/Integration.Tests.csproj"]),
+            executions=[
+                exec_(["dotnet", "build", "tests/Integration.Tests.csproj"]),
+                exec_(["dotnet", "test", "tests/Integration.Tests.csproj"]),
+            ],
         )
         proc = run_gate("report", report)
-        self.assertEqual(proc.returncode, 2)
-        self.assertIn("broad", output(proc))
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("inside DO", output(proc))
 
     def test_missing_final_green_rejected(self):
         report = valid_report(
@@ -882,10 +890,12 @@ class ContractWiringTests(unittest.TestCase):
             r"|fail[^.]{0,200}whole[- ](project|solution)",
         )
         self.assertIn("never warns", text)
-        # exactly one comprehensive boundary sweep
+        # E10: integration is boundary-only; unit runs are unlimited and the
+        # filter is not the classification criterion.
         self.assertIn(
-            "comprehensive sweep runs once at the do → check boundary", text
+            "integration runs happen only at the do → check boundary", text
         )
+        self.assertIn("unit runs are unlimited", text)
 
     def test_skill_references_the_validator_script(self):
         self.assert_contract_wired(self.raw)
@@ -927,9 +937,15 @@ class ContractWiringTests(unittest.TestCase):
     def test_negative_boundary_once_removed_detected(self):
         self._assert_mutation_detected(
             self.raw.replace(
-                "comprehensive sweep runs once at the",
-                "comprehensive sweep happens at the",
+                "Integration runs happen only at the DO → CHECK boundary",
+                "Integration runs may happen anywhere in the cycle",
             )
+        )
+
+    def test_negative_unit_unlimited_removed_detected(self):
+        # The phrase wraps across lines in the raw Markdown; mutate it as written.
+        self._assert_mutation_detected(
+            self.raw.replace("Unit runs are\n  unlimited**", "Unit runs are\n  capped**")
         )
 
     def test_negative_test_scope_phrase_removed_detected(self):
@@ -971,16 +987,19 @@ class _CoderParityMixin:
             self.assertIn(anchor, texts[path])
         for path in self.ANCHORS:
             bullet = self._bullet(texts[path], path).lower()
-            # affected / subset filtered tests (RU фильтр / EN filter)
-            self.assertRegex(bullet, r"filter|фильтр")
+            # affected subset (RU поднабор/затронут / EN affected/subset)
             self.assertRegex(bullet, r"affected|затронут|поднабор|subset")
-            # stream / DO→CHECK boundary
+            # both run kinds are named and distinguished (E10)
+            self.assertRegex(bullet, r"unit")
+            self.assertRegex(bullet, r"integration|интеграц")
+            # the filter is explicitly NOT the classification criterion
+            self.assertRegex(bullet, r"filter|фильтр")
+            # stream / DO→CHECK boundary for integration
             self.assertRegex(bullet, r"boundary|границ")
-            # prohibition of whole project / whole solution
-            self.assertRegex(
-                bullet,
-                r"whole project|whole solution|весь проект|всё решение|всё реле",
-            )
+            # prohibition of the whole solution (a whole *unit project* run is legal)
+            self.assertRegex(bullet, r"whole solution|всё решение")
+            # the ledger is projected from the raw journal
+            self.assertRegex(bullet, r"journal|журнал")
         for path in self.ANCHORS:
             text = texts[path]
             evidence = text.index(self.EVIDENCE[path])
@@ -1029,6 +1048,467 @@ class HostCoderParityTests(_CoderParityMixin, unittest.TestCase):
         EN_CODER: "Evidence, not claims",
         RU_CODER: "Доказательства, а не заявления",
     }
+
+
+class IntegrationPolicyTests(unittest.TestCase):
+    """E10 policy: unit unlimited, integration boundary-only and planned.
+
+    The run kind is classified by the actually selected projects/solution, never
+    by the presence of ``--filter``.  These are behavioral gate tests: they run
+    the real CLI as a subprocess and assert its exit code and `FAIL:` lines.
+    """
+
+    def test_multiple_unfiltered_unit_runs_inside_do_allowed(self):
+        # (b) Multiple unfiltered unit runs inside DO and at the boundary are
+        # allowed without artificial namespace filters.
+        report = valid_report(executions=[
+            exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj"]),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj"]),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj"]),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj"], phase="boundary"),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj"], phase="boundary"),
+        ])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_integration_inside_do_detected_and_recorded(self):
+        # (c) Integration inside DO is detected as an actual policy violation and
+        # the execution record still exists (the gate reports, never deletes).
+        report = valid_report(
+            scope=valid_scope(integration_projects=["tests/Integration.Tests.csproj"]),
+            executions=[
+                exec_(["dotnet", "build", "tests/Integration.Tests.csproj"]),
+                exec_(["dotnet", "test", "tests/Integration.Tests.csproj"]),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("execution 1", output(proc))
+        self.assertIn("executed inside DO", output(proc))
+
+    def test_integration_attempt_not_started_is_a_distinct_state(self):
+        # (j) A pre-run policy check distinguishes an attempt violation
+        # (failed-to-start, no invented fact) from an executed violation.
+        report = valid_report(
+            scope=valid_scope(integration_projects=["tests/Integration.Tests.csproj"]),
+            executions=[
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+                exec_(
+                    ["dotnet", "test", "tests/Integration.Tests.csproj"],
+                    state="failed-to-start",
+                    exit_code=None,
+                    selected_count=None,
+                ),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("attempt never started", output(proc))
+        self.assertNotIn("executed inside DO", output(proc))
+
+    def test_mixed_solution_run_is_not_unit_by_command_name(self):
+        # (d) A mixed solution run that really runs integration is classified
+        # correctly, and may not be relabelled `unit` to escape the boundary rule.
+        report = valid_report(
+            executions=[
+                exec_(["dotnet", "test", "Foo.slnx"], kind="unit"),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("not unit", output(proc))
+
+    def test_boundary_integration_reflects_planned_count(self):
+        # (d) The boundary integration reflects the planned scope/count; an extra
+        # actual run is a visible deviation, not a silent exemption.
+        scope = valid_scope(
+            integration_projects=["tests/Integration.Tests.csproj"],
+            integration_boundary_runs=1,
+        )
+        report = valid_report(scope=scope, executions=[
+            exec_(["dotnet", "build", "tests/Integration.Tests.csproj"]),
+            exec_(["dotnet", "test", "tests/Integration.Tests.csproj"], phase="boundary"),
+            exec_(["dotnet", "test", "tests/Integration.Tests.csproj"], phase="boundary"),
+        ])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("exceed the planned budget", output(proc))
+
+    def test_no_invented_numeric_cap_without_a_planned_count(self):
+        # The gate invents no universal numeric cap: without a declared plan
+        # count, only the phase rule constrains integration runs.
+        report = valid_report(
+            scope=valid_scope(integration_projects=["tests/Integration.Tests.csproj"]),
+            executions=[
+                exec_(["dotnet", "build", "tests/Integration.Tests.csproj"]),
+                exec_(["dotnet", "test", "tests/Integration.Tests.csproj"], phase="boundary"),
+                exec_(["dotnet", "test", "tests/Integration.Tests.csproj"], phase="boundary"),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+
+class ExecutionStateTests(unittest.TestCase):
+    """(e)/(k): every started execution is recorded; unfinished ≠ success."""
+
+    def test_unfinished_attempt_does_not_carry_invented_result(self):
+        report = valid_report(executions=[
+            exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            exec_(
+                ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR],
+                state="canceled",
+                exit_code=None,
+                selected_count=None,
+            ),
+        ])
+        proc = run_gate("report", report)
+        # The canceled attempt is retained but cannot satisfy required success.
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("no finished execution", output(proc))
+
+    def test_canceled_attempt_retained_after_successful_retry(self):
+        report = valid_report(executions=[
+            exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            exec_(
+                ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR],
+                state="interrupted",
+                exit_code=None,
+                selected_count=None,
+            ),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR]),
+        ])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_not_started_state_may_not_carry_a_result(self):
+        report = valid_report(executions=[
+            exec_(
+                ["dotnet", "build", "tests/Foo.Tests.csproj"],
+                state="not-started",
+                exit_code=0,
+                selected_count=5,
+            ),
+        ])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("must not carry an exit_code", output(proc))
+
+    def test_unknown_state_rejected(self):
+        report = valid_report(executions=[
+            exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], state="done"),
+        ])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("state must be one of", output(proc))
+
+
+class JournalProjectionTests(unittest.TestCase):
+    """(j): the report is projected from the raw journal, never hand-selected."""
+
+    @staticmethod
+    def journal(events):
+        return {"unit": "D1", "scope": valid_scope(), "events": events}
+
+    @staticmethod
+    def start(event_id, phase="inner", command=None, kind=None):
+        event = {
+            "id": event_id,
+            "event": "start",
+            "phase": phase,
+            "command": command or ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR],
+            "source_revision": "r1",
+            "artifact_revision": "r1",
+            "at": "2026-10-16T00:00:00Z",
+        }
+        if kind is not None:
+            event["kind"] = kind
+        return event
+
+    @staticmethod
+    def finish(event_id, state="finished", code=0, count=5):
+        return {
+            "id": event_id,
+            "event": "finish",
+            "state": state,
+            "exit_code": code,
+            "selected_count": count,
+            "at": "2026-10-16T00:01:00Z",
+        }
+
+    def test_journal_validation_accepts_start_finish(self):
+        data = self.journal([
+            self.start("e1"),
+            self.finish("e1"),
+        ])
+        proc = run_gate("journal", data)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_finish_without_start_rejected(self):
+        data = self.journal([self.finish("e1")])
+        proc = run_gate("journal", data)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("no recorded start", output(proc))
+
+    def test_project_rebuilds_every_started_execution(self):
+        data = self.journal([
+            self.start("e1", command=["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            self.finish("e1"),
+            self.start("e2"),
+            self.finish("e2"),
+        ])
+        proc = run_gate("project", data)
+        self.assertEqual(proc.returncode, 0, output(proc))
+        projected = json.loads(proc.stdout)
+        self.assertEqual([e["id"] for e in projected["executions"]], ["e1", "e2"])
+
+    def test_projection_omitting_a_started_execution_is_rejected(self):
+        # (e)/(j) The measurable completeness test: a projection that drops a
+        # started execution is a completeness failure, not a way to pass.
+        data = self.journal([
+            self.start("e1", command=["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            self.finish("e1"),
+            self.start("e2"),
+            self.finish("e2"),
+        ])
+        projected = json.loads(run_gate("project", data).stdout)
+        projected["executions"] = [projected["executions"][0]]  # silently drop e2
+        with tempfile.TemporaryDirectory() as tmp:
+            journal_path = Path(tmp) / "journal.json"
+            journal_path.write_text(json.dumps(data), encoding="utf-8")
+            proc = run_gate("report", projected)
+            self.assertEqual(proc.returncode, 0, output(proc))
+            # ... but reconciling it against the raw journal exposes the omission.
+            full = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "report",
+                    str(self._write(tmp, "report.json", projected)),
+                    "--journal",
+                    str(journal_path),
+                ],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(full.returncode, 2)
+        self.assertIn("projection incomplete", output(full))
+
+    @staticmethod
+    def _write(tmp, name, payload):
+        path = Path(tmp) / name
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def test_report_execution_absent_from_journal_rejected(self):
+        data = self.journal([
+            self.start("e1", command=["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            self.finish("e1"),
+        ])
+        report = valid_report(executions=[
+            exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], id="e1"),
+            exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], id="e9"),
+        ])
+        with tempfile.TemporaryDirectory() as tmp:
+            journal_path = self._write(tmp, "journal.json", data)
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "report",
+                    str(self._write(tmp, "report.json", report)),
+                    "--journal",
+                    str(journal_path),
+                ],
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("absent from the raw journal", output(proc))
+
+
+class CleanupReceiptTests(unittest.TestCase):
+    """(g)/(l): the ACT cleanup receipt is machine-checked, premature cleanup fails."""
+
+    TASK = "D235"
+    EVIDENCE_ROOT = "artifacts/pdca"
+
+    def receipt(self, **overrides):
+        receipt = {
+            "task": self.TASK,
+            "rv": 1,
+            "evidence_root": self.EVIDENCE_ROOT,
+            "at": "2026-10-16T00:00:00Z",
+            "closure": {
+                "terminal": True,
+                "approved": True,
+                "independent_verdict": "pass",
+                "final_report": "artifacts/pdca/D235/rv1/final-report.md",
+            },
+            "frozen_manifest": {"path": "artifacts/pdca/D235/rv1/manifest.json", "sha256": "a" * 64},
+            "retained": {
+                "final_report": "artifacts/pdca/D235/rv1/final-report.md",
+                "frozen_manifest": "artifacts/pdca/D235/rv1/manifest.json",
+                "certification": "artifacts/pdca/D235/rv1/check-receipt.json",
+                "digests": "artifacts/pdca/D235/rv1/pack-receipt.json",
+            },
+            "removed": [
+                {
+                    "path": "artifacts/pdca/D235/rv1/review-pack/src/Foo/Bar.cs",
+                    "sha256": "b" * 64,
+                    "kind": "staged-copy",
+                    "reason": "heavy staged body; the compact records are retained",
+                }
+            ],
+        }
+        receipt.update(overrides)
+        return receipt
+
+    def test_valid_receipt_rc0(self):
+        proc = run_gate("cleanup", self.receipt())
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_premature_cleanup_rejected(self):
+        receipt = self.receipt()
+        receipt["closure"] = dict(receipt["closure"], terminal=False, approved=False)
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("premature cleanup rejected", output(proc))
+
+    def test_missing_independent_verdict_rejected(self):
+        receipt = self.receipt()
+        receipt["closure"] = dict(receipt["closure"], independent_verdict="")
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("independent final CHECK verdict", output(proc))
+
+    def test_removing_a_retained_record_rejected(self):
+        receipt = self.receipt()
+        receipt["removed"] = [
+            {
+                "path": "artifacts/pdca/D235/rv1/manifest.json",
+                "sha256": "c" * 64,
+                "kind": "staged-copy",
+                "reason": "clean it",
+            }
+        ]
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("retained record", output(proc))
+
+    def test_deleting_another_task_or_a_broad_pattern_rejected(self):
+        for path in (
+            "artifacts/pdca/D218/rv1/staged/Foo.cs",
+            "artifacts/pdca/D235",
+            "artifacts/pdca/D235/rv1",
+            "artifacts/pdca/D235/rv1/*",
+        ):
+            with self.subTest(path=path):
+                receipt = self.receipt()
+                receipt["removed"] = [
+                    {"path": path, "sha256": "c" * 64, "kind": "temp", "reason": "x"}
+                ]
+                proc = run_gate("cleanup", receipt)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("outside this task's own rv dir", output(proc))
+
+    def test_absent_prior_hash_rejected(self):
+        receipt = self.receipt()
+        receipt["removed"][0]["sha256"] = "not-a-digest"
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("prior content digest", output(proc))
+
+
+class ArchivedPackTests(unittest.TestCase):
+    """(l): a missing body is an error unless a valid receipt explains its removal."""
+
+    def _fixture(self, tmp):
+        import hashlib
+
+        root = Path(tmp) / "artifacts/pdca/D235/rv1"
+        body = root / "review-pack/src/Foo/Bar.cs"
+        body.parent.mkdir(parents=True, exist_ok=True)
+        body.write_text("class Bar {}\n", encoding="utf-8")
+        rel_body = "artifacts/pdca/D235/rv1/review-pack/src/Foo/Bar.cs"
+        manifest = {
+            "task": "D235",
+            "tree": "abc123",
+            "status_file": "docs/specs/status/D235-1.md",
+            "contract_rv": 1,
+            "required_rows": ["E07"],
+            "rows": [
+                {
+                    "id": "E07",
+                    "status": "met",
+                    "evidence": [{"kind": "staged-body", "path": rel_body}],
+                }
+            ],
+        }
+        manifest_path = Path(tmp) / "manifest.json"
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        receipt = CleanupReceiptTests().receipt()
+        receipt["frozen_manifest"] = {
+            "path": "manifest.json",
+            "sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        }
+        receipt["retained"]["frozen_manifest"] = "manifest.json"
+        receipt["removed"][0]["path"] = rel_body
+        receipt["removed"][0]["sha256"] = hashlib.sha256(body.read_bytes()).hexdigest()
+        receipt_path = Path(tmp) / "cleanup.json"
+        receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        return manifest_path, receipt_path, body
+
+    def test_body_present_validates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest_path, receipt_path, _ = self._fixture(tmp)
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "archived", str(manifest_path),
+                 "--cleanup", str(receipt_path)],
+                capture_output=True, text=True, cwd=tmp,
+            )
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_cleaned_body_explained_by_receipt_validates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest_path, receipt_path, body = self._fixture(tmp)
+            body.unlink()
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "archived", str(manifest_path),
+                 "--cleanup", str(receipt_path)],
+                capture_output=True, text=True, cwd=tmp,
+            )
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_unexplained_missing_body_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest_path, receipt_path, body = self._fixture(tmp)
+            body.unlink()
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            receipt["removed"][0]["path"] = "artifacts/pdca/D235/rv1/review-pack/src/Other.cs"
+            receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "archived", str(manifest_path),
+                 "--cleanup", str(receipt_path)],
+                capture_output=True, text=True, cwd=tmp,
+            )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("missing staged body", output(proc))
+
+    def test_rewritten_frozen_manifest_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest_path, receipt_path, _ = self._fixture(tmp)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["tree"] = "rewritten"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "archived", str(manifest_path),
+                 "--cleanup", str(receipt_path)],
+                capture_output=True, text=True, cwd=tmp,
+            )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("rewritten after cleanup", output(proc))
 
 
 if __name__ == "__main__":

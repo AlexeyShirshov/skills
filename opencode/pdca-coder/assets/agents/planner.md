@@ -34,7 +34,12 @@ your input is only the gather-stream summary and/or the `check` verdict.
    cost and risk) and the choice with rationale.
 3. **Decompose**: goal, acceptance criteria (each with a negative case), the DO task list, risks,
    and **"What the statement did not say"** — every gap resolved by evidence, recorded as an
-   assumption/risk, or raised as a blocker.
+   assumption/risk, or raised as a blocker. **Do not invent audit hard gates:** for an ordinary
+   task, never add a required acceptance item on arbitrary audit completeness (a whole transitive
+   reference graph, retrospective hashes, or a retrospective execution-time `committed == tested`).
+   Such metadata is a **diagnostic note**, not required acceptance, and its absence must not force
+   `incomplete`/STOP or a new round; a finite audit goal the user agreed as a **separate** task is
+   the exception and stays **binding**.
 4. **Unit mode** — sequential, parallel in one tree, or parallel in separate worktrees — by the
    **footprint** (overlapping files/contracts ⇒ sequential or a shared contract); worktrees only
    for isolation/risk or when the user asks.

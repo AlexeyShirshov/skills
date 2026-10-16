@@ -45,6 +45,12 @@ your input is only the gather-stream summary and/or the `check` verdict.
    Pin a finite CHECK re-gather budget and owner. On justified revision, explicitly supersede the
    previous contract revision, retain existing row IDs and obligations, and add IDs for new
    variants. Missing reporting alone does not justify a contract revision or a DO iteration.
+   **Do not invent audit hard gates:** for an ordinary task, never freeze a required row on
+   arbitrary audit completeness (a whole transitive reference graph, retrospective hashes, or a
+   retrospective execution-time `committed == tested`). Such metadata is recorded as **diagnostic
+   notes**, not required acceptance, and its absence must not force `incomplete`/STOP or a new
+   round; a finite audit goal the user agreed as a **separate** task is the exception and stays
+   **binding**.
 4. **Unit mode** — sequential, parallel in one tree, or parallel in separate worktrees — by the
    **footprint** (overlapping files/contracts ⇒ sequential or a shared contract); worktrees only
    for isolation/risk or when the user asks.

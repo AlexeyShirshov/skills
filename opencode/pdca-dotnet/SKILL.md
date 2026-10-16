@@ -303,9 +303,11 @@ contract**, not "finish and fix later".
 - I worked outside my own worktree / the unit's status location.
 - I closed a phase/cycle on a `coder` self-report without the evidence chain — fresh re-run + `scout`
   diff + `check` verdict (§Evidence over assertion).
-- A DO report whose inner loop was the **whole project/solution**, or that lacks the exact
-  commands + filters + exit codes — **immediate STOP: reject the report**, it is not continued DO
-  (§Delegation by phase → "DO brief: mandatory `test scope`", §CHECK → item 11).
+- A DO report whose inner loop ran the **whole solution** or an **integration** run inside DO, or that
+  lacks the exact commands + phase/kind + exit codes — **immediate STOP: reject the report**, it is
+  not continued DO (§Delegation by phase → "DO brief: mandatory `test scope`", §Execution journal,
+  §CHECK → item 11). An unfiltered **unit** run is not a deviation and is never a reason to reject a
+  report.
 
 **Excuses (the AI justifies the deviation) → reality:**
 - "Too simple for PDCA" → "simple" causes the most rework; size does not cancel the gates.
@@ -485,18 +487,19 @@ contract (the discipline a dedicated design/performance engineer would apply whe
   affected tests**; **expensive tests — integration (DB/EF Core, HTTP, `Testcontainers`)** — are run
   at the **stream boundary** (before the DO → CHECK gate) and in the **CHECK** test lens, **not
   after every micro-edit**. The DO brief **MUST** carry a mandatory structured `test scope`
-  (projects, exact filtered selectors, files, rebuild policy, the boundary sweep point, and a
-  rationale); without it the brief is not dispatched. The inner loop is the **filtered affected
-  subset**: build the affected project once, then
-  `dotnet test <project> --no-build --filter <selector>` (a `rebuild: none` docs-only scope skips
-  the build). Running the **whole project or solution** in the inner loop is a **red flag** and the
-  report is rejected. The **comprehensive sweep runs once at the DO → CHECK boundary**, not per
-  edit. Widening to a shared contract/dependency is allowed **only** if the scope is amended **and
-  validated BEFORE running**, the reason is recorded, and the run stays **filtered**. `coder` runs
-  `scripts/validate_inner_loop.py` — `brief` before editing and `report` before CHECK — and CHECK
-  consumes the evidence; a missing/invalid gate fails closed. (If the change is integration-only,
-  run the affected integration case directly at the boundary or as a filtered case; but do not
-  re-run the whole suite per edit.)
+  (projects, selectors, files, rebuild policy, the boundary sweep point, the integration projects
+  and the planned integration boundary runs, and a rationale); without it the brief is not
+  dispatched. The inner loop covers the **affected** subset: build the affected project once, then
+  run it — `dotnet test <project> --no-build --filter <selector>` **or** an unfiltered run of an
+  affected **unit** project (a `rebuild: none` docs-only scope skips the build). **Unit runs are
+  unlimited**, and the presence of `--filter` is **not** a unit-vs-integration criterion. Running
+  the **whole solution** in the inner loop, or an **integration** run inside DO, is a **red flag**
+  and the report is rejected. **Integration runs happen only at the DO → CHECK boundary**, within
+  the planned scope/count — not per edit. Widening to a shared contract/dependency is allowed
+  **only** if the scope is amended **and validated BEFORE running**, and the reason is recorded.
+  `coder` runs `scripts/validate_inner_loop.py` — `brief` before editing, and `journal`/`report`
+  (reconciled with `--journal`) before CHECK — and CHECK consumes the evidence; a missing/invalid
+  gate fails closed.
 - **Verify after every step, not only at the end.** A red build or failing test stops the stream and
   is reported — it is not written over with the next edit.
 - **Minimal blast radius.** Touch only the fix's blast radius; leave unrelated parallel edits alone.
@@ -550,7 +553,9 @@ Required fields:
   "files": ["<changed file path>"],
   "rebuild": "affected | none",
   "boundary": "<the single DO → CHECK comprehensive sweep point>",
-  "rationale": "<why this subset covers the changed behavior>"
+  "rationale": "<why this subset covers the changed behavior>",
+  "integration_projects": ["<test project that really runs integration tests>"],
+  "integration_boundary_runs": 1
 }
 ```
 
@@ -559,11 +564,53 @@ Required fields:
 - `rebuild` — `affected` on a compiled-input change; `none` for a docs-only change (no fictitious
   rebuild). A docs-only scope (no `.cs`/`.fs`/`.vb` file) must **not** claim an `affected` rebuild;
   a fictitious rebuild fails the gate.
-- `boundary` — the one comprehensive sweep point at the **DO → CHECK boundary**; a **filtered**
-  integration test run directly at the boundary is legitimate.
+- `boundary` — the one comprehensive sweep point at the **DO → CHECK boundary**.
+- `integration_projects` (optional) — the test projects that **actually execute integration tests**;
+  `integration_boundary_runs` (optional int ≥ 1) — the number of **actual** integration runs PLAN
+  approves at the boundary. Both are how PLAN fixes the integration scope up front; the gate
+  invents no universal numeric cap of its own (§Execution journal).
 - Before CHECK, the full evidence (scope + `executions` with exact argument arrays, filters, phase,
   revisions, exit codes) is validated with `scripts/validate_inner_loop.py report <evidence.json>`;
-  CHECK consumes that exit code and fails closed when it is missing or nonzero.
+  CHECK consumes that exit code and fails closed when it is missing or nonzero. When the raw
+  journal exists, the report is reconciled against it with `--journal` (§Execution journal).
+
+### Execution journal and the unit/integration policy
+
+**The restriction is on the ACTUAL integration-test run, not on the number of report entries.**
+Unit tests are unlimited inside DO and at phase boundaries; *expensive integration runs* are
+permitted at the **DO → CHECK boundary**, not after every unit/edit. The presence or absence of
+`--filter` is **not** a unit-vs-integration criterion and is **never** grounds to restrict unit
+execution: classification follows the test projects/suites actually selected, so a mixed solution
+run that really executes integration is not "unit" because of a command name or a filter.
+
+- **PLAN fixes the boundary integration scope and the allowed runs up front** (the
+  `integration_projects` / `integration_boundary_runs` of the mandatory `test scope`). This skill
+  invents **no** separate universal numeric cap. An extra actual integration run outside the
+  allowed plan/boundary is a **visible deviation** subject to the existing gates — it is not masked
+  by a phase or a rename.
+- **Mandatory execution capture path.** For the cycle's test commands, a `start` event is recorded
+  **at launch** and the result is **appended** on completion (`journal`). The report that CHECK
+  consumes is **projected from that journal**, not hand-selected by the author:
+  `scripts/validate_inner_loop.py project <journal.json>` rebuilds it mechanically, and
+  `scripts/validate_inner_loop.py report <report.json> --journal <journal.json>` proves the report
+  is a faithful projection. A projection that **omits a started execution is rejected** — a
+  completeness failure, never a way to pass a cap; an over-budget run **stays in the raw journal**.
+- **Every actually-started run is recorded regardless of exit code, cancellation, retry,
+  over-budget status, or usability as acceptance evidence.** For a run that did **not** start, the
+  execution state is stated explicitly — no invented fact. Recording the execution and judging
+  policy compliance are **separate** actions: recording a violation does not legalise the run, and
+  its absence does not cancel it.
+- **Execution states are explicit and distinguishable:** `started`/`running`, `finished`,
+  `interrupted`/`canceled`, `failed-to-start`/`not-started`. Exit code and selected count are
+  nullable and are **never invented** for a run that did not finish. An unfinished or not-started
+  attempt does **not** satisfy a required success, but it **is retained** even after a later
+  successful retry. Before launch the path evaluates the integration policy as far as the scope is
+  determinable, so an **attempt** violation (`failed-to-start`) and an **executed** violation are
+  recorded as different states.
+- A run outside the mandatory capture path is a process violation. Detecting an arbitrary hidden
+  shell invocation is **not** promised; completeness is enforced within the existing process
+  tooling (journal → projection → reconciliation).
+- On a pipeline failure, incomplete accounting is explicitly **blocked/unresolved**, never PASS.
 
 ### Worktree sub-tasks of one cycle: subagent prompt template
 
@@ -884,10 +931,13 @@ coverage as proof; an edge without a decision; checking the implementation inste
 works (prefer real components / integration); a "for the future" test without a criterion.
 
 **Per-unit test scope is part of the strategy.** For **every unit** the plan names its **affected
-subset** — the test project(s) and the exact, non-broad filtered selector(s) — and the **boundary
-sweep point** (the single DO → CHECK comprehensive run). This mapping feeds the DO brief's mandatory
+subset** — the test project(s) and the exact, non-broad filtered selector(s) — the **boundary
+sweep point** (the single DO → CHECK comprehensive run), and which of those projects actually
+execute **integration** tests (the boundary-only runs). This mapping feeds the DO brief's mandatory
 `test scope` (§Delegation by phase → "DO brief: mandatory `test scope`"); a unit whose affected
-subset or boundary point is unnamed fails gate 1.
+subset or boundary point is unnamed fails gate 1. Unlimited **unit** runs inside DO are normal and
+must not be constrained with artificial namespace filters; an **integration** run inside DO is a
+policy deviation (§Execution journal and the unit/integration policy).
 
 ### Test run safety (memory + streaming) — every phase
 
@@ -971,15 +1021,74 @@ the superseded one is kept. Minimum content — each entry maps one contract row
   key number, test symbol); for `open` a `reason`; for `na` an observed `predicate`.
 Every `required_rows` entry must appear; a row without a resolving reference is `open`, never
 silently dropped. Logs stay references — the manifest is a thin index, not a copy of artifacts.
-**No PASS while any `required_rows` entry is `open`;** CHECK resolves a row by opening its `path`,
-not by re-deriving it from the brief. Validate the manifest with
+**No PASS while any BINDING/APPLICABLE `required_rows` entry is `open`;** CHECK resolves a row by
+opening its `path`, not by re-deriving it from the brief, and records the applicability
+disposition of a non-binding audit row (below). Validate the manifest with
 `scripts/validate_inner_loop.py manifest <manifest.json>` (row coverage + row/evidence shape).
+
+**Binding/applicability disposition (append-only).** The frozen manifest is never rewritten and no
+row is ever deleted: a pre-existing, self-imposed extra *audit* row stays in place with its
+original `status`/text and is never quietly turned into `met`. CHECK appends an explicit
+applicability disposition to that row inside the same canonical manifest — a stable row ID, the
+classification `diagnostic_nonbinding`, and the concrete reason/basis in the agreed scope or the
+priority global rule (the plan fixes the exact field names; no second competing manifest). A raw
+row may thus stay `open` while it is **excluded from the set of binding acceptance blockers**: the
+final receipt shows binding unmet rows and audit notes separately, so a PASS on the genuine gates
+does not contradict a retained historical audit `open`.
+This path is **not** a loophole. It covers only unsupported *extra* audit demands that do not
+follow from the agreed goal — a recursive historical inventory, or a retrospective/unrequested
+execution-time `committed == tested`. A failing or missing required test, unverified direct
+evidence, a source-copy mismatch, or a real functional/security variant stays on the normal
+fail/re-gather/STOP route, and a finite audit goal the user explicitly agreed as a **separate**
+audit task stays **binding**. The scope basis and reason are checked by the role decision, not
+merely asserted by the author; an extra gate does not acquire normative force from the word
+`frozen`. The applicability budget is not a tuning knob: an absent audit-only row consumes no
+gather/replan budget, while a missing *mandatory* direct result still goes through bounded
+re-gather.
 
 **Revision:** a newly discovered required variant must return CHECK → PLAN with a justification.
 PLAN explicitly supersedes the previous contract revision, retains existing row IDs, adds IDs
 for new variants, and preserves all still-required acceptance obligations. Completing evidence
 does not itself revise the contract. Contract supersession does not supersede DO work or discard
 unfinished acceptance criteria; existing plan-revision and attempt rules remain unchanged.
+
+### Reviewer evidence pack (independent CHECK over full bodies)
+
+An independent CHECK reads only inside its allowed roots; evidence that lives only in a diffstat, a
+paraphrase, a link to an unreadable original, or isolated quoted lines is **not** reviewable
+evidence. At the DO → CHECK boundary the executor therefore **stages the full bodies** of the
+changed files a reviewer needs into this task's `rv<k>` evidence dir (default
+`artifacts/pdca/<task>/rv<k>/`; the exact filenames/layout are the plan's). Staging is a **copy,
+not a move** — the originals are preserved.
+
+- A separate, cheap **read-only source-side gather (`scout`)** performs the transport and the
+  technical source check **before** medium CHECK: per staged file it records the original path, the
+  staged copy path, the content digest, the **source identity** of the verified revision/working
+  tree, and the **content equality** of copy vs source. The receipt carries the gather's **actual
+  finding**, not the author's declaration. A single `HEAD` is insufficient when the working tree has
+  uncommitted edits, so the source identity names the state that was actually reviewed.
+- **Roslyn resolution runs in that source-side gather**, on the same frozen snapshot, and the pack
+  carries the result with the same source identity. Medium CHECK evaluates the pack and does **not**
+  run Roslyn against an inaccessible whole solution. Source-check data and C# resolution are bound
+  to **one** snapshot: one revision may not be verified while the receipt names another.
+- **Drift ⇒ invalidation.** From the frozen capture until CHECK, no task-relevant footprint may
+  drift without invalidation; a drift invalidates the previous verdict and the current revision
+  gets a new `rv`/receipt/check. This is not a global ban on unrelated parallel work.
+- The pack carries the confirmations of the changed **registry claims**; the whole repository need
+  not be mirrored. Before CHECK, availability of every required reviewer material **inside the
+  allowed roots** and staged-vs-source equality are checked; the original path stays metadata, not
+  the only readable route.
+- Author and independent certifier are **different roles**: CHECK itself reconciles each changed
+  registry claim against the supplied confirmation and records a **row-level result/reason**. CHECK
+  reads row-level evidence addressably and need not load every staged file into context; its
+  read/MCP rights are **not** widened, and Roslyn-first for C# semantics stays in the source-side
+  gather.
+- A missing body, a staged-vs-source mismatch, an incomplete justification, or the absence of an
+  independent verdict is **evidence open/blocked** — not product FAIL and not PASS.
+
+This is **source-copy fidelity**: it reuses the existing source binding and digests and introduces
+no second competing evidence contract. It is **not** a proof of execution-time `committed == tested`
+and **not** the atomic evidence generator.
 
 ## CHECK: audit checklist (generic)
 
@@ -1092,16 +1201,18 @@ gather, 7–8 judgment.
     **branch** delta (not line only); **mutation testing** on changed code was run or untested branches are
     listed. A missing test / coverage drop / open row → a `D:` task, not "good enough".
     **Inner-loop evidence gate (mandatory, fails closed).** The lens requires the
-    `scripts/validate_inner_loop.py report <evidence.json>` result; if the validator is missing,
+    `scripts/validate_inner_loop.py report <evidence.json>` result (reconciled with
+    `--journal <journal.json>` when the raw journal exists); if the validator is missing,
     cannot run, or exits nonzero, CHECK **FAILS** — never warns. It FAILS on any of: the inner loop
-    was the **whole project/solution**; the exact commands/filters/exit codes are missing; a
-    **missing or zero `selected_count`** (`selected_count ≥ 1` per execution — a zero-match run is
-    rejected); a **docs-only scope claiming an `affected` rebuild** (fictitious rebuild); **stale
-    `--no-build` artifacts** after a compiled edit (`source_revision != artifact_revision`, or no
-    prior build with the matching artifact revision); the scope was **widened without a prior
-    validated amendment**; or a boundary is **relabelled/fabricated** — a broad run in `inner`, or
-    more than one comprehensive boundary sweep. A **filtered** integration test run directly at the
-    boundary is legitimate and does not consume the single-sweep cap.
+    ran the **whole solution** or an **integration** run inside DO; the exact commands/phase/exit codes
+    are missing; a **missing or zero `selected_count`** on a `finished` run (`selected_count ≥ 1` per
+    execution — a zero-match run is rejected); a result invented for a run that never
+    finished (`failed-to-start`/`not-started`/`interrupted` must not carry one); **stale `--no-build`
+    artifacts** after a compiled edit (`source_revision != artifact_revision`, or no prior build with
+    the matching artifact revision); the scope was **widened without a prior validated amendment**; a
+    boundary **relabelled/fabricated**; a **projection that omits a started execution**; or a
+    **boundary integration count above the planned budget**. Unlimited unfiltered **unit** runs inside
+    DO are legitimate and never consume an integration budget.
 12. **Doc lens** (parallel). Per PLAN verifies **both**: prose docs (README/guides/DocFX, examples/migration
     notes) **created** and **matching the implementation** (content, not presence; `dotnet-docs-generator`);
     and XML-doc comments **only when mandated** (CS1591) or user-requested — generated on every new/changed
@@ -1153,7 +1264,10 @@ conflict/regression"), do not close the cycle.
 reconciliation object — one contract row → evidence by reference; §Versioned evidence contract)
 and inspect the referenced evidence. Every applicable required row must be satisfied by actual
 evidence for the current `rv`; every `required_rows` entry must be `met` or `na`, and any `open`
-row forbids PASS. Required artifacts must exist and support the reported result. N/A is valid only
+row that is **binding/applicable** forbids PASS. A retained audit row carrying a valid
+`diagnostic_nonbinding` disposition is reported separately and does not block PASS
+(§Versioned evidence contract → "Binding/applicability disposition"); genuine required checks are
+never waived. Required artifacts must exist and support the reported result. N/A is valid only
 when its pinned observable predicate is demonstrated; unconditional obligations cannot be waived.
 
 **Missing evidence is not a product defect:** re-gather reports, logs, artifacts, or missing
@@ -1167,8 +1281,21 @@ and preserved obligations; CHECK must not silently add, remove, or weaken contra
 
 **Bounded gathering:** if the budget is exhausted with required evidence still open, leave CHECK
 unresolved, report the open row IDs and reasons, and follow the existing blocker/escalation rules.
-Never issue PASS while an applicable required row is open. This gate adds no state-machine phase
-and does not lower existing priorities or replace existing correctness checks.
+Never issue PASS while a binding/applicable required row is open. This gate adds no state-machine
+phase and does not lower existing priorities or replace existing correctness checks.
+
+**PLAN does not invent audit hard gates.** For an ordinary product task, PLAN must not add a hard
+gate on arbitrary audit completeness — a full transitive reference graph, retrospective hashes,
+or an execution-time `committed == tested` proof — beyond the agreed scope and the skill's
+unconditional checks. Extra audit metadata belongs in the plan as separate **diagnostic notes**,
+not as required acceptance: their absence or incompleteness must not force extra DO iterations or
+retests, a CHECK → PLAN return, an escalation, `incomplete`, or STOP. The result on the mandatory
+checks is not downgraded to FAIL/`incomplete` because of such notes, and the notes are not treated
+as a product defect. A self-imposed mandatory-extra audit row is a contract-classification defect,
+not a new product blocker: CHECK records the original row and the reason for its non-binding
+classification by the priority global rule instead of silently deleting or replacing it. This is a
+boundary on *audit over-reach*, not a weakening of real requirements — see
+§Versioned evidence contract → "Binding/applicability disposition".
 
 ## Debugging (loop-back CHECK → DO)
 
@@ -1223,7 +1350,11 @@ Order:
    task is planned — the next cycle `<N>+1` starts from it (manual mode — the next session; autonomous —
    the next PLAN in this session, §Autonomous mode). If the flow is **complete** (no further cycle of this
    task — the next goal is a separate task/flow) — it stays as the closed record.
-6. **Commit advice + message for the next session** (§Message) — the block
+6. **ACT cleanup** (§ACT cleanup receipt) — only on a genuine **terminal closure**, gated by the
+   machine-checkable cleanup receipt; a STOP / incomplete / continuing task keeps its staged
+   evidence. Removed heavy copies/temp are recorded; the compact report / manifest / hashes /
+   certification stay.
+7. **Commit advice + message for the next session** (§Message) — the block
    last, nothing after it. **In autonomous mode this block is not printed**
    (§Autonomous mode).
 
@@ -1311,6 +1442,36 @@ Content — a brief handoff, not a report:
 
 These sections answer the five recovery questions (§Recovery step 5). Write so the file alone allows
 recovery. During DO/CHECK it is updated on every event; the todo mirrors it and is never the source of truth.
+
+### ACT cleanup receipt (heavy staged materials)
+
+Staged evidence is **retained** until the independent CHECK, review and task closure are complete —
+it is not cleaned on every DO → CHECK. On a genuine task closure in ACT, this task's **heavy staged
+file copies and temp materials** are removed; there is no premature cleanup on STOP / incomplete /
+awaiting-decision / continuing work.
+
+The cleanup is gated by a **machine-checkable receipt**, not by prose
+(`scripts/validate_inner_loop.py cleanup <receipt.json>`). The receipt is bound to the task and its
+`rv`, to the **approved terminal closure** and to the independent final verdict, and lists the
+removed paths with their **prior hashes** plus the retained records:
+
+- **Gate before cleanup:** the right to terminal closure is checked *before* deletion. A receipt
+  without an approved terminal closure or without the independent final verdict is **rejected**
+  (premature cleanup).
+- **Deletion scope:** only explicitly cleanable staged copies / temp files **inside this task's own
+  `rv` dir** may be removed. A blanket `rm` of the whole task dir, a broad pattern, or another
+  task's / `rv`'s files are rejected; the mandatory retained **report / manifest / digests /
+  certification** are never removed.
+- The **frozen manifest is not rewritten** or retroactively turned into different evidence; its
+  digest is checked against the receipt by
+  `scripts/validate_inner_loop.py archived <manifest.json> --cleanup <receipt.json>`. Post-ACT
+  removed staged paths are explained by the receipt (prior hash + lifecycle state), so a correctly
+  cleaned-up snapshot is a **planned lifecycle**, not "the original evidence never existed"; a
+  missing snapshot **before** ACT or without a valid receipt stays an **error**.
+- The compact retained records do **not** promise that the full review can be re-run without the
+  cleaned bodies; archived validation claims no re-certification over removed bodies, and it does
+  not replace the checks. Pre-existing historical task artifacts (in particular #218) are neither
+  repacked nor cleaned here.
 
 ### Message for the next session
 

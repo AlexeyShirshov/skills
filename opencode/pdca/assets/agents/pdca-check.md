@@ -56,6 +56,15 @@ of the status/evidence/manifest files) to reconcile the contract rows.
    rests only on the **full current report**.
 7. **No numbers/pointers → no pass.** A claim backed only by the author's self-report is
    `unverified` (Verifier Theater).
+8. **Mandatory evidence completeness gate:** no PASS while a **binding/applicable** `required`
+   criterion is `open`. A retained, self-imposed extra *audit* row (a recursive historical
+   inventory, or a retrospective execution-time `committed == tested`) is never rewritten or
+   deleted: append a disposition to the same manifest (stable row ID, classification
+   `diagnostic_nonbinding`, concrete reason/basis in the agreed scope or the priority global rule)
+   so it is excluded from the binding acceptance blockers, and report binding unmet criteria and
+   audit notes **separately**. This is not a loophole: a failing/missing required check, unverified
+   direct evidence, a source-copy mismatch, or a real functional/security variant stays on the
+   normal fail/re-gather/STOP route, and a user-requested finite audit task stays **binding**.
 
 ## Output contract (compact, in the language of the dialogue)
 
