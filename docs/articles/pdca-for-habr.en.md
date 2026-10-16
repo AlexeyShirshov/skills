@@ -1,150 +1,159 @@
-# Beyond vibe coding
+# Vibe coding: what's next?
 
-Vibe coding sped up development to an indecent degree: on a strong model a working prototype appears within minutes, and there's no need to plan or dig in — the model fills in the details itself. The price of that speed is unpredictability. Success isn't defined in advance, "done" stays a self-assessment, and the result isn't reproducible: the same request yields a different solution. The `pdca` skill doesn't cancel vibe coding; it adds a **verifiable result** to it — PLAN → DO → CHECK → ACT with gates, independent verification, and a report on disk.
+Agents are a new development environment that effectively replaces the existing IDEs. In it, with nothing but a prompt, you can do all the same things as in any other IDE (writing code, tests, refactoring, static analysis, and so on). Only the way code is written has changed. You describe in natural language what you want to do, and the model implements it — finds files, edits code, runs commands. With the help of the model and the operating system's tools, the agent grasps what you want very quickly and delivers in minutes what used to take you a day.
 
-## Vibe coding: why it works
+Of course, this is a modern, progressive approach that gives a serious productivity boost — so what could possibly go wrong? Well, over time various little things start to annoy you. Either the model loses the thread and does something completely different from what you asked, or it fails to do what you stated explicitly and unambiguously. A few times the model genuinely drove me up the wall, when I had to literally retype the very same prompt for it to understand what to do. The same model that yesterday understood you at a word, almost read your mind, wrote fast and well — today, for some reason, starts dragging: asks silly questions, goes off to read documentation on the internet, re-reads your whole repository again, and so on. Once again you spend time and money on "retraining" it (immersing it in context, quite literally).
 
-Early in 2025, Andrej Karpathy described a style in which a programmer "gives in fully to the vibes" and forgets that the code exists at all. The phrasing is a joke, but there's a real shift behind it.
+Then you begin to notice that it can report the task as done while having done nothing, or something completely different from what you asked. You spend time on an in-depth review of its handiwork, losing time and focus.
 
-- **The barrier to entry drops.** You don't have to remember the syntax, the library, or the exact API — describing what you want in words is enough.
-- **Feedback is instant.** Edit, run, next edit happen in seconds, without the build-and-review ritual.
-- **A strong model fills in what's missing.** Boilerplate, configuration, and small mistakes — it handles them itself while you keep the intent in your head.
-- **Disposable work is its element.** A prototype, a script "for today", a demo of an idea, a reconnaissance of an unfamiliar technology: here vibe coding is nearly unbeatable.
+Of course, none of this is critical, and it's cured by setting behaviour rules, instructions, skills. Over time you'll accumulate working prompts, skills, and specs. On the whole it's a workable solution — I, too, have a set of skills for various tasks, various development artifacts, and input parameters. But what if you want more? More quality, for instance?
 
-As long as you need the result just to "feel out" an idea, it's an honest deal: speed in exchange for control.
+## Almost euphoria
 
-## Where vibe coding breaks
+For the first few months, frankly, I was impressed by prompt engineering. Modern IDEs with IntelliSense and IntelliCode lower the barrier to entry, you say? Nonsense! Now you don't need to remember the syntax, the library, or the exact API at all — describing in natural language what you want is enough, and all the wiring of complex libraries and the calls to their methods, which you previously had to remember or look up and hand-code, magically appear by themselves. You don't have to burden your head with the small stuff — the boilerplate, the configs, the tests, the performance measurements — the model does it itself while you keep the main idea in your head.
 
-The problems start when you need something beyond "looks like it works" from the result — reproducibility, explainability, repeatability, or a high cost of error.
+At first I collected successful prompts. For a one-off solution that seems ideal. A prototype, a script "for today", a demo of an idea, a trial of an unfamiliar technology, writing tests for finished code. In a couple of months they had grown into a set of skills that helped me achieve repeatability and a certain level of quality. I told the model where to look, what to treat as the readiness criterion, how to verify the result. The skills set behavioural patterns for the model so that its line of thought went in the direction I needed. On the whole they helped a lot — up to a certain point.
 
-- **Success isn't defined in advance.** No criterion — so "done" is decided by the author. That's an opinion, not a fact, and there's nothing to check it against.
-- **State lives in the session.** After compaction (the host compresses the context) or in a new session, it's unclear where you stopped, what was done, and why: the context reset, and the work starts over.
-- **Mistakes aren't punished.** A failure doesn't stop it from "trying again" the same way: identical retries look like progress even though they're going in circles.
-- **The result isn't reproducible.** The same request to the same model yields a different answer — sometimes a broken one. You can't take that on faith.
+## The complexity threshold
 
-Together, that's what unpredictability is: vibe coding can produce a result, but it doesn't promise it'll be the one you need or that you'll be able to repeat it.
+If the task was complex and hard, it became long, the context grew, the limits blew past within minutes, and the money on API plans burned even faster. Keeping a big, long task entirely on an expensive model is costly. Switching to a cheap one is very expensive, because you have to fiddle with the context by hand.
 
-## From vibe coding to a cycle
+The problem with simple prompts and one-liner skills is that they're linear. Once I realised we needed cyclicity, the idea of using the management cycle Plan — Do — Check — Act came immediately. I took my existing work — the prompts, the skills — reconciled them with PDCA theory, and out came the `pdca` skill.
 
-These problems share a root: the model's ordinary work is a sequence of actions ("read, fix, run, say it's done"), not a path to a verifiable result. The `pdca` skill replaces the sequence with a **cycle**. The idea is borrowed from the management cycle Plan — Do — Check — Act: plan, do, verify independently, finish — or return to the plan. In the contract it's a state machine with **gates**: a gate is a condition under which the next step is allowed. A gate checks the **presence** of the required items, not quality. The promise is modest: the cycle doesn't guarantee the right result, but it won't let you close work without verification, silently lose state, or pass off identical retries as progress.
+By that point I had already heard the term harness engineering, but imagine my surprise when, by trial and error, I had reinvented an approach now known as loop engineering and positioned as the next stage in agentic development.
 
-![The universal cycle contract](../../opencode/pdca/assets/diagram/pdca-contract-dark-en.svg)
+OK, did a miracle happen? Of course not! The first thing I ran into after launching the skill was that it got slower. The cycle sets rigid bounds on the model's reasoning and demands a verifiable result: for instance, after the changes performance must not degrade or coverage must not drop. With this approach you can no longer have a casual simple refactor — the cycle will sit over a trivial edit for 20–30 minutes, whereas before, in prompt mode, it was done as quickly as in an IDE. But in exchange I got two important things.
+1. a result that became verifiable and predictable.
+2. a quality that became noticeably higher.
 
-`pdca` is a **domain-neutral** skill: it names only **roles** and **phases** and imposes neither artifacts, nor task types, nor domain examples. What the result will be — a report, a document, a config, a plan — is decided by the planning phase; that's also what chooses the way to verify it. So `pdca` is worth picking for a task with a **verifiable result**: you can name the success criteria and the way to check them in advance.
+## How the skill works
 
-## Responsibility
+![The universal skill contract](../../opencode/pdca/assets/diagram/pdca-contract-dark-en.svg)
 
-A cycle has a fixed set of **roles**. A role is not a person and not a specific model, but a function with permissions. A **tier** (cheap / medium / strong) is a label for a model's cost and quality, **not** an authority: a cheap role can have more permissions than an expensive one. The host binds specific agents and models (the host is the run environment, the "harness"); the skill names only roles.
+The skill defines a fixed set of roles, each with an attached set of functions and permissions. A role has an attribute — **Tier** — which describes the complexity of the tasks assigned to that role. The task complexity determines which model suits them best. I singled out three levels — cheap / medium / strong. The tier is a measure of a model's cost and quality. Another role attribute is permissions. They, too, depend on the tasks being solved. A strong model, oddly enough, will have fewer permissions than a cheap one. I'll cover that effect in the economics section. Different harnesses implement roles differently; personally I live in opencode, where this maps beautifully onto the notion of subagents. The skill knows nothing about models and permissions — it operates only with roles. The harness implements a role via subagents, giving them specific models and permissions.
+
+The skill takes a task or goal as input. It can't be changed or reformulated inside the skill (only the user may do that). If the skill realises it's unachievable, the cycle stops.
+
+Planning gives birth to the status file, and that file is the skill's main artifact.
+
+All the work is done by subagents implementing specific roles:
 
 | Role | What it does | Tier |
 |---|---|---|
 | GATHER — Scout | Collects pointers `file:line`, URLs, numbers; no recommendations | cheap |
 | PLAN — Analyst | Goal, acceptance criteria, decomposition, risks, verification method | medium |
-| DO — Executor | Edits files, runs commands, keeps the status file (the cycle's state on disk) | cheap |
+| DO — Executor | Edits files, runs commands, keeps the status file | cheap |
 | CHECK — Auditor | Independently verifies every criterion against actual evidence | medium |
 | ESCALATE — Expert | The instance for hard decisions | strong |
 | RUNNER — Orchestrator | Drives the cycle, reading and editing nothing | cheap |
 
-The table holds as long as a few rules are respected:
+Next, the skill defines the rules of interaction between the roles:
 
-- **The orchestrator drives the cycle, reading and changing nothing — dispatch only.** It calls the roles through `Task` (the subagent-launch tool), passing information from one to another. But it doesn't write the plan, read files, or run commands; the exception is updating the task list (`todowrite`).
-- **The plan always belongs to the analyst.** It both forms the initial plan and revises it when the corresponding signal arrives.
-- **Only the executor may write and run**, including the status file.
-- **The auditor is independent of the author.** It judges by the aggregated report with fresh runs and facts from the scout.
+- **The orchestrator** drives the cycle but reads and changes nothing. As a rule it's the primary agent on a cheap or free model. It dispatches the roles through `Task` (the subagent-launch tool) and passes information from one to another. It doesn't write the plan, doesn't read files, doesn't run commands; the exception is updating execution progress (the task list).
+- **The scout** is a universal role, used by all the non-cheap models to shovel through raw information.
+- The plan always belongs to the **analyst**. It both drafts the initial plan and revises it when the corresponding signal arrives.
+- Only the **executor** may write and run — including the status file.
+- The **auditor** collects evidence (with the scout's help) of the work done. It receives the report from the executor and the acceptance criteria from the analyst, and tries on its own, independently, to assess whether the result holds.
 
-From these rules follow three prohibitions on "self". **Self-verdict**: the executor does the work, and an independent auditor accepts it — if the author decided for itself that the criteria were met, verification would turn into a self-report, so the executor neither renders the verdict nor declares STOP, and the auditor doesn't verify its own work. **Self-editing**: only the executor may write and run, otherwise the source of changes splits in two and the author ends up the judge of its own edit. **Self-reading**: a file once read can't be evicted from the context, so raw data is read only by the scout, which returns pointers, and the orchestrator merely dispatches and doesn't substitute for the roles.
+The harness's permission mechanism sets constraints for the roles:
+ - only the executor may write and run (exec), otherwise the source of changes multiplies.
+ - reading is available only to the executor, the scout, and the expert.
+ - The medium and strong tiers don't work with raw information. A file read or documentation downloaded from the internet enters the context in full, although perhaps only a single line is needed to make the decision. So raw data is read only by the scout, which returns pointers to the orchestrator, and the orchestrator then dispatches them to the stronger roles.
 
-## How the cycle runs
+## Technical details
 
-The cycle's state machine looks like this:
+The skill's state machine looks like this:
 
-![The cycle state graph](../../opencode/pdca/assets/diagram/pdca-state-dark-en.svg)
+![The skill state graph](../../opencode/pdca/assets/diagram/pdca-state-dark-en.svg)
 
-**PLAN.** The analyst decomposes the goal and answers what result is needed. The goal must be present at the cycle's entry: it's formulated in advance and can't be changed. The decomposition goes down to atomic, indivisible tasks with clear boundaries — **units**. A unit is one verifiable piece of work with its own acceptance criteria. The plan's mandatory fields:
+PLAN. The analyst decomposes the goal and answers the question of what result is needed. The decomposition goes down to atomic, indivisible tasks with clear boundaries — **units**. A unit is one verifiable piece of work with its own acceptance criteria. The plan's mandatory fields:
 
-- the goal and the expected result;
+- the expected result;
 - constraints and assumptions;
-- acceptance criteria — **each with a verification method**;
+- measurable acceptance criteria;
 - decomposition with dependencies, or an explicit decision not to split;
 - means and access;
 - risks and stopping conditions.
 
-A gap in the input data is closed with a fact, an explicit assumption/risk, or a blocker/escalation; guesses are forbidden.
+DO. The executor does only what the plan says; a change beyond the unit is out of bounds. Once the work is finished it hands the orchestrator essentially a draft, whose correctness the auditor verifies.
 
-**DO.** The executor does only what the plan says; a change beyond the unit — "Over-Reach" — is a separate task. The verdict and STOP aren't its job: it returns to the orchestrator a hypothesis, a **preliminary candidate with evidence**, and the answer "the result is achieved" never closes the cycle — the verdict belongs to CHECK.
+CHECK. The auditor judges every answer against actual evidence and checks that the evidence isn't self-contradictory. The auditor forms a verdict in terms of the acceptance criteria and hands it to the orchestrator. An implementation defect goes back to DO, a wrong plan goes back to PLAN.
 
-**CHECK.** The auditor judges every answer **against actual evidence** and checks that the evidence isn't self-contradictory. Statuses: `met` (satisfied), `unmet` (not satisfied), `unverified` (not verified). The absence of verification isn't a pass: without numbers and pointers a criterion gets `unverified`, not `met`. The output is a verdict, a criteria matrix, findings, and routing: an implementation defect → DO, a wrong plan → PLAN.
+ACT. Closes the cycle: it records the conclusions, limitations, status, and handover, and finalizes the status file.
 
-**ACT.** Closes the cycle: fixes the conclusions, limitations, status, and handover, and finalizes the status file. Without ACT the cycle can't be closed, and without an accepted verification there's no ACT; `rework`/`replan` aren't part of ACT but **returns before** it.
+If it turns out that one more thing must be done before the current unit (DO can return the work to PLAN, putting the current unit in a blocked state), the analyst adds a new active unit. When the new unit completes, the original unblocks and continues with the same criteria.
 
-**Returns.** `CHECK → DO` — an implementation defect: fix and check again. `CHECK → PLAN` — a wrong plan: the analyst issues a new revision. `DO → PLAN` — a new precondition or blocker: not a unilateral revision, but a candidate for the analyst to consider.
+If the original unit is no longer achievable, a new one supersedes it, and the original is marked `superseded`. So that no requirement is lost in the supersession, the new unit inherits all the criteria of the original, and CHECK verifies them by the same scenario.
 
-When the set of units changes mid-work, it's important to distinguish two cases.
+Execution can't move from one state to another until it passes a gate:
 
-If it turns out that one more thing must be done before the current unit, the plan simply *adds* a new active unit, and the original stays in the `blocked` status and keeps all its criteria. There's no mapping between them and none is needed: the new unit doesn't replace the old one, it merely comes before it — once it's done, the original unblocks and is brought to `done` by its own criteria. This is called an **additive precondition**.
+- Plan → DO: all mandatory fields are present, the plan is written to the status file, and approval from the user is obtained — or the run is in autonomous mode.
+- DO → CHECK: all active, non-superseded units are done with evidence.
+- CHECK → ACT: all criteria are checked, not a single one failing or unverified.
+- ACT → EXIT: the result and the status file are finalized.
+- STOP: a separate finalization, outside the series of transitions above.
 
-If the original unit is no longer achievable, a new one supersedes it. The original is marked `superseded`, and this is a genuine substitution. So that requirements aren't lost in the supersession, a "superseded → replacement" mapping is mandatory: the new unit inherits all the criteria of the original, and CHECK still verifies them. Without such a mapping, superseding is forbidden — otherwise some requirements quietly evaporate. This is called a **scope replacement**.
+Since the graph allows returns, cycle counters have to be kept. The orchestrator keeps three counters:
 
-In short: with an additive precondition the original unit lives on (`blocked`) and there's no mapping; with a scope replacement it dies (`superseded`), and a mapping with all its criteria is mandatory.
+- `N` — the number of the task's cycle in the file name `.pdca/status/&lt;task&gt;-&lt;N&gt;.md`; it grows only in ACT, when the next cycle of the same task is planned.
+- `r` — the plan revision; it grows only with a genuinely different plan (DO or CHECK may request a plan change).
+- `n` — the attempt at executing the current revision: starts at 1, the `CHECK → DO` transition increments it by 1, and a new revision resets it to 1.
 
-**Five gates** allow the transitions:
+A defect history is kept as well. It isn't erased by a plan revision or a new session; it exists so you don't loop on the same mistake.
 
-1. **Plan → DO:** all mandatory fields are present, the plan is written to the status file, and approval is obtained from the user or the orchestrator.
-2. **DO → CHECK:** all active, non-superseded units are `done` with evidence.
-3. **CHECK → ACT:** all criteria are `met` on actual data, not a single `unmet`/`unverified`.
-4. **ACT → EXIT:** the result and the status file are finalized.
-5. **STOP:** a separate finalization, outside the series of transitions above.
+The counters and the history live in the status file.
 
-Two invariants are inviolable: **you can't skip CHECK** and **you can't close the cycle without ACT**.
+The orchestrator hands control to the Expert when the execution attempt `n` reaches three — that is, the Auditor has rejected the implementation three times. In that case the Expert has two options:
+1. Provide a new input for re-planning (return to PLAN). In that case `r` grows and `n` resets.
+2. Find no solution and stop the cycle.
 
-Progress is tracked by **three counters** and a **defect history**:
+If the Auditor accepts the implementation, it issues its verdict and the Orchestrator moves to ACT, where the cycle ends.
 
-- `N` — the number of the task's cycle in the file name `.pdca/status/<task>-<N>.md`; it grows only in ACT, when the next cycle of the same task is planned.
-- `r` — the plan revision; it grows only with a genuinely different plan.
-- `n/3` — the attempt at executing the current revision: starts at 1, `CHECK → DO` increments it, and a new revision resets it to 1.
-- **Defect history** — one line per stable defect key (revisions/attempts, number of fixes, pointers, escalation outcome); it isn't erased by a revision or a new session.
+## A real-world example
 
-A rejected candidate with an unchanged plan is **not** a revision: `r` and `n` don't change; renaming or resetting the session doesn't "produce" a revision. The counters and the history live in the status file. They help tell "one more attempt" from a revision and to call escalation in time: **a repeat of the same defect after one fix** is a signal earlier than three different failures; after a revision's third failed CHECK there's no fourth attempt.
+In one large, complex project there was a task that the `pdca` skill returned to four times. The detailed log is below, but here's what happened in outline:
+### Cycle 1
+The orchestrator decided to stop the work, because escalation found no confirmation from the user that the plan was approved.
+### Cycle 2
+- The Auditor rejected a unit three times, escalation followed. The Expert accepted the work.
+- The next unit also failed three times, and this time the Expert didn't accept the work: the task remained unfinished.
+### Cycle 3
+I stepped in and pointed out that the acceptance criterion which had failed the previous revision was being dropped (with a record in the status file). I asked for the work to continue. The next unit, which was supposed to take a different measurement, was also rejected by the Auditor. Escalation happened again, and the Expert decided that we close the task as done, but with the limitations recorded.
+### Cycle 4
+The task came back to me once more; I reformulated the requirements again and sent it back for rework. With the new implementation the Auditor found six defects on the first iteration and handed it back to the executor. A repeat defect from the executor went to the Expert, who accepted the work partially and asked for one aspect to be re-measured. The measurements came out positive, and the task was finally closed for good.
 
-**Modes.** In **normal** mode, after the plan is written the orchestrator shows its gist, gives a path to the status file, and asks to confirm the plan — this is the **only** start signal. Without confirmation, nothing is created or edited except the status file. In **autonomous** mode the same contract runs without pauses or questions: transitions happen in the same turn the gate is passed, nothing "for the user" is printed, and notifications (an unavailable role, recovery after compaction, an assumption instead of a question) are written to the status file as `Notice:` (a notice entry). No questions are asked: anything unresolvable leads to STOP.
+Needs collapsing here — the real task log
+```
+Cycle 1 (Oct 4, 13:30). The skill stopped before doing any work: escalation decided that writing code without an approved written spec was not allowed. Status incomplete, no code, commit 01f3e92. This was not a failed implementation but a missing permission.
+Bridge into cycle 2. You approved the document iteration-15-cached-path-design.md, commit 5137ec8 "written spec approved; reopen group-1". Cycle 2 starts from that permission.
+Cycle 2 (Stage A) (≈16:40–17:42, r=2). Planning work: decomposed the cached path, fixed a baseline and budgets. This is not the optimisation itself but preparation. n reached 3/3, and escalation decided simply to accept stage A ("No replan, no STOP, no fourth CHECK", 183-2.md:232). Then a separate attempt B1: replace the private Dictionary with a built-in store of four pairs. Three CHECK failures in a row, escalation: accept only with a controlled measurement under the condition loadavg(1m) < 1.0. In the quiet environment the measurement was not taken, so the fallback kicked in: B1 incomplete, the patch neither accepted nor committed (b1.md:461-469).
+Cycle 3 (Oct 4, 20:40, autonomous + auto-commit, 7eb5899, r=2). Your directive: don't stop the group on the time metric, record the limitation and continue with B2. Inside, three units:
+- U1 — re-measurement of B1: again could not prove the speed-up, the fallback repeated;
+- U2 — a different approach, "guarded immutable refresh recipe", deliberately independent of B1's result. CHECK failed, the changes were rolled back, there was no plan revision (183-3.md:90-92);
+- U3 / Stage C — escalation issued the final status: #183 = DONE (with limitation), B1 and B2 rejected. Closure — commit 04c0c96.
+Cycle 4 (Oct 5, N=4, interactive, you gave the go). The issue was reopened. Here they rebuilt B1+B2 as an immutable ParamRefreshRecipe: the parameter-binding recipe is prepared in advance, and the per-hit Dictionary and the collector were removed. On the first CHECK six defects were found (among them a crash with InvalidCastException), one return to DO, escalation accept-with-open-AC4. Then AC4 was closed by a repeat ABAB measurement. Commits 322f9be and 79b48fd, acceptance passed.
+```
 
-**Memory and evidence.** The **cycle status file** is the source of truth for the plan and progress. It lives on disk, survives compaction and a new session, and the executor updates it on every event. The **todo list** in the sidebar is merely a session mirror that's lost in a new session; it is never the source of truth. After compaction, state is restored from the status file (via the scout), not from memory. The cycle closes only on **fresh evidence** — exit codes, numbers, a path to a log, `file:line` — and never on a claim, including subagents' reports. Marker words like "should work", "probably" are a signal to schedule a re-run: **a report ≠ a result**.
+## The experiment
 
-## A teaching story: when the cycle stops
+Once the skill had more or less settled, I wanted to test it, so I set up an experiment. I took the same task in a project (a fairly complex one, where dynamic columns had to be added) and had the same model (DeepSeek V4.1 Flash) solve it in three different environments: plain, with no skills; with an eight-step instruction skill (one of my earlier, very successful skills); and with the new `pdca` skill. Each run was in a separate clone of the repository, with no history and no ready answer. Separately I ran a reference (my working role setup) on the working branch — the same feature, done by the same cycle but with expensive models: planning and verification on the medium model, escalation on the strong one.
 
-> This is a **teaching illustration**, not a source of the rule. It shows the transitions and STOP schematically; the exact wording is in the skill's materials.
+| environment | time | files | own tests | P0 defects | cost |
+|---|---|---|---|---|---|
+| no skills | 16 min | 32 | 2 | 5 | $0.20 |
+| a very good skill | 30 min | 37 | 7 | 4 | $0.33 |
+| cycle, all roles on a cheap model | 78 min | 55 | 19 | 2 | $1.19 |
+| cycle with expensive models | ≈40 min | 48 | 16 | 2 | $0.76 |
 
-Imagine a task: answer whether caching intermediate results speeds up a nightly report. The analyst in PLAN r1 formulates the criteria: (1) run times with and without the cache on the same dataset; (2) the conclusion follows from the numbers; (3) the methodology is reproducible. Units: a baseline measurement, a measurement with the cache, writing up the conclusion. The plan is written, the user types `go` — DO begins (`N=1`, `r=1`, `n=1`).
+What we see: vibe coding is the unconditional leader in execution time, cost, and defect count. My previous skill, born out of prompts, did the job somewhat better, but twice as slowly. The `pdca` skills, though, are champions of quality. They wrote considerably more tests and left half as many critical defects. You can also notice that an ordinary linear skill is twice as cheap as the `pdca` skill — and twice as low in quality.
 
-During DO the executor discovers that the promised dataset of the needed size isn't available. Fixing the plan unilaterally is forbidden: DO returns a preliminary candidate, and the analyst classifies it as an **additive precondition** — the "measurement with the cache" unit stays active but `blocked` on the dependency, and a new active unit "obtain the dataset" is added. This isn't a scope replacement, so no mapping is needed. The precondition is closed, the measurements are taken, the conclusion is written up, DO → CHECK.
+## The economics of tiers
 
-CHECK in revision r1 returns `unmet` on the "methodology is reproducible" criterion: the numbers are there, but the methodology is described incompletely. This is an implementation defect, the cycle returns `CHECK → DO`, `n`=2. The executor expands the description; a re-check of the same revision again returns `unmet` on the same criterion. The same defect came back after one fix — a signal to **escalate before a second fix**, and the orchestrator calls the expert. The escalation finds that the needed dataset can't be obtained in the permitted environment, and without it the criterion can't be met; there's no revised plan that keeps the original criterion. The cycle ends in **STOP**: the remaining `unmet`/`unverified` criteria are recorded, along with the counters (`N=1`, `r=1`, `n=2/3`) and the defect history — **with no false PASS and no ACT success**. There's no fourth attempt, and STOP doesn't bypass it.
+A formalized skill costs more in time, tokens, and money. That holds as long as the comparison is against one or two prompts. On simple tasks, where the context is never lost, vibe coding is cheaper, and the cycle isn't needed. On complex tasks the cost of vibe coding is made up of a multitude of restarted sessions, repeated explanations of the task, code reviews, and the developer's hours spent restoring the thread of reasoning. The harder the task, the more expensive and inefficient vibe coding becomes. So if we want to compare money, we shouldn't compare "a prompt vs a cycle" but "a day of vibe coding vs a day in the cycle".
 
-This outcome isn't a failure of discipline: the cycle stopped where the verifiable result was exhausted, and kept a record of why. And it's not "try a little harder": the "no fourth attempt" rule holds after escalation too.
+In a well-decomposed task almost all tokens go to mechanics: read a file, apply an edit, run the tests, collect excerpts. Decision-making is rare and expressed in short answers, which is why the strong models have a smaller set of permissions. A digest of an article, a line of code with its contract, a couple of numbers are enough for them. Tool output and internet scanning would only eat your tokens, so bulky, mechanical work goes to the cheap tier.
 
-Now let's compare with vibe coding. There the model wouldn't have stopped at this point: it would have made a fourth and a fifth attempt and each time confidently reported "now it definitely works". An impossible criterion it would have quietly softened — picked a different dataset, lowered the bar, or simply declared it met without verification: there's no independent CHECK, and no one to catch it. The reason for the stop wouldn't be saved anywhere — instead a confident "done", and you'd learn about the failed criterion later or never. There's simply no "no fourth attempt" rule there: retries are free and endless, and the model keeps hammering away, burning tokens and drifting from the goal. What looks like "gave up" in the cycle is precisely the honest outcome that vibe coding doesn't produce: a stop with a recorded reason instead of endless confident churn.
-
-## Trade-offs
-
-Nothing is free, and the cycle is no exception. The main downsides:
-
-- **More expensive.** The cycle involves several roles, some on the medium and expensive tiers, and independent verification requires fresh runs. Strictly speaking, though, this holds only for simple tasks — on complex ones the arithmetic is reversed, see the next section.
-- **Slower.** The gates, the independent CHECK, and keeping the status file add steps and increase execution time.
-- **More complex.** You have to stand up the roles and tiers, and watch the status file and gates — the barrier to entry is higher than a single prompt.
-
-This is the price of predictability: a verifiable result and an honest stop. On a small or one-off task the cycle may not pay off — in such cases it's more appropriate to tell the model by hand what to fix and where. The `pdca` cycle suits complex tasks with a large context that simply may not fit into one session under vibe coding. The cycle is very successful for corporate solutions, where people are willing to pay with greater token and time consumption for a quality result.
-
-## The economics of tiers: cheaper doesn't mean worse
-
-Above I honestly wrote "more expensive" — and I confirm it: a formalized cycle costs more in time, in tokens, and, of course, in money. But the caveat here matters more than the admission itself: this holds as long as the comparison is against one or a few prompts. On simple tasks, where neither the developer nor the model can "lose" the context, vibe coding is unconditionally cheaper — and the cycle isn't needed there at all. On complex tasks that's not so: the cost of vibe coding stops being the cost of prompts and is made up of session restarts, re-explanations of the task, the model's wanderings that burn tokens while drifting from the goal, and the developer's hours restoring the thread of reasoning. This hidden part of the bill grows with the task's complexity, while the cycle's overhead doesn't. So for complex tasks the honest comparison isn't "a prompt vs a cycle" but "a day of vibe coding vs a day in the cycle". And that's where the arithmetic flips.
-
-The key to the economics is separating volume from judgment. In a well-decomposed cycle, the overwhelming majority of tokens go to mechanics: read a file, apply an edit, run the tests, collect excerpts. Judgment — "what do we do next", "does it count" — is compact and rare. Tiering is exactly the routing of these two streams: volume to cheap, judgment to medium, dead-end analysis to strong. Paying a flagship price for a ten-line edit is like hiring an architect to repaper the walls.
-
-At the same time, "with no loss of quality" isn't a hope but a consequence of the very prohibitions from the "Responsibility" section. A cheap executor renders no verdicts: its work is accepted by an independent CHECK on the medium tier — with evidence and fresh runs. Quality is held by the cycle's structure, not by the model's price at every individual step. Remove the ban on self-verdict and the savings instantly turn into a loss of quality.
-
-### Numbers instead of gut feelings
-
-A real-usage snapshot: 12 hours of work, 159 sessions, 3829 messages, $7.34 in total. The distribution by tier:
+A snapshot from my own real usage: 12 hours of work, 159 sessions, 3829 messages, $7.34.
 
 | Tier | Messages | Input, tok. | Output, tok. | Cost | Budget share |
 | --- | --- | --- | --- | --- | --- |
@@ -152,34 +161,28 @@ A real-usage snapshot: 12 hours of work, 159 sessions, 3829 messages, $7.34 in t
 | medium | 113 (3%) | 3.36M | 116.5k | $2.70 | 37% |
 | strong | 4 (0.1%) | 50.4k | 11.5k | $0.20 | 3% |
 
-Input here is all input tokens (fresh plus cache reads and writes); output is the answer together with reasoning: in billing, reasoning counts as output.
+Input here is all input tokens, including cache reads and writes; output is the answer together with reasoning.
 
-I'll start with strong: four calls for twenty cents over twelve hours. The expensive tier works like insurance — nearly free while everything runs normally, and priceless when the cycle is stuck. Its alternative is a fourth and fifth blind attempt on the medium tier, each with the full context: they cost more than one escalation and, unlike it, add no new perspective to the task.
+What does this table say? The strong tier was called four times over twelve hours. It barely works compared with the other roles, so its relative expensiveness gets lost in the total spend.
+The medium tier was called considerably more. That tells us there were many verifications of the cheap tier and a large number of round-trips and returns to DO. It's expensive, but also under 40% of the total spend.
 
-### The second multiplier: cache
+One subtlety about prompt cache is worth noting here as well. On expensive models the difference between writing to the cache and reading from it is a multiple: in my setup, on the strong tier, a read is $0.2/M against a write of $5/M — 25 times. A measurement on a live session: a warm repeat turn with a full cache hit cost $0.0034 against $0.0794 for a cold one — 23 times cheaper.
 
-Tiering isn't alone — its effect is multiplied by prompt cache. On expensive models, the difference between writing to the cache and reading from it is a multiple: in my setup, the strong tier's cache read is 25 times cheaper than the write ($0.2/M vs $5/M). A measurement on a live session: a "warm" repeat turn with a full cache hit cost $0.0034 against $0.0794 for a "cold" one — 23 times cheaper. Seven such prefix rewrites (859K tokens) would have saved ≈$4.1 — as much as the entire cheap tier burned over those twelve hours.
+The biggest single source of expense is the coding itself. And no wonder, looking at the number of tokens it shovelled through over that time. If a medium model had done it, that one coding job over those twelve hours would have cost about $59 instead of $2.76, and together with the scout about $75 instead of $3.74. On flagship models it would already be about $150 — and that's without counting cache writes and reads, which are paid on expensive models.
 
-A caveat from my own methodology: if there are no cache hits, the savings are unproven, and the promised percentage must not be published. The cache has to be kept warm deliberately — up to and including a dedicated warming proxy, otherwise after every idle period the expensive model rewrites the whole prefix again.
+## Takeaways
 
-### Where the savings end
+Do I imagine the skill is so smart that it can handle any task? No — it simply doesn't say "done" until it has verified. Because for it, done and not-done are equally valid outcomes. The model strives to satisfy your prompt; the cycle doesn't. It will mark the task `incomplete` if the acceptance criteria set during planning weren't met. Vibe coding in such a case can close the task as done, because it has no definition of done. If the result isn't verified, you're likely to catch a bug in production or get an angry review from a user.
 
-And two cases where tiering doesn't pay off at all. The first is a single-model profile: if all roles are bound to one model, there's nowhere to save, and only the organizational benefits of the cycle remain. The second is small one-off tasks, already covered in "Trade-offs": the cycle's overhead will eat any difference in tier prices.
+The downsides of the `pdca` skill stem, as usual, from its upsides. The skill works much longer. A simple half-hour task turns into hours. The skill consumes more tokens. Several roles work, some of them on the medium and expensive tiers, and independent verification requires fresh runs. The skill is more complex both in design and in operation. You have to stand up the roles and tiers, and watch the status file and the gates. The barrier to entry is higher than for a single prompt.
 
-Finally. The cycle's economics is a measurable thing, not a declaration: cost and tokens can be broken down by phase and tier straight from the session database. If your numbers don't look like mine — that's not grounds for an argument, but grounds to measure your own snapshot.
+So on a small one-off task the `pdca` cycle won't pay off — there it's simpler to tell the model by hand what to fix and where. The cycle is worth taking for long tasks with a large context, where you care about the result and the quality.
+
 
 ## Conclusion
 
-`pdca` doesn't promise the right result — it doesn't let you close work without verification, silently lose state, or pass off a retry as progress. The gates check the presence of the required items, an independent CHECK judges on fresh evidence, and STOP honestly records where the verifiable result was exhausted.
-
-And who decides "done" in your setup — a human, a review, or automation? Share in the comments.
-
-This article is part of a cycle about `pdca`. Next we'll cover the applied skills on the same core and the layer on top of it:
-
-- `pdca-coder` — the cycle for development (delivering a solution by writing code);
-- `pdca-dotnet` — the same cycle, but with .NET gates;
-- `pdca-collection` — coordination of several cycles: a layer for solving multiple tasks.
+The `pdca` skill isn't a silver bullet; your productivity won't go up from using it (rather the opposite). It's worth plugging in when you want a little more assurance of quality. Work on any complex task is iterative — you can't do it all in one sitting. The model is no exception: it, too, handles tasks far better when they are planned, decomposed, verified, sent back for rework, and lessons are drawn from them. Strong models can already do this on their own, but nobody has repealed the price/quality ratio. Happy coding!
 
 ## Open source
 
-The skills discussed in this cycle — `pdca` and the applied `pdca-coder`, `pdca-dotnet`, `pdca-collection` — are open and published on GitHub: you can download and install them from the repository <https://github.com/AlexeyShirshov/skills>.
+The skills discussed here — `pdca` and the applied `pdca-coder`, `pdca-dotnet`, `pdca-collection` — are open: <https://github.com/AlexeyShirshov/skills>.
