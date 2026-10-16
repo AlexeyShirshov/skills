@@ -112,7 +112,11 @@ id, no verdict), tests, documentation, performance; then the **triage** — `che
 tier renders the verdict. The gathered evidence converges into a single machine-readable **evidence
 manifest**: DO writes it at the path fixed in the plan and freezes it at the DO→CHECK boundary; in
 CHECK the manifest is only appended to, and `pass` is forbidden while even one mandatory item is
-open. `check` reads the aggregated report and may open the cycle's artifacts directly — a scoped
+open **and binding**. A self-imposed extra *audit* row that follows from no agreed goal is not
+rewritten or dropped: CHECK appends an explicit disposition to it in the same manifest (a stable row
+ID plus the `diagnostic_nonbinding` classification and a reason), so the row may stay `open` while
+it is excluded from the binding blockers, with binding unmet rows and audit notes reported
+separately. `check` reads the aggregated report and may open the cycle's artifacts directly — a scoped
 read of the status, the evidence and the manifest, but never the product's code. Four streams are
 unconditional: code audit, tests, documentation, performance; the fifth — the security audit — is
 conditional and engaged by trigger, and its report returns into the common verdict rather than
@@ -204,7 +208,7 @@ whole family is in the guide [`docs/articles/pdca-guide.md`](pdca-guide.md).
 ## Sources
 
 The "claim → source" map. The article's normative claims were reconciled with the current
-`opencode/pdca-coder/SKILL.md` (commit `065e2b8`); where they disagree, the skill file takes
+`opencode/pdca-coder/SKILL.md` (commit `69685b8`); where they disagree, the skill file takes
 precedence. The paths are given from this repository; the host artifacts (`config/agents/*.md`,
 `config/profiles/*.jsonc`, `config/AGENTS.md`) are not part of it and live in a separate
 configuration repository.

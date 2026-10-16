@@ -255,7 +255,7 @@ CHECK — перезапускаются все обязательные гей�
 ## Источники
 
 Карта «утверждение → источник». Нормативные утверждения статьи сверены с текущими файлами
-репозитория (коммит `065e2b8`); при расхождении приоритет у
+репозитория (коммит `69685b8`); при расхождении приоритет у
 `opencode/pdca-collection/SKILL.md`.
 
 | Утверждение в статье | Источник |
@@ -274,5 +274,5 @@ CHECK — перезапускаются все обязательные гей�
 | Параметры: cap = 4, worktree-каталог, merge-право, туду | `opencode/pdca-collection/SKILL.md:402-413` |
 | Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md:439-448` |
 | Тиры ролей (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
-| База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:939-973,120-146,554-616,49-91` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md:984-1018,118-144,602-664,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
+| База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:960-994,120-146,554-616,49-91` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md:1093-1127,118-144,649-711,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
 | Тексты контракта проверяются тестами, а сценарная матрица помечена как статическая (не доказательство поведения); хостовые артефакты (промпт-раннер `pdca-orchestrator`, профили, `AGENTS.md`) — вне этого репозитория | `opencode/pdca-collection/tests/test_plan_barrier.py` (в т.ч. `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

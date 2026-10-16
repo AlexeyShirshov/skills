@@ -174,9 +174,15 @@ DO and CHECK are reconciled by the **frozen evidence manifest**: DO writes it at
 boundary and ties it to the fixed identity of the result (revision `r` plus the captured
 input/artifact), and CHECK reads it **first**. Afterwards the manifest is only appended to, never
 rewritten; every mandatory criterion has one row in it with the status `met` / `open` / `na`, and
-**while even one mandatory row is `open`, no PASS is rendered**. If the project has a manifest
-validator, it is run. By default the manifest and its logs live in `.pdca/<task>/rv<k>/` — next to
-the status directory `.pdca/status/`.
+**while even one mandatory row is `open` *and binding*, no PASS is rendered**. A self-imposed extra
+*audit* row that follows from no agreed goal is not rewritten or deleted either: CHECK appends an
+explicit disposition to it in the same manifest — a stable row ID and the classification
+`diagnostic_nonbinding` with a reason — so the row may stay `open` while it is excluded from the
+binding acceptance blockers, and the receipt shows binding unmet rows and audit notes separately.
+The exclusion never covers a failing or missing required check, unverified direct evidence or a real
+functional/security variant, and a finite audit task the user asked for **separately** stays
+binding. If the project has a manifest validator, it is run. By default the manifest and its logs
+live in `.pdca/<task>/rv<k>/` — next to the status directory `.pdca/status/`.
 
 ## A teaching story: when the cycle stops
 
@@ -247,7 +253,7 @@ after an escalation as well.
 
 ## Sources
 
-The article's normative claims were reconciled with the repository at commit `065e2b8`; where the
+The article's normative claims were reconciled with the repository at commit `69685b8`; where the
 article and the skill disagree, the skill file takes precedence. The "claim → source" map:
 
 | Claim | Source |
@@ -262,9 +268,9 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 | The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:186-201,266-275` |
 | Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:203-244` |
 | The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:245-303` |
-| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:304-326` |
-| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:329-353` |
-| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:345-352` |
-| The status file, the todo mirror, evidence, recovery | `opencode/pdca/SKILL.md:146-184,371-394,395-411,413-439` |
-| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:441-496` |
-| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:497-521` |
+| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:304-347` |
+| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:350-374` |
+| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:366-373` |
+| The status file, the todo mirror, evidence, recovery | `opencode/pdca/SKILL.md:146-184,392-415,416-432,434-460` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:462-517` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:518-542` |

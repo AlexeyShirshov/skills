@@ -533,8 +533,9 @@ plan revision opens a new version of the manifest, and the superseded one is kep
 one row per **mandatory criterion ID**, with the status `met | open | na`, and these are
 **references, not copies** (`path`, `command`, exit code, key number). Every mandatory ID must be
 present; a criterion without a permitting reference is `open`, not a struck-through row. **While
-even one mandatory row is `open`, a PASS is impossible**; if the project ships a manifest validator,
-it is run (row completeness + shape).
+even one mandatory row is `open` *and binding*, a PASS is impossible** — a self-imposed extra audit
+row is dispositioned `diagnostic_nonbinding` in the same manifest, never rewritten; if the project
+ships a manifest validator, it is run (row completeness + shape).
 
 **The default evidence directory** is `.pdca/<task>/rv<k>/`, next to the status directory
 `.pdca/status/`: `<task>` is a kebab-slug, `<k>` is the revision `rv`. It holds the frozen
@@ -622,7 +623,8 @@ completes only a result accepted by CHECK; STOP is a separate terminal outcome.
 
 The domain's evidence is the same as in §9: the **frozen evidence manifest** and the default
 directory `.pdca/<task>/rv<k>/` — next to the statuses in `.pdca/status/`. A mandatory `open` row
-forbids a PASS, and `check` may open the **cycle's own artifacts** with a limited `read` (the
+that is **binding** forbids a PASS (a self-imposed extra audit row gets a `diagnostic_nonbinding`
+disposition instead of a rewrite), and `check` may open the **cycle's own artifacts** with a limited `read` (the
 status, the evidence directory, the manifest), but not the product artifact. A **re-entry** after a
 terminal `incomplete`/STOP is a mandatory PLAN input: a criterion whose evidence failed cannot be
 re-run unchanged — either it must be proven obtainable now, or the oracle must be redefined.
@@ -650,8 +652,8 @@ to the base:
   signatures/DTOs without implementations). Generated/API docs are written **after** the code
   stream, because they live in the same files. Any file written by different streams is not
   parallelized.
-- **Editing discipline.** One axis per step, then verification; a cheap inner loop (only the
-  affected fast tests), expensive integration runs at the stream boundary and in CHECK; verification
+- **Editing discipline.** One axis per step, then verification; a cheap inner loop (the affected
+  unit tests, unlimited), expensive integration runs at the stream boundary and in CHECK; verification
   after every step rather than at the end; a minimal blast radius; preserving line endings and
   formatting; build/lint as a gate (a change that introduces a warning is not a fix); no commits and
   no `push` without an explicit request (the only mechanical exception is isolated worktree
@@ -682,7 +684,8 @@ to the base:
   problem is no longer a hypothesis but the architecture.
 - **Evidence and roles.** The default evidence directory is `artifacts/pdca/<task>/rv<k>/` (`<k>` is
   the contract revision `rv`); the manifest is frozen at the DO → CHECK boundary and is append-only
-  afterwards; an `open` row of a mandatory criterion forbids a PASS, and `check` opens the cycle's
+  afterwards; an `open` row of a mandatory criterion forbids a PASS **only while it is binding**
+  (an extra self-imposed audit row is dispositioned, not rewritten), and `check` opens the cycle's
   own artifacts with a limited `read` (not the product code). A re-entry after a terminal
   `incomplete`/STOP is a mandatory PLAN input. The host defines the roles: the skill's assets carry
   only `# tier:` and permission blocks, without `model:`.
@@ -705,37 +708,62 @@ differences are in the lenses, the thresholds and the additional gates.
   bound; the report follows the **branch** increment; mutation testing (Stryker.NET, within the
   affected build/type) kills the surviving mutants or explicitly justifies them.
 - **A mandatory `test scope`.** Every implementation brief **must** carry a structured `test scope`
-  (projects, exact filtered selectors, files, the rebuild policy, the boundary point, the
-  rationale). Without it the brief is not sent — it goes back to the planner. Fields: `projects`,
-  `selectors`, `files`, `rebuild` (`affected` | `none`), `boundary`, `rationale`. `selectors` must
-  not select a whole project/solution; `rebuild: none` is correct for a docs-only change; an
-  invented `affected` rebuild for docs-only fails the gate.
+  (projects, selectors, files, the rebuild policy, the boundary point, the integration projects and
+  the planned integration boundary runs, the rationale). Without it the brief is not sent — it goes
+  back to the planner. Fields: `projects`, `selectors`, `files`, `rebuild` (`affected` | `none`),
+  `boundary`, `rationale`, `integration_projects`, `integration_boundary_runs`. A selector must not
+  select the whole solution; `rebuild: none` is correct for a docs-only change; an invented
+  `affected` rebuild for docs-only fails the gate.
+- **Unit runs are unlimited; the integration cap counts actual runs.** The presence or absence of
+  `--filter` is **not** a unit-vs-integration criterion: an unfiltered run of an affected **unit**
+  project inside DO is legitimate. Expensive **integration** runs happen only at the DO → CHECK
+  boundary, within the planned scope and count; an integration run inside DO is a recorded policy
+  deviation, and a mixed solution run that really executes integration is integration, not unit,
+  whatever the command name says.
 - **The `validate_inner_loop.py` validator.** The executor runs
   `scripts/validate_inner_loop.py brief <scope.json>` **before any editing** and
-  `report <evidence.json>` **before CHECK**. There is also a third mode —
-  `manifest <manifest.json>`: it checks the **row coverage** of the frozen manifest
-  (`required_rows` ↔ `rows[]`), not the execution of commands. A non-zero exit code is
-  **fail-closed** (refuse under uncertainty): do not begin editing / do not skip CHECK. The
-  validator executes nothing; it only parses the recorded argument arrays and JSON artifacts.
-  Codes: `0` — valid, `2` — a violation, `1` — a usage error/unreadable/broken JSON.
-- **The inner-loop evidence gate.** CHECK requires the `report` result; if the validator is absent,
-  cannot start, or exits non-zero, CHECK **fails** rather than warns. The gate fails on any of: the
-  inner loop was the **whole project/solution**; exact commands/filters/exit codes are missing;
-  `selected_count` is missing or zero (`selected_count ≥ 1` per execution — a run with zero matches
-  is rejected); a docs-only scope claims an `affected` rebuild; stale `--no-build` artifacts after a
+  `report <evidence.json>` **before CHECK** — reconciled with `--journal <journal.json>` when the raw
+  execution journal exists. `journal` validates the raw start/finish capture and `project` rebuilds
+  the report from it mechanically, so a projection that drops a started execution is rejected
+  (`projection incomplete`). `manifest <manifest.json>` checks the **row coverage** of the frozen
+  manifest (`required_rows` ↔ `rows[]`), not the execution of commands; `cleanup` and `archived`
+  gate the ACT cleanup receipt. A non-zero exit code is **fail-closed** (refuse under uncertainty):
+  do not begin editing / do not skip CHECK. The validator executes nothing; it only parses the
+  recorded argument arrays and JSON artifacts. Codes: `0` — valid, `2` — a violation, `1` — a usage
+  error/unreadable/broken JSON.
+- **Explicit execution states.** Every actually-started run is recorded regardless of outcome:
+  `finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` |
+  `not-started`. Exit code and selected count are nullable and are never invented for a run that did
+  not finish; an unfinished attempt is retained but does not satisfy a required success.
+- **The inner-loop evidence gate.** CHECK requires the `report` result (with `--journal` when the
+  journal exists); if the validator is absent, cannot start, or exits non-zero, CHECK **fails**
+  rather than warns. The gate fails on any of: the inner loop ran the **whole solution** or an
+  **integration** run inside DO; exact commands/phase/exit codes are missing; `selected_count` is
+  missing or zero on a `finished` run (`selected_count ≥ 1`); a result invented for a run that never
+  finished; a docs-only scope claims an `affected` rebuild; stale `--no-build` artifacts after a
   compilable change (`source_revision != artifact_revision` or no preceding build with a matching
-  revision); the scope was widened without a pre-validated amendment; the boundary was renamed/
-  invented — a wide run in `inner` or more than one comprehensive boundary sweep. One filtered
-  integration test run right at the boundary is legitimate and does not consume the one-sweep
-  limit.
+  revision); the scope was widened without a pre-validated amendment; the boundary was relabelled/
+  invented; a projection dropped a started execution; or the boundary integration count exceeds the
+  planned budget.
 - **The evidence contract and the directory.** PLAN fixes in the status file a versioned contract of
   rows (row ID, the required check, the expected evidence, the command/exit code, the artifacts and
   their paths, the owner, the applicability predicate, the revision `rv`) and the manifest path; the
   default directory is `artifacts/pdca/<task>/rv<k>/`. The manifest is frozen at the DO → CHECK
-  boundary and append-only afterwards; **a PASS is forbidden while a mandatory row is `open`.**
-  Missing evidence is a **re-gather** (within the fixed budget), not a product defect. A re-entry
-  after a terminal `incomplete`/STOP is a mandatory PLAN input (the criterion cannot be re-run
-  unchanged).
+  boundary and append-only afterwards; **a PASS is forbidden while a mandatory row is `open` and
+  binding**. A self-imposed extra *audit* row that follows from no agreed goal is not rewritten or
+  deleted: CHECK appends a `diagnostic_nonbinding` disposition (stable row ID + reason) in the same
+  manifest, and the receipt separates binding unmet rows from audit notes. Missing evidence is a
+  **re-gather** (within the fixed budget), not a product defect. A re-entry after a terminal
+  `incomplete`/STOP is a mandatory PLAN input (the criterion cannot be re-run unchanged).
+- **The reviewer evidence pack and the ACT cleanup receipt.** The full bodies a reviewer needs are
+  **staged** into the task's `rv<k>` directory (a copy, not a move), with a cheap read-only
+  source-side receipt recording the original path, the copy path, the content digest, the source
+  identity and the content equality; Roslyn runs in that same gather on one frozen snapshot, and any
+  drift of the task-relevant footprint invalidates the verdict. On a genuine terminal closure ACT
+  removes the heavy staged copies and temp material under a **machine-checkable receipt** that is
+  bound to the approved closure and the independent verdict, lists prior hashes, is scoped to this
+  task's own `rv` directory, and never touches the retained report/manifest/digests/certification;
+  cleanup before terminal closure is rejected.
 - **.NET lenses and tools.** PLAN/CHECK use `dotnet-architect`, `dotnet-code-review-agent`,
   `dotnet-testing-specialist`, `dotnet-benchmark-designer`, `dotnet-async-performance-specialist`,
   `dotnet-csharp-concurrency-specialist`, `dotnet-performance-analyst` (only with data),
@@ -990,13 +1018,14 @@ defect is resolved. The cleanup concerns A only; B is not deleted.
 
 ### Story 5. A .NET verification rejects incomplete/stale evidence
 
-*A teaching run.* DO reports "the tests passed", but the report has no exact commands/filters,
-`selected_count` is zero, and one run after a compilable change used `--no-build` with
-`source_revision != artifact_revision`. The executor runs
-`validate_inner_loop.py report <evidence.json>`, which returns a non-zero code. CHECK **fails
-fail-closed** rather than warns: the missing evidence is **re-gathered**, the stale artifacts are
-rebuilt, and a wide run in `inner` or a second boundary sweep is rejected. No product defect is
-invented here — this is a reporting problem, and it is solved by gathering, not by editing code.
+*A teaching run.* DO reports "the tests passed", but the report has no exact commands or phase,
+`selected_count` is zero on a `finished` run, and one run after a compilable change used `--no-build`
+with `source_revision != artifact_revision`. The executor runs
+`validate_inner_loop.py report <evidence.json>` (with `--journal` when the raw journal exists),
+which returns a non-zero code. CHECK **fails fail-closed** rather than warns: the missing evidence is
+**re-gathered**, the stale artifacts are rebuilt, and a whole-solution run or an integration run
+inside DO, or a second unplanned boundary sweep, is rejected. No product defect is invented here —
+this is a reporting problem, and it is solved by gathering, not by editing code.
 
 ## 13. Limitations, security and typical misunderstandings
 
@@ -1081,7 +1110,7 @@ identical retries will not be passed off as progress.
 | **Phase-todo** | A session mirror in the sidebar (`P:`/`D:`/`C:`/`A:`, exactly one `in_progress`); not the source of truth |
 | **Recovery after compaction** | Restoring the state from the status file after the context is lost |
 | **Evidence vs assertion** | Fresh data/pointers against a self-report; the cycle closes only on the former |
-| **Frozen evidence manifest** | A machine-readable index "mandatory criterion → evidence by reference", frozen at DO → CHECK; an `open` row forbids a PASS |
+| **Frozen evidence manifest** | A machine-readable index "mandatory criterion → evidence by reference", frozen at DO → CHECK; a **binding** `open` row forbids a PASS, while a self-imposed extra audit row gets a `diagnostic_nonbinding` disposition instead of being rewritten |
 | **Evidence directory (`rv<k>`)** | The directory of the manifest, logs and row artifacts: `.pdca/<task>/rv<k>/` in `pdca`, `artifacts/pdca/<task>/rv<k>/` in the engineering variants; `<k>` is the revision `rv` |
 | **Scoped read in `check`** | The check's right to open the cycle's own artifacts (status/evidence/manifest), but not the product artifact |
 | **Escalation** | The second (strong) tier for hard decisions; it returns a decision that the orchestrator only routes |
@@ -1102,17 +1131,17 @@ identical retries will not be passed off as progress.
 | **Tier** | A cost/quality label (cheap/medium/strong); not an authority |
 | **`# tier:` instead of `model:`** | A role agent carries only a tier label and a permission block; the model id is bound by the host profile and is not written into the role |
 | **Variant matrix** | The matrix of execution variants: every row is closed as test/guard/deferred |
-| **Inner loop / boundary sweep** | A cheap filtered run versus one comprehensive run at the DO → CHECK boundary |
-| **Test scope** | A mandatory structured set of projects/selectors/files/rebuild/boundary/rationale |
+| **Inner loop / boundary sweep** | Unlimited affected **unit** runs versus **integration** runs only at the DO → CHECK boundary, within the planned scope/count |
+| **Test scope** | A mandatory structured set of projects/selectors/files/rebuild/boundary/rationale plus the integration projects and the planned boundary runs |
 | **Fail-closed** | Under uncertainty/an error the gate refuses rather than warns |
-| **The validator's `manifest` mode** | The third mode of `validate_inner_loop.py`: it checks the coverage `required_rows` ↔ `rows[]` of the frozen manifest, not the execution of commands |
+| **The validator's `manifest` mode** | One of the modes of `validate_inner_loop.py` (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`): it checks the coverage `required_rows` ↔ `rows[]` of the frozen manifest, not the execution of commands |
 | **CS1591 / XML-doc** | The warning about a missing XML doc on a public member; enabled by a project setting |
 | **The `OPENCODE_CONFIG_REPO` env** | The path to a separate config repository: only then do the skill checks run against host artifacts (`config/…`); otherwise they are skipped |
 
 ### 14.2. Sources and correspondence
 
 The guide's normative claims were reconciled with the repository's current files (commit
-`065e2b8`); where they disagree, `opencode/<skill>/SKILL.md` takes precedence. Below is the
+`69685b8`); where they disagree, `opencode/<skill>/SKILL.md` takes precedence. Below is the
 "topic → `file:line`" map over the repository files; the line ranges were checked with
 `sed -n 'A,Bp'`.
 
@@ -1130,7 +1159,7 @@ The guide's normative claims were reconciled with the repository's current files
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-117`; `opencode/pdca-coder/SKILL.md:92-118`
 - `check` may open the evidence artifacts (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:954-959`; `opencode/pdca-dotnet/SKILL.md:999-1002`
+  `opencode/pdca-coder/SKILL.md:975-980`; `opencode/pdca-dotnet/SKILL.md:1108-1111`
 
 **The state machine, the counters, the todo**
 - the state machine → `opencode/pdca/SKILL.md:119-145`; `opencode/pdca-coder/SKILL.md:120-146`
@@ -1142,44 +1171,46 @@ The guide's normative claims were reconciled with the repository's current files
 - gates 1–5 → `opencode/pdca/SKILL.md:203-243`
 - the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:245-302`
 - re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md:262-264`;
-  `opencode/pdca-coder/SKILL.md:715-719`; `opencode/pdca-dotnet/SKILL.md:720-724`
-- the normal/autonomous modes → `opencode/pdca/SKILL.md:328-369`
-- the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:345-352`;
+  `opencode/pdca-coder/SKILL.md:715-719`; `opencode/pdca-dotnet/SKILL.md:767-771`
+- the normal/autonomous modes → `opencode/pdca/SKILL.md:349-390`
+- the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:366-373`;
   `opencode/pdca-coder/SKILL.md:823-830`
-- escalation and its triggers → `opencode/pdca/SKILL.md:441-495`; `opencode/pdca-coder/SKILL.md:554-663`
+- escalation and its triggers → `opencode/pdca/SKILL.md:462-516`; `opencode/pdca-coder/SKILL.md:554-663`
 
 **Memory, evidence, recovery, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md:371-393,602-670`
-- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:304-326`
-- evidence over assertion → `opencode/pdca/SKILL.md:395-411`
-- recovery → `opencode/pdca/SKILL.md:413-439`
-- ACT / status / message → `opencode/pdca/SKILL.md:581-694`
+- durable status / progress log / unit states → `opencode/pdca/SKILL.md:392-414,623-691`
+- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:304-347`
+- evidence over assertion → `opencode/pdca/SKILL.md:416-432`
+- recovery → `opencode/pdca/SKILL.md:434-460`
+- ACT / status / message → `opencode/pdca/SKILL.md:602-715`
 
 **Limitations, security, red flags**
-- generic constraints → `opencode/pdca/SKILL.md:497-520`
+- generic constraints → `opencode/pdca/SKILL.md:518-541`
 - instruction priority / injection → `opencode/pdca-coder/SKILL.md:378-394`;
-  `opencode/pdca-dotnet/SKILL.md:377-393`
-- red flags / failure modes → `opencode/pdca/SKILL.md:522-579`
+  `opencode/pdca-dotnet/SKILL.md:379-395`
+- red flags / failure modes → `opencode/pdca/SKILL.md:543-600`
 
 **pdca-coder: engineering streams**
 - the project overlay → `opencode/pdca-coder/SKILL.md:38-47`
 - toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
 - the test strategy/variant matrix → `:832-879`; test-run safety → `:881-894`; doc owners → `:896-912`
-- the frozen evidence manifest + `artifacts/pdca/<task>/rv<k>/` → `:914-937`
-- the CHECK audit/streams → `:939-1016`; debugging → `:1092-1114`
-- ACT → `:1116-1147`; the economics → `:1292-1302`
+- the frozen evidence manifest + `artifacts/pdca/<task>/rv<k>/` → `:914-958`
+- the CHECK audit/streams → `:960-1037`; debugging → `:1113-1135`
+- ACT → `:1137-1168`; the economics → `:1313-1323`
 
 **pdca-dotnet: .NET gates**
-- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:537-566`
-- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:922-952,959-976`
-- the CHECK completeness gate (`open` forbids a PASS) → `:974-976,1150-1171`
-- the inner-loop evidence gate → `:1094-1104`; zero warnings → `:988,1073,1141-1142`
-- coverage/branches/mutations → `:864-873`; run safety → `:892-905`
-- the `dotnet-*` lenses → `:395-400,668-673,988-997,1042-1047`
-- `security-auditor` — a conditional gathering, its report into the `check` aggregate → `:1033-1040`
-- ACT → `:1197-1228`
-- `validate_inner_loop.py`: modes/codes → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-17`;
-  the manifest (`required_rows` ↔ `rows[]`) → `:497-564`; mode parsing → `:580-612`
+- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:540-576`
+- the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1055-1092,1446-1475`
+- the binding/applicability disposition → `:1029-1053,1287-1298`
+- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1027`
+- the CHECK completeness gate (a **binding** `open` forbids a PASS; the `diagnostic_nonbinding` disposition) → `:1024-1027,1261-1299`
+- the inner-loop evidence gate → `:1203-1215`; zero warnings → `:1097,1182,1252-1253`
+- coverage/branches/mutations → `:911-920`; run safety → `:942-955`
+- the `dotnet-*` lenses → `:397-402,715-720,1097-1106,1151-1156`
+- `security-auditor` — a conditional gathering, its report into the `check` aggregate → `:1142-1149`
+- ACT → `:1324-1359`
+- `validate_inner_loop.py`: modes/codes → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
+  the manifest (`required_rows` ↔ `rows[]`) → `:1158-1226`; mode parsing → `:1241-1300`
 
 **pdca-collection**
 - the role/variant → `opencode/pdca-collection/SKILL.md:12-21`; P → `:49-105`; D/merge → `:107-155`;
