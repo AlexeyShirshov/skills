@@ -227,7 +227,7 @@ CHECK — перезапускаются все обязательные гей�
   пересмотренного плана коллекция остаётся `unverified`, а исходные задачи — с прежними
   статусами.
 - **Fallback.** Плоский primary включается, когда `pdca-orchestrator` недоступен: агента нет,
-  `subagent_depth` < 2 или хост запрещает субагенту вызывать `Task` (нет вложенной делегации).
+  `subagent_depth` < 2 или хост запрещает субагенту делегировать (нет вложенной делегации).
   Тогда оркестрировать некому, и primary берёт группы на себя: сам ведёт по одной задаче каждой
   группы и запускает следующую по завершении, а на фазе P так же сам проводит `COLLECTION TASK
   PLAN` каждой задачи (через `planner`/`coder`/`scout` её варианта), соблюдая ALL-barrier, и
@@ -272,7 +272,7 @@ CHECK — перезапускаются все обязательные гей�
 | Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `opencode/pdca-collection/SKILL.md:306-336` |
 | Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `opencode/pdca-collection/SKILL.md:338-393` |
 | Параметры: cap = 4, worktree-каталог, merge-право, туду | `opencode/pdca-collection/SKILL.md:402-413` |
-| Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md:439-448` |
+| Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md:439-447` |
 | Тиры ролей (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
 | База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:960-994,120-146,554-616,49-91` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md:1093-1127,118-144,649-711,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
 | Тексты контракта проверяются тестами, а сценарная матрица помечена как статическая (не доказательство поведения); хостовые артефакты (промпт-раннер `pdca-orchestrator`, профили, `AGENTS.md`) — вне этого репозитория | `opencode/pdca-collection/tests/test_plan_barrier.py` (в т.ч. `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

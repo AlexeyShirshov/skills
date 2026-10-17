@@ -444,9 +444,9 @@ except the status file**: waiting, clarifying or rewriting the plan (through the
 file, written by the executor) is allowed.
 
 **Autonomous mode** is the same contract without pauses or questions. The cheap primary delegates
-the single cycle to the cheap `pdca-orchestrator` agent through `Task`; that agent runs
+the single cycle to the cheap `pdca-orchestrator` agent; that agent runs
 PLAN → DO → CHECK → ACT and returns a compact summary. If `pdca-orchestrator` is unavailable (no
-agent, `subagent_depth < 2`, `Task` forbidden), a **flat primary fallback** applies: the cheap
+agent, `subagent_depth < 2`, delegation forbidden), a **flat primary fallback** applies: the cheap
 primary drives the cycle itself and records a `Notice:` and a durable reason.
 
 In autonomous mode:
@@ -612,7 +612,7 @@ The roles here have their own names: `pdca-planner`, `pdca-executor`, `pdca-chec
 the skill's `assets/agents/`: they contain only a `# tier:` label and permission blocks; no `model:`
 is written into a role — the ids are bound by the host profile. `pdca-orchestrator` is a shared host
 agent. The cycle's input is the doctrine "two paths, one contract": in normal mode the primary
-drives the cycle itself, calling subagents through `Task`; in autonomous mode it delegates the whole
+drives the cycle itself, dispatching subagents; in autonomous mode it delegates the whole
 cycle to the orchestrator. There is one requirement for the host: only a cheap-tier primary drives
 the cycle; a medium/strong primary does not dispatch it.
 
@@ -844,7 +844,7 @@ input — report that there is nothing to do.
 
 - **A worktree per group** `<repo>-worktrees/<collection-id>/<group>` and a branch
   `collection/<id>/group-<g>` (with several groups). The `pdca-orchestrator` agents are launched in
-  parallel (one `Task` per group) but no more than `cap` at a time; by default `cap = 4`
+  parallel (one subagent per group) but no more than `cap` at a time; by default `cap = 4`
   (configurable), and the ceiling is `min(#groups, cap)`.
 - **The merge barrier.** With `≥ 2` groups, merging begins only when **all** lanes are terminal
   (`done`, or `incomplete` with an explicit outcome): readiness = **terminality, not success**.
@@ -965,9 +965,9 @@ The git model: with `≥ 2` groups — 1 worktree per group; the group branch is
 completed task's tip; the group and task branches are **siblings**, not nested (git does not allow a
 ref that is a prefix of another). With one group no isolation is needed.
 
-**Fallback.** If the host forbids a subagent to call `Task` (no nested delegation),
+**Fallback.** If the host forbids a subagent to delegate (no nested delegation),
 `pdca-orchestrator` cannot orchestrate: then a flat primary drives, in flight, one task of each
-group itself (`Task` to coder/check) and starts the next one as each finishes; the groups progress
+group itself (dispatches to coder/check) and starts the next one as each finishes; the groups progress
 in parallel without orchestrator agents.
 
 ## 12. Teaching stories

@@ -223,7 +223,7 @@ not carried through.
   admissible revised plan, the collection remains `unverified` and the original tasks keep their
   previous statuses.
 - **Fallback.** The flat primary kicks in when `pdca-orchestrator` is unavailable: the agent is
-  absent, `subagent_depth` < 2, or the host forbids a subagent to call `Task` (no nested
+  absent, `subagent_depth` < 2, or the host forbids a subagent to delegate (no nested
   delegation). Then there is no one to orchestrate, and the primary takes the groups on itself: it
   drives one task per group itself and starts the next when the previous finishes, and in phase P it
   likewise conducts each task's `COLLECTION TASK PLAN` itself (through its variant's
@@ -270,7 +270,7 @@ precedence.
 | The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md:306-336` |
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md:338-393` |
 | Parameters: cap = 4, the worktree directory, the merge right, the todo | `opencode/pdca-collection/SKILL.md:402-413` |
-| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md:439-448` |
+| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md:439-447` |
 | The role tiers (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
 | The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:960-994,120-146,554-616,49-91` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md:1093-1127,118-144,649-711,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
 | The contract texts are checked by tests, and the scenario matrix is marked as static (not proof of behaviour); the host artifacts (the `pdca-orchestrator` prompt runner, the profiles, `AGENTS.md`) are outside this repository | `opencode/pdca-collection/tests/test_plan_barrier.py` (including `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

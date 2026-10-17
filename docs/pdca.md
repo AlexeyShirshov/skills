@@ -58,7 +58,7 @@ host binds specific agents and models; the skill names only roles.
 | RUNNER — orchestrator | Drives the cycle, reading and editing nothing | `pdca-orchestrator` | cheap |
 
 A few rules keep the table working. **The orchestrator is a dispatcher, not a reader and not a
-decision maker**: it calls the roles through `Task` and passes their reports to one another, but it
+decision maker**: it dispatches the roles to subagents and passes their reports to one another, but it
 does not write the plan, read files or run commands; the exception is the task list (`todowrite`) as
 orchestration. **PLAN always belongs to the planner**: both the initial plan and a revision are
 formulated by `pdca-planner`. **Only the executor may write and run**, including the status file.
@@ -72,7 +72,7 @@ substitute for the roles.
 The cycle is driven by the **cheap primary only** (the primary is the main session) — by the
 profile's effective tier, not by the agent's name. A medium/strong primary (for example,
 `architect`) does not dispatch the cycle. In autonomous mode the cheap primary delegates the whole
-cycle to the cheap **`pdca-orchestrator`** agent through `Task`. `pdca-orchestrator` is **not a
+cycle to the cheap **`pdca-orchestrator`** agent. `pdca-orchestrator` is **not a
 fifth skill** but a driver agent: it loads the chosen variant (`pdca`, `pdca-coder` or
 `pdca-dotnet`) and runs one child cycle or one collection group. An unavailable mandatory role is a
 **resource blocker**: in normal mode it is reported to the user, in autonomous mode it is written
