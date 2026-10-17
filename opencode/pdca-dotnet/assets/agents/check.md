@@ -7,18 +7,15 @@ steps: 40
 permission:
   "*": deny
   read:
-    "docs/specs/status/**": allow
-    "artifacts/**": allow
+    ".pdca/**": allow
     "TestResults/**": allow
     "StrykerOutput/**": allow
   glob:
-    "docs/specs/status/**": allow
-    "artifacts/**": allow
+    ".pdca/**": allow
     "TestResults/**": allow
     "StrykerOutput/**": allow
   list:
-    "docs/specs/status/**": allow
-    "artifacts/**": allow
+    ".pdca/**": allow
     "TestResults/**": allow
     "StrykerOutput/**": allow
 ---

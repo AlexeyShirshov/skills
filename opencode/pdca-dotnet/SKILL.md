@@ -122,7 +122,7 @@ Cycle: `PLAN → (normal mode: the user reads and approves the plan) → DO → 
 approval, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a new prerequisite/blocker.
 
 Progress is recorded in one place:
-- **The cycle status file** `docs/specs/status/<task>-<N>.md` (§Cycle status file) — **source of
+- **The cycle status file** `.pdca/status/<task>-<N>.md` (§Cycle status file) — **source of
   truth** for plan and progress; on disk, survives compaction and a new session, updated by `coder`
   on every event. There is no separate todo or sidebar mirror.
 
@@ -480,7 +480,7 @@ contract (the discipline a dedicated design/performance engineer would apply whe
   and the report is rejected. **Integration runs happen only at the DO → CHECK boundary**, within
   the planned scope/count — not per edit. Widening to a shared contract/dependency is allowed
   **only** if the scope is amended **and validated BEFORE running**, and the reason is recorded.
-  `coder` runs `scripts/validate_inner_loop.py` — `brief` before editing, and `journal`/`report`
+  `coder` runs `.pdca/scripts/validate_inner_loop.py` — `brief` before editing, and `journal`/`report`
   (reconciled with `--journal`) before CHECK — and CHECK consumes the evidence; a missing/invalid
   gate fails closed.
 - **Verify after every step, not only at the end.** A red build or failing test stops the stream and
@@ -513,7 +513,7 @@ In every dispatch brief, state the response format explicitly — otherwise the 
 - **test evidence** — the actual build/test invocations as **argument arrays** (not shell
   strings), each with its `--filter` value, `phase` (`inner`/`boundary`), `exit_code`, the
   number of selected tests (`selected_count ≥ 1`), and the
-  `scripts/validate_inner_loop.py report <evidence.json>` **exit code**; a zero-match or
+  `.pdca/scripts/validate_inner_loop.py report <evidence.json>` **exit code**; a zero-match or
   missing `selected_count` ⇒ CHECK FAIL, and missing or invalid evidence ⇒ CHECK cannot pass;
 - the full build/test/dump output — write it to a file and return the path;
 - not enough data — a short question, not a guess.
@@ -524,7 +524,7 @@ Details live in files; only a pointer enters the orchestrator's context.
 
 Every implementation brief to `coder` **MUST** carry a mandatory structured `test scope` (with a
 rationale); **without it the orchestrator must NOT dispatch the brief** — it returns to `planner`
-to complete the scope. `coder` runs `scripts/validate_inner_loop.py brief <scope.json>` **before
+to complete the scope. `coder` runs `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before
 any edit**; a nonzero exit is **fail-closed** → return to the orchestrator (do not start editing).
 
 Required fields:
@@ -553,7 +553,7 @@ Required fields:
   approves at the boundary. Both are how PLAN fixes the integration scope up front; the gate
   invents no universal numeric cap of its own (§Execution journal).
 - Before CHECK, the full evidence (scope + `executions` with exact argument arrays, filters, phase,
-  revisions, exit codes) is validated with `scripts/validate_inner_loop.py report <evidence.json>`;
+  revisions, exit codes) is validated with `.pdca/scripts/validate_inner_loop.py report <evidence.json>`;
   CHECK consumes that exit code and fails closed when it is missing or nonzero. When the raw
   journal exists, the report is reconciled against it with `--journal` (§Execution journal).
 
@@ -574,8 +574,8 @@ run that really executes integration is not "unit" because of a command name or 
 - **Mandatory execution capture path.** For the cycle's test commands, a `start` event is recorded
   **at launch** and the result is **appended** on completion (`journal`). The report that CHECK
   consumes is **projected from that journal**, not hand-selected by the author:
-  `scripts/validate_inner_loop.py project <journal.json>` rebuilds it mechanically, and
-  `scripts/validate_inner_loop.py report <report.json> --journal <journal.json>` proves the report
+  `.pdca/scripts/validate_inner_loop.py project <journal.json>` rebuilds it mechanically, and
+  `.pdca/scripts/validate_inner_loop.py report <report.json> --journal <journal.json>` proves the report
   is a faithful projection. A projection that **omits a started execution is rejected** — a
   completeness failure, never a way to pass a cap; an over-budget run **stays in the raw journal**.
 - **Every actually-started run is recorded regardless of exit code, cancellation, retry,
@@ -605,7 +605,7 @@ task and paths):
 ```text
 Task: <what to do>.
 Test scope: <scope.json> — mandatory; validate with
-  scripts/validate_inner_loop.py brief before any edit (fail-closed).
+  .pdca/scripts/validate_inner_loop.py brief before any edit (fail-closed).
 Work ONLY in worktree <ABS_WT>.
 - In bash always: cd <ABS_WT> && <command>
 - read/edit/write/glob/grep — only with absolute paths inside <ABS_WT>;
@@ -834,7 +834,7 @@ plan but must not be the plan: for a shipping change gate 1 is not cancelled.
 ### Plan approval (PLAN → DO)
 
 **The plan goes to disk before the user approves it, in both modes.** Last step of PLAN: the primary passes
-`planner`'s plan to `coder`, which writes the **status file** (`docs/specs/status/<task>-<N>.md`) — goal,
+`planner`'s plan to `coder`, which writes the **status file** (`.pdca/status/<task>-<N>.md`) — goal,
 acceptance criteria, test strategy with the variant matrix, docs plan, perf/recon/unit-mode decisions, DO
 task list, risks — and the log entry `PLAN ready — awaiting user approval` (`planner` never writes files). A compaction
 while awaiting approval loses nothing.
@@ -843,7 +843,7 @@ while awaiting approval loses nothing.
 (goal, criteria, test strategy, docs plan, perf decision, unit mode, tasks, risks), give the
 status-file path, and ask the user to read the implementation plan and approve it (substitute the gist for `<…>`):
 
-> The plan is ready: <1–2 lines of the gist>. Plan file: `docs/specs/status/<task>-<N>.md`.
+> The plan is ready: <1–2 lines of the gist>. Plan file: `.pdca/status/<task>-<N>.md`.
 > The planner has produced the plan and written it to the status file — please read it and
 > **approve it**. Implementation starts only after your approval.
 
@@ -978,10 +978,11 @@ PLAN must also pin a finite CHECK re-gather budget and its owner, and the frozen
 manifest path, in the status file.
 
 **Default evidence dir (defined by the skill, not by overlays or agent settings):**
-`artifacts/pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
-revision `rv`; the frozen manifest, its logs and per-row artifacts live here. Like the status
-path it is a **default** the overlay may override. The check role's scoped `read` grants it
-generically (`artifacts/**`), so the concrete path is defined **only here** — never repeated in
+`.pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
+revision `rv`; the frozen manifest, its logs and per-row artifacts live here. The `.pdca/` root
+is fixed (§Skill workspace in the base `pdca` contract) — the plan chooses `<task>` and `rv`, an
+overlay never relocates the root. The check role's scoped `read` grants it
+generically (`.pdca/**`), so the concrete path is defined **only here** — never repeated in
 an overlay or an agent's settings.
 
 **DO ledger:** record actual evidence against each row ID and `rv`: verified test symbols or
@@ -1009,20 +1010,20 @@ silently dropped. Logs stay references — the manifest is a thin index, not a c
 opening its `path`, not by re-deriving it from the brief, and records the applicability
 disposition of a non-binding audit row (below). The manifest passes the mechanical gate only when
 **both** tracked helpers exit `0`:
-- `scripts/validate_inner_loop.py manifest <manifest.json>` — row/evidence shape plus two-way
+- `.pdca/scripts/validate_inner_loop.py manifest <manifest.json>` — row/evidence shape plus two-way
   `required_rows` ↔ `rows[]` coverage;
-- `scripts/pdca_evidence.py lint --repo <root> --manifest <manifest.json>` — frozen-tree binding
+- `.pdca/scripts/pdca_evidence.py lint --repo <root> --manifest <manifest.json>` — frozen-tree binding
   (§Mechanical evidence pipeline below).
 Neither substitutes for the other; a nonzero exit is a failed evidence gate, never a warning.
 
-**Mechanical evidence pipeline (`scripts/pdca_evidence.py`, stdlib only).** The plan may opt into
+**Mechanical evidence pipeline (`.pdca/scripts/pdca_evidence.py`, stdlib only).** The plan may opt into
 the atomic generator; DO then materialises the pinned contract as a JSON object that mirrors the
 status file (e.g. `<evidence-dir>/inputs/contract.json`) and runs:
 - `generate --repo <root> --contract <contract.json> --output <evidence-dir>` — resolves the frozen
   synthetic tree from `base_ref` + `footprint` (paths under `exclusions` are overlaid out, not
   removed from the base tree), writes one immutable receipt per required row under
   `generations/<digest>/results/<row-id>.json`, and replaces `<evidence-dir>/manifest.json` last and
-  atomically (default `<evidence-dir>`: `artifacts/pdca/<task>/rv<k>/`). A preflight lint refuses
+  atomically (default `<evidence-dir>`: `.pdca/<task>/rv<k>/`). A preflight lint refuses
   to regenerate over stale or inconsistent evidence, and a held lock refuses a concurrent writer —
   it never silently repairs, never invents an execution and never turns `open` into `met`. DO runs
   it at the DO→CHECK boundary.
@@ -1070,7 +1071,7 @@ An independent CHECK reads only inside its allowed roots; evidence that lives on
 paraphrase, a link to an unreadable original, or isolated quoted lines is **not** reviewable
 evidence. At the DO → CHECK boundary the executor therefore **stages the full bodies** of the
 changed files a reviewer needs into this task's `rv<k>` evidence dir (default
-`artifacts/pdca/<task>/rv<k>/`; the exact filenames/layout are the plan's). Staging is a **copy,
+`.pdca/<task>/rv<k>/`; the exact filenames/layout are the plan's). Staging is a **copy,
 not a move** — the originals are preserved.
 
 - A separate, cheap **read-only source-side gather (`scout`)** performs the transport and the
@@ -1100,7 +1101,7 @@ not a move** — the originals are preserved.
 
 This is **source-copy fidelity**: it reuses the existing source binding and digests and introduces
 no second competing evidence contract. It is **not** a proof of execution-time `committed == tested`
-and **not** the atomic evidence generator (`scripts/pdca_evidence.py`; §Versioned evidence
+and **not** the atomic evidence generator (`.pdca/scripts/pdca_evidence.py`; §Versioned evidence
 contract → "Mechanical evidence pipeline").
 
 ## CHECK: audit checklist (generic)
@@ -1146,7 +1147,7 @@ independent: launch **in parallel** (one turn, several Tasks), not in sequence:
   (build 0 warnings, suppression/slop, smell, public-API/CS1591) = items 3–6, 9–10; judgment in `check`
   beat 2 = items 7–8. Specialized async/concurrency subagents by trigger are part of the gather.
 - **Test lens** — `dotnet-testing-specialist` + `coder` (run, coverage, CRAP) — item 11. It also
-  gathers the `scripts/validate_inner_loop.py report <evidence.json>` exit code; a missing/invalid
+  gathers the `.pdca/scripts/validate_inner_loop.py report <evidence.json>` exit code; a missing/invalid
   gate fails the lens **closed** (never a warning).
 - **Doc lens** — `dotnet-docs-generator` (+ `dotnet-api-docs`) — item 12.
 - **Perf lens (two-phase)** — when "needed": measurement (`dotnet-benchmark-designer` + `coder`;
@@ -1214,7 +1215,7 @@ gather, 7–8 judgment.
     **branch** delta (not line only); **mutation testing** on changed code was run or untested branches are
     listed. A missing test / coverage drop / open row → a `D:` task, not "good enough".
     **Inner-loop evidence gate (mandatory, fails closed).** The lens requires the
-    `scripts/validate_inner_loop.py report <evidence.json>` result (reconciled with
+    `.pdca/scripts/validate_inner_loop.py report <evidence.json>` result (reconciled with
     `--journal <journal.json>` when the raw journal exists); if the validator is missing,
     cannot run, or exits nonzero, CHECK **FAILS** — never warns. It FAILS on any of: the inner loop
     ran the **whole solution** or an **integration** run inside DO; the exact commands/phase/exit codes
@@ -1285,8 +1286,8 @@ when its pinned observable predicate is demonstrated; unconditional obligations 
 
 **Mandatory mechanical gate before reading rows.** CHECK runs both tracked helpers on the frozen
 manifest and treats a nonzero exit as **evidence FAIL** (re-gather/STOP, never PASS):
-`scripts/validate_inner_loop.py manifest <manifest.json>` (row/evidence shape + two-way
-`required_rows` ↔ `rows[]` coverage) and `scripts/pdca_evidence.py lint --repo <root> --manifest
+`.pdca/scripts/validate_inner_loop.py manifest <manifest.json>` (row/evidence shape + two-way
+`required_rows` ↔ `rows[]` coverage) and `.pdca/scripts/pdca_evidence.py lint --repo <root> --manifest
 <manifest.json>` (frozen-tree binding, recomputed independently, plus the same coverage). A
 manifest whose tree does not reconcile, a missing required row, an undeclared row, or a dangling
 evidence reference is an open evidence gate — never a reason to reclassify the row.
@@ -1381,7 +1382,7 @@ Order:
 
 ### Cycle status file
 
-Default path `docs/specs/status/<task>-<N>.md` (the overlay may set its own dir). The name must carry
+Default path `.pdca/status/<task>-<N>.md` (inside the fixed workspace root, §Skill workspace). The name must carry
 both: `<task>` (kebab slug, e.g. `retry-policy`) and `<N>` (cycle number **within that task**; grows
 only in ACT — loop-backs change `r`/`n`, not `<N>`; §State machine). Examples: `retry-policy-3.md`,
 `bulk-import-1.md`.
@@ -1472,7 +1473,7 @@ file copies and temp materials** are removed; there is no premature cleanup on S
 awaiting-decision / continuing work.
 
 The cleanup is gated by a **machine-checkable receipt**, not by prose
-(`scripts/validate_inner_loop.py cleanup <receipt.json>`). The receipt is bound to the task and its
+(`.pdca/scripts/validate_inner_loop.py cleanup <receipt.json>`). The receipt is bound to the task and its
 `rv`, to the **approved terminal closure** and to the independent final verdict, and lists the
 removed paths with their **prior hashes** plus the retained records:
 
@@ -1485,7 +1486,7 @@ removed paths with their **prior hashes** plus the retained records:
   certification** are never removed.
 - The **frozen manifest is not rewritten** or retroactively turned into different evidence; its
   digest is checked against the receipt by
-  `scripts/validate_inner_loop.py archived <manifest.json> --cleanup <receipt.json>`. Post-ACT
+  `.pdca/scripts/validate_inner_loop.py archived <manifest.json> --cleanup <receipt.json>`. Post-ACT
   removed staged paths are explained by the receipt (prior hash + lifecycle state), so a correctly
   cleaned-up snapshot is a **planned lifecycle**, not "the original evidence never existed"; a
   missing snapshot **before** ACT or without a valid receipt stays an **error**.
@@ -1514,7 +1515,7 @@ first message in the new session):
 
 ```text
 Cycle <N> of the task "<task>" is closed.
-Status: docs/specs/status/<task>-<N>.md
+Status: .pdca/status/<task>-<N>.md
 Registries: <comma-separated paths, if any>.
 Have scout report the status and the needed registries/baseline on-demand; do not pull the previous session's history.
 Next goal: <one line>.

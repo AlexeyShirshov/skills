@@ -47,13 +47,13 @@ ZERO40 = "0" * 40
 TREE_METHOD = (
     "Synthetic tree: seed an isolated index with `git read-tree <base_ref>^{tree}`, "
     "run `git add -A -- <recorded footprint paths>` using the evaluated contents, then "
-    "`git write-tree`. `artifacts/**` and `docs/specs/status/**` are excluded from the "
+    "`git write-tree`. `.pdca/**` is excluded from the "
     "overlay, not removed from the base tree. Reconcile by repeating this recipe; after ACT, "
     "use committed footprint contents. The resulting tree is not asserted to equal "
     "`HEAD^{tree}`."
 )
 
-DEFAULT_EXCLUSIONS = ("artifacts/**", "docs/specs/status/**")
+DEFAULT_EXCLUSIONS = (".pdca/**",)
 
 # Environment hook used only by tests to simulate a pre-publication candidate-check failure.
 FAIL_BEFORE_PUBLISH_ENV = "PDCA_EVIDENCE_FAIL_BEFORE_PUBLISH"

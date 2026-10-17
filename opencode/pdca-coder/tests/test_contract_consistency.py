@@ -259,7 +259,7 @@ class ContractConsistencyTest(unittest.TestCase):
     # --- status file, parallel DO streams, worktree template --------------
 
     def test_cycle_status_file_schema(self):
-        self.assertIn("docs/specs/status/<task>-<N>.md", self.status_file)
+        self.assertIn(".pdca/status/<task>-<N>.md", self.status_file)
         self.assertIn("Progress log", self.status_file)
         self.assertIn("Current cycle N", self.status_file)
         self.assertIn("Plan revision r", self.status_file)

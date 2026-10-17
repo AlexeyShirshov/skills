@@ -96,7 +96,7 @@ Examples
   validate_inner_loop.py project /tmp/journal.json
 
   # validate the frozen evidence manifest (row coverage + row/evidence shape)
-  validate_inner_loop.py manifest artifacts/pdca/<task>/rv1/manifest.json
+  validate_inner_loop.py manifest .pdca/<task>/rv1/manifest.json
 
   # exit 0 = valid, 2 = violation(s), 1 = usage / unreadable / malformed JSON
   validate_inner_loop.py report /tmp/evidence.json; echo $?
@@ -998,7 +998,7 @@ def validate_cleanup(data):
     if not _is_int(rv) or rv < 1:
         violations.append("cleanup.rv must be an integer >= 1")
         rv = 0
-    evidence_root = data.get("evidence_root", "artifacts/pdca")
+    evidence_root = data.get("evidence_root", ".pdca")
     if not _nonempty_str(evidence_root):
         violations.append("cleanup.evidence_root must be a nonempty string")
     if not _nonempty_str(data.get("at")):

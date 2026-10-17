@@ -124,7 +124,7 @@ Cycle: `PLAN → (normal mode: the user reads and approves the plan) → DO → 
 approval, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a new prerequisite/blocker.
 
 Progress is recorded in one place:
-- **The cycle status file** `docs/specs/status/<task>-<N>.md` (§Cycle status file) — **source of
+- **The cycle status file** `.pdca/status/<task>-<N>.md` (§Cycle status file) — **source of
   truth** for plan and progress; on disk, survives compaction and a new session, updated by `coder`
   on every event. There is no separate todo or sidebar mirror.
 
@@ -782,7 +782,7 @@ plan but must not be the plan: for a shipping change gate 1 is not cancelled.
 ### Plan approval (PLAN → DO)
 
 **The plan goes to disk before the user approves it, in both modes.** Last step of PLAN: the primary passes
-`planner`'s plan to `coder`, which writes the **status file** (`docs/specs/status/<task>-<N>.md`) — goal,
+`planner`'s plan to `coder`, which writes the **status file** (`.pdca/status/<task>-<N>.md`) — goal,
 acceptance criteria, test strategy with the variant matrix, docs plan, perf/recon/unit-mode decisions, the
 toolchain/lens selection, DO
 task list, risks — and the log entry `PLAN ready — awaiting user approval` (`planner` never writes files). A compaction
@@ -792,7 +792,7 @@ while awaiting approval loses nothing.
 (goal, criteria, test strategy, docs plan, perf decision, unit mode, toolchain/lenses, tasks, risks), give the
 status-file path, and ask the user to read the implementation plan and approve it (substitute the gist for `<…>`):
 
-> The plan is ready: <1–2 lines of the gist>. Plan file: `docs/specs/status/<task>-<N>.md`.
+> The plan is ready: <1–2 lines of the gist>. Plan file: `.pdca/status/<task>-<N>.md`.
 > The planner has produced the plan and written it to the status file — please read it and
 > **approve it**. Implementation starts only after your approval.
 
@@ -935,10 +935,11 @@ completeness (a whole transitive reference graph, retrospective hashes, executio
 **diagnostic notes**, and its absence never forces `incomplete`/STOP or a new round.
 
 **Default evidence dir (defined by the skill, not by overlays or agent settings):**
-`artifacts/pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
-revision `rv`; the frozen manifest, its logs and per-row artifacts live here; a **default** the
-overlay may override. The check role's scoped `read` grants it generically, so the concrete path
-is defined only here.
+`.pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
+revision `rv`; the frozen manifest, its logs and per-row artifacts live here. The `.pdca/` root
+is fixed (§Skill workspace in the base `pdca` contract) — the plan chooses `<task>` and `rv`, an
+overlay never relocates the root. The check role's scoped `read` grants it generically, so the
+concrete path is defined only here.
 
 ## CHECK: audit checklist (generic)
 
@@ -1152,7 +1153,7 @@ Order:
 
 ### Cycle status file
 
-Default path `docs/specs/status/<task>-<N>.md` (the overlay may set its own dir). The name must carry
+Default path `.pdca/status/<task>-<N>.md` (inside the fixed workspace root, §Skill workspace). The name must carry
 both: `<task>` (kebab slug, e.g. `retry-policy`) and `<N>` (cycle number **within that task**; grows
 only in ACT — loop-backs change `r`/`n`, not `<N>`; §State machine). Examples: `retry-policy-3.md`,
 `bulk-import-1.md`.
@@ -1258,7 +1259,7 @@ first message in the new session):
 
 ```text
 Cycle <N> of the task "<task>" is closed.
-Status: docs/specs/status/<task>-<N>.md
+Status: .pdca/status/<task>-<N>.md
 Registries: <comma-separated paths, if any>.
 Have scout report the status and the needed registries/baseline on-demand; do not pull the previous session's history.
 Next goal: <one line>.

@@ -24,7 +24,7 @@ sufficient edits.
   red→green requirement is the **regression test of a bug fix**: show it failing without the fix and
   passing with it (both exit codes in the report).
 - **Status file.** You are the only role that writes the cycle status file
-  (`docs/specs/status/<task>-<N>.md`): write exactly the content the brief gives you (plan, replan,
+  (`.pdca/status/<task>-<N>.md`): write exactly the content the brief gives you (plan, replan,
   finalization) and append progress-log lines as `<UTC time> | <phase> | revision r | iteration n/3 |
   <event> | <evidence pointer>` — append only, never rewrite earlier lines. A replan increments the
   plan revision `r` and resets `n` to 1; a rejected candidate with the plan unchanged is not a new

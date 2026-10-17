@@ -371,7 +371,7 @@ CHECK считается проваленной проверкой текуще�
 
 | Счётчик | Что означает | Когда растёт | Когда сбрасывается |
 |---|---|---|---|
-| **`N`** | Номер цикла **задания**; виден в имени статус-файла `.pdca/status/<task>-<N>.md` (у инженерных вариантов — `docs/specs/status/<task>-<N>.md`) | Только в ACT, когда планируется следующий цикл того же задания | Не меняется loop-back'ами |
+| **`N`** | Номер цикла **задания**; виден в имени статус-файла `.pdca/status/<task>-<N>.md` | Только в ACT, когда планируется следующий цикл того же задания | Не меняется loop-back'ами |
 | **`r`** | Ревизия плана | Только когда planner **действительно выдал пересмотренный план** (новый `P:` из CHECK → PLAN / DO → PLAN) | — (кап на число ревизий отсутствует) |
 | **`n/3`** | Попытка исполнения для текущей ревизии `r` | `CHECK → DO` инкрементирует; `PLAN(r) → DO` стартует с 1 | Новая ревизия сбрасывает в 1 |
 
@@ -504,9 +504,8 @@ PLAN стартует в том же ходу, а его вход — `Next plan
 
 - **Статус-файл цикла** — **источник истины** по плану и прогрессу. Он лежит на диске,
   переживает компакцию и новую сессию, и обновляет его исполнитель на каждом событии.
-  Домен `pdca` по умолчанию использует `.pdca/status/<task>-<N>.md`; PLAN может выбрать
-  эквивалентный разрешённый артефакт. Инженерные варианты используют
-  `docs/specs/status/<task>-<N>.md`.
+  Все варианты держат статус-файл цикла в одном фиксированном корне
+  (`.pdca/status/<task>-<N>.md`); PLAN может добавить суффикс или подкаталог, но не другой корень.
 
 **Единственное зеркало прогресса.** Статус-файл — единственное место, где записаны план и
 прогресс. Отдельного todo/сайдбар-зеркала нет: хост может не давать todo-инструмента
@@ -551,9 +550,9 @@ PLAN стартует в том же ходу, а его вход — `Next plan
 критерий без разрешающей ссылки — это `open`, а не вычеркнутая строка. **Пока хоть одна
 обязательная строка `open` и при этом binding, PASS невозможен** — самовольно добавленная
 лишняя audit-строка получает в том же манифесте disposition `diagnostic_nonbinding`, а не
-переписывание. Механический гейт обязателен и в каноническом скилле: трекнутый
-`scripts/pdca_evidence.py` (`generate`/`lint`) публикует квитанции атомарно против
-замороженного синтетического дерева, а `lint` пересчитывает дерево и проверяет двустороннее
+переписывание. Механический гейт обязателен и в каноническом скилле: скилл поставляет
+`scripts/pdca_evidence.py`, проект запускает `.pdca/scripts/pdca_evidence.py` (`generate`/`lint`),
+который публикует квитанции атомарно против замороженного синтетического дерева, а `lint` пересчитывает дерево и проверяет двустороннее
 покрытие `required_rows` ↔ `rows[]`; вместе с `validate_inner_loop.py manifest` (форма строк)
 это две обязательные команды CHECK, ненулевой exit — fail-closed.
 
@@ -715,7 +714,7 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `ch
   это и есть счётчик эскалации: за его пределами проблема уже не гипотеза, а
   архитектура.
 - **Доказательства и роли.** Каталог доказательств по умолчанию —
-  `artifacts/pdca/<task>/rv<k>/` (`<k>` — ревизия контракта `rv`); манифест замораживается
+  `.pdca/<task>/rv<k>/` (`<k>` — ревизия контракта `rv`); манифест замораживается
   на границе DO → CHECK и далее append-only, `open`-строка обязательного критерия запрещает
   PASS, а `check` открывает собственные артефакты цикла ограниченным `read` (не продуктовый
   код). Повторный заход (re-entry) после терминального `incomplete`/STOP — обязательный вход
@@ -756,7 +755,7 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `ch
   DO — записанное отклонение политики, а смешанный solution-прогон, реально исполняющий
   интеграцию, — это интеграция, а не unit, независимо от имени команды.
 - **Валидатор `validate_inner_loop.py`.** Исполнитель запускает
-  `scripts/validate_inner_loop.py brief <scope.json>` **до любого редактирования** и
+  `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **до любого редактирования** и
   `report <evidence.json>` **до CHECK** — сверяясь с `--journal <journal.json>`, когда есть
   сырой журнал исполнения. `journal` валидирует сырой захват start/finish, а `project`
   механически пересобирает из него отчёт, поэтому проекция, потерявшая начавшийся прогон,
@@ -766,7 +765,8 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `ch
   (отказ при неопределённости): не начинать редактирование / не пропускать CHECK. Валидатор
   ничего не исполняет, он только разбирает записанные массивы аргументов и JSON-артефакты.
   Коды: `0` — валидно, `2` — нарушение, `1` — ошибка использования/нечитаемый/битый JSON.
-  Канонический скилл также поставляет трекнутый `scripts/pdca_evidence.py` (stdlib):
+  Канонический скилл поставляет `scripts/pdca_evidence.py`; проект запускает его как
+  `.pdca/scripts/pdca_evidence.py` (stdlib):
   `generate` атомарно пишет квитанции по строкам и заменяет манифест против замороженного
   синтетического дерева, `lint` пересчитывает дерево и проверяет `required_rows` ↔ `rows[]`
   в обе стороны. CHECK прогоняет **оба** хелпера; ненулевой exit — fail-closed.
@@ -789,7 +789,7 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `ch
 - **Контракт свидетельств и каталог.** PLAN закрепляет в статус-файле versioned-контракт
   строк (ID строки, требуемая проверка, ожидаемые свидетельства, команда/код выхода,
   артефакты и их пути, владелец, applicability-предикат, ревизия `rv`) и путь манифеста;
-  каталог по умолчанию — `artifacts/pdca/<task>/rv<k>/`. Манифест замораживается на границе
+  каталог по умолчанию — `.pdca/<task>/rv<k>/`. Манифест замораживается на границе
   DO → CHECK и дальше append-only; **PASS запрещён, пока обязательная строка `open` и
   binding**. Самовольно добавленную лишнюю *audit*-строку, не вытекающую из согласованной
   цели, не переписывают и не удаляют: CHECK дописывает в тот же манифест disposition
@@ -1000,7 +1000,7 @@ Worktree, ветки, коммиты и patch'и **`incomplete`-групп не 
 
 ### Статус коллекции и git-модель
 
-Файл: `docs/specs/status/collection-<slug>.md`. В нём: вход и `collection-id`; таблица
+Файл: `.pdca/status/collection-<slug>.md`. В нём: вход и `collection-id`; таблица
 групп (id, задачи, порядок, worktree, ветка/ref, статус, причина остановки, tip, patch);
 таблица задач (id, группа, ветка, статус, фазовая готовность плана `plan_state`
 (`pending | running | ready`), `selected_variant`, `cycle_id`, `plan_revision`, baseline,
@@ -1175,7 +1175,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 | **Recovery after compaction** | Восстановление состояния из статус-файла после потери контекста |
 | **Evidence vs assertion** | Свежие данные/указатели против самоотчёта; цикл закрывается только на первом |
 | **Замороженный манифест доказательств** | Машиночитаемый индекс «обязательный критерий → свидетельство по ссылке», замораживается на DO → CHECK; PASS запрещает **binding** `open`-строка, а самовольно добавленная audit-строка получает disposition `diagnostic_nonbinding` вместо переписывания |
-| **Каталог доказательств (`rv<k>`)** | Каталог манифеста, логов и артефактов строк: `.pdca/<task>/rv<k>/` у `pdca`, `artifacts/pdca/<task>/rv<k>/` у инженерных вариантов; `<k>` — ревизия `rv` |
+| **Каталог доказательств (`rv<k>`)** | Каталог манифеста, логов и артефактов строк: `.pdca/<task>/rv<k>/` у всех вариантов; `<k>` — ревизия `rv` |
 | **Scoped read у `check`** | Право `check` открыть собственные артефакты цикла (статус/evidence/манифест), но не продуктовый артефакт |
 | **Escalation** | Второй (strong) тир для трудных решений; возвращает решение, которое оркестратор только роутит |
 | **Resource blocker** | Отсутствие обязательной роли/ресурса; не повод работать без неё |
@@ -1199,7 +1199,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 | **Test scope** | Обязательный структурированный набор проектов/селекторов/файлов/ребейлда/границы/обоснования плюс интеграционные проекты и плановое число граничных прогонов |
 | **Fail-closed** | При неопределённости/ошибке гейт отклоняет, а не предупреждает |
 | **Режим `manifest` валидатора** | Один из режимов `validate_inner_loop.py` (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`): проверяет покрытие `required_rows` ↔ `rows[]` замороженного манифеста, а не исполнение команд |
-| **Механический конвейер доказательств** | Трекнутый `scripts/pdca_evidence.py` (`generate`/`lint`): атомарная публикация квитанций по строкам против замороженного синтетического дерева и lint, который пересчитывает дерево и проверяет двустороннее покрытие `required_rows` ↔ `rows[]` |
+| **Механический конвейер доказательств** | Скилл поставляет `scripts/pdca_evidence.py`; проект запускает `.pdca/scripts/pdca_evidence.py` (`generate`/`lint`): атомарная публикация квитанций по строкам против замороженного синтетического дерева и lint, который пересчитывает дерево и проверяет двустороннее покрытие `required_rows` ↔ `rows[]` |
 | **CS1591 / XML-doc** | Предупреждение об отсутствующем XML-доке публичного члена; включается настройкой проекта |
 | **env `OPENCODE_CONFIG_REPO`** | Путь к отдельному конфиг-репозиторию: только тогда запускаются проверки скиллов против хостовых артефактов (`config/…`); иначе они пропускаются |
 
@@ -1223,7 +1223,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - orchestrator role (диспетчер) → `opencode/pdca/SKILL.md:89-116`; `opencode/pdca-coder/SKILL.md:92-117`
 - `check` вправе открыть артефакты доказательств (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:956-961`; `opencode/pdca-dotnet/SKILL.md:1119-1122`
+  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1120-1123`
 
 **Машина состояний, счётчики, зеркало прогресса**
 - state machine → `opencode/pdca/SKILL.md:118-141`; `opencode/pdca-coder/SKILL.md:119-141`
@@ -1239,26 +1239,26 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - режимы normal/autonomous → `opencode/pdca/SKILL.md:326-367`
 - collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
   `opencode/pdca-coder/SKILL.md:804-811`
-- escalation и триггеры → `opencode/pdca/SKILL.md:439-493`; `opencode/pdca-coder/SKILL.md:535-644`
+- escalation и триггеры → `opencode/pdca/SKILL.md:467-521`; `opencode/pdca-coder/SKILL.md:535-644`
 
 **Память, доказательства, восстановление, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md:369-391,598-666`
+- durable status / progress log / unit states → `opencode/pdca/SKILL.md:369-419,626-694`
 - frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:281-324`
-- evidence over assertion → `opencode/pdca/SKILL.md:393-409`
-- recovery → `opencode/pdca/SKILL.md:411-437`
-- ACT / статус / сообщение → `opencode/pdca/SKILL.md:577-689`
+- evidence over assertion → `opencode/pdca/SKILL.md:421-437`
+- recovery → `opencode/pdca/SKILL.md:439-465`
+- ACT / статус / сообщение → `opencode/pdca/SKILL.md:605-717`
 
 **Ограничения, безопасность, red flags**
-- generic constraints → `opencode/pdca/SKILL.md:495-518`
+- generic constraints → `opencode/pdca/SKILL.md:523-546`
 - instruction priority / injection → `opencode/pdca-coder/SKILL.md:359-375`;
   `opencode/pdca-dotnet/SKILL.md:360-376`
-- red flags / failure modes → `opencode/pdca/SKILL.md:520-575`
+- red flags / failure modes → `opencode/pdca/SKILL.md:548-603`
 
 **pdca-coder: инженерные потоки**
 - project overlay → `opencode/pdca-coder/SKILL.md:38-47`
 - toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
 - test strategy/variant matrix → `:832-879`; test run safety → `:881-894`; docs owners → `:896-912`
-- frozen evidence manifest + `artifacts/pdca/<task>/rv<k>/` → `:914-958`
+- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `:914-958`
 - CHECK audit/streams → `:960-1037`; debugging → `:1113-1135`
 - ACT → `:1137-1168`; economics → `:1313-1323`
 
@@ -1266,7 +1266,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md:521-557`
 - политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1084-1122,1484-1513`
 - binding/applicability disposition → `:1058-1082,1325-1336`
-- versioned evidence contract + манифест + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
+- versioned evidence contract + манифест + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
 - CHECK completeness gate (**binding** `open` запрещает PASS; disposition `diagnostic_nonbinding`) → `:1024-1034,1291-1337`
 - inner-loop evidence gate → `:1233-1245`; ноль предупреждений → `:1127,1212,1282-1283`
 - покрытие/ветки/мутации → `:911-920`; безопасность прогонов → `:942-955`

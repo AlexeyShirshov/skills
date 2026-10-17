@@ -361,7 +361,7 @@ real movement from marking time, the contract has **three counters**, and they m
 
 | Counter | What it means | When it grows | When it resets |
 |---|---|---|---|
-| **`N`** | The number of the **task's** cycle; visible in the status-file name `.pdca/status/<task>-<N>.md` (for the engineering variants — `docs/specs/status/<task>-<N>.md`) | Only in ACT, when the next cycle of the same task is planned | Not changed by loop-backs |
+| **`N`** | The number of the **task's** cycle; visible in the status-file name `.pdca/status/<task>-<N>.md` | Only in ACT, when the next cycle of the same task is planned | Not changed by loop-backs |
 | **`r`** | The plan revision | Only when the planner **genuinely issued a revised plan** (a new `P:` from CHECK → PLAN / DO → PLAN) | — (there is no cap on the number of revisions) |
 | **`n/3`** | The execution attempt for the current revision `r` | `CHECK → DO` increments it; `PLAN(r) → DO` starts at 1 | A new revision resets it to 1 |
 
@@ -488,9 +488,9 @@ resolve through planner/escalate, an attempt limit fired, or the user said "stop
 The cycle's progress is recorded in **one place**.
 
 - **The cycle status file** — the **source of truth** on the plan and progress. It lives on disk,
-  survives compaction and a new session, and the executor updates it on every event. The `pdca`
-  domain uses `.pdca/status/<task>-<N>.md` by default; PLAN may choose an equivalent permitted
-  artifact. The engineering variants use `docs/specs/status/<task>-<N>.md`.
+  survives compaction and a new session, and the executor updates it on every event. All
+  variants keep the cycle status file under the same fixed workspace root
+  (`.pdca/status/<task>-<N>.md`); a plan may add a suffix or a subdirectory, never another root.
 
 **The only progress mirror.** The status file is the single place where the plan and the progress
 are recorded. There is no separate todo or sidebar mirror: the host may not provide a todo tool
@@ -678,7 +678,7 @@ to the base:
   hypothesis, the fix + a test (a failing test for the original symptom first), verify. The
   regression test is red↔green. The fix counter is the escalation counter: beyond its limit the
   problem is no longer a hypothesis but the architecture.
-- **Evidence and roles.** The default evidence directory is `artifacts/pdca/<task>/rv<k>/` (`<k>` is
+- **Evidence and roles.** The default evidence directory is `.pdca/<task>/rv<k>/` (`<k>` is
   the contract revision `rv`); the manifest is frozen at the DO → CHECK boundary and is append-only
   afterwards; an `open` row of a mandatory criterion forbids a PASS **only while it is binding**
   (an extra self-imposed audit row is dispositioned, not rewritten), and `check` opens the cycle's
@@ -717,7 +717,7 @@ differences are in the lenses, the thresholds and the additional gates.
   deviation, and a mixed solution run that really executes integration is integration, not unit,
   whatever the command name says.
 - **The `validate_inner_loop.py` validator.** The executor runs
-  `scripts/validate_inner_loop.py brief <scope.json>` **before any editing** and
+  `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before any editing** and
   `report <evidence.json>` **before CHECK** — reconciled with `--journal <journal.json>` when the raw
   execution journal exists. `journal` validates the raw start/finish capture and `project` rebuilds
   the report from it mechanically, so a projection that drops a started execution is rejected
@@ -726,8 +726,8 @@ differences are in the lenses, the thresholds and the additional gates.
   gate the ACT cleanup receipt. A non-zero exit code is **fail-closed** (refuse under uncertainty):
   do not begin editing / do not skip CHECK. The validator executes nothing; it only parses the
   recorded argument arrays and JSON artifacts. Codes: `0` — valid, `2` — a violation, `1` — a usage
-  error/unreadable/broken JSON. The canonical skill also ships the tracked
-  `scripts/pdca_evidence.py` (stdlib): `generate` writes the per-row receipts and replaces the
+  error/unreadable/broken JSON. The canonical skill ships `scripts/pdca_evidence.py`; the project runs
+  `.pdca/scripts/pdca_evidence.py` (stdlib): `generate` writes the per-row receipts and replaces the
   manifest atomically against a frozen synthetic tree, and `lint` recomputes that tree and checks
   `required_rows` ↔ `rows[]` both ways. CHECK runs **both** helpers on the frozen manifest; a
   non-zero exit is fail-closed.
@@ -748,7 +748,7 @@ differences are in the lenses, the thresholds and the additional gates.
 - **The evidence contract and the directory.** PLAN fixes in the status file a versioned contract of
   rows (row ID, the required check, the expected evidence, the command/exit code, the artifacts and
   their paths, the owner, the applicability predicate, the revision `rv`) and the manifest path; the
-  default directory is `artifacts/pdca/<task>/rv<k>/`. The manifest is frozen at the DO → CHECK
+  default directory is `.pdca/<task>/rv<k>/`. The manifest is frozen at the DO → CHECK
   boundary and append-only afterwards; **a PASS is forbidden while a mandatory row is `open` and
   binding**. A self-imposed extra *audit* row that follows from no agreed goal is not rewritten or
   deleted: CHECK appends a `diagnostic_nonbinding` disposition (stable row ID + reason) in the same
@@ -945,7 +945,7 @@ rolled back.
 
 ### The collection status and the git model
 
-The file: `docs/specs/status/collection-<slug>.md`. It contains: the input and the `collection-id`;
+The file: `.pdca/status/collection-<slug>.md`. It contains: the input and the `collection-id`;
 a group table (id, tasks, order, worktree, branch/ref, status, stop reason, tip, patch); a task table
 (id, group, branch, status, the plan's phase readiness `plan_state`
 (`pending | running | ready`), `selected_variant`, `cycle_id`, `plan_revision`, baseline,
@@ -1112,7 +1112,7 @@ identical retries will not be passed off as progress.
 | **Recovery after compaction** | Restoring the state from the status file after the context is lost |
 | **Evidence vs assertion** | Fresh data/pointers against a self-report; the cycle closes only on the former |
 | **Frozen evidence manifest** | A machine-readable index "mandatory criterion → evidence by reference", frozen at DO → CHECK; a **binding** `open` row forbids a PASS, while a self-imposed extra audit row gets a `diagnostic_nonbinding` disposition instead of being rewritten |
-| **Evidence directory (`rv<k>`)** | The directory of the manifest, logs and row artifacts: `.pdca/<task>/rv<k>/` in `pdca`, `artifacts/pdca/<task>/rv<k>/` in the engineering variants; `<k>` is the revision `rv` |
+| **Evidence directory (`rv<k>`)** | The directory of the manifest, logs and row artifacts: `.pdca/<task>/rv<k>/` in every variant; `<k>` is the revision `rv` |
 | **Scoped read in `check`** | The check's right to open the cycle's own artifacts (status/evidence/manifest), but not the product artifact |
 | **Escalation** | The second (strong) tier for hard decisions; it returns a decision that the orchestrator only routes |
 | **Resource blocker** | The absence of a mandatory role/resource; not a reason to work without it |
@@ -1136,7 +1136,7 @@ identical retries will not be passed off as progress.
 | **Test scope** | A mandatory structured set of projects/selectors/files/rebuild/boundary/rationale plus the integration projects and the planned boundary runs |
 | **Fail-closed** | Under uncertainty/an error the gate refuses rather than warns |
 | **The validator's `manifest` mode** | One of the modes of `validate_inner_loop.py` (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`): it checks the coverage `required_rows` ↔ `rows[]` of the frozen manifest, not the execution of commands |
-| **The mechanical evidence pipeline** | The tracked `scripts/pdca_evidence.py` (`generate`/`lint`): atomic publication of per-row receipts against a frozen synthetic tree, and a lint that recomputes the tree and checks two-way `required_rows` ↔ `rows[]` coverage |
+| **The mechanical evidence pipeline** | The skill ships `scripts/pdca_evidence.py`; the project runs `.pdca/scripts/pdca_evidence.py` (`generate`/`lint`): atomic publication of per-row receipts against a frozen synthetic tree, and a lint that recomputes the tree and checks two-way `required_rows` ↔ `rows[]` coverage |
 | **CS1591 / XML-doc** | The warning about a missing XML doc on a public member; enabled by a project setting |
 | **The `OPENCODE_CONFIG_REPO` env** | The path to a separate config repository: only then do the skill checks run against host artifacts (`config/…`); otherwise they are skipped |
 
@@ -1161,7 +1161,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-116`; `opencode/pdca-coder/SKILL.md:92-117`
 - `check` may open the evidence artifacts (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:956-961`; `opencode/pdca-dotnet/SKILL.md:1119-1122`
+  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1120-1123`
 
 **The state machine, the counters, the progress mirror**
 - the state machine → `opencode/pdca/SKILL.md:118-141`; `opencode/pdca-coder/SKILL.md:119-141`
@@ -1177,26 +1177,26 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
 - the normal/autonomous modes → `opencode/pdca/SKILL.md:326-367`
 - the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
   `opencode/pdca-coder/SKILL.md:804-811`
-- escalation and its triggers → `opencode/pdca/SKILL.md:439-493`; `opencode/pdca-coder/SKILL.md:535-644`
+- escalation and its triggers → `opencode/pdca/SKILL.md:467-521`; `opencode/pdca-coder/SKILL.md:535-644`
 
 **Memory, evidence, recovery, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md:369-391,598-666`
+- durable status / progress log / unit states → `opencode/pdca/SKILL.md:369-419,626-694`
 - the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:281-324`
-- evidence over assertion → `opencode/pdca/SKILL.md:393-409`
-- recovery → `opencode/pdca/SKILL.md:411-437`
-- ACT / status / message → `opencode/pdca/SKILL.md:577-689`
+- evidence over assertion → `opencode/pdca/SKILL.md:421-437`
+- recovery → `opencode/pdca/SKILL.md:439-465`
+- ACT / status / message → `opencode/pdca/SKILL.md:605-717`
 
 **Limitations, security, red flags**
-- generic constraints → `opencode/pdca/SKILL.md:495-518`
+- generic constraints → `opencode/pdca/SKILL.md:523-546`
 - instruction priority / injection → `opencode/pdca-coder/SKILL.md:359-375`;
   `opencode/pdca-dotnet/SKILL.md:360-376`
-- red flags / failure modes → `opencode/pdca/SKILL.md:520-575`
+- red flags / failure modes → `opencode/pdca/SKILL.md:548-603`
 
 **pdca-coder: engineering streams**
 - the project overlay → `opencode/pdca-coder/SKILL.md:38-47`
 - toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
 - the test strategy/variant matrix → `:832-879`; test-run safety → `:881-894`; doc owners → `:896-912`
-- the frozen evidence manifest + `artifacts/pdca/<task>/rv<k>/` → `:914-958`
+- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `:914-958`
 - the CHECK audit/streams → `:960-1037`; debugging → `:1113-1135`
 - ACT → `:1137-1168`; the economics → `:1313-1323`
 
@@ -1204,7 +1204,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
 - the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:521-557`
 - the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1084-1122,1484-1513`
 - the binding/applicability disposition → `:1058-1082,1325-1336`
-- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; the mechanical pipeline (`generate`/`lint`) → `:1035-1056`
+- the versioned evidence contract + manifest + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; the mechanical pipeline (`generate`/`lint`) → `:1035-1056`
 - the CHECK completeness gate (a **binding** `open` forbids a PASS; the `diagnostic_nonbinding` disposition) → `:1024-1034,1291-1337`
 - the inner-loop evidence gate → `:1233-1245`; zero warnings → `:1127,1212,1282-1283`
 - coverage/branches/mutations → `:911-920`; run safety → `:942-955`

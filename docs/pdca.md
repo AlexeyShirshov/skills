@@ -272,6 +272,6 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 | The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:281-324` |
 | The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:327-351` |
 | The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:343-350` |
-| The status file as the only progress mirror, evidence, recovery | `opencode/pdca/SKILL.md:143-160,369-392,393-410,411-438` |
-| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:439-494` |
-| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:495-519` |
+| The status file as the only progress mirror, evidence, recovery | `opencode/pdca/SKILL.md:143-160,369-420,421-438,439-466` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:467-522` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:523-547` |

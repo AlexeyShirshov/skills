@@ -319,9 +319,10 @@ completeness (a whole transitive reference graph, retrospective hashes, executio
 **diagnostic notes**, and its absence never forces `incomplete`/STOP or a new round.
 
 **Default evidence dir:** **`.pdca/<task>/rv<k>/`** — `<task>` = kebab-slug, `<k>` = plan/criterion
-revision `rv`; the frozen manifest, its logs and per-row artifacts live here; a **default** the
-overlay may override (the status dir is `.pdca/status/`, §Durable status). The check role's scoped
-`read` grants `.pdca/**` generically, so the concrete path is defined only here.
+revision `rv`; the frozen manifest, its logs and per-row artifacts live here; the `.pdca/` root is
+fixed (§Skill workspace), the plan chooses `<task>` and `rv` (the status dir is `.pdca/status/`,
+§Durable status). The check role's scoped `read` grants `.pdca/**` generically, so the concrete path
+is defined only here.
 
 ## Normal and autonomous modes
 
@@ -366,12 +367,39 @@ plan, and standalone autonomous still starts DO immediately.
 
 The mode stays until the user explicitly removes it; otherwise normal mode.
 
+## Skill workspace: `.pdca/`
+
+Everything this skill writes lives under **one** project-local root, `.pdca/`, in the project root
+(`git rev-parse --show-toplevel`). The folder name is **fixed**: the same layout holds wherever the
+skill itself is installed — a global skills directory, a project `.opencode/skills` copy, or a
+checkout — so it never collides with the project's own `scripts/` or its other output directories.
+
+```text
+.pdca/
+├─ scripts/            # runtime copies of the helpers the plan uses
+├─ status/             # durable cycle status files
+└─ <task>/rv<k>/       # evidence: frozen manifest, logs, per-row artifacts
+```
+
+- **Helpers.** The skill package ships its helpers under its own `scripts/` (for example
+  `scripts/pdca_cost.py`, `scripts/validate_inner_loop.py`, `scripts/pdca_evidence.py`); that is the
+  **source**. The project keeps its runtime copies in `.pdca/scripts/` (same filenames, stdlib
+  only), and every command in this contract is written from the project root:
+  `python3 .pdca/scripts/<helper>.py …`. A helper is never run from the installed skill directory,
+  and the project's own `scripts/` is never used for bookkeeping. Copies are byte-identical to the
+  skill's version; a project fork must be declared (path + reason) in the status file.
+- **Status** — `.pdca/status/<task>-<N>.md` (§Durable status).
+- **Evidence** — `.pdca/<task>/rv<k>/` (§Phase contracts, default evidence dir).
+- A plan may add subdirectories under `.pdca/` (e.g. `.pdca/<task>/inputs/`), but never renames the
+  root and never writes bookkeeping outside it. Project sources and documentation are edited
+  only as planned work, never as bookkeeping.
+
 ## Durable status
 
-Default path: **`.pdca/status/<task>-<N>.md`** in the **permitted** workspace. It does not
-depend on any particular directory tree. The name carries both `<task>` (a kebab slug) and
-`<N>` (cycle number within that task; grows only in ACT). `PLAN` may choose an **equivalent
-permitted** status artefact instead of the default.
+Default path: **`.pdca/status/<task>-<N>.md`** in the project's fixed workspace root
+(§Skill workspace). The name carries both `<task>` (a kebab slug) and
+`<N>` (cycle number within that task; grows only in ACT). A plan may add a subdirectory or a
+distinguishing suffix under `.pdca/status/`, but never leaves the workspace root.
 
 - **Every write is by `pdca-executor`** — `pdca-planner`, `pdca-check`, `pdca-escalate` and
   the primary have no file permissions; the primary composes content from reports and passes
@@ -597,7 +625,7 @@ Order:
 
 ### Cycle status file
 
-Default path `.pdca/status/<task>-<N>.md` (an overlay may set its own directory). The name
+Default path `.pdca/status/<task>-<N>.md` (inside the fixed workspace root, §Skill workspace). The name
 carries both `<task>` (kebab slug) and `<N>` (cycle number within that task; grows only in ACT
 — loop-backs change `r`/`n`, not `<N>`).
 

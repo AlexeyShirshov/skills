@@ -7,20 +7,23 @@ steps: 40
 permission:
   # Default-deny: any MCP tool of any server (`<server>_<tool>`), plus grep/bash/
   # webfetch/websearch/edit/write/task. check judges the supplied brief, but may open the
-  # cycle's own evidence artifacts directly to reconcile the contract rows: the status dir
-  # `docs/specs/status/**` and the evidence dir `artifacts/**` (§Frozen evidence manifest;
-  # the overlay may override). Product code/diffs stay unavailable; enumerate MCP servers
+  # cycle's own evidence artifacts directly to reconcile the contract rows: the workspace root
+  # `.pdca/**` — status files and evidence (§Skill workspace; §Frozen evidence manifest;
+  # the root is fixed by the contract). Product code/diffs stay unavailable; enumerate MCP servers
   # is not needed (context7_*, mslearn_*, …).
   "*": deny
   read:
-    "docs/specs/status/**": allow
-    "artifacts/**": allow
+    ".pdca/**": allow
+    "TestResults/**": allow
+    "StrykerOutput/**": allow
   glob:
-    "docs/specs/status/**": allow
-    "artifacts/**": allow
+    ".pdca/**": allow
+    "TestResults/**": allow
+    "StrykerOutput/**": allow
   list:
-    "docs/specs/status/**": allow
-    "artifacts/**": allow
+    ".pdca/**": allow
+    "TestResults/**": allow
+    "StrykerOutput/**": allow
 ---
 
 # check — CHECK Triage

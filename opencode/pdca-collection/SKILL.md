@@ -345,7 +345,7 @@ current-branch
 
 ## Статус коллекции
 
-Файл: `docs/specs/status/collection-<slug>.md`. Содержит:
+Файл: `.pdca/status/collection-<slug>.md`. Содержит:
 
 - вход (список задач) и `collection-id`;
 - таблицу групп: id, задачи, порядок, worktree, ветка/ref, **статус**
