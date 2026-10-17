@@ -2,7 +2,7 @@
 
 These tests read the skill directory (`opencode/pdca-coder/`) as *text* and assert the
 retained PDCA rules are present in the operative sections (state machine, counters, gates,
-todo tracker, autonomous mode, escalation, evidence/recovery/injection, status
+the status file as the only progress mirror, autonomous mode, escalation, evidence/recovery/injection, status
 file, parallel DO streams, worktree template).  They are rule-presence guards,
 not behavioral proof.
 
@@ -102,8 +102,8 @@ class ContractConsistencyTest(unittest.TestCase):
         cls.skill_raw = read(SKILL_PATH)
         cls.skill = norm(cls.skill_raw)
         cls.fm = parse_frontmatter(frontmatter_block(cls.skill_raw))
-        cls.counters = norm(between(cls.skill_raw, "## State machine", "### Phase todo tracker"))
-        cls.todo = norm(between(cls.skill_raw, "### Phase todo tracker", "Transition gates:"))
+        cls.counters = norm(between(cls.skill_raw, "## State machine", "### Phase progress mirror"))
+        cls.mirror = norm(between(cls.skill_raw, "### Phase progress mirror", "Transition gates:"))
         cls.status_file = norm(
             between(cls.skill_raw, "### Cycle status file", "### Message for the next session")
         )
@@ -196,14 +196,16 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("AGENTS.md", self.gate4)
         self.assertIn("status file is finalized", self.gate4)
 
-    # --- mandatory todo tracker rules -------------------------------------
+    # --- the status file is the only progress mirror ----------------------
 
-    def test_todo_tracker_rules(self):
-        self.assertIn("todowrite", self.todo)
-        self.assertIn("exactly one in_progress", self.todo)
-        self.assertIn("single aggregate D:", self.todo)
-        self.assertIn("Status first, todo second", self.todo)
-        self.assertIn("Reconcile each turn", self.todo)
+    def test_progress_mirror_rules(self):
+        self.assertIn("Progress lives only in the cycle status file", self.mirror)
+        self.assertIn("no separate todo or sidebar mirror", self.mirror)
+        self.assertIn("a second mirror only creates divergence", self.mirror)
+        self.assertIn("executor updates the status file in the same turn", self.mirror)
+        self.assertIn("Reconcile each turn", self.mirror)
+        self.assertIn("never from memory", self.mirror)
+        self.assertIn("nothing changed", self.mirror)
 
     # --- autonomous mode: delegation, fallback, Notice --------------------
 
@@ -244,7 +246,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("status file is the source of truth", self.recovery)
         self.assertIn("revision r", self.recovery)
         self.assertIn("attempt n/3", self.recovery)
-        self.assertIn("Rebuild the todo", self.recovery)
+        self.assertIn("Reconstruct the state", self.recovery)
         self.assertIn("Recovered after compaction", self.recovery)
 
     def test_instruction_priority_and_injection_defense(self):

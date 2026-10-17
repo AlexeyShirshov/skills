@@ -134,8 +134,7 @@ Five principles explain that table.
 
 1. **The orchestrator is a dispatcher, not a reader and not a decision maker.** It calls subagents
    and passes their reports to one another. It does not write the plan, read files or run commands
-   itself. The only exception is updating the todo list: that is orchestration, not editing the
-   contract. The cycle is driven by the **cheap-tier primary only** — by the profile's effective
+   itself. The cycle is driven by the **cheap-tier primary only** — by the profile's effective
    tier, not by the agent's name; a medium/strong primary (for example, `architect`) does not
    dispatch the cycle and outside the cycle remains the deciding primary.
 2. **PLAN always belongs to the planner.** Both the initial plan and any revision (CHECK → PLAN,
@@ -303,7 +302,7 @@ escalation counter.
 |---|---|
 | **Entry condition** | The accepted result is finalized; the status file is finalized and kept; in normal mode a message for the next session is printed |
 | **Evidence** | The finalized status file (Done/Verified, Next plan, Changed artefacts); the message in normal mode |
-| **Responsible** | The executor finalizes; the orchestrator closes the phase and the todo |
+| **Responsible** | The executor finalizes and records the closure in the status file; the orchestrator closes the phase |
 | **Permitted next step** | EXIT (or a new cycle `N+1` of the same task) |
 
 In `pdca-coder`/`pdca-dotnet` this is joined by: AGENTS.md/registries/tests updated and verified.
@@ -486,22 +485,19 @@ resolve through planner/escalate, an attempt limit fired, or the user said "stop
 
 ## 9. The cycle's memory and evidence
 
-The cycle's progress is recorded in **two places with different roles**.
+The cycle's progress is recorded in **one place**.
 
 - **The cycle status file** — the **source of truth** on the plan and progress. It lives on disk,
   survives compaction and a new session, and the executor updates it on every event. The `pdca`
   domain uses `.pdca/status/<task>-<N>.md` by default; PLAN may choose an equivalent permitted
   artifact. The engineering variants use `docs/specs/status/<task>-<N>.md`.
-- **The todo list** (sidebar) — a **session mirror** for the user. It is lost in a new session,
-  unreliable after compaction, and **never the source of truth**.
 
-**Todo phases.** Every item begins with a phase prefix `P:` `D:` `C:` `A:`; exactly one item is
-`in_progress`. Mirror rules: update in the **same turn** as the event, and always **after** the
-status file is written (never running ahead); one unit of granularity per phase (a single
-aggregated `D:`, not one per unit); before dispatching, reconcile the todo against the last
-recorded status; after compaction the todo is **restored from the status file**, not the other way
-round. `todowrite` is orchestration, not editing, so the orchestrator is allowed and required to
-do it.
+**The only progress mirror.** The status file is the single place where the plan and the progress
+are recorded. There is no separate todo or sidebar mirror: the host may not provide a todo tool
+(V2 does not), and a second mirror only creates divergence. The executor writes the event in the
+**same turn**, never running ahead; before dispatching, the orchestrator reconciles its narrative
+against the last recorded status; after compaction the state is **restored from the status file**,
+not the other way round and never from memory.
 
 **The progress log** is an append-only journal, one line per event, never edited retroactively:
 
@@ -515,7 +511,7 @@ reports; the check's verdict; every failure/fix/loop-back with the defect key an
 applied fixes; a return to DO or `Replanned` (with the failed attempt recorded); the addition of
 an additive precondition or a `superseded → replacement` mapping; an escalation and its outcome;
 `Recovered after compaction`; `Notice: …` (autonomous mode); `ACT closed`. The lines are written by
-the executor, one event at a time; the todo mirrors the last line.
+the executor, one event at a time; the current state must match the last line.
 
 **Units and their statuses.** Each `D:` unit has exactly one status out of
 `pending | running | blocked | done | superseded`. `done` is set only when gate 2 is satisfied; a
@@ -550,8 +546,8 @@ manifest, its logs and the rows' artifacts; this is a **default** that an overla
 - the DO unit table (unit | status | criteria covered | `superseded→replacement`);
 - the decisions taken and why; the means and verification methods chosen by PLAN, the fixed paths
   (including the evidence manifest) and the evidence each must return;
-- risks/known issues with severity and status; deferred items with a trigger; `Next plan` and the
-  next todo; changed artifacts (paths) and pointers (`file:line`, approvals, open questions);
+- risks/known issues with severity and status; deferred items with a trigger; `Next plan`; changed
+  artifacts (paths) and pointers (`file:line`, approvals, open questions);
 - the progress log.
 
 **The status file's life** — it is finalized and **kept in any case, never deleted**. If the next
@@ -567,7 +563,7 @@ status path; you answer from impressions rather than artifacts. The recovery ord
 current action; **read the status file through `scout`** (the orchestrator does not read it itself);
 lift the durable lessons and the overlay through `scout`; re-read the gates and the "red flags";
 answer the five questions (where am I; where to; the goal and criteria; which decisions and why;
-what has been done and how it was verified, and the defect history); restore the todo from the
+what has been done and how it was verified, and the defect history); restore the state from the
 status file; continue from the current phase without reopening PLAN/CHECK, recording
 `Recovered after compaction`.
 
@@ -829,11 +825,12 @@ component/line by dependencies and shared files; the **groups' footprints do not
 a group the tasks are ordered topologically. The result is tied to the **PLAN revision vector** and
 recorded in the collection status file; before that there is no lane allocation.
 
-The last step of phase P is the **sidebar todo** (`todowrite`), and only the collection's primary
-orchestrator keeps it: with `≥ 2` groups, one item per group; with one group, one item per task in
-topological order; parallel lanes produce several `in_progress` items at once. The todo is a session
-mirror, not the source of truth (the truth is the collection status), and it is rebuilt from that
-after compaction.
+The last step of phase P is recording the schedule in the **collection status file**, and only the
+collection's primary orchestrator writes it. That file is the **only progress mirror**: there is no
+separate todo or sidebar mirror, since the host may not provide a todo tool (V2 does not) and a
+second mirror only creates divergence. The group and task tables with their statuses live there;
+the orchestrator updates the file in the same turn as the event, reconciles against it before
+dispatching, and restores the state from it after compaction — never from memory.
 
 If the result is a **single group**, that is not a failure but a degradation to one lane: worktrees
 and group/task branches are **not created**, the work goes on in the current worktree on the current
@@ -1075,7 +1072,7 @@ obtained — STOP, not a silent pass. Autonomous mode does not invent approvals.
 
 - **Infinite fix-loop** — the same defect returned after a fix → escalation before the second fix.
 - **Verifier Theater** — CHECK "passed" with no numbers/pointers/baseline.
-- **State Rot** — status/todo/memory diverge; reconcile every turn, the status file wins.
+- **State Rot** — status/memory diverge; reconcile every turn, the status file wins.
 - **Over-Reach** — edits beyond the unit's footprint.
 - **Token Burn** — the cheap orchestrator reads files itself instead of delegating.
 - **Cognitive Surrender** — "the skill will do it all": a gate without explicit verification is not
@@ -1111,7 +1108,7 @@ identical retries will not be passed off as progress.
 | **Additive precondition** | A new necessary condition: the original unit stays active `blocked`, a new active unit is added, there is no mapping |
 | **Status file** | The on-disk source of truth on the plan and progress; it survives compaction; the executor writes it |
 | **Progress log** | An append-only event journal in the format `<UTC> \| <phase> \| r \| n/3 \| <event> \| <pointer>` |
-| **Phase-todo** | A session mirror in the sidebar (`P:`/`D:`/`C:`/`A:`, exactly one `in_progress`); not the source of truth |
+| **Phase progress mirror** | The cycle status file as the only place where the plan and the progress are recorded; there is no separate todo/sidebar mirror |
 | **Recovery after compaction** | Restoring the state from the status file after the context is lost |
 | **Evidence vs assertion** | Fresh data/pointers against a self-report; the cycle closes only on the former |
 | **Frozen evidence manifest** | A machine-readable index "mandatory criterion → evidence by reference", frozen at DO → CHECK; a **binding** `open` row forbids a PASS, while a self-imposed extra audit row gets a `diagnostic_nonbinding` disposition instead of being rewritten |
@@ -1162,38 +1159,38 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
   `opencode/pdca-coder/SKILL.md:49-71`; `opencode/pdca-dotnet/SKILL.md:47-69`
 - the role assets: only `# tier:` and permission blocks, no `model:` → `opencode/pdca/SKILL.md:63-71`;
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
-- the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-117`; `opencode/pdca-coder/SKILL.md:92-118`
+- the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-116`; `opencode/pdca-coder/SKILL.md:92-117`
 - `check` may open the evidence artifacts (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:975-980`; `opencode/pdca-dotnet/SKILL.md:1138-1141`
+  `opencode/pdca-coder/SKILL.md:956-961`; `opencode/pdca-dotnet/SKILL.md:1119-1122`
 
-**The state machine, the counters, the todo**
-- the state machine → `opencode/pdca/SKILL.md:119-145`; `opencode/pdca-coder/SKILL.md:120-146`
-- the counters `N/r/n` → `opencode/pdca/SKILL.md:133-145`
-- phase-todo → `opencode/pdca/SKILL.md:147-184`
-- the DO → PLAN candidate (a–d) → `opencode/pdca/SKILL.md:186-201`
+**The state machine, the counters, the progress mirror**
+- the state machine → `opencode/pdca/SKILL.md:118-141`; `opencode/pdca-coder/SKILL.md:119-141`
+- the counters `N/r/n` → `opencode/pdca/SKILL.md:129-141`
+- phase progress mirror → `opencode/pdca/SKILL.md:143-160`
+- the DO → PLAN candidate (a–d) → `opencode/pdca/SKILL.md:161-176`
 
 **Gates and escalation**
-- gates 1–5 → `opencode/pdca/SKILL.md:203-243`
-- the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:245-302`
-- re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md:262-264`;
-  `opencode/pdca-coder/SKILL.md:715-719`; `opencode/pdca-dotnet/SKILL.md:767-771`
-- the normal/autonomous modes → `opencode/pdca/SKILL.md:349-390`
-- the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:366-373`;
-  `opencode/pdca-coder/SKILL.md:823-830`
-- escalation and its triggers → `opencode/pdca/SKILL.md:462-516`; `opencode/pdca-coder/SKILL.md:554-663`
+- gates 1–5 → `opencode/pdca/SKILL.md:178-220`
+- the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:222-279`
+- re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md:239-241`;
+  `opencode/pdca-coder/SKILL.md:696-700`; `opencode/pdca-dotnet/SKILL.md:748-752`
+- the normal/autonomous modes → `opencode/pdca/SKILL.md:326-367`
+- the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
+  `opencode/pdca-coder/SKILL.md:804-811`
+- escalation and its triggers → `opencode/pdca/SKILL.md:439-493`; `opencode/pdca-coder/SKILL.md:535-644`
 
 **Memory, evidence, recovery, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md:392-414,623-691`
-- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:304-347`
-- evidence over assertion → `opencode/pdca/SKILL.md:416-432`
-- recovery → `opencode/pdca/SKILL.md:434-460`
-- ACT / status / message → `opencode/pdca/SKILL.md:602-715`
+- durable status / progress log / unit states → `opencode/pdca/SKILL.md:369-391,598-666`
+- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:281-324`
+- evidence over assertion → `opencode/pdca/SKILL.md:393-409`
+- recovery → `opencode/pdca/SKILL.md:411-437`
+- ACT / status / message → `opencode/pdca/SKILL.md:577-689`
 
 **Limitations, security, red flags**
-- generic constraints → `opencode/pdca/SKILL.md:518-541`
-- instruction priority / injection → `opencode/pdca-coder/SKILL.md:378-394`;
-  `opencode/pdca-dotnet/SKILL.md:379-395`
-- red flags / failure modes → `opencode/pdca/SKILL.md:543-600`
+- generic constraints → `opencode/pdca/SKILL.md:495-518`
+- instruction priority / injection → `opencode/pdca-coder/SKILL.md:359-375`;
+  `opencode/pdca-dotnet/SKILL.md:360-376`
+- red flags / failure modes → `opencode/pdca/SKILL.md:520-575`
 
 **pdca-coder: engineering streams**
 - the project overlay → `opencode/pdca-coder/SKILL.md:38-47`
@@ -1204,7 +1201,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
 - ACT → `:1137-1168`; the economics → `:1313-1323`
 
 **pdca-dotnet: .NET gates**
-- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:540-576`
+- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:521-557`
 - the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1084-1122,1484-1513`
 - the binding/applicability disposition → `:1058-1082,1325-1336`
 - the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; the mechanical pipeline (`generate`/`lint`) → `:1035-1056`
@@ -1250,7 +1247,8 @@ Below are topics with their supporting sections (no new normative claims).
    `validate_inner_loop.py`, zero warnings, coverage and mutations.
 8. **"The collection: terminality is not success"** — §11, §12 (story 4). The merge barrier,
    `incomplete`, the preservation of results.
-9. **"The memory that survives compaction"** — §9. The status file versus the todo, recovery.
+9. **"The memory that survives compaction"** — §9. The status file as the only progress mirror,
+   recovery.
 10. **"The escalation that is routed, not re-chosen"** — §6, §7. A strong-tier decision and the ban
     on semantic re-choosing.
 11. **"The cycle's limitations and security"** — §13. Injections, secrets, permissions, and what the

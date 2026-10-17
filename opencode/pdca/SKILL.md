@@ -105,16 +105,15 @@ to `pdca-executor` via a subagent. Both the initial PLAN and any replan belong t
   substituting a different option) and never edits. The decision cannot waive the gates, the
   no-4th rule, scope or the authority boundaries (§Escalation).
 - **Do not edit files or run commands** — that is `pdca-executor`'s job, including the cycle
-  status file (§Durable status). The only exception is `todowrite` (§Phase todo tracker):
-  orchestration, not an edit, and mandatory.
+  status file (§Durable status).
 - **Do not read anything yourself** — no artefacts/diffs/logs/status files/outputs. Facts
   come from `scout` (pointers), command results from `pdca-executor` (exit status, key numbers,
   log path), judgments from `pdca-check`/`pdca-planner`/`pdca-escalate`. Only their compact
   reports enter your context, to forward.
 - Your job: drive the phases, compose briefs (what to do + the reports the subagent needs),
   verify the gate **items are present** in the reports (presence, not quality — that is
-  `pdca-check`/`pdca-planner`'s), and keep the status file (`pdca-executor`) and todo in sync
-  (§Phase todo tracker).
+  `pdca-check`/`pdca-planner`'s), and keep the status file (`pdca-executor`) authoritative
+  (§Phase progress mirror).
 
 ## State machine
 
@@ -122,13 +121,10 @@ Cycle: `PLAN → (normal mode: the user reads and approves the plan) → DO → 
 (autonomous: no approval, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a
 new prerequisite/blocker or changes assumptions/scope.
 
-Progress is recorded in two places with different roles:
+Progress is recorded in one place:
 - **The cycle status file** (§Durable status) — **source of truth** for plan and progress; on
-  disk, survives compaction and a new session, updated by `pdca-executor` on every event.
-- **The todo list** (`todowrite`, sidebar) — the **session mirror** for the user; lost on a
-  new session, unreliable after compaction, never the source of truth.
-
-Each todo item starts with a phase prefix `P:` `D:` `C:` `A:`; exactly one is `in_progress`.
+  disk, survives compaction and a new session, updated by `pdca-executor` on every event. There
+  is no separate todo or sidebar mirror.
 
 **Three counters, do not mix them:**
 - `<N>` — the task's cycle number, in the status-file name: grows **only in ACT**, when a
@@ -144,44 +140,23 @@ Each todo item starts with a phase prefix `P:` `D:` `C:` `A:`; exactly one is `i
   history is not erased by a replan (§Escalation). There is no global `n/3` on every
   loop-back.
 
-### Phase todo tracker (mandatory action)
+### Phase progress mirror (status file only)
 
-The sidebar todo is a strict mirror kept in sync by rule, not convenience:
+Progress lives only in the cycle status file (§Durable status). There is no separate todo or
+sidebar mirror: the host may not provide a todo tool (V2 does not), and a second mirror only
+creates divergence.
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan,
-   escalation — call `todowrite` in the turn you announce it, before/with the first subagent dispatch of
-   the next step; never batched.
-2. **Status first, todo second.** The event is written to the status file by `pdca-executor`
-   first (next `pdca-executor` brief or a short dedicated dispatch); the todo is then set to
-   exactly what was recorded — never ahead.
-3. **Granularity.** One item per phase (`P`/`D`/`C`/`A`), exactly one `in_progress`; a **single
-   aggregate `D:`** (not per unit — those live in the status file, §Durable status). The
-   aggregate `D:` closes only when all active, non-superseded units satisfy gate 2.
-4. **Reconcile each turn.** Before dispatching, compare the todo with the last status recorded
-   by `pdca-executor` (from its report — do not read the file). Divergence → fix in the same
-   turn; the status file wins.
-5. **After compaction/resume** reconstruct the todo from the status file (§Recovery after
-   compaction), never the reverse.
+   escalation — the executor updates the status file in the same turn, before/with the first
+   subagent dispatch of the next step; never batched.
+2. **Reconcile each turn.** Before dispatching, compare the last status recorded by
+   `pdca-executor` (from its report — do not read the file) with your narrative. Divergence →
+   fix it in the same turn; the status file wins.
+3. **After compaction/resume** reconstruct the state from the status file (§Recovery after
+   compaction), never from memory or the context retelling.
 
-The todo must not lag your narrative ("entering ACT" while a `P:` is `in_progress` is a
-violation). `todowrite` is orchestration, not an edit: allowed and mandatory for the
-orchestrator, autonomous mode too.
-
-Remap on transition:
-- PLAN → DO: `P:`→`completed`, aggregate `D:`→`in_progress`.
-- a `D:` unit closes: record it in the status file; the aggregate `D:` stays `in_progress`.
-- DO → CHECK: `D:`→`completed`, `C:`→`in_progress`.
-- CHECK → ACT: `C:`→`completed`, `A:`→`in_progress`.
-- ACT → EXIT: `A:`→`completed`.
-- loop-back CHECK → DO: `C:`→`completed`, aggregate `D:`→`in_progress` (closed units stay
-  `completed`).
-- loop-back CHECK → PLAN: `C:`→`completed`, new `P:`→`in_progress`.
-- loop-back DO → PLAN: aggregate `D:`→`pending` (unfinished retained, not completed), new
-  `P:`→`in_progress`.
-- new cycle `<N>+1`: replace the list with the new cycle's items, one `in_progress`.
-
-Never batch-close at ACT, never leave `in_progress` on a finished phase; there is no "nothing
-changed" exception — if an event happened, `todowrite` is called.
+The recorded state must not lag your narrative ("entering ACT" while PLAN is still open is a
+violation); there is no "nothing changed" exception — if an event happened, it is recorded.
 
 ### DO → PLAN candidate
 
@@ -213,7 +188,8 @@ bad plan found by review is a CHECK → PLAN).
    mode, where no approval is required and DO starts right after PLAN. The orchestrator only
    checks each item is **present** (§Orchestrator role) and
    returns an incomplete answer to `pdca-planner`. On DO start: `pdca-executor` logs `DO
-   started`, then `todowrite` (`P:`→`completed`, single `D:`→`in_progress`). Normal mode with
+   started` and records the phase transition in the status file (`P:` closed, single `D:` in
+   progress). Normal mode with
    no acceptance criteria → ask the user, do not guess; autonomous → route through
    `pdca-planner`/`pdca-escalate` and STOP (§Autonomous mode).
 2. **DO → CHECK** — only when all **active, non-`superseded`** `D:` units are `done` with
@@ -221,19 +197,20 @@ bad plan found by review is a CHECK → PLAN).
    `done`**: `done` counts only actually completed **accepted** work; unfinished work stays
    `blocked`/`pending` (never `completed`), a rejected candidate resumes the original `D`, and
    unresolved work prevents gate 2. Supersede vs additive prerequisite and the single gate-2
-   definition are canonical in §Durable status → "Unit states". On entry: status first, then
-   `todowrite` (`D:`→`completed`, `C:`→`in_progress`).
+   definition are canonical in §Durable status → "Unit states". On entry: the phase
+   transition (`D:` closed, `C:` in progress) is recorded in the status file.
 3. **CHECK → ACT** — only if `pdca-check` gives a verdict of all criteria `met` on **actual
    evidence** and no criterion is `unmet`/`unverified`; cross-part consistency verified. On
-   entry: status (verdict pointer) first, then `todowrite` (`C:`→`completed`,
-   `A:`→`in_progress`). Otherwise loop back — implementation defect → DO (`pdca-executor`);
+   entry: the verdict pointer and the phase transition (`C:` closed, `A:` in progress) are
+   recorded in the status file. Otherwise loop back — implementation defect → DO (`pdca-executor`);
    wrong plan → PLAN via `pdca-planner` (it issues the new `P:`; `pdca-executor` rewrites the
    same status file and logs `Replanned: <reason>`). A CHECK → DO return of revision `r` grows
    `n/3`; a return to PLAN does not. The escalation counter is canonical in §Escalation
    (trigger 2), counters in §State machine.
 4. **ACT → EXIT** — only if the accepted result is finalized, the status file is finalized
    and kept (§Durable status → "Lifetime"), and in normal mode the next-session message is
-   printed (§ACT; not in autonomous). `todowrite` (`A:`→`completed`). You cannot close the
+   printed (§ACT; not in autonomous). The executor records the phase closure in the status
+   file. You cannot close the
    cycle without ACT.
 5. **STOP finalization** — a **separate terminal path**, not a green gate and not
    `CHECK → ACT`: the permitted writer-executor finalizes the STOP with the remaining
@@ -435,7 +412,7 @@ role); it constructs the chain:
 
 The host may compact mid-cycle: the rules survive, "where I am / what was done / why" does
 not. **The status file is the source of truth for plan and progress — not the context
-retelling, not the todo.**
+retelling, not memory.**
 
 **Detectors** (any one — recover, do not continue from memory): a long session /
 auto-compaction; you cannot name the task, phase, cycle `<N>`, iteration `n/3`, or the current
@@ -455,7 +432,7 @@ rather than by artefacts.
 5. **Five questions** from the scout report: where am I (task/phase/`N`/`r`/`n`)? where to?
    goal and criteria? decisions made and why? what was done and how verified, and the defect
    history?
-6. **Reconstruct the todo** from the status file (§Phase todo tracker rule 5).
+6. **Reconstruct the state** from the status file (§Phase progress mirror rule 3).
 7. **Continue** from the current phase without re-opening PLAN/CHECK; `pdca-executor` appends
    `Recovered after compaction`. One line to the user in normal mode; log-only in autonomous.
 
@@ -546,8 +523,7 @@ Signals that you have fallen off the contract. On any one — **stop, name the d
 return to the contract**, not "finish and fix later".
 
 **Immediate-stop signals:**
-- I edit files (incl. the status file) or run commands myself instead of `pdca-executor` —
-  only `todowrite` is orchestration.
+- I edit files (incl. the status file) or run commands myself instead of `pdca-executor`.
 - I read artefacts/logs/status files myself instead of a `scout`/`pdca-executor` report.
 - I decide the plan or the verdict myself instead of `pdca-planner`/`pdca-check`.
 - I start DO without the user's approval (normal mode), or ask for approval before the plan is on disk.
@@ -556,8 +532,7 @@ return to the contract**, not "finish and fix later".
   verification methods, decomposition, means and access, risks/stop conditions.
 - An event happened but `pdca-executor` did not update the status file.
 - I deleted a status file — it is finalized and kept, never deleted.
-- I did not `todowrite` in the same turn as an event, left `in_progress` on a finished phase,
-  or left the todo diverging from the last recorded status.
+- I let the status file lag my narrative, or left a finished phase open in it.
 - I loaded large artefacts/logs into my context instead of a pointer.
 - I made a next attempt instead of `pdca-escalate` (§Escalation).
 - I declared a blocker without evidence.
@@ -589,7 +564,7 @@ return to the contract**, not "finish and fix later".
   second fix.
 - **Verifier Theater** — CHECK "passed" with no numbers/pointers/baseline; `pdca-check` never
   saw raw evidence.
-- **State Rot** — status/todo/memory diverge; reconcile every turn, the status file is the
+- **State Rot** — status/memory diverge; reconcile every turn, the status file is the
   truth.
 - **Over-Reach** — edits beyond the unit's footprint → outside the plan is a separate `P:`
   task.
@@ -649,8 +624,8 @@ verdict; each CHECK failure/fix/loop-back with its defect key and applied fix co
 not logs); loop-back to DO / `Replanned` (with the outgoing failed attempt); an
 additive-prerequisite addition or a `superseded→replacement` mapping; escalation and its
 outcome; `Recovered after compaction`; `Notice: …` (autonomous); ACT closed. Written **one
-event at a time** by a short `pdca-executor` dispatch (or as the last step of one). The todo mirrors
-the last log line.
+event at a time** by a short `pdca-executor` dispatch (or as the last step of one). The current
+state must match the last log line.
 
 **Unit states** (per `D:` unit): exactly one of `pending | running | blocked | done |
 superseded`. `done` only when it satisfies gate 2; a blocker report leaves it `blocked`, never
@@ -659,7 +634,7 @@ superseded`. `done` only when it satisfies gate 2; a blocker report leaves it `b
 mapping. Only an **actual scope replacement** sets the original `superseded` and **requires**
 an explicit `<superseded unit> → <replacement>` mapping; replacements are tracked active and
 carry all original criteria and residual work. The row records criteria covered so gate 2 can
-verify all criteria are covered. The **aggregate `D:` todo closes by that same gate-2 definition**: every
+verify all criteria are covered. The **aggregate `D:` closes by that same gate-2 definition**: every
 active, non-superseded unit `done` and every unit's evidence recorded; `superseded` never
 counts as `done`, and the replacement chain must resolve to active done units covering the
 preserved criteria (a missing mapping/replacement, an orphan, a circular/self mapping, or a
@@ -681,14 +656,13 @@ pending/blocked replacement ⇒ gate 2 rejected).
 - **Means and verification methods** selected by PLAN and the evidence each must return.
 - **Risks / known issues** — severity and status.
 - **Deferred + trigger** — what and by which signal to return.
-- **Next plan + next todo** — the todo is not carried between sessions, so it lives here.
+- **Next plan** — the plan for the next cycle is not carried between sessions, so it lives here.
 - **Changed artefacts** (paths) and **Pointers** (`file:line`, approvals, open questions) —
   without retelling content.
 - **Progress log** (above).
 
 These sections answer the five recovery questions (§Recovery step 5). Write so the file alone
-allows recovery. During DO/CHECK it is updated on every event; the todo mirrors it and is never
-the source of truth.
+allows recovery. During DO/CHECK it is updated on every event; it is the only progress mirror and the source of truth.
 
 ### Message for the next session
 

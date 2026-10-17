@@ -108,28 +108,23 @@ initial PLAN and any replan belong to `planner`.
   semantically re-selects (no substituting a different option) and never edits. The decision cannot
   waive the gates, the no-4th rule, scope or the security constraints (§Escalation).
 - **Do not edit files or run commands** — that is `coder`'s job, including the cycle status file
-  (§Cycle status file). The only exception is `todowrite` (§Phase todo tracker): orchestration, not an
-  edit, and mandatory. You have the tools but do not use them in the cycle — that is the mode's point.
+  (§Cycle status file). You have the tools but do not use them in the cycle — that is the mode's point.
 - **Do not read anything yourself** — no code/diffs/logs/status/docs/MCP output. Facts come from
   `scout` (`file:line`), command results from `coder` (exit code, numbers, log path), judgments from
   `check`/`planner`/`escalate`. Only their compact reports enter your context, to forward.
 - Your job: drive the phases, compose briefs (what to do + the reports the subagent needs), verify the
   gate **items are present** in the reports (presence, not quality — that is `check`/`planner`), and
-  keep the status file (`coder`) and todo in sync (§Phase todo tracker).
+  keep the status file (`coder`) authoritative (§Phase progress mirror).
 
 ## State machine
 
 Cycle: `PLAN → (normal mode: the user reads and approves the plan) → DO → CHECK → ACT → (EXIT | PLAN)` (autonomous: no
 approval, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a new prerequisite/blocker.
 
-Progress is recorded in two places with different roles:
+Progress is recorded in one place:
 - **The cycle status file** `docs/specs/status/<task>-<N>.md` (§Cycle status file) — **source of
   truth** for plan and progress; on disk, survives compaction and a new session, updated by `coder`
-  on every event.
-- **The todo list** (`todowrite`, sidebar) — the **session mirror** for the user; lost on a new
-  session, unreliable after compaction, never the source of truth.
-
-Each todo item starts with a phase prefix `P:` `D:` `C:` `A:`; exactly one is `in_progress`.
+  on every event. There is no separate todo or sidebar mirror.
 
 **Three counters, do not mix them:**
 - `<N>` — the task's cycle number, in the status-file name: grows **only in ACT**, when a further
@@ -144,37 +139,23 @@ Each todo item starts with a phase prefix `P:` `D:` `C:` `A:`; exactly one is `i
   a new revision resets `n` to 1. The same-defect history is not erased by a replan (§Escalation).
   There is no global `n/3` on every loop-back.
 
-### Phase todo tracker (mandatory action)
+### Phase progress mirror (status file only)
 
-The sidebar todo is a strict mirror kept in sync by rule, not convenience:
+Progress lives only in the cycle status file (§Cycle status file). There is no separate todo or
+sidebar mirror: the host may not provide a todo tool (V2 does not), and a second mirror only
+creates divergence.
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan, escalation —
-   call `todowrite` in the turn you announce it, before/with the first subagent dispatch of the next step; never batched.
-2. **Status first, todo second.** The event is written to the status file by `coder` first (next `coder`
-   brief or a short dedicated dispatch); the todo is then set to exactly what was recorded — never ahead.
-3. **Granularity.** One item per phase (`P`/`D`/`C`/`A`), exactly one `in_progress`; a **single aggregate
-   `D:`** (not per unit/stream — those live in the status file, §Cycle status file). The aggregate `D:`
-   closes only when all units and DO streams satisfy gate 2.
-4. **Reconcile each turn.** Before dispatching, compare the todo with the last status recorded by `coder`
-   (from its report — do not read the file). Divergence → fix in the same turn; the status file wins.
-5. **After compaction/resume** rebuild the todo from the status file (§Recovery), never the reverse.
+   the executor updates the status file in the same turn, before/with the first subagent dispatch of
+   the next step; never batched.
+2. **Reconcile each turn.** Before dispatching, compare the last status recorded by `coder`
+   (from its report — do not read the file) with your narrative. Divergence → fix it in the same
+   turn; the status file wins.
+3. **After compaction/resume** reconstruct the state from the status file (§Recovery), never from
+   memory or the context retelling.
 
-The todo must not lag your narrative ("entering ACT" while a `P:` is `in_progress` is a violation).
-`todowrite` is orchestration, not an edit: allowed and mandatory for the orchestrator, autonomous mode too.
-
-Remap on transition:
-- PLAN → DO: `P:`→`completed`, aggregate `D:`→`in_progress`.
-- a `D:` unit/stream closes: record it in the status file; the aggregate `D:` stays `in_progress`.
-- DO → CHECK: `D:`→`completed`, `C:`→`in_progress`.
-- CHECK → ACT: `C:`→`completed`, `A:`→`in_progress`.
-- ACT → EXIT: `A:`→`completed`.
-- loop-back CHECK → DO: `C:`→`completed`, aggregate `D:`→`in_progress` (closed units stay `completed`).
-- loop-back CHECK → PLAN: `C:`→`completed`, new `P:`→`in_progress`.
-- loop-back DO → PLAN: aggregate `D:`→`pending` (unfinished retained, not completed), new `P:`→`in_progress`.
-- new cycle `<N>+1`: replace the list with the new cycle's items, one `in_progress`.
-
-Never batch-close at ACT, never leave `in_progress` on a finished phase; there is no "nothing changed"
-exception — if an event happened, `todowrite` is called.
+The recorded state must not lag your narrative ("entering ACT" while PLAN is still open is a
+violation); there is no "nothing changed" exception — if an event happened, it is recorded.
 
 **DO → PLAN candidate.** DO never issues a verdict or STOP — it reports a **provisional candidate with
 evidence**; a **candidate analysis** that says "implementation complete" **never completes** `D`. While
@@ -202,27 +183,29 @@ established externalness (§Escalation). Only a genuinely **new** item that make
    it, and starts implementation only after that approval — except in autonomous mode, where
    no approval is required and DO starts right after PLAN. The orchestrator only checks
    each item is **present** (§Orchestrator role) and returns an incomplete answer to `planner`. On DO start:
-   `coder` logs `DO started`, then `todowrite` (`P:`→`completed`, single `D:`→`in_progress`), then the
-   parallel streams (§Parallel DO streams). Normal mode with no acceptance criteria → ask the user, do not
-   guess; autonomous → route through `planner`/`escalate` and STOP (§Autonomous mode).
+   `coder` logs `DO started`, records the phase transition in the status file (`P:` closed, single
+   `D:` in progress), then the parallel streams (§Parallel DO streams). Normal mode with no acceptance
+   criteria → ask the user, do not guess; autonomous → route through `planner`/`escalate` and STOP
+   (§Autonomous mode).
 2. **DO → CHECK** — only when all `D:` tasks and all DO streams (code, tests, docs) are closed, the
    build/tests have run (`coder`: exit code + log path), and every closed `D:` is in the status file. A
    blocker report is **not `done`**: `done` counts only actually completed **accepted** work; unfinished
    work stays `blocked`/`pending` (never `completed`), a
    rejected candidate resumes the original `D`, and unresolved work prevents gate 2. Supersede vs additive
    prerequisite and the single gate-2 definition are canonical in §Cycle status file → "Unit states".
-   On entry: status first, then `todowrite` (`D:`→`completed`, `C:`→`in_progress`).
+   On entry: the phase transition (`D:` closed, `C:` in progress) is recorded in the status file.
 3. **CHECK → ACT** — only if all CHECK streams are green: the four unconditional (code audit, test, doc,
    perf) plus security when triggered; worktree sub-tasks merged and re-verified (§CHECK → "Parallel CHECK
-   streams", "Parallel sub-tasks in worktrees"). On entry: status (verdict pointer) first, then `todowrite`
-   (`C:`→`completed`, `A:`→`in_progress`). Otherwise loop back — implementation defect → DO; wrong plan →
-   PLAN via `planner` (it issues the new `P:`; `coder` rewrites the same status file and logs
-   `Replanned: <reason>`). A CHECK → DO return of revision `r` grows `n/3`; a return to PLAN does not. The
-   escalation counter is canonical in §Escalation (trigger 2), counters in §State machine.
+   streams", "Parallel sub-tasks in worktrees"). On entry: the verdict pointer and the phase
+   transition (`C:` closed, `A:` in progress) are recorded in the status file. Otherwise loop back —
+   implementation defect → DO; wrong plan → PLAN via `planner` (it issues the new `P:`; `coder`
+   rewrites the same status file and logs `Replanned: <reason>`). A CHECK → DO return of revision
+   `r` grows `n/3`; a return to PLAN does not. The escalation counter is canonical in §Escalation
+   (trigger 2), counters in §State machine.
 4. **ACT → EXIT** — only if AGENTS.md/registries/tests are updated and verified, the status file is
    finalized and kept (§Status file "Lifetime"), and in normal mode the
-   next-session message is printed (§ACT; not in autonomous). `todowrite` (`A:`→`completed`). You cannot
-   close the cycle without ACT.
+   next-session message is printed (§ACT; not in autonomous). The executor records the phase closure
+   in the status file. You cannot close the cycle without ACT.
 
 **You cannot skip CHECK. You cannot close the cycle without ACT.**
 
@@ -281,8 +264,7 @@ Signals that you have fallen off the contract. On any one — **stop, name the d
 contract**, not "finish and fix later".
 
 **Immediate-stop signals:**
-- I edit files (incl. the status file) or run commands myself instead of `coder` — only `todowrite`
-  is orchestration.
+- I edit files (incl. the status file) or run commands myself instead of `coder`.
 - I read code/diff/log/status/docs myself instead of a `scout`/`coder` report.
 - I decide the plan or verdict myself instead of `planner`/`check`.
 - I start DO without the user's approval (normal mode), or ask for approval before the plan is on disk.
@@ -293,8 +275,7 @@ contract**, not "finish and fix later".
 - An event happened but `coder` did not update the status file (§Cycle status file → "Progress log").
 - I deleted a status file — it is finalized and kept, never deleted (§Status file → "Lifetime").
 - I pushed project facts, or >0–2 transferable lessons, into the memory MCP (§ACT step 1).
-- I did not `todowrite` in the same turn as an event, left `in_progress` on a finished phase, or left
-  the todo diverging from the last recorded status.
+- I let the status file lag my narrative, or left a finished phase open in it.
 - I loaded code/large files/logs/MCP output into my context instead of a pointer.
 - "Tests/docs later", "test strategy as I go" — in DO everything runs in parallel.
 - I made a next attempt instead of `escalate` (§Escalation).
@@ -328,7 +309,7 @@ contract**, not "finish and fix later".
 ### Cycle failure modes
 - **Infinite fix-loop** — same defect returned after a fix → `escalate` before the second fix.
 - **Verifier Theater** — CHECK "passed" with no numbers/`file:line`/baseline; `check` never saw raw candidates.
-- **State Rot** — status/todo/memory diverge; reconcile every turn, the status file is the truth.
+- **State Rot** — status/memory diverge; reconcile every turn, the status file is the truth.
 - **Over-Reach** — edits beyond the unit's footprint → outside the plan is a separate `P:` task.
 - **Token Burn** — cheap-subagent walls / `build` reading files itself → delegate, take a pointer.
 - **Cognitive Surrender** — "the skill will do everything": a gate without an explicit check is not passed.
@@ -337,7 +318,7 @@ contract**, not "finish and fix later".
 ## Recovery after compaction and drift
 
 opencode may compact mid-cycle: the rules survive, "where I am / what was done / why" does not. **The
-status file is the source of truth for plan and progress — not the context retelling, not the todo.**
+status file is the source of truth for plan and progress — not the context retelling, not memory.**
 
 **Detectors** (any one — recover, do not continue from memory): a long session / auto-compaction; you
 cannot name the task, phase, cycle `<N>`, iteration `n/3`, or the current `D:` and its criterion; you
@@ -355,7 +336,7 @@ mix up the cycle number or status path; you answer by impression rather than by 
 4. **Rules** — re-read the gates and §Red flags (the contract, not project content).
 5. **Five questions** from the scout report: where am I (task/phase/`N`/`r`/`n`)? where to? goal and
    criteria? decisions made and why? what was done and how verified, and the defect history?
-6. **Rebuild the todo** from the status file (§Phase todo tracker rule 5).
+6. **Reconstruct the state** from the status file (§Phase progress mirror rule 3).
 7. **Continue** from the current phase without re-opening PLAN/CHECK; `coder` appends `Recovered after
    compaction`. One line to the user in normal mode; log-only in autonomous (§Autonomous mode).
 
@@ -1427,7 +1408,7 @@ CHECK failure/fix/loop-back with its defect key and applied fix count (pointers,
 DO / `Replanned` (with the outgoing failed attempt); an additive-prerequisite addition or a
 `superseded→replacement` mapping; escalation and its outcome; `Recovered after compaction`; `Notice: …`
 (autonomous); ACT closed. Written **one event at a time** by a short `coder` dispatch (or as the last step of
-one) — never by parallel streams. The todo mirrors the latest log line.
+one) — never by parallel streams. The current state must match the latest log line.
 
 **Unit states** (per `D:` unit/DO stream): exactly one of `pending` | `running` | `blocked` | `done` |
 `superseded`. `done` only when it satisfies gate 2; a blocker report leaves it `blocked`, never `done`. An
@@ -1435,7 +1416,7 @@ one) — never by parallel streams. The todo mirrors the latest log line.
 with criteria and remainder unchanged — not superseded, no mapping. Only an **actual scope replacement**
 sets the original `superseded` and **requires** an explicit `<superseded unit> → <replacement>` mapping;
 replacements are tracked active and carry all original criteria and residual work. The row records
-criteria covered so gate 2 can check coverage. The **aggregate `D:` todo closes by that same gate-2
+criteria covered so gate 2 can check coverage. The **aggregate `D:` closes by that same gate-2
 definition**: every active non-superseded unit `done` and every DO stream closed/verified; `superseded`
 never counts as `done`, and the replacement chain must resolve to active done units covering the
 preserved criteria (missing mapping/replacement, orphan, circular/self mapping, or pending/blocked
@@ -1475,13 +1456,13 @@ Content — a brief handoff, not a report:
   experiment-only case records the frozen contract, verdict and fork (§PLAN "Prototype / reconnaissance").
 - **Unit mode** — sequential / parallel one tree / parallel worktrees (+ why).
 - **Deferred + trigger** — what and by which signal to return (stays in the current milestone).
-- **Next plan + next todo** — the todo is not carried between sessions, so it lives here.
+- **Next plan** — the plan for the next cycle is not carried between sessions, so it lives here.
 - **Changed files** (paths, ≥3 as a table), **Pointers** (`file:line`, commits, open questions) — without
   retelling code.
 - **Progress log** (above).
 
 These sections answer the five recovery questions (§Recovery step 5). Write so the file alone allows
-recovery. During DO/CHECK it is updated on every event; the todo mirrors it and is never the source of truth.
+recovery. During DO/CHECK it is updated on every event; it is the only progress mirror and the source of truth.
 
 ### ACT cleanup receipt (heavy staged materials)
 

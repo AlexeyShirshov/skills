@@ -26,7 +26,7 @@
 | D | Один план, три провальных CHECK | `escalate`, 4-й попытки нет; `DO → PLAN` — не провальный CHECK |
 | E | `planner` не может классифицировать кандидата | Сначала точечные факты (`scout`), затем `escalate` по низкой уверенности даже без доказанной внешности |
 | F | Автономно: нет критерия / недоступен ресурс | Без вопроса; сбор/решение, затем blocked STOP с записанным итогом; обычный режим сохраняет вопросы и апрув плана |
-| G | Три параллельных потока DO | Ровно один активный агрегированный `D:` todo; правдивые состояния каждого потока в статус-файле |
+| G | Три параллельных потока DO | Единственное зеркало прогресса — статус-файл: агрегированный `D:` и правдивые состояния каждого потока в нём |
 | H | Cheap-only оркестрация; `architect` — решения вне цикла | Цикл ведёт только cheap-tier primary (эффективный тир, не имя агента); начальный PLAN/replan — `planner`; в ролях только `# tier`, без `model:` |
 | I | Security-триггер red | Conditional gather возвращается в агрегат `check` (своего независимого вердикта нет); обычный security-провал — провальный CHECK ревизии по общим счётчикам; немедленная эскалация — только жёсткий security-tradeoff |
 | J | Эскалация: исчерпана ревизия `r` или нет | `escalate` даёт **решение**; оркестратор только роутит: revised remediation `r+1` → `planner`, реализация/STOP → `coder`; семантически не перевыбирает, гейты/no-4th/scope/security не отменяет |
@@ -35,7 +35,7 @@
 
 Общая оперативная база (применяется ко всем кейсам, если ниже не уточнено):
 `opencode/pdca-dotnet/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
-§Phase todo tracker, §Escalation (`escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
+§Phase progress mirror, §Escalation (`escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
 §Orchestrator role; `opencode/pdca-dotnet/assets/agents/*.md` и зеркала
 `config/agents/*.md` (`planner`, `coder`, `check`, `escalate`, `scout`, `security-auditor`,
@@ -132,12 +132,13 @@ plan approval), §State machine; `assets/agents/planner.md` (plan-disk paragraph
 ## G. Один агрегированный активный `D:` при параллельных потоках
 
 **Вход:** три параллельных потока/единицы DO.
-**Требуемый исход:** в любой момент ровно один `in_progress` todo — агрегированный `D:`; сами
-единицы и их правдивые состояния (`pending`/`running`/`blocked`/`done`/`superseded`) — в
-статус-файле; агрегированный `D:` закрывается только когда все единицы и DO-потоки удовлетворяют
-гейту 2; replan переносит агрегированную фазовую метку, не завершая единицы ложно.
-**Оперативные источники:** SKILL §Phase todo tracker (exactly one in_progress, one aggregate `D:`,
-units in status file), §Transition gates (gate 1 single aggregate `D:`), §Cycle status file.
+**Требуемый исход:** единственное зеркало прогресса — статус-файл: в нём агрегированный `D:` и
+правдивые состояния единиц (`pending`/`running`/`blocked`/`done`/`superseded`); агрегированный
+`D:` закрывается только когда все единицы и DO-потоки удовлетворяют гейту 2; replan переносит
+агрегированную фазовую метку, не завершая единицы ложно.
+**Оперативные источники:** SKILL §Phase progress mirror (status file only, same turn, reconcile,
+never from memory), §Transition gates (gate 1 records the single aggregate `D:` in the status
+file), §Cycle status file.
 
 ## H. Cheap-only оркестрация, полномочия PLAN и привязки моделей
 

@@ -92,10 +92,12 @@ dependencies and shared files; the **footprints of the groups do not intersect**
 the tasks are ordered **topologically** (those that others depend on come first). The list of
 groups, the order and the PLAN revision vector are kept in the collection status file.
 
-The last step of phase P is the **todo list in the sidebar** (`todowrite`), and only the
-collection's primary orchestrator keeps it: with two or more groups, an item is created per group;
-with one group, per task in topological order. This is a session mirror, not the source of truth:
-the truth is the collection status file, and the list is rebuilt from it after compaction.
+The last step of phase P is recording the schedule in the **collection status file**, and that
+file is the **only progress mirror**: there is no separate todo or sidebar mirror, since the host
+may not provide a todo tool (V2 does not), and a second mirror only creates divergence. The primary
+orchestrator updates the file in the same turn as the event, reconciles against it before
+dispatching, and restores the state from it after compaction — never from memory. The groups and
+tasks with their statuses live in the status-file tables.
 
 If the result is a **single** group, that is not a failure but a **degradation to one lane**: no
 isolation is needed (see below). The current branch's existing commits stay in place.
@@ -261,16 +263,16 @@ precedence.
 | The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md:10-33` |
 | Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md:35-45` |
 | P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `planner`, the revision vector, lane allocation only after the schedule is bound; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md:51-82` |
-| P: the sidebar todo list (an item per group or per task), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md:83-105` |
-| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md:109-155` |
-| C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md:159-218` |
-| A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `opencode/pdca-collection/SKILL.md:222-233` |
-| The lane: task branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `opencode/pdca-collection/SKILL.md:237-282` |
-| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md:284-304` |
-| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md:306-336` |
-| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md:338-393` |
-| Parameters: cap = 4, the worktree directory, the merge right, the todo | `opencode/pdca-collection/SKILL.md:402-413` |
-| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md:439-447` |
+| P: the status file as the only progress mirror (per-group and per-task tables), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md:83-93` |
+| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md:103-149` |
+| C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md:153-212` |
+| A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `opencode/pdca-collection/SKILL.md:216-227` |
+| The lane: task branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `opencode/pdca-collection/SKILL.md:231-276` |
+| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md:278-298` |
+| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md:300-330` |
+| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md:332-387` |
+| Parameters: cap = 4, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md:390-401` |
+| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md:432-440` |
 | The role tiers (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
-| The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:960-994,120-146,554-616,49-91` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md:1093-1127,118-144,649-711,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
+| The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:941-975,119-141,535-597,49-91` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md:1074-1108,117-139,630-692,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
 | The contract texts are checked by tests, and the scenario matrix is marked as static (not proof of behaviour); the host artifacts (the `pdca-orchestrator` prompt runner, the profiles, `AGENTS.md`) are outside this repository | `opencode/pdca-collection/tests/test_plan_barrier.py` (including `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

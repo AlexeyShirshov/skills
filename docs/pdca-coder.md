@@ -222,7 +222,7 @@ configuration repository.
 | Only a cheap-tier primary drives the cycle (by the profile's effective tier) | `:52-57`, `:99-103` |
 | The role table, the fallback to `explore`/`general`; an unavailable role is a resource blocker | `:64-71`, `:86-90` |
 | The project overlay and its boundaries (it does not cancel the gates or the state machine) | `:38-47` |
-| State: the status file is the source of truth, the todo is a session mirror | `:125-132` |
+| State: the status file is the source of truth and the only progress mirror | `:126-130` |
 | The three counters `N`, `r`, `n/3` | `:134-145` |
 | Gates 1–4 (PLAN → DO → CHECK → ACT) | `:190-229` |
 | The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `:179-188`, `:1181-1191` |

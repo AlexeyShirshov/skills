@@ -2370,20 +2370,22 @@ class CollectionContractSemanticsTest(unittest.TestCase):
             r"в режиме одной группы ветки/worktree группы и задач не создаются",
         )
 
-    # --- sidebar todo mirrors groups, or tasks when single ----------------
+    # --- the status file is the only progress mirror ----------------------
 
-    def test_sidebar_todo_lists_groups_or_all_tasks_when_single(self):
+    def test_progress_mirror_is_the_status_file_only(self):
         p = self._skill_plain("### P —", "### D —")
-        self.assertRegex(p, re.compile(r"туду|todo", re.I))
-        # multi-group: one sidebar item per group
-        self.assertRegex(p, re.compile(r"по одному пункту на группу", re.I))
-        # single group (could not split): one item per task, no group item
-        self.assertRegex(
-            p, re.compile(r"одн\w+ группа.*по одному пункту на каждую задачу", re.I)
-        )
-        self.assertRegex(p, re.compile(r"пункта-«группы».*нет", re.I))
-        # parallel lanes may hold several in_progress items at once
-        self.assertRegex(p, re.compile(r"параллельные лейны дают.*in_progress", re.I))
+        # no separate sidebar todo: the host may not provide a todo tool
+        self.assertIn("Отдельного туду в сайдбаре нет", p)
+        self.assertIn("хост может не давать todo-инструмента", p)
+        self.assertIn("второе зеркало только порождает расхождение", p)
+        # the collection status file is updated in the same turn and reconciled
+        self.assertIn("в том же такте, что и событие", p)
+        self.assertIn("Перед диспетчеризацией сверяйся с файлом статуса", p)
+        self.assertIn("после компакции состояние восстанавливается из него", p)
+        # groups and tasks live in the status file tables, not a sidebar list
+        status = self._skill_plain("## Статус коллекции", "## Отчёт")
+        self.assertIn("таблицу групп", status)
+        self.assertIn("таблицу задач", status)
 
     # --- merge policy -----------------------------------------------------
 

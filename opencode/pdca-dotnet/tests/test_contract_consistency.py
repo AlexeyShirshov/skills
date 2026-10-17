@@ -87,10 +87,10 @@ class ContractConsistencyTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.skill_raw = read(SKILL_PATH)
         cls.skill = norm(cls.skill_raw)
-        # The counter block is the State machine intro before the Phase todo tracker.
-        cls.counters = norm(between(cls.skill_raw, "## State machine", "### Phase todo tracker"))
-        cls.todo_tracker = norm(
-            between(cls.skill_raw, "### Phase todo tracker", "Transition gates:")
+        # The counter block is the State machine intro before the progress mirror.
+        cls.counters = norm(between(cls.skill_raw, "## State machine", "### Phase progress mirror"))
+        cls.mirror = norm(
+            between(cls.skill_raw, "### Phase progress mirror", "Transition gates:")
         )
         cls.status_file = norm(
             between(cls.skill_raw, "### Cycle status file", "### Message for the next session")
@@ -192,29 +192,37 @@ class ContractConsistencyTest(unittest.TestCase):
         )
         self.assertIn("not superseded, no mapping", self.skill)
 
-    # --- exactly one active aggregate phase todo -------------------------
+    # --- the status file is the only progress mirror ----------------------
 
-    def test_todo_exactly_one_active_phase_item(self):
-        self.assertIn("exactly one in_progress", self.todo_tracker)
-        self.assertIn("single aggregate D:", self.todo_tracker)
+    def test_progress_mirror_is_status_file_only(self):
+        self.assertIn("Progress lives only in the cycle status file", self.mirror)
+        self.assertIn("no separate todo or sidebar mirror", self.mirror)
+        self.assertIn("a second mirror only creates divergence", self.mirror)
 
     def test_parallel_units_tracked_in_status_file(self):
-        self.assertIn("not per unit/stream — those live in the status file", self.todo_tracker)
+        self.assertIn("DO units/streams table", self.status_file)
+        self.assertIn("no separate todo or sidebar mirror", self.mirror)
 
     def test_aggregate_d_closes_on_gate2(self):
-        self.assertIn("aggregate D: closes only when all units and DO streams satisfy gate 2",
-                      self.todo_tracker)
+        self.assertIn(
+            "aggregate D: closes by that same gate-2 definition", self.status_file
+        )
+        self.assertIn(
+            "every active non-superseded unit done and every DO stream closed/verified",
+            self.status_file,
+        )
 
     # --- gate 1 transition + red-flag section (fix round 1) --------------
 
     def test_gate1_activates_single_aggregate_d_not_first_d(self):
-        # The gate-1 "When starting DO" transition must start the one aggregate
-        # `D:` (units tracked in the status file), not "the first `D:`".
-        self.assertIn("single D:→in_progress", self.gate1)
-        self.assertIn("P:→completed", self.gate1)
+        # The gate-1 "When starting DO" transition records the one aggregate
+        # `D:` in the status file (units tracked there), not "the first `D:`".
+        self.assertIn("phase transition in the status file", self.gate1)
+        self.assertIn("single D: in progress", self.gate1)
+        self.assertIn("P: closed", self.gate1)
         self.assertNotIn("the first D:", self.gate1)
         self.assertIn(
-            "not per unit/stream — those live in the status file", self.todo_tracker
+            "Progress lives only in the cycle status file", self.mirror
         )
 
     def test_redflag_attempt_scoped_to_same_revision_not_global(self):
@@ -681,7 +689,7 @@ class ApprovalGateAndFallbackGuardTest(unittest.TestCase):
         cls.skill = norm(cls.skill_raw)
         cls.gate1 = norm(between(cls.skill_raw, "1. **PLAN → DO**", "2. **DO → CHECK**"))
         cls.state_machine = norm(
-            between(cls.skill_raw, "## State machine", "### Phase todo tracker")
+            between(cls.skill_raw, "## State machine", "### Phase progress mirror")
         )
         cls.autonomous = norm(
             between(cls.skill_raw, "## Autonomous mode", "## Red flags")
@@ -973,7 +981,7 @@ class FinalFixGuardTest(unittest.TestCase):
 
     def test_aggregate_d_completion_derives_single_definition(self):
         self.assertIn(
-            "aggregate D: todo closes by that same gate-2 definition", self.unit_states
+            "aggregate D: closes by that same gate-2 definition", self.unit_states
         )
 
     # --- F6: durable state + defect history -------------------------------

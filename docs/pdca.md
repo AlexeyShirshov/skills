@@ -59,9 +59,9 @@ host binds specific agents and models; the skill names only roles.
 
 A few rules keep the table working. **The orchestrator is a dispatcher, not a reader and not a
 decision maker**: it dispatches the roles to subagents and passes their reports to one another, but it
-does not write the plan, read files or run commands; the exception is the task list (`todowrite`) as
-orchestration. **PLAN always belongs to the planner**: both the initial plan and a revision are
-formulated by `pdca-planner`. **Only the executor may write and run**, including the status file.
+does not write the plan, read files or run commands. **PLAN always belongs to the planner**: both
+the initial plan and a revision are formulated by `pdca-planner`. **Only the executor may write
+and run**, including the status file.
 **The checker is independent of the author**: it judges by the aggregated report with fresh runs and
 facts from `scout`, but it may also **open the cycle's evidence artifacts directly** — the status
 file and the manifest with their pointers (scoped `read`), never the product itself. Hence the
@@ -164,8 +164,9 @@ STOP.
 
 **Memory and evidence.** The **cycle status file** is the source of truth on the plan and progress.
 It lives on disk, survives compaction and a new session, and the executor updates it on every
-event. The **todo list** in the sidebar is only a session mirror that is lost in a new session; it
-is never the source of truth. After compaction the state is restored from the status file (through
+event. It is the **only** progress mirror: there is no separate todo or sidebar mirror, so a host
+that provides no todo tool (V2 does) loses nothing, and a second mirror cannot diverge from it.
+After compaction the state is restored from the status file (through
 `scout`), not from memory. The cycle closes only on **fresh evidence** — an exit code, numbers, a
 log path, `file:line` — and never on an assertion, including subagent reports. Marker words like
 "should work", "probably" are a signal to schedule a re-run: **a report ≠ a result**.
@@ -262,15 +263,15 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 | Roles, tiers, fallback; an unavailable role is a resource blocker | `opencode/pdca/SKILL.md:38-88` |
 | `pdca-orchestrator` is a cheap dispatcher, not a fifth skill (the agent prompt lives in the host config and is not shipped here) | `opencode/pdca/SKILL.md:48-52,63-71` |
 | CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `opencode/pdca/SKILL.md:22-28,59`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
-| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md:89-118` |
-| The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md:119-146` |
-| The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md:133-145` |
-| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:186-201,266-275` |
-| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:203-244` |
-| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:245-303` |
-| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:304-347` |
-| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:350-374` |
-| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:366-373` |
-| The status file, the todo mirror, evidence, recovery | `opencode/pdca/SKILL.md:146-184,392-415,416-432,434-460` |
-| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:462-517` |
-| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:518-542` |
+| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md:89-117` |
+| The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md:118-142` |
+| The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md:129-141` |
+| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:161-176,243-252` |
+| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:178-221` |
+| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:222-280` |
+| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:281-324` |
+| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:327-351` |
+| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:343-350` |
+| The status file as the only progress mirror, evidence, recovery | `opencode/pdca/SKILL.md:143-160,369-392,393-410,411-438` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:439-494` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:495-519` |

@@ -92,10 +92,12 @@ DAG и группы.** `pdca-orchestrator` проводит собственну
 внутри группы задачи упорядочены **топологически** (сначала те, от которых зависят
 остальные). Список групп, порядок и вектор ревизий PLAN хранятся в файле статуса коллекции.
 
-Последний шаг фазы P — **туду-список в сайдбаре** (`todowrite`), и ведёт его только
-primary-оркестратор коллекции: при двух и более группах пункт заводится на группу, при
-одной — на каждую её задачу в топологическом порядке. Это сессионное зеркало, а не источник
-истины: истина — файл статуса коллекции, из него список пересобирается после компакции.
+Последний шаг фазы P — запись расписания в **файл статуса коллекции**, и этот файл —
+**единственное зеркало прогресса**: отдельного туду/сайдбар-зеркала нет, потому что хост может
+не давать todo-инструмента (V2 его не даёт), а второе зеркало только порождает расхождение.
+Primary-оркестратор обновляет файл в том же такте, что и событие, сверяется с ним перед
+диспетчеризацией и восстанавливает из него состояние после компакции — не из памяти. Группы и
+задачи с их статусами живут в таблицах файла статуса.
 
 Если группа получилась **одна** — это не сбой, а **деградация к одному лейну**: никакой
 изоляции не нужно (см. ниже). Уже существующие коммиты текущей ветки при этом остаются на
@@ -263,16 +265,16 @@ CHECK — перезапускаются все обязательные гей�
 | Роль верхнего уровня и стек-нейтральность; вариант цикла выбирается на задачу; собственный PLAN останавливается на границе PLAN→DO и продолжается в лейне; primary не правит файлы | `opencode/pdca-collection/SKILL.md:10-33` |
 | Автокоммит только по проектному оверлею или явному запросу; `push` никогда; режим одной группы | `opencode/pdca-collection/SKILL.md:35-45` |
 | P: собственный PLAN каждой задачи до DAG, ALL-barrier, gap без `ready`-placeholder, группы у `planner`, вектор ревизий, аллокация лейнов только после привязки расписания; повторный заход после терминального `incomplete`/STOP требует доказательства или нового оракула | `opencode/pdca-collection/SKILL.md:51-82` |
-| P: туду-список в сайдбаре (пункт на группу или на задачу), одна группа → один лейн, пустой вход | `opencode/pdca-collection/SKILL.md:83-105` |
-| D: worktree и ветки, cap, привязка расписания, барьер merge, `done → merged`, `#<n>` в сообщении merge, `incomplete` не мержится, конфликт/abort/эскалация; пять статусов группы, `skipped` — примечание интеграции, `blocked` — не статус | `opencode/pdca-collection/SKILL.md:109-155` |
-| C: штатный CHECK в два такта, обязательные отчёты и review-линзы, полная проверка после интеграции всех выбранных `done`-групп, PASS вместе с `incomplete`, корректирующая задача, re-gather, базовые `r`/`n`, STOP и `unverified`; механизм `incomplete` задачи в лейне со STOP корректирующей задачи не смешивается | `opencode/pdca-collection/SKILL.md:159-218` |
-| A: завершение только по PASS, состав отчёта, cleanup только `done`/`merged`, сохранение `incomplete`-результатов и статус/evidence-путей, STOP | `opencode/pdca-collection/SKILL.md:222-233` |
-| Лейн: ветки задач от tip, продолжение сохранённого PLAN с DO, остановка группы, сохранение коммитов/patch, другие группы продолжают, `blocked` не статус группы | `opencode/pdca-collection/SKILL.md:237-282` |
-| Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `opencode/pdca-collection/SKILL.md:284-304` |
-| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `opencode/pdca-collection/SKILL.md:306-336` |
-| Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `opencode/pdca-collection/SKILL.md:338-393` |
-| Параметры: cap = 4, worktree-каталог, merge-право, туду | `opencode/pdca-collection/SKILL.md:402-413` |
-| Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md:439-447` |
+| P: файл статуса как единственное зеркало прогресса (таблицы групп и задач), одна группа → один лейн, пустой вход | `opencode/pdca-collection/SKILL.md:83-93` |
+| D: worktree и ветки, cap, привязка расписания, барьер merge, `done → merged`, `#<n>` в сообщении merge, `incomplete` не мержится, конфликт/abort/эскалация; пять статусов группы, `skipped` — примечание интеграции, `blocked` — не статус | `opencode/pdca-collection/SKILL.md:103-149` |
+| C: штатный CHECK в два такта, обязательные отчёты и review-линзы, полная проверка после интеграции всех выбранных `done`-групп, PASS вместе с `incomplete`, корректирующая задача, re-gather, базовые `r`/`n`, STOP и `unverified`; механизм `incomplete` задачи в лейне со STOP корректирующей задачи не смешивается | `opencode/pdca-collection/SKILL.md:153-212` |
+| A: завершение только по PASS, состав отчёта, cleanup только `done`/`merged`, сохранение `incomplete`-результатов и статус/evidence-путей, STOP | `opencode/pdca-collection/SKILL.md:216-227` |
+| Лейн: ветки задач от tip, продолжение сохранённого PLAN с DO, остановка группы, сохранение коммитов/patch, другие группы продолжают, `blocked` не статус группы | `opencode/pdca-collection/SKILL.md:231-276` |
+| Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `opencode/pdca-collection/SKILL.md:278-298` |
+| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `opencode/pdca-collection/SKILL.md:300-330` |
+| Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `opencode/pdca-collection/SKILL.md:332-387` |
+| Параметры: cap = 4, worktree-каталог, merge-право | `opencode/pdca-collection/SKILL.md:390-401` |
+| Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md:432-440` |
 | Тиры ролей (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
-| База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:960-994,120-146,554-616,49-91` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md:1093-1127,118-144,649-711,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
+| База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:941-975,119-141,535-597,49-91` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md:1074-1108,117-139,630-692,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
 | Тексты контракта проверяются тестами, а сценарная матрица помечена как статическая (не доказательство поведения); хостовые артефакты (промпт-раннер `pdca-orchestrator`, профили, `AGENTS.md`) — вне этого репозитория | `opencode/pdca-collection/tests/test_plan_barrier.py` (в т.ч. `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |
