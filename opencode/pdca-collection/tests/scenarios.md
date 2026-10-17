@@ -18,6 +18,13 @@
 моменту до Task 2, а не к текущему состоянию.) Поведенческий разбор этой матрицы — read-only
 сэмплы `baseline-*`/`after-*` по рубрике (см. ниже); они тоже симуляция, а не живой прогон.
 
+Git-механика (`SKILL.md` §«Git-модель») проверяется отдельным детерминированным bash-скриптом —
+без сети, на временных репозиториях:
+`bash opencode/pdca-collection/tests/git-model-sim.sh` (кейсы: именование ref-ов (сиблинги,
+не вложенность), цепочка веток задач + ff группы + `merge --no-ff`, merge-конфликт → обнаружен,
+single-group — коммиты в текущий бранч без веток и merge, `incomplete`-группа — в `main` не влита,
+её ветка/tip и коммиты сохранены как evidence; exit 0 = все кейсы зелёные).
+
 Хостовые артефакты (`config/agents/pdca-orchestrator.md` — промпт общего RUNNER,
 `config/profiles/*.jsonc`, `config/AGENTS.md`) живут в репозитории `opencode-config`; тесты
 обращаются к ним только при `OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе эти проверки

@@ -86,6 +86,14 @@ OPENCODE_CONFIG_REPO=/path/to/opencode-config \
   python3 -m unittest discover -s opencode/pdca-dotnet/tests -p 'test_*.py'
 ```
 
+`pdca-collection` additionally ships a dependency-free bash check of its git model (branch
+chain, `--no-ff` merge of completed groups, conflict detection, single-group isolation, and an
+incomplete group preserved but never merged) on throwaway temp repositories:
+
+```sh
+bash opencode/pdca-collection/tests/git-model-sim.sh
+```
+
 ## Plugins
 
 Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per package.

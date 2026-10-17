@@ -89,6 +89,7 @@ IN_SCOPE_TEXT_FILES = [
     SKILL_DIR / "assets/diagram/gen_collection.py",
     SKILL_DIR / "tests/test_verification_recovery.py",
     SKILL_DIR / "tests/scenarios.md",
+    SKILL_DIR / "tests/git-model-sim.sh",
     SKILL_DIR / "SKILL.md",
     (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None,
     SKILL_DIR / "assets/diagram/collection-hand.svg",
