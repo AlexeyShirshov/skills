@@ -253,7 +253,7 @@ not carried through.
 ## Sources
 
 The "claim → source" map. The article's normative claims were reconciled with the repository's
-current files (commit `69685b8`); where they disagree, `opencode/pdca-collection/SKILL.md` takes
+current files (commit `a58f338`); where they disagree, `opencode/pdca-collection/SKILL.md` takes
 precedence.
 
 | Claim in the article | Source |

@@ -208,7 +208,7 @@ whole family is in the guide [`docs/pdca-guide.md`](pdca-guide.md).
 ## Sources
 
 The "claim → source" map. The article's normative claims were reconciled with the current
-`opencode/pdca-coder/SKILL.md` (commit `69685b8`); where they disagree, the skill file takes
+`opencode/pdca-coder/SKILL.md` (commit `a58f338`); where they disagree, the skill file takes
 precedence. The paths are given from this repository; the host artifacts (`config/agents/*.md`,
 `config/profiles/*.jsonc`, `config/AGENTS.md`) are not part of it and live in a separate
 configuration repository.

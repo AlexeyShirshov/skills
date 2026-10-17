@@ -253,7 +253,7 @@ after an escalation as well.
 
 ## Sources
 
-The article's normative claims were reconciled with the repository at commit `69685b8`; where the
+The article's normative claims were reconciled with the repository at commit `a58f338`; where the
 article and the skill disagree, the skill file takes precedence. The "claim → source" map:
 
 | Claim | Source |
