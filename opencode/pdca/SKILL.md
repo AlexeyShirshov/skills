@@ -27,11 +27,11 @@ status/evidence/manifest files — never the product artefact) to reconcile the 
 produces
 a verdict.
 
-**Two paths, one contract.** In **normal mode you drive the cycle yourself, invoking subagents
-via `Task`** — PLAN and the CHECK → PLAN / DO → PLAN loop-back → `pdca-planner`; execution →
+**Two paths, one contract.** In **normal mode you drive the cycle yourself, dispatching
+subagents** — PLAN and the CHECK → PLAN / DO → PLAN loop-back → `pdca-planner`; execution →
 `pdca-executor`; verdict → `pdca-check`; escalation → `pdca-escalate`; facts → `scout`. In
 **autonomous mode you do not drive the cycle yourself:** dispatch the whole cycle to the cheap
-`pdca-orchestrator` subagent via `Task` (a cycle brief in, a compact summary out) and relay it
+`pdca-orchestrator` subagent (a cycle brief in, a compact summary out) and relay it
 (§Autonomous mode). Either way **only a cheap-tier primary drives the cycle or dispatches
 `pdca-orchestrator`** (§Host requirements); **the PLAN decision always belongs to `pdca-planner`**.
 
@@ -46,19 +46,19 @@ holds. No model id is ever written into a role, the skill or any role prompt —
 binds ids.
 
 **Autonomous driver.** In autonomous mode the cycle driver is the cheap `pdca-orchestrator`
-subagent — a **dispatcher** (`task` allowlist; `edit`/`bash`: deny, shared with the other PDCA
+subagent — a **dispatcher** (subagent allowlist; `edit`/`bash`: deny, shared with the other PDCA
 skills). The
-primary only dispatches it and relays its summary, so it needs `Task` access to `pdca-orchestrator`.
+primary only dispatches it and relays its summary, so it needs subagent access to `pdca-orchestrator`.
 A medium/strong primary still neither drives the cycle nor dispatches `pdca-orchestrator`.
 
 | Role | Agent | Required | Fallback if missing |
 |---|---|---|---|
 | GATHER (facts) | `scout` | read-only, cheap, reused unchanged | resource blocker |
-| PLAN (decisions) | `pdca-planner` | read-only, no `Task`, default-deny | resource blocker |
+| PLAN (decisions) | `pdca-planner` | read-only, no delegation, default-deny | resource blocker |
 | DO (hands) | `pdca-executor` | `edit`/`bash`/`read` allow | resource blocker |
-| CHECK (verdict) | `pdca-check` | read-only (brief + cycle evidence artifacts), no `Task`, default-deny | resource blocker |
+| CHECK (verdict) | `pdca-check` | read-only (brief + cycle evidence artifacts), no delegation, default-deny | resource blocker |
 | ESCALATE | `pdca-escalate` | read-only, facts via `scout` | resource blocker |
-| RUNNER | `pdca-orchestrator` | cheap dispatcher, `task`-allowlist (shared) | flat cheap primary + `Notice:` |
+| RUNNER | `pdca-orchestrator` | cheap dispatcher, subagent allowlist (shared) | flat cheap primary + `Notice:` |
 
 Ready-made definitions: this skill's `assets/agents/` (the four plan/do/check/escalate role
 files plus the gatherer `scout`, which is **not** specialized per task and stays the same for every
@@ -82,7 +82,7 @@ permissions.
 A required-but-unavailable role is a **resource blocker** (normal: report to the user;
 autonomous: `Notice:` in the status log + recorded summary), not a silent run without the
 role. A host that denies the fallback must **never** bypass the deny. If `pdca-orchestrator` is
-unavailable (agent absent, `subagent_depth` < 2, or `Task` forbidden) in autonomous mode,
+unavailable (agent absent, `subagent_depth` < 2, or delegation forbidden) in autonomous mode,
 fall back to the flat cheap primary (drive the cycle yourself) and log the fallback
 (`Notice:` + durable reason); in normal mode, report to the user.
 
@@ -96,7 +96,7 @@ Decisions (PLAN, return to PLAN) → `pdca-planner`; CHECK verdict → `pdca-che
 **Cheap primary only (§Host requirements).** Only a cheap-tier primary takes this role; a
 medium/strong primary does not drive the cycle. The cheap orchestrator never authors a plan,
 never reads files and never runs a command; it routes facts to `scout` and every edit/command
-to `pdca-executor` via `Task`. Both the initial PLAN and any replan belong to `pdca-planner`.
+to `pdca-executor` via a subagent. Both the initial PLAN and any replan belong to `pdca-planner`.
 
 - **Execute an `pdca-escalate` decision by routing, never by re-deciding.** `pdca-escalate`
   returns a **decision**; the orchestrator carries it out solely by dispatch: a genuinely
@@ -149,10 +149,10 @@ Each todo item starts with a phase prefix `P:` `D:` `C:` `A:`; exactly one is `i
 The sidebar todo is a strict mirror kept in sync by rule, not convenience:
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan,
-   escalation — call `todowrite` in the turn you announce it, before/with the first `Task` of
+   escalation — call `todowrite` in the turn you announce it, before/with the first subagent dispatch of
    the next step; never batched.
 2. **Status first, todo second.** The event is written to the status file by `pdca-executor`
-   first (next `pdca-executor` brief or a short dedicated Task); the todo is then set to
+   first (next `pdca-executor` brief or a short dedicated dispatch); the todo is then set to
    exactly what was recorded — never ahead.
 3. **Granularity.** One item per phase (`P`/`D`/`C`/`A`), exactly one `in_progress`; a **single
    aggregate `D:`** (not per unit — those live in the status file, §Durable status). The
@@ -358,7 +358,7 @@ does not start; without approval nothing is created/edited **except the status f
 clarify, or rewrite the plan (via `pdca-planner`, same file by `pdca-executor`).
 
 **Autonomous mode** is the same contract with no pauses and no questions. The cheap primary
-delegates the single cycle to the cheap `pdca-orchestrator` via `Task`; it drives PLAN → DO
+delegates the single cycle to the cheap `pdca-orchestrator` via a subagent; it drives PLAN → DO
 → CHECK → ACT and returns a compact summary. If `pdca-orchestrator` is unavailable, the cheap
 primary drives the cycle itself (flat primary fallback) and records a `Notice:` plus the
 durable reason (§Host requirements).
@@ -463,7 +463,7 @@ rather than by artefacts.
 
 `pdca-escalate` is the **second tier for hard decisions**, on an expensive model — call it
 sparingly, when a decision is non-obvious or risky and the cheap subagents are not enough. A
-separate Task, a narrow question, facts pre-gathered into a `scout` evidence pack. Triggers
+separate subagent dispatch, a narrow question, facts pre-gathered into a `scout` evidence pack. Triggers
 (any one):
 
 1. A requirement or acceptance criterion is ambiguous and guessing is unacceptable.
@@ -487,7 +487,7 @@ separate Task, a narrow question, facts pre-gathered into a `scout` evidence pac
 
 **A blocker surfaced in DO is not escalated directly**: it is a *provisional candidate* that
 goes to `pdca-planner` first (§State machine, DO → PLAN), and `pdca-planner` adjudicates it.
-`pdca-planner` has no `Task` permission, so it does not call `pdca-escalate` itself: it
+`pdca-planner` has no delegation permission, so it does not call `pdca-escalate` itself: it
 reports the outside-cycle blocker or a persistent low-confidence classification after the
 targeted `scout` gather (trigger 5) to the **orchestrator**, which dispatches `pdca-escalate`.
 
@@ -649,7 +649,7 @@ verdict; each CHECK failure/fix/loop-back with its defect key and applied fix co
 not logs); loop-back to DO / `Replanned` (with the outgoing failed attempt); an
 additive-prerequisite addition or a `superseded→replacement` mapping; escalation and its
 outcome; `Recovered after compaction`; `Notice: …` (autonomous); ACT closed. Written **one
-event at a time** by a short `pdca-executor` Task (or as the last step of one). The todo mirrors
+event at a time** by a short `pdca-executor` dispatch (or as the last step of one). The todo mirrors
 the last log line.
 
 **Unit states** (per `D:` unit): exactly one of `pending | running | blocked | done |

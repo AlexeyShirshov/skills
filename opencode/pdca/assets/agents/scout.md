@@ -44,7 +44,7 @@ pointers — the caller makes the decision.
 
 ## Rules
 
-- **Read-only.** No edits (`edit`/`write` denied), no subagents (`task` denied); of `bash` only
+- **Read-only.** No edits (`edit`/`write` denied), no subagents (delegation denied); of `bash` only
   literal read-only readers (`ls`/`cat`/`head`/`tail`/`wc`/`stat`) and fixed git literals
   (`git status`/`git diff --stat`/`git diff --name-only`/`git diff --no-color`/
   `git log --oneline -n 20`/`git show`/`git ls-files`) plus their ` -- *` path forms are allowed —

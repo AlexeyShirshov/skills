@@ -18,6 +18,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import sqlite3
 import tempfile
 import unittest
@@ -79,12 +80,81 @@ def frontmatter(path: Path) -> dict:
     return _parse_block(text[3:end])
 
 
-def perm_of(role: str) -> dict:
-    return frontmatter(HOST_DIR / ("%s.md" % role))["permission"]
+def _frontmatter_block(path: Path) -> str:
+    text = read(path)
+    if not text.startswith("---"):
+        raise AssertionError("%s: no frontmatter" % path)
+    end = text.find("\n---", 3)
+    if end < 0:
+        raise AssertionError("%s: unterminated frontmatter" % path)
+    return text[3:end]
 
 
-def allow_keys(mapping: dict) -> set:
-    return {k for k, v in mapping.items() if v == "allow"}
+def permission_rules(path: Path) -> list[dict]:
+    """V2 frontmatter `permissions:` — an ordered list of {action, resource, effect}."""
+    rules: list[dict] = []
+    current: dict | None = None
+    in_list = False
+    for raw in _frontmatter_block(path).splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        stripped = raw.strip()
+        if indent == 0:
+            if stripped == "permission:":
+                raise AssertionError(
+                    "%s: V1 `permission:` frontmatter — migrate to V2 `permissions:`" % path)
+            in_list = stripped == "permissions:"
+            current = None
+            continue
+        if not in_list:
+            continue
+        if stripped.startswith("- "):
+            current = {}
+            rules.append(current)
+            stripped = stripped[2:]
+        if current is None:
+            continue
+        key, sep, value = stripped.partition(":")
+        if not sep:
+            raise AssertionError("%s: malformed permission line %r" % (path, raw))
+        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
+    if not rules:
+        raise AssertionError("%s: no V2 `permissions:` rules" % path)
+    return rules
+
+
+BASE_POLICY = (
+    {"action": "*", "resource": "*", "effect": "allow"},
+    {"action": "read", "resource": "*.env", "effect": "ask"},
+    {"action": "read", "resource": "*.env.*", "effect": "ask"},
+    {"action": "read", "resource": "*.env.example", "effect": "allow"},
+)
+
+
+def _matches(pattern: str, value: str) -> bool:
+    regex = "".join(
+        ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
+    flags = re.IGNORECASE if os.name == "nt" else 0
+    return re.fullmatch(regex, value, flags | re.DOTALL) is not None
+
+
+def effective(rules: list[dict], action: str, resource: str) -> str:
+    """Last matching rule wins; no match falls back to `ask`."""
+    effect = "ask"
+    for rule in BASE_POLICY + tuple(rules):
+        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
+            effect = rule["effect"]
+    return effect
+
+
+def allowed_resources(rules: list[dict], action: str) -> set:
+    probes = {rule["resource"] for rule in rules if _matches(rule["action"], action)}
+    return {res for res in probes if effective(rules, action, res) == "allow"}
+
+
+def rules_of(role: str) -> list[dict]:
+    return permission_rules(HOST_DIR / ("%s.md" % role))
 
 
 def load_module():
@@ -120,22 +190,22 @@ def make_db(path: Path) -> None:
 class ReadOnlyRoleBoundaryTest(unittest.TestCase):
     def test_planner_check_runner_do_not_grant_edit_or_write(self):
         for role in ("pdca-planner", "pdca-check", "pdca-orchestrator"):
-            perm = perm_of(role)
+            rules = rules_of(role)
             with self.subTest(role=role):
-                self.assertNotEqual("allow", perm.get("edit"))
-                self.assertNotEqual("allow", perm.get("write"))
+                self.assertNotEqual("allow", effective(rules, "edit", "*"))
+                self.assertFalse([r for r in rules if r["action"] == "write"])
 
     def test_planner_and_check_grant_no_bash(self):
         for role in ("pdca-planner", "pdca-check"):
-            perm = perm_of(role)
+            rules = rules_of(role)
             with self.subTest(role=role):
-                self.assertNotEqual("allow", perm.get("bash"))
-                self.assertNotIn("bash", perm)
+                self.assertNotEqual("allow", effective(rules, "shell", "*"))
+                self.assertEqual(set(), allowed_resources(rules, "shell"))
 
     def test_escalate_bash_is_inspection_only(self):
-        bash = perm_of("pdca-escalate")["bash"]
-        self.assertEqual("deny", bash.get("*"))
-        allowed = allow_keys(bash)
+        rules = rules_of("pdca-escalate")
+        self.assertEqual("deny", effective(rules, "shell", "*"))
+        allowed = allowed_resources(rules, "shell")
         self.assertTrue(allowed)
         for key in allowed:
             stem = key.split()[0].rstrip("*")
@@ -143,17 +213,17 @@ class ReadOnlyRoleBoundaryTest(unittest.TestCase):
                 self.assertIn(stem, INSPECTION_STEMS)
                 self.assertNotIn(stem, FORBIDDEN_COMMAND_STEMS)
 
-    def test_runner_task_excludes_general_and_explore(self):
-        task = perm_of("pdca-orchestrator")["task"]
-        self.assertEqual("deny", task.get("*"))
-        allowed = allow_keys(task)
+    def test_runner_subagent_excludes_general_and_explore(self):
+        rules = rules_of("pdca-orchestrator")
+        self.assertEqual("deny", effective(rules, "subagent", "*"))
+        allowed = allowed_resources(rules, "subagent")
         self.assertNotIn("general", allowed)
         self.assertNotIn("explore", allowed)
 
     def test_executor_grants_edit_and_bash(self):
-        perm = perm_of("pdca-executor")
-        self.assertEqual("allow", perm.get("edit"))
-        self.assertEqual("allow", perm.get("bash"))
+        rules = rules_of("pdca-executor")
+        self.assertEqual("allow", effective(rules, "edit", "*"))
+        self.assertEqual("allow", effective(rules, "shell", "*"))
 
 
 class CostReadNoWriteTest(unittest.TestCase):

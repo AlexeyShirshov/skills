@@ -48,13 +48,37 @@ ORCHESTRATOR = CONFIG_AGENTS / "pdca-orchestrator.md" if CONFIG_AGENTS else None
 LEGACY_ORCHESTRATOR = CONFIG_AGENTS / "lane.md" if CONFIG_AGENTS else None
 # Host-profile paths, relative to the host repo root.
 PROFILES = ["config/profiles/deepseek.jsonc", "config/profiles/gp.jsonc"]
-# Required permission subtrees that must mirror config/agents <-> assets/agents.
+# Permission probes that must resolve identically in config/agents <-> assets/agents.
+# V2 has no per-tool subtrees: a rule is {action, resource, effect} and the whole
+# ordered list resolves last-match-wins, so probes assert the effective result.
 MIRROR = {
-    "planner": ["*"], "check": ["*"], "coder": ["edit", "bash"],
-    "escalate": ["*", "read", "task", "bash", "skill"],
-    "security-auditor": ["*", "read", "task", "bash", "skill"],
+    "planner": [("*", "*")],
+    "check": [("*", "*")],
+    "coder": [("edit", "*"), ("shell", "*")],
+    "escalate": [
+        ("*", "*"),
+        ("read", "*"), ("read", "secrets.env"),
+        ("subagent", "*"), ("subagent", "scout"), ("subagent", "general"),
+        ("shell", "*"), ("shell", "git status"), ("shell", "git push"),
+        ("skill", "*"), ("skill", "brainstorming"),
+    ],
+    "security-auditor": [
+        ("*", "*"),
+        ("read", "*"), ("read", "secrets.env"),
+        ("subagent", "*"), ("subagent", "scout"), ("subagent", "general"),
+        ("shell", "*"), ("shell", "git status"), ("shell", "git push"),
+        ("skill", "*"), ("skill", "dotnet-security-owasp"),
+        ("skill", "dotnet-cryptography"), ("skill", "other"),
+    ],
 }
 SEC_SKILLS = {"dotnet-security-owasp", "dotnet-secrets-management", "dotnet-cryptography"}
+# Whole-action allowlists that must stay byte-for-byte equivalent (as resolved
+# resource sets) between the host agent and the portable asset.
+MIRROR_ALLOW = {
+    "coder": ["edit", "shell"],
+    "escalate": ["read", "subagent", "shell", "skill", "question"],
+    "security-auditor": ["read", "subagent", "shell", "skill", "question"],
+}
 CRITICAL_TOKENS = [
     "Execute an escalate decision by routing, never by re-deciding",
     "cannot waive the gates, the no-4th rule",
@@ -102,12 +126,119 @@ def frontmatter(path: Path) -> dict:
     return _parse_block(text[3:text.find("\n---", 3)])
 
 
-def permission(path: Path) -> dict:
-    return frontmatter(path).get("permission", {})
+def _frontmatter_block(path: Path) -> str:
+    text = read(path)
+    assert text.startswith("---"), f"{path}: no frontmatter"
+    end = text.find("\n---", 3)
+    assert end != -1, f"{path}: unterminated frontmatter"
+    return text[3:end]
 
 
-def allow_keys(node: dict) -> set:
-    return {k for k, v in node.items() if v == "allow"}
+def permission_rules(path: Path) -> list[dict]:
+    """V2 frontmatter `permissions:` — an ordered list of {action, resource, effect}."""
+    rules: list[dict] = []
+    current: dict | None = None
+    in_list = False
+    for raw in _frontmatter_block(path).splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        stripped = raw.strip()
+        if indent == 0:
+            if stripped == "permission:":
+                raise AssertionError(
+                    f"{path}: V1 `permission:` frontmatter — migrate to V2 `permissions:`")
+            in_list = stripped == "permissions:"
+            current = None
+            continue
+        if not in_list:
+            continue
+        if stripped.startswith("- "):
+            current = {}
+            rules.append(current)
+            stripped = stripped[2:]
+        if current is None:
+            continue
+        key, sep, value = stripped.partition(":")
+        assert sep, f"{path}: malformed permission line {raw!r}"
+        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
+    if not rules:
+        raise AssertionError(f"{path}: no V2 `permissions:` rules")
+    for rule in rules:
+        missing = {"action", "resource", "effect"} - set(rule)
+        assert not missing, f"{path}: rule missing {sorted(missing)}: {rule!r}"
+        assert rule["effect"] in {"allow", "deny", "ask"}, f"{path}: bad effect {rule!r}"
+    return rules
+
+
+# The V2 base policy every agent starts with; agent rules are appended after it.
+BASE_POLICY = (
+    {"action": "*", "resource": "*", "effect": "allow"},
+    {"action": "read", "resource": "*.env", "effect": "ask"},
+    {"action": "read", "resource": "*.env.*", "effect": "ask"},
+    {"action": "read", "resource": "*.env.example", "effect": "allow"},
+)
+
+
+def _matches(pattern: str, value: str) -> bool:
+    """V2 whole-value wildcard: `*` = any run, `?` = one character."""
+    regex = "".join(
+        ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
+    flags = re.IGNORECASE if os.name == "nt" else 0
+    return re.fullmatch(regex, value, flags | re.DOTALL) is not None
+
+
+def effective(rules: list[dict], action: str, resource: str) -> str:
+    """Last matching rule wins; no match falls back to `ask`."""
+    effect = "ask"
+    for rule in BASE_POLICY + tuple(rules):
+        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
+            effect = rule["effect"]
+    return effect
+
+
+def allowed_resources(rules: list[dict], action: str) -> set:
+    """Resources the agent's own rules allow for `action` after last-match resolution."""
+    probes = {rule["resource"] for rule in rules if _matches(rule["action"], action)}
+    return {res for res in probes if effective(rules, action, res) == "allow"}
+
+
+# Published skill assets must stay V1-compatible: V1 knows only `permission:`, while
+# V2 translates legacy frontmatter automatically. Host config is native V2.
+V1_ACTION = {"subagent": "task", "shell": "bash"}
+
+
+def legacy_permission(path: Path) -> dict:
+    data = frontmatter(path)
+    node = data.get("permission")
+    if not isinstance(node, dict) or not node:
+        raise AssertionError(f"{path}: expected a non-empty V1 `permission:` map")
+    return node
+
+
+def legacy_effective(perm: dict, action: str, resource: str) -> str:
+    """V1 semantics: action key → effect or resource map (last match wins)."""
+    node = perm.get(V1_ACTION.get(action, action))
+    if node is None:
+        node = perm.get("*")
+    if node is None:
+        return "allow"  # V1 default: the tool is not restricted
+    if isinstance(node, str):
+        return node
+    effect = "ask"
+    for pattern, value in node.items():
+        if _matches(pattern, resource):
+            effect = value
+    return effect
+
+
+def legacy_allowed(perm: dict, action: str) -> set:
+    node = perm.get(V1_ACTION.get(action, action))
+    if isinstance(node, str):
+        return {"*"} if node == "allow" else set()
+    if not isinstance(node, dict):
+        return set()
+    return {res for res in node if legacy_effective(perm, action, res) == "allow"}
 
 
 def _agent_block(text: str) -> str:
@@ -122,26 +253,26 @@ class RolePermissionTest(unittest.TestCase):
     """Cheap orchestrator canonical allowlist; expensive roles stay narrow and mirror the assets."""
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_cheap_orchestrator_canonical_task_allowlist(self):
+    def test_cheap_orchestrator_canonical_subagent_allowlist(self):
         self.assertTrue(ORCHESTRATOR.exists(), "canonical pdca-orchestrator agent missing")
         self.assertRegex(read(ORCHESTRATOR), r"(?m)^# tier: cheap\s*$")
-        perm = permission(ORCHESTRATOR)
-        self.assertEqual(perm["task"]["*"], "deny")
+        rules = permission_rules(ORCHESTRATOR)
+        self.assertEqual(effective(rules, "subagent", "*"), "deny")
         self.assertEqual(
-            allow_keys(perm["task"]),
+            allowed_resources(rules, "subagent"),
             {"planner", "coder", "check", "escalate", "scout", "security-auditor",
              "docfx-specialist", "dotnet-*",
              "pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate"},
         )
-        self.assertEqual(perm.get("edit"), "deny")
-        self.assertEqual(perm.get("bash"), "deny")
+        self.assertEqual(effective(rules, "edit", "*"), "deny")
+        self.assertEqual(effective(rules, "shell", "*"), "deny")
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_orchestrator_description_covers_single_autonomous_cycle_no_single_tasks_ban(self):
         # The description advertises BOTH inputs -- a pdca-collection group *or* a
         # single autonomous pdca-dotnet cycle -- and must not ban single tasks. The
-        # canonical task allowlist and edit/bash: deny are pinned by
-        # test_cheap_orchestrator_canonical_task_allowlist above.
+        # canonical subagent allowlist and edit/shell: deny are pinned by
+        # test_cheap_orchestrator_canonical_subagent_allowlist above.
         desc = norm(frontmatter(ORCHESTRATOR).get("description", "")).lower()
         self.assertTrue(desc, "pdca-orchestrator description missing")
         self.assertIn("single autonomous", desc)
@@ -168,66 +299,100 @@ class RolePermissionTest(unittest.TestCase):
                 self.assertNotIn('"lane"', agent)
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_architect_task_allowlist_is_default_deny_scout_and_coder_only(self):
-        perm = permission(CONFIG_AGENTS / "architect.md")
-        self.assertEqual(perm["*"], "deny")
-        self.assertEqual(perm["task"]["*"], "deny")
-        allowed = allow_keys(perm["task"])
+    def test_architect_subagent_allowlist_is_default_deny_scout_and_coder_only(self):
+        rules = permission_rules(CONFIG_AGENTS / "architect.md")
+        self.assertEqual(effective(rules, "*", "*"), "deny")
+        self.assertEqual(effective(rules, "subagent", "*"), "deny")
+        allowed = allowed_resources(rules, "subagent")
         self.assertEqual(allowed, {"scout", "coder"})
         self.assertFalse({k for k in allowed if k.startswith("dotnet")})
         self.assertNotIn("security-auditor", allowed)
-        for wide in ("read", "bash", "edit"):
-            self.assertNotIn(wide, perm)
+        for wide in ("read", "grep", "glob", "shell", "edit", "webfetch", "websearch",
+                     "context7_query-docs", "execute"):
+            with self.subTest(action=wide):
+                self.assertEqual(effective(rules, wide, "*"), "deny")
+        self.assertEqual(effective(rules, "skill", "*"), "deny")
+        self.assertEqual(effective(rules, "skill", "brainstorming"), "allow")
 
-    def _assert_planner_and_check_have_no_task_permission(self, base: Path) -> None:
+    def test_planner_and_check_have_no_subagent_permission(self):
         for role in ("planner", "check"):
-            with self.subTest(role=role, base=str(base)):
-                perm = permission(base / f"{role}.md")
-                self.assertEqual(perm["*"], "deny")
-                self.assertNotIn("task", perm)
-
-    def test_planner_and_check_have_no_task_permission(self):
-        self._assert_planner_and_check_have_no_task_permission(ASSET_AGENTS)
+            with self.subTest(role=role, base="asset"):
+                perm = legacy_permission(ASSET_AGENTS / f"{role}.md")
+                self.assertEqual(legacy_effective(perm, "*", "*"), "deny")
+                self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
+                self.assertEqual(legacy_allowed(perm, "subagent"), set())
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_planner_and_check_have_no_task_permission_host_config(self):
-        self._assert_planner_and_check_have_no_task_permission(CONFIG_AGENTS)
+    def test_planner_and_check_have_no_subagent_permission_host_config(self):
+        for role in ("planner", "check"):
+            with self.subTest(role=role, base="host"):
+                rules = permission_rules(CONFIG_AGENTS / f"{role}.md")
+                self.assertEqual(effective(rules, "*", "*"), "deny")
+                self.assertEqual(effective(rules, "subagent", "*"), "deny")
+                self.assertEqual(allowed_resources(rules, "subagent"), set())
 
-    def _assert_escalate_task_only_scout(self, base: Path) -> None:
-        with self.subTest(base=str(base)):
-            perm = permission(base / "escalate.md")
-            self.assertEqual(perm["task"]["*"], "deny")
-            self.assertEqual(allow_keys(perm["task"]), {"scout"})
-
-    def test_escalate_task_only_scout(self):
-        self._assert_escalate_task_only_scout(ASSET_AGENTS)
+    def test_escalate_subagent_only_scout(self):
+        perm = legacy_permission(ASSET_AGENTS / "escalate.md")
+        self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
+        self.assertEqual(legacy_allowed(perm, "subagent"), {"scout"})
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_escalate_task_only_scout_host_config(self):
-        self._assert_escalate_task_only_scout(CONFIG_AGENTS)
-
-    def _assert_security_auditor_allows_exactly_three_skills(self, base: Path) -> None:
-        with self.subTest(base=str(base)):
-            perm = permission(base / "security-auditor.md")
-            self.assertEqual(perm["skill"]["*"], "deny")
-            self.assertEqual(allow_keys(perm["skill"]), SEC_SKILLS)
+    def test_escalate_subagent_only_scout_host_config(self):
+        rules = permission_rules(CONFIG_AGENTS / "escalate.md")
+        self.assertEqual(effective(rules, "subagent", "*"), "deny")
+        self.assertEqual(allowed_resources(rules, "subagent"), {"scout"})
 
     def test_security_auditor_allows_exactly_three_skills(self):
-        self._assert_security_auditor_allows_exactly_three_skills(ASSET_AGENTS)
+        perm = legacy_permission(ASSET_AGENTS / "security-auditor.md")
+        self.assertEqual(legacy_effective(perm, "skill", "*"), "deny")
+        self.assertEqual(legacy_allowed(perm, "skill"), SEC_SKILLS)
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_security_auditor_allows_exactly_three_skills_host_config(self):
-        self._assert_security_auditor_allows_exactly_three_skills(CONFIG_AGENTS)
+        rules = permission_rules(CONFIG_AGENTS / "security-auditor.md")
+        self.assertEqual(effective(rules, "skill", "*"), "deny")
+        self.assertEqual(allowed_resources(rules, "skill"), SEC_SKILLS)
+
+    def test_asset_agents_keep_v1_permission_map_for_compat(self):
+        # V1 only understands `permission:`; V2 translates it automatically.
+        # A V2-only `permissions:` list would silently drop every restriction in V1.
+        for path in sorted(ASSET_AGENTS.glob("*.md")):
+            data = frontmatter(path)
+            with self.subTest(path=path.name):
+                self.assertIn("permission", data)
+                self.assertNotIn("permissions", data)
+                self.assertTrue(legacy_permission(path))
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_host_agents_use_v2_permissions_lists(self):
+        # Not every agent declares permissions (many inherit the base policy), but
+        # no host agent may keep the V1 `permission:` map.
+        for path in sorted(CONFIG_AGENTS.glob("*.md")):
+            block = _frontmatter_block(path)
+            with self.subTest(path=path.name):
+                self.assertNotRegex(block, r"(?m)^permission:")
+                if re.search(r"(?m)^permissions:", block):
+                    self.assertTrue(permission_rules(path))
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_required_permissions_mirror_config_and_asset(self):
-        for role, keys in MIRROR.items():
-            cfg = permission(CONFIG_AGENTS / f"{role}.md")
-            asset = permission(ASSET_AGENTS / f"{role}.md")
-            for key in keys:
-                with self.subTest(role=role, key=key):
-                    self.assertIn(key, cfg)
-                    self.assertEqual(cfg[key], asset.get(key))
+        for role, probes in MIRROR.items():
+            cfg = permission_rules(CONFIG_AGENTS / f"{role}.md")
+            asset = legacy_permission(ASSET_AGENTS / f"{role}.md")
+            self.assertNotIn("external_directory", asset,
+                             f"{role}: portable asset must not carry host external_directory")
+            for action, resource in probes:
+                with self.subTest(role=role, action=action, resource=resource):
+                    self.assertEqual(
+                        effective(cfg, action, resource),
+                        legacy_effective(asset, action, resource),
+                    )
+            for action in MIRROR_ALLOW.get(role, []):
+                with self.subTest(role=role, action=action, set="allowlist"):
+                    self.assertEqual(
+                        allowed_resources(cfg, action),
+                        legacy_allowed(asset, action),
+                    )
 
     def _assert_role_tiers_are_tier_comments(self, base: Path) -> None:
         for name, tier in TIERS.items():

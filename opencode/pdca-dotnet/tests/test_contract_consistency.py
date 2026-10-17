@@ -613,7 +613,7 @@ class TwoPathContractTest(unittest.TestCase):
 
     Scoped to the operative SKILL sections (the two-path paragraph, §Autonomous
     mode, §Host requirements).  Rule-presence only: reads Markdown text and never
-    executes a model or the `Task` tool, so it proves the wording, not behavior.
+    executes a model or the subagent tool, so it proves the wording, not behavior.
     """
 
     @classmethod
@@ -635,13 +635,13 @@ class TwoPathContractTest(unittest.TestCase):
 
     def test_skill_names_both_paths_normal_drives_autonomous_dispatches(self):
         # Normal: the primary drives the cycle; autonomous: it dispatches the whole
-        # cycle to pdca-orchestrator via Task (does not drive it itself).
+        # cycle to pdca-orchestrator as a subagent (does not drive it itself).
         self.assertIn("normal mode you drive the cycle yourself", self.two_paths)
         self.assertIn(
             "autonomous mode you do not drive the cycle yourself", self.two_paths
         )
         self.assertIn(
-            "dispatch the whole cycle to the cheap pdca-orchestrator subagent via Task",
+            "dispatch the whole cycle to the cheap pdca-orchestrator subagent",
             self.two_paths,
         )
 
@@ -650,14 +650,14 @@ class TwoPathContractTest(unittest.TestCase):
         self.assertIn("cycle brief", self.autonomous)
         self.assertIn("≤8", self.autonomous)
         self.assertIn("summary", self.autonomous)
-        self.assertIn("Task", self.autonomous)
+        self.assertIn("subagent dispatch", self.autonomous)
 
     def test_flat_primary_fallback_when_orchestrator_unavailable(self):
-        # Agent absent / subagent_depth < 2 / Task forbidden -> flat primary.
+        # Agent absent / subagent_depth < 2 / delegation forbidden -> flat primary.
         self.assertIn("fall back to the flat primary", self.autonomous)
         self.assertIn("subagent_depth", self.autonomous)
-        self.assertIn("Task to pdca-orchestrator fails", self.autonomous)
-        self.assertIn("Task forbidden", self.autonomous)
+        self.assertIn("subagent dispatch to pdca-orchestrator fails", self.autonomous)
+        self.assertIn("delegation forbidden", self.autonomous)
 
     def test_setup_allowlist_includes_pdca_orchestrator(self):
         self.assertIn("pdca-orchestrator (autonomous delegation)", self.host)

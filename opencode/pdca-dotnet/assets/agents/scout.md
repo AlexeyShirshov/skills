@@ -32,7 +32,7 @@ pointers — the caller makes the decision.
 
 ## Rules
 
-- **Read-only.** No edits (`edit`/`write` denied), no subagents (`task` denied); of `bash` only
+- **Read-only.** No edits (`edit`/`write` denied), no subagents (delegation denied); of `bash` only
   read-only `git log/show/diff/status` and `ls` are allowed. If a patch or a decision is needed,
   write `decision/patch for the caller`.
 - **Facts, not opinions.** No design proposals, no approach choices, no verdicts.

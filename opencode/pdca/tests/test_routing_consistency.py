@@ -106,8 +106,123 @@ def load_jsonc(path: Path) -> dict:
     return json.loads(text)
 
 
-def allow_keys(mapping: dict) -> set:
-    return {k for k, v in mapping.items() if v == "allow"}
+def _frontmatter_block(path: Path) -> str:
+    text = read(path)
+    if not text.startswith("---"):
+        raise AssertionError("%s: no frontmatter" % path)
+    end = text.find("\n---", 3)
+    if end < 0:
+        raise AssertionError("%s: unterminated frontmatter" % path)
+    return text[3:end]
+
+
+def permission_rules(path: Path) -> list[dict]:
+    """V2 frontmatter `permissions:` — an ordered list of {action, resource, effect}."""
+    rules: list[dict] = []
+    current: dict | None = None
+    in_list = False
+    for raw in _frontmatter_block(path).splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        stripped = raw.strip()
+        if indent == 0:
+            if stripped == "permission:":
+                raise AssertionError(
+                    "%s: V1 `permission:` frontmatter — migrate to V2 `permissions:`" % path)
+            in_list = stripped == "permissions:"
+            current = None
+            continue
+        if not in_list:
+            continue
+        if stripped.startswith("- "):
+            current = {}
+            rules.append(current)
+            stripped = stripped[2:]
+        if current is None:
+            continue
+        key, sep, value = stripped.partition(":")
+        if not sep:
+            raise AssertionError("%s: malformed permission line %r" % (path, raw))
+        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
+    if not rules:
+        raise AssertionError("%s: no V2 `permissions:` rules" % path)
+    for rule in rules:
+        missing = {"action", "resource", "effect"} - set(rule)
+        if missing:
+            raise AssertionError("%s: rule missing %s: %r" % (path, sorted(missing), rule))
+        if rule["effect"] not in {"allow", "deny", "ask"}:
+            raise AssertionError("%s: bad effect %r" % (path, rule))
+    return rules
+
+
+# The V2 base policy every agent starts with; agent rules are appended after it.
+BASE_POLICY = (
+    {"action": "*", "resource": "*", "effect": "allow"},
+    {"action": "read", "resource": "*.env", "effect": "ask"},
+    {"action": "read", "resource": "*.env.*", "effect": "ask"},
+    {"action": "read", "resource": "*.env.example", "effect": "allow"},
+)
+
+
+def _matches(pattern: str, value: str) -> bool:
+    """V2 whole-value wildcard: `*` = any run, `?` = one character."""
+    regex = "".join(
+        ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
+    flags = re.IGNORECASE if os.name == "nt" else 0
+    return re.fullmatch(regex, value, flags | re.DOTALL) is not None
+
+
+def effective(rules: list[dict], action: str, resource: str) -> str:
+    """Last matching rule wins; no match falls back to `ask`."""
+    effect = "ask"
+    for rule in BASE_POLICY + tuple(rules):
+        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
+            effect = rule["effect"]
+    return effect
+
+
+def allowed_resources(rules: list[dict], action: str) -> set:
+    """Resources the agent's own rules allow for `action` after last-match resolution."""
+    probes = {rule["resource"] for rule in rules if _matches(rule["action"], action)}
+    return {res for res in probes if effective(rules, action, res) == "allow"}
+
+
+# Published skill assets stay V1-compatible: V1 knows only `permission:`, while
+# V2 translates that legacy frontmatter automatically. Host config is native V2.
+V1_ACTION = {"subagent": "task", "shell": "bash"}
+
+
+def legacy_permission(path: Path) -> dict:
+    data = frontmatter(path)
+    node = data.get("permission")
+    if not isinstance(node, dict) or not node:
+        raise AssertionError("%s: expected a non-empty V1 `permission:` map" % path)
+    return node
+
+
+def legacy_effective(perm: dict, action: str, resource: str) -> str:
+    node = perm.get(V1_ACTION.get(action, action))
+    if node is None:
+        node = perm.get("*")
+    if node is None:
+        return "allow"
+    if isinstance(node, str):
+        return node
+    effect = "ask"
+    for pattern, value in node.items():
+        if _matches(pattern, resource):
+            effect = value
+    return effect
+
+
+def legacy_allowed(perm: dict, action: str) -> set:
+    node = perm.get(V1_ACTION.get(action, action))
+    if isinstance(node, str):
+        return {"*"} if node == "allow" else set()
+    if not isinstance(node, dict):
+        return set()
+    return {res for res in node if legacy_effective(perm, action, res) == "allow"}
 
 
 class RoleParityTest(unittest.TestCase):
@@ -118,11 +233,15 @@ class RoleParityTest(unittest.TestCase):
                 self.assertTrue((HOST_DIR / ("%s.md" % name)).is_file())
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_frontmatter_name_equals_filename_stem(self):
+    def test_host_agent_identity_is_the_filename_stem(self):
+        # V2 identifies an agent by its file name; a legacy `name:` is allowed only
+        # when it agrees with the stem.
         for name in ROLE_TIER:
             with self.subTest(role=name):
-                data = frontmatter(HOST_DIR / ("%s.md" % name))
-                self.assertEqual(name, data.get("name"))
+                path = HOST_DIR / ("%s.md" % name)
+                self.assertTrue(path.is_file())
+                self.assertEqual(name, path.stem)
+                self.assertEqual(name, frontmatter(path).get("name", name))
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_each_role_carries_expected_tier_and_no_model(self):
@@ -147,10 +266,21 @@ class RoleParityTest(unittest.TestCase):
                 self.assertRegex(raw, r"(?m)^# tier: %s\s*$" % tier)
                 self.assertNotRegex(raw, r"(?m)^\s*model\s*:")
 
+    def test_asset_agents_keep_v1_permission_map_for_compat(self):
+        # V1 only understands `permission:`; V2 translates it automatically. A
+        # V2-only `permissions:` list would silently drop restrictions in V1.
+        for name in ASSET_TIER:
+            path = ASSET_AGENTS / ("%s.md" % name)
+            data = frontmatter(path)
+            with self.subTest(role=name):
+                self.assertIn("permission", data)
+                self.assertNotIn("permissions", data)
+                self.assertTrue(legacy_permission(path))
+
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_assets_match_host_except_external_directory(self):
-        # The portable asset mirrors the host agent's body and settings, but must
-        # not carry the host-specific `external_directory` (local-env paths).
+        # The portable asset mirrors the host agent's body and effective permissions,
+        # but must not carry the host-specific `external_directory` (local-env paths).
         for name in ROLE_TIER:
             with self.subTest(role=name):
                 host = read(HOST_DIR / ("%s.md" % name))
@@ -160,14 +290,24 @@ class RoleParityTest(unittest.TestCase):
                     asset.split("\n---\n", 1)[1],
                     "%s host/asset body differ" % name,
                 )
-                hperm = frontmatter(HOST_DIR / ("%s.md" % name))["permission"]
-                aperm = frontmatter(ASSET_AGENTS / ("%s.md" % name))["permission"]
-                self.assertNotIn("external_directory", aperm)
-                self.assertEqual(
-                    {k: v for k, v in hperm.items() if k != "external_directory"},
-                    {k: v for k, v in aperm.items() if k != "external_directory"},
-                    "%s host/asset settings differ" % name,
+                hperm = permission_rules(HOST_DIR / ("%s.md" % name))
+                aperm = legacy_permission(ASSET_AGENTS / ("%s.md" % name))
+                self.assertNotIn(
+                    "external_directory", aperm,
+                    "%s: portable asset must not carry host external_directory rules" % name,
                 )
+                self.assertEqual(
+                    effective(hperm, "*", "*"),
+                    legacy_effective(aperm, "*", "*"),
+                    "%s host/asset default deny differ" % name,
+                )
+                for action in ("read", "glob", "shell", "subagent", "skill", "question"):
+                    with self.subTest(role=name, action=action):
+                        self.assertEqual(
+                            allowed_resources(hperm, action),
+                            legacy_allowed(aperm, action),
+                            "%s: %s allowlist differs host vs asset" % (name, action),
+                        )
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
@@ -175,14 +315,13 @@ class PermissionRoutingTest(unittest.TestCase):
     def test_planner_and_check_are_default_deny(self):
         for name in ("pdca-planner", "pdca-check"):
             with self.subTest(role=name):
-                perm = frontmatter(HOST_DIR / ("%s.md" % name))["permission"]
-                self.assertEqual("deny", perm.get("*"))
+                rules = permission_rules(HOST_DIR / ("%s.md" % name))
+                self.assertEqual("deny", effective(rules, "*", "*"))
 
     def test_escalate_only_allows_scout(self):
-        perm = frontmatter(HOST_DIR / "pdca-escalate.md")["permission"]
-        task = perm["task"]
-        self.assertEqual("deny", task.get("*"))
-        self.assertEqual({"scout"}, allow_keys(task))
+        rules = permission_rules(HOST_DIR / "pdca-escalate.md")
+        self.assertEqual("deny", effective(rules, "subagent", "*"))
+        self.assertEqual({"scout"}, allowed_resources(rules, "subagent"))
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
@@ -212,13 +351,16 @@ class ProfileBindingTest(unittest.TestCase):
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class AdditiveIntegrationTest(unittest.TestCase):
-    def test_skills_keep_has_pdca_and_pdca_coder(self):
+    def test_cycle_skills_are_not_in_the_always_on_pack(self):
+        # The cycle skills live in the global skills dir and are loaded by name/trigger;
+        # the curated always-on pack must not spend context on them.
         lines = {
             ln.strip() for ln in read(SKILLS_KEEP).splitlines()
             if ln.strip() and not ln.lstrip().startswith("#")
         }
-        self.assertIn("pdca", lines)
-        self.assertIn("pdca-coder", lines)
+        for name in ("pdca", "pdca-coder", "pdca-dotnet"):
+            with self.subTest(skill=name):
+                self.assertNotIn(name, lines)
 
     def test_agents_md_has_explicit_pdca_and_keeps_old_triggers(self):
         text = read(AGENTS_MD)
@@ -236,13 +378,13 @@ class OrchestratorVariantSelectionTest(unittest.TestCase):
     def test_orchestrator_exists(self):
         self.assertTrue(ORCHESTRATOR.is_file())
 
-    def test_orchestrator_task_allowlist_covers_universal_roles(self):
-        perm = frontmatter(ORCHESTRATOR)["permission"]
-        task = perm["task"]
-        self.assertEqual("deny", task.get("*"))
+    def test_orchestrator_subagent_allowlist_covers_universal_roles(self):
+        rules = permission_rules(ORCHESTRATOR)
+        self.assertEqual("deny", effective(rules, "subagent", "*"))
+        allowed = allowed_resources(rules, "subagent")
         for role in self.UNIVERSAL_ROLES:
             with self.subTest(role=role):
-                self.assertEqual("allow", task.get(role))
+                self.assertIn(role, allowed)
 
 
 class SkillFrontmatterTest(unittest.TestCase):

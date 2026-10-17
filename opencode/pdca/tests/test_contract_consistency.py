@@ -129,6 +129,29 @@ def boundary_regex(token: str) -> "re.Pattern":
     return re.compile(r"(?<!\w)%s(?!\w)" % re.escape(token), re.IGNORECASE)
 
 
+def instruction_surface(text: str) -> str:
+    """Host agents: drop YAML comments and host-specific external_directory paths.
+
+    Local-env values such as ``.../Code/User/**`` and comments naming a stack
+    command are not part of the runtime instruction surface the guard protects.
+    """
+    lines = []
+    skip_external = False
+    for raw in text.splitlines():
+        stripped = raw.lstrip()
+        if stripped.startswith("#"):
+            continue
+        if "action: external_directory" in raw:
+            skip_external = True
+            continue
+        if skip_external:
+            if stripped.startswith("resource:"):
+                skip_external = False
+                continue
+        lines.append(raw)
+    return "\n".join(lines)
+
+
 def scan_forbidden() -> list:
     hits = []
     for path in runtime_files():
@@ -136,6 +159,8 @@ def scan_forbidden() -> list:
             text = read(path)
         except OSError:
             continue
+        if path in HOST_AGENTS:
+            text = instruction_surface(text)
         for token in FORBIDDEN_WORDS:
             if boundary_regex(token).search(text):
                 hits.append((str(path), token))

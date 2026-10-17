@@ -33,7 +33,10 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
+# Canonical repo: <root>/config/skills; published pack: <root>/opencode.
 SKILLS = REPO / "opencode"
+if not SKILLS.is_dir():
+    SKILLS = REPO / "skills"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
@@ -115,10 +118,57 @@ def skill_name(path: Path) -> str:
     return match.group(1) if match else ""
 
 
-def skill_permission_block() -> str:
-    frontmatter = between(read(ORCHESTRATOR), "---", "\n---")
-    i = frontmatter.find("skill:")
-    return frontmatter[i:] if i >= 0 else ""
+def skill_permission_rules() -> list:
+    """V2 `permissions:` rules of the orchestrator (ordered {action,resource,effect})."""
+    block = between(read(ORCHESTRATOR), "---", "\n---")
+    rules: list = []
+    current: dict | None = None
+    in_list = False
+    for raw in block.splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        stripped = raw.strip()
+        if indent == 0:
+            in_list = stripped == "permissions:"
+            current = None
+            continue
+        if not in_list:
+            continue
+        if stripped.startswith("- "):
+            current = {}
+            rules.append(current)
+            stripped = stripped[2:]
+        if current is None:
+            continue
+        key, _, value = stripped.partition(":")
+        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
+    return rules
+
+
+BASE_POLICY = (
+    {"action": "*", "resource": "*", "effect": "allow"},
+    {"action": "read", "resource": "*.env", "effect": "ask"},
+    {"action": "read", "resource": "*.env.*", "effect": "ask"},
+    {"action": "read", "resource": "*.env.example", "effect": "allow"},
+)
+
+
+def _matches(pattern: str, value: str) -> bool:
+    regex = "".join(
+        ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
+    flags = re.IGNORECASE if os.name == "nt" else 0
+    return re.fullmatch(regex, value, flags | re.DOTALL) is not None
+
+
+def effective(rules: list, action: str, resource: str) -> str:
+    effect = "ask"
+    for rule in BASE_POLICY + tuple(rules):
+        if "action" not in rule or "resource" not in rule:
+            continue
+        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
+            effect = rule.get("effect", "ask")
+    return effect
 
 
 class CycleSkillsExistTest(unittest.TestCase):
@@ -133,12 +183,12 @@ class CycleSkillsExistTest(unittest.TestCase):
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class OrchestratorMayLoadCycleSkillsTest(unittest.TestCase):
     def test_skill_permission_allows_cycles_and_denies_brainstorming(self):
-        block = skill_permission_block()
-        self.assertRegex(block, r"\"?\*\"?:\s*allow")
-        self.assertRegex(block, r"brainstorming:\s*deny")
+        rules = skill_permission_rules()
+        self.assertEqual("allow", effective(rules, "skill", "*"))
+        self.assertEqual("deny", effective(rules, "skill", "brainstorming"))
         for name in CYCLE_SKILLS:
             with self.subTest(skill=name):
-                self.assertNotRegex(block, r"%s:\s*deny" % re.escape(name))
+                self.assertEqual("allow", effective(rules, "skill", name))
 
     def test_orchestrator_carries_no_model_id(self):
         self.assertNotRegex(read(ORCHESTRATOR), r"(?m)^\s*model\s*:")

@@ -30,7 +30,7 @@ EN-роли `opencode/pdca-coder/assets/agents/*.md` с зеркалами `conf
 | H | Cheap-only оркестрация; `architect` — решения вне цикла | Цикл ведёт только cheap-tier primary (эффективный тир, не имя агента); начальный PLAN/replan — `planner`; в ролях только `# tier`, без `model:` |
 | I | Security-триггер red | Conditional gather возвращается в агрегат `check` (своего независимого вердикта нет); обычный security-провал — провальный CHECK ревизии по общим счётчикам; немедленная эскалация — только жёсткий security-tradeoff |
 | J | Эскалация: исчерпана ревизия `r` или нет | `escalate` даёт **решение**; оркестратор только роутит: revised remediation `r+1` → `planner`, реализация/STOP → `coder`; семантически не перевыбирает, гейты/no-4th/scope/security не отменяет |
-| K | Автономно: cheap primary делегирует цикл | `Task(pdca-orchestrator)` с cycle brief; субагент ведёт PLAN→DO→CHECK→ACT, возвращает сводку ≤8 строк; primary не читает/не правит |
+| K | Автономно: cheap primary делегирует цикл | `subagent(pdca-orchestrator)` с cycle brief; субагент ведёт PLAN→DO→CHECK→ACT, возвращает сводку ≤8 строк; primary не читает/не правит |
 | L | Fallback: `pdca-orchestrator` недоступен | Flat primary ведёт цикл сам, fallback зафиксирован (`Notice:`); гейты/no-4th/scope/security не отменяются |
 
 Общая оперативная база (применяется ко всем кейсам, если ниже не уточнено):
@@ -188,7 +188,7 @@ actionable-плана → **STOP** (обычный режим — вопрос �
 ## K. Автономное делегирование: primary диспатчит `pdca-orchestrator`
 
 **Вход:** cheap-tier primary; пользователь **явно** просит работать автономно; цикл ещё не начат.
-**Требуемый исход:** primary **не ведёт** цикл сам, а вызывает `Task` на cheap-субагенте
+**Требуемый исход:** primary **не ведёт** цикл сам, а запускает субагента
 `pdca-orchestrator` с **cycle brief** (goal, scope, acceptance criteria, constraints,
 references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и возвращает компактную
 **сводку ≤8 строк**; primary лишь передаёт сводку дальше и **не читает** файлы/логи и **не правит** их;
@@ -200,8 +200,8 @@ references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и в�
 
 ## L. Fallback: `pdca-orchestrator` недоступен
 
-**Вход:** автономная просьба, но `Task` к `pdca-orchestrator` невозможен — агент отсутствует,
-либо `subagent_depth` < 2, либо `Task` запрещён хостом.
+**Вход:** автономная просьба, но запуск субагента `pdca-orchestrator` невозможен — агент отсутствует,
+либо `subagent_depth` < 2, либо делегирование запрещено хостом.
 **Требуемый исход:** primary переходит в **flat primary** и ведёт цикл **сам** (PLAN→DO→CHECK→ACT
 с теми же гейтами); fallback зафиксирован (`Notice:` в статус-файле); запрет 4-й попытки, scope и
 security-ограничения **не отменяются**; вопросы по-прежнему не задаются.

@@ -27,11 +27,12 @@ a plan; `check` reads the summary **and may open the cycle's evidence artifacts 
 (its scoped `read` of the status/evidence/manifest files — never product code) to reconcile
 the contract rows. Neither pulls product code into context.
 
-**Two paths, one contract.** In **normal mode you drive the cycle yourself, invoking subagents via
-Task:** PLAN Decide (including starting the cycle) and the CHECK → PLAN / DO → PLAN loop-back —
+**Two paths, one contract.** In **normal mode you drive the cycle yourself, dispatching
+subagents:** PLAN Decide (including starting the cycle) and the CHECK → PLAN / DO → PLAN
+loop-back —
 `planner`, Triage — `check`, edits/commands — `coder`, escalation — `escalate`. In **autonomous
 mode you do not drive the cycle yourself:** dispatch the whole cycle to the cheap
-`pdca-orchestrator` subagent via `Task` (a cycle brief in, an ≤8-line summary out) and relay it
+`pdca-orchestrator` subagent (a cycle brief in, an ≤8-line summary out) and relay it
 (§Autonomous mode). Either way **only a cheap-tier primary drives the cycle or dispatches
 `pdca-orchestrator`** (§Host requirements); **the PLAN decision always belongs to `planner`**.
 
@@ -49,24 +50,24 @@ Where to look: `instructions` from the project `opencode.json`, skills from `.op
 ## Host requirements (roles → agents)
 
 The cycle roles are **subagent names**; the skill creates no agents and sets no models — the host
-provides them, else `Task` fails and the cycle degrades to built-ins. **PDCA orchestration is
-cheap-only:** the orchestrator is the **cheap-tier primary** (opencode default `build`); `build` is the
-shorthand throughout. A primary may drive the cycle **only when its effective host-profile tier is
+provides them, else subagent dispatch fails and the cycle degrades to built-ins.
+**PDCA orchestration is cheap-only:** the orchestrator is the **cheap-tier primary**
+(opencode default `build`); `build` is the shorthand throughout. A primary may drive the cycle **only when its effective host-profile tier is
 cheap** — the call is made by effective tier, **not** by agent name. A medium/strong primary (e.g.
 `architect`) does **not** orchestrate PDCA; outside the cycle it remains a decision primary. No
 `model:` id is ever written into a role, the skill or the docs — the host profile binds ids.
 
 **Autonomous driver.** In autonomous mode the cycle driver is the cheap `pdca-orchestrator`
-subagent — a **structural dispatcher** (`task` allowlist; `edit`/`bash: deny`). The primary only
-dispatches it and relays its summary, so it needs `Task` access to `pdca-orchestrator`. A
+subagent — a **structural dispatcher** (subagent allowlist; `edit`/`bash: deny`). The primary only
+dispatches it and relays its summary, so it needs subagent access to `pdca-orchestrator`. A
 medium/strong primary still neither drives the cycle nor dispatches `pdca-orchestrator`.
 
 | Role | Agent | Required | Fallback if missing |
 |---|---|---|---|
 | GATHER (facts) | `scout` | read-only, cheap | built-in `explore` |
-| PLAN (decisions) | `planner` | read-only, no `Task` | built-in `general` |
+| PLAN (decisions) | `planner` | read-only, no delegation | built-in `general` |
 | DO (hands) | `coder` | `edit`/`bash` allow | built-in `general` |
-| CHECK (verdict) | `check` | read-only, no `Task` | built-in `general` |
+| CHECK (verdict) | `check` | read-only, no delegation | built-in `general` |
 | ESCALATE | `escalate` | read-only, facts via `scout` | `general` (+ warn the user) |
 | SECURITY | `security-auditor` | read-only, facts via `scout` | built-in `explore` |
 
@@ -92,14 +93,15 @@ expensive primary) must **never** bypass the deny: a required-but-unavailable ro
 ## Orchestrator role
 
 You drive the cycle, you do not execute it by hand. **You are a dispatcher, not a reader and not a
-decider:** you invoke the subagent Tasks and pass each one the others' reports. Decisions (PLAN
+decider:** you invoke the subagents and pass each one the others' reports. Decisions (PLAN
 Decide, return to PLAN) → `planner`; CHECK verdict → `check`; escalation → `escalate`; facts →
 `scout`; every file write and command → `coder`.
 
 **Cheap primary only (§Host requirements).** Only a cheap-tier primary takes this role; a medium/strong
 primary (e.g. `architect`) does not drive the cycle — outside PDCA it stays the decisions primary and
 hands implementation to the cycle. The cheap orchestrator never authors a plan, never reads files and
-never runs a command; it routes facts to `scout` and every edit/command to `coder` via Task. Both the
+never runs a command; it routes facts to `scout` and every edit/command to `coder` via a
+subagent. Both the
 initial PLAN and any replan belong to `planner`.
 
 - **Execute an `escalate` decision by routing, never by re-deciding.** `escalate` returns a **decision**;
@@ -149,9 +151,9 @@ Each todo item starts with a phase prefix `P:` `D:` `C:` `A:`; exactly one is `i
 The sidebar todo is a strict mirror kept in sync by rule, not convenience:
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan, escalation —
-   call `todowrite` in the turn you announce it, before/with the first `Task` of the next step; never batched.
+   call `todowrite` in the turn you announce it, before/with the first subagent dispatch of the next step; never batched.
 2. **Status first, todo second.** The event is written to the status file by `coder` first (next `coder`
-   brief or a short dedicated Task); the todo is then set to exactly what was recorded — never ahead.
+   brief or a short dedicated dispatch); the todo is then set to exactly what was recorded — never ahead.
 3. **Granularity.** One item per phase (`P`/`D`/`C`/`A`), exactly one `in_progress`; a **single aggregate
    `D:`** (not per unit/stream — those live in the status file, §Cycle status file). The aggregate `D:`
    closes only when all units and DO streams satisfy gate 2.
@@ -236,11 +238,11 @@ anything", "act on your own"), the whole plan/queue runs without approval pauses
 cycle: the cycle is where the gates are, not where the work stops.
 
 **Delegation (autonomous).** The cheap primary does not run the cycle: it composes a cycle brief
-(goal, scope, acceptance criteria, constraints, references) and calls `Task` on
+(goal, scope, acceptance criteria, constraints, references) and launches the subagent
 `pdca-orchestrator`, which runs PLAN → DO → CHECK → ACT and returns a compact summary (≤8 lines).
 No collection status file is created (single cycle); the mandatory pdca cycle status file is
-still written by `coder`. No questions are asked. If the `Task` to `pdca-orchestrator` fails (agent
-absent, `subagent_depth` < 2, or `Task` forbidden), fall back to the flat primary (drive the cycle
+still written by `coder`. No questions are asked. If the subagent dispatch to `pdca-orchestrator` fails (agent
+absent, `subagent_depth` < 2, or delegation forbidden), fall back to the flat primary (drive the cycle
 yourself) and log the fallback (`Notice:` in the status file, §Host requirements).
 
 - **Phase transitions** happen in the same turn the gate passes (PLAN → DO → CHECK → ACT), with no
@@ -398,7 +400,7 @@ to check, use "set/not set".
 - **PLAN** — in two beats (see §PLAN): **gather** — `scout` (repository facts, `file:line`)
   plus the **domain lenses/specialists selected by PLAN** (§PLAN selects the toolchain and lenses) —
   cheap; **decisions and decomposition** — the `planner` subagent, which `build`
-  invokes via Task (both when starting the cycle and on the CHECK → PLAN / DO → PLAN return); do not load code into your
+  invokes as a subagent (both when starting the cycle and on the CHECK → PLAN / DO → PLAN return); do not load code into your
   context. **The last step of PLAN** — `coder` writes `planner`'s plan into the status file
   (`planner` has no file permissions), and only then is the user asked to approve the plan.
 - **DO** — code, tests and prose docs are written in parallel right after the plan (not "test then
@@ -415,7 +417,7 @@ to check, use "set/not set".
   streams". Worktree sub-tasks also merge + re-verify the merged tree (§CHECK → "Parallel sub-tasks
   in worktrees"). `escalate` handles a risky diff by trigger (§Escalation).
 - **ESCALATE** — `escalate`, **sparingly, by triggers** (§Escalation):
-  a separate Task with a narrow question. It returns a **decision** (not code, not a menu) and does not
+  a separate subagent dispatch with a narrow question. It returns a **decision** (not code, not a menu) and does not
   edit code; the cheap orchestrator executes it **by routing** — a revised plan → `planner`, a
   fix/status STOP → `coder` — and never re-selects semantically. The tier is expensive — call it only
   where cheap subagents cannot give an answer.
@@ -435,7 +437,7 @@ ordering in DO — the only red→green requirement is the regression test of a 
    approval"); on approval `coder` records `DO started` in its progress log.
 2. **Shared contract — only if the streams need it.** If the tests or docs rely
    on an abstraction/DTO/signature, **first** only the contract is fixed: signatures and
-   types **without implementation** (a single `coder` Task or a sketch in the status file). The
+   types **without implementation** (a single `coder` dispatch or a sketch in the status file). The
    streams need nothing beyond that from each other. No contract — the step is skipped.
 3. **Parallel launch.** In one turn, several Tasks in one message:
    the **code stream** (`coder`), the **test stream** (`coder`; with the project's test
@@ -462,7 +464,7 @@ Invariants:
 - Divergence of the streams (tests ↔ code, prose docs ↔ the actual contract/behavior) is a defect,
   and it is caught by **CHECK** (the test lens and the doc lens), not by DO.
 - The **status file is not written by the streams** (it would be the same file from different
-  streams): as each stream report arrives, a separate short `coder` Task logs it, one at a time.
+  streams): as each stream report arrives, a separate short `coder` dispatch logs it, one at a time.
 
 Why this way: all three sides are derived from the plan (step 2 removes the only possible
 link — the shared contract), so they are isolated and do not wait for each other; the idle time of the
@@ -470,7 +472,7 @@ coder/tester/documenter disappears.
 
 **Units (not streams).** If PLAN split the feature into several **independent units**
 (§PLAN → "Unit execution mode"), they are launched in parallel the same way — with several
-`Task`s per turn. In the "one tree" mode — right in it (units do not share files, the invariant
+subagent dispatches per turn. In the "one tree" mode — right in it (units do not share files, the invariant
 above); in the "worktree" mode — per the template (§Worktree sub-tasks), and the status file of **each**
 unit is created when its worktree is set up at the start of DO, inside that worktree.
 
@@ -503,14 +505,14 @@ contract (the discipline a dedicated design/performance engineer would apply whe
   explicit request.
 - **No benchmark conclusions.** The coder may run a benchmark to sanity-check, but does not draw
   conclusions from it; sub-noise deltas are noise. Interpretation goes to the perf lens/specialist.
-- **Hand off what needs numbers** to the perf specialist (via `task`) instead of asserting it.
+- **Hand off what needs numbers** to the perf specialist (via a subagent) instead of asserting it.
 
 A host/project overlay supplies the concrete values (build/test/lint commands, line endings, artifact
 restore, test projects); this block is the generic skeleton and the overlay may not omit it.
 
 ### Subagent report format (mandatory)
 
-In every Task state the response format explicitly — otherwise the subagent will drag in code and dumps:
+In every dispatch brief, state the response format explicitly — otherwise the subagent will drag in code and dumps:
 
 - conclusion: `file:line` + the gist, **≤8 lines**; do NOT send code, diffs or logs;
 - **changed files** — a list of paths (what and where), ≥3 files — a compact table;
@@ -523,7 +525,7 @@ Details live in files; only a pointer enters the orchestrator's context.
 
 If the plan chose (or the user asked — §PLAN → "Unit execution mode")
 to perform **sub-tasks of one cycle** (one PLAN/contract) in parallel in separate
-worktrees, give each task to `coder` as a **separate Task** with this brief (substitute the
+worktrees, give each task to `coder` as a **separate dispatch** with this brief (substitute the
 task and paths):
 
 ```text
@@ -538,7 +540,7 @@ Work ONLY in worktree <ABS_WT>.
   open questions; do NOT send code/diffs/logs — full outputs to a file, give the path.
 ```
 
-Why this way: a subagent inherits the session directory (Task has no worktree parameter),
+Why this way: a subagent inherits the session directory (a subagent dispatch has no worktree parameter),
 so isolation rests on absolute paths and `cd`. Each task gets its own branch
 `pdca/<task>`, committed; the merge and re-verification of the merged tree are done by CHECK
 (§CHECK → "Parallel sub-tasks in worktrees"). The unit's status file is created when the
@@ -555,7 +557,7 @@ session — §Autonomous mode), outside this cycle.
 
 `escalate` is the **second tier for hard decisions**, but on a **expensive model**:
 so you call it sparingly, when the decision is non-obvious or
-risky and the cheap subagents are not enough. A separate Task, a narrow question.
+risky and the cheap subagents are not enough. A separate dispatch, a narrow question.
 Triggers (any one):
 
 1. A requirement or acceptance criterion is ambiguous and guessing is unacceptable.
@@ -582,7 +584,7 @@ Triggers (any one):
    required for the trigger.
 
 **A blocker surfaced in DO is not escalated directly**: it is a *provisional candidate* that goes to
-`planner` first (§State machine, `DO → PLAN`), and `planner` adjudicates it. `planner` has no `Task`
+`planner` first (§State machine, `DO → PLAN`), and `planner` adjudicates it. `planner` has no delegation permission
 permission, so it does not call `escalate` itself: it reports the outside-cycle blocker (the user / a
 forcing architectural call) or a persistent low-confidence classification after the targeted `scout`
 gather (trigger 5) to the **orchestrator**, which dispatches `escalate` — proven externalness is **not**
@@ -663,7 +665,7 @@ PLAN runs in two beats (like §CHECK), so as not to load code into the orchestra
 1. **Gather (cheap):** review the **area of change** (not the whole repo) via `scout` + the selected
    domain lenses — findings (`file:line`, counters, structural-invariant ratio,
    anti-pattern hits), no code.
-2. **Decide:** `planner` (invoked by the primary via Task — start and CHECK → PLAN / DO → PLAN returns)
+2. **Decide:** `planner` (invoked by the primary as a subagent — start and CHECK → PLAN / DO → PLAN returns)
    reads **only the summary**, chooses fix-now vs deferred, decomposes, fixes the plan. Do not pull code
    into context — a missing datum goes to the gatherer.
 
@@ -1196,7 +1198,7 @@ each `D:` closed (exit code + log path); DO → CHECK; each CHECK stream report;
 CHECK failure/fix/loop-back with its defect key and applied fix count (pointers, not logs); loop-back to
 DO / `Replanned` (with the outgoing failed attempt); an additive-prerequisite addition or a
 `superseded→replacement` mapping; escalation and its outcome; `Recovered after compaction`; `Notice: …`
-(autonomous); ACT closed. Written **one event at a time** by a short `coder` Task (or as the last step of
+(autonomous); ACT closed. Written **one event at a time** by a short `coder` dispatch (or as the last step of
 one) — never by parallel streams. The todo mirrors the latest log line.
 
 **Unit states** (per `D:` unit/DO stream): exactly one of `pending` | `running` | `blocked` | `done` |

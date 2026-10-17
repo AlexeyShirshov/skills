@@ -64,7 +64,7 @@ before the second fix.
 
 1. Address the **narrow question** for which you were called — do not re-open the whole cycle
    and do not investigate the whole workspace.
-2. Rely on the **scout pack in the brief**. If a fact is missing, call `scout` (Task) with a
+2. Rely on the **scout pack in the brief**. If a fact is missing, call the `scout` subagent with a
    precise question; do not surf the workspace yourself.
 3. Consider 2–3 alternatives and state trade-offs and risks honestly.
 4. Give a **decision**, not "possible options": what to do, why, what can go wrong, and the

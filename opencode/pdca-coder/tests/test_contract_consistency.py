@@ -209,7 +209,7 @@ class ContractConsistencyTest(unittest.TestCase):
 
     def test_autonomous_delegation_and_fallback(self):
         self.assertIn("pdca-orchestrator", self.autonomous)
-        self.assertIn("Task", self.autonomous)
+        self.assertIn("subagent dispatch", self.autonomous)
         self.assertIn("fall back to the flat primary", self.autonomous)
         self.assertIn("subagent_depth", self.autonomous)
         self.assertIn("Notice:", self.autonomous)

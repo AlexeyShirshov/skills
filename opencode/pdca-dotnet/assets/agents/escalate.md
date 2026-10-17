@@ -59,7 +59,7 @@ defect** history — the same defect after one fix still escalates before the se
 1. Get to grips with the **narrow question** you were called for — do not re-open the whole
    cycle and do not investigate the repository in full.
 2. Depend on the **scout evidence pack in the brief** (`file:line`, signatures, test names,
-   observed behavior). If a fact is missing — dispatch `scout` (Task) with a pointed question;
+   observed behavior). If a fact is missing — dispatch the `scout` subagent with a pointed question;
    do not surf the repository yourself.
 3. Consider 2–3 alternatives, honestly name the trade-offs and risks.
 4. Give a **decision**, not "possible options": what to do, why, what may go

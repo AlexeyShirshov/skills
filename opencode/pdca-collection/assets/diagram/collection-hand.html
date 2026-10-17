@@ -94,7 +94,7 @@
 <rect x="632.0" y="505" width="50" height="18" rx="6" fill="#0d9488" fill-opacity="0.13" stroke="#0d9488" stroke-opacity="0.7"/>
 <text x="657.0" y="517.5" class="bm" fill="#0d9488" text-anchor="middle">cheap</text>
 <text x="279.0" y="521" class="t">Лейн · группа</text>
-<text x="279.0" y="540" class="s">один Task · оркеструет, не решает</text>
+<text x="279.0" y="540" class="s">один субагент · оркеструет, не решает</text>
 <polyline points="478.0,486 478.0,498" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
 <polyline points="493.0,548 493.0,560" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
 <rect x="296.0" y="560" width="394" height="50" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
@@ -480,6 +480,6 @@
 <text x="24" y="1518" class="nt">≥2: барьер ждёт терминальности ВСЕХ лейнов (done | incomplete) — это готовность, не успех; MERGE только успешных (done) tip, incomplete пропускается; конфликт → abort → escalate</text>
 <text x="24" y="1534" class="nt">C: re-gather остаётся blocked (нет отчёта) — не дефект, правок кода нет; STOP корректирующего PDCA ≠ EXIT: unverified, evidence сохранён, без ACT/cleanup; ACT чистит только DONE/merged, incomplete-результаты (ветки/patch/указатели) сохраняются</text>
 <text x="24" y="1550" class="nt">Лейн (work stream) — один параллельный поток работ на группу: отдельный субагент, свой worktree и ветка, задачи строго по одной, полный pdca-цикл на каждую; параллельно идут группы (≤ cap), не задачи внутри лейна.</text>
-<text x="24" y="1566" class="nt">Fallback: pdca-orchestrator недоступен (нет агента / subagent_depth &lt; 2 / Task запрещён) → primary ведёт цикл сам · autonomous: Notice: + summary · normal: сообщение пользователю</text>
+<text x="24" y="1566" class="nt">Fallback: pdca-orchestrator недоступен (нет агента / subagent_depth &lt; 2 / делегирование запрещено) → primary ведёт цикл сам · autonomous: Notice: + summary · normal: сообщение пользователю</text>
 </svg>
 </div></html>

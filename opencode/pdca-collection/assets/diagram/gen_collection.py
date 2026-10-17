@@ -209,7 +209,7 @@ BLOCKS = {
     "DO": [
         ("Worktree + ветки", "coder · на группу", "weak"),
         ("Запуск лейнов", "параллельно · ≤ cap (4)", "weak"),
-        ("Лейн · группа", "один Task · оркеструет, не решает", "weak"),
+        ("Лейн · группа", "один субагент · оркеструет, не решает", "weak"),
         ("Ветка задачи", "от tip предыдущей · coder", "weak"),
         (("pdca-цикл · continue from saved PLAN", "DO→CHECK→ACT"), "руки cheap · решения medium · эскалация strong", "composite"),
         # autocommit is only available inside the explicitly authorized
@@ -919,8 +919,8 @@ def render(P, title):
         # lane definition
         "Лейн (work stream) — один параллельный поток работ на группу: отдельный субагент, свой worktree и ветка, "
         "задачи строго по одной, полный pdca-цикл на каждую; параллельно идут группы (≤ cap), не задачи внутри лейна.",
-        # flat primary fallback when a nested `Task` is unavailable
-        "Fallback: pdca-orchestrator недоступен (нет агента / subagent_depth < 2 / Task запрещён) → "
+        # flat primary fallback when nested delegation is unavailable
+        "Fallback: pdca-orchestrator недоступен (нет агента / subagent_depth < 2 / делегирование запрещено) → "
         "primary ведёт цикл сам · autonomous: Notice: + summary · normal: сообщение пользователю",
     ]
     for _i, _ntext in enumerate(_notes):

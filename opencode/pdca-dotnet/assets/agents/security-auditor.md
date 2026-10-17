@@ -51,7 +51,7 @@ auth/secrets/external input/crypto) or on a direct request.
 
 **The diff/area under audit is in the brief directly** (you may also take `git diff` yourself): you
 audit exactly that, reading the diff code directly, without `scout`. **Facts outside the diff** come
-only from `scout` (Task) via a narrow question: other occurrences of a weak crypto/pattern, who
+only from the `scout` subagent via a narrow question: other occurrences of a weak crypto/pattern, who
 calls a method, what is in `appsettings*`/`.gitignore`, other `HttpClient` calls with a user-supplied
 URL. Do not surf the repository — broad search (`grep`/`glob`/web) is denied. Read a single file
 locally only to confirm a specific `file:line`.
