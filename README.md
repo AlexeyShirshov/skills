@@ -88,7 +88,8 @@ OPENCODE_CONFIG_REPO=/path/to/opencode-config \
 
 `pdca-collection` additionally ships a dependency-free bash check of its git model (branch
 chain, `--no-ff` merge of completed groups, conflict detection, single-group isolation, and an
-incomplete group preserved but never merged) on throwaway temp repositories:
+incomplete group preserved but never merged) on throwaway temp repositories. `unittest discover`
+runs it through `tests/test_git_model.py`; it can also be run directly:
 
 ```sh
 bash opencode/pdca-collection/tests/git-model-sim.sh
