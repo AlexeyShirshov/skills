@@ -555,8 +555,11 @@ PLAN стартует в том же ходу, а его вход — `Next plan
 критерий без разрешающей ссылки — это `open`, а не вычеркнутая строка. **Пока хоть одна
 обязательная строка `open` и при этом binding, PASS невозможен** — самовольно добавленная
 лишняя audit-строка получает в том же манифесте disposition `diagnostic_nonbinding`, а не
-переписывание; если проект поставляет валидатор манифеста — его запускают (полнота строк +
-форма).
+переписывание. Механический гейт обязателен и в каноническом скилле: трекнутый
+`scripts/pdca_evidence.py` (`generate`/`lint`) публикует квитанции атомарно против
+замороженного синтетического дерева, а `lint` пересчитывает дерево и проверяет двустороннее
+покрытие `required_rows` ↔ `rows[]`; вместе с `validate_inner_loop.py manifest` (форма строк)
+это две обязательные команды CHECK, ненулевой exit — fail-closed.
 
 **Каталог свидетельств по умолчанию** — `.pdca/<task>/rv<k>/`, рядом с каталогом статусов
 `.pdca/status/`: `<task>` — kebab-slug, `<k>` — ревизия `rv`. Там живут замороженный
@@ -768,6 +771,10 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `ch
   (отказ при неопределённости): не начинать редактирование / не пропускать CHECK. Валидатор
   ничего не исполняет, он только разбирает записанные массивы аргументов и JSON-артефакты.
   Коды: `0` — валидно, `2` — нарушение, `1` — ошибка использования/нечитаемый/битый JSON.
+  Канонический скилл также поставляет трекнутый `scripts/pdca_evidence.py` (stdlib):
+  `generate` атомарно пишет квитанции по строкам и заменяет манифест против замороженного
+  синтетического дерева, `lint` пересчитывает дерево и проверяет `required_rows` ↔ `rows[]`
+  в обе стороны. CHECK прогоняет **оба** хелпера; ненулевой exit — fail-closed.
 - **Явные состояния исполнения.** Каждый фактически начавшийся прогон записывается
   независимо от исхода: `finished` | `started` | `running` | `interrupted` | `canceled` |
   `failed-to-start` | `not-started`. Exit code и selected count nullable и никогда не
@@ -1196,13 +1203,14 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 | **Test scope** | Обязательный структурированный набор проектов/селекторов/файлов/ребейлда/границы/обоснования плюс интеграционные проекты и плановое число граничных прогонов |
 | **Fail-closed** | При неопределённости/ошибке гейт отклоняет, а не предупреждает |
 | **Режим `manifest` валидатора** | Один из режимов `validate_inner_loop.py` (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`): проверяет покрытие `required_rows` ↔ `rows[]` замороженного манифеста, а не исполнение команд |
+| **Механический конвейер доказательств** | Трекнутый `scripts/pdca_evidence.py` (`generate`/`lint`): атомарная публикация квитанций по строкам против замороженного синтетического дерева и lint, который пересчитывает дерево и проверяет двустороннее покрытие `required_rows` ↔ `rows[]` |
 | **CS1591 / XML-doc** | Предупреждение об отсутствующем XML-доке публичного члена; включается настройкой проекта |
 | **env `OPENCODE_CONFIG_REPO`** | Путь к отдельному конфиг-репозиторию: только тогда запускаются проверки скиллов против хостовых артефактов (`config/…`); иначе они пропускаются |
 
 ### 14.2. Источники и соответствие
 
-Нормативные утверждения путеводителя сверены с текущими файлами репозитория (коммит
-`69685b8`); при расхождении приоритет у `opencode/<skill>/SKILL.md`. Ниже — карта «тема →
+Нормативные утверждения путеводителя сверены с текущими файлами репозитория (зеркало
+`pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `opencode/<skill>/SKILL.md`. Ниже — карта «тема →
 `file:line`» по репозиторным файлам; диапазоны строк проверены `sed -n 'A,Bp'`.
 
 **Семейство и вызовы**
@@ -1219,7 +1227,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - orchestrator role (диспетчер) → `opencode/pdca/SKILL.md:89-117`; `opencode/pdca-coder/SKILL.md:92-118`
 - `check` вправе открыть артефакты доказательств (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:975-980`; `opencode/pdca-dotnet/SKILL.md:1108-1111`
+  `opencode/pdca-coder/SKILL.md:975-980`; `opencode/pdca-dotnet/SKILL.md:1138-1141`
 
 **Машина состояний, счётчики, todo**
 - state machine → `opencode/pdca/SKILL.md:119-145`; `opencode/pdca-coder/SKILL.md:120-146`
@@ -1260,17 +1268,18 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 
 **pdca-dotnet: .NET-гейты**
 - обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md:540-576`
-- политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1055-1092,1446-1475`
-- binding/applicability disposition → `:1029-1053,1287-1298`
-- versioned evidence contract + манифест + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1027`
-- CHECK completeness gate (**binding** `open` запрещает PASS; disposition `diagnostic_nonbinding`) → `:1024-1027,1261-1299`
-- inner-loop evidence gate → `:1203-1215`; ноль предупреждений → `:1097,1182,1252-1253`
+- политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1084-1122,1484-1513`
+- binding/applicability disposition → `:1058-1082,1325-1336`
+- versioned evidence contract + манифест + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
+- CHECK completeness gate (**binding** `open` запрещает PASS; disposition `diagnostic_nonbinding`) → `:1024-1034,1291-1337`
+- inner-loop evidence gate → `:1233-1245`; ноль предупреждений → `:1127,1212,1282-1283`
 - покрытие/ветки/мутации → `:911-920`; безопасность прогонов → `:942-955`
-- `dotnet-*` линзы → `:397-402,715-720,1097-1106,1151-1156`
-- `security-auditor` — условный сбор, отчёт в агрегат `check` → `:1142-1149`
-- ACT → `:1324-1359`
+- `dotnet-*` линзы → `:397-402,715-720,1127-1136,1181-1186`
+- `security-auditor` — условный сбор, отчёт в агрегат `check` → `:1172-1179`
+- ACT → `:1362-1397`
 - `validate_inner_loop.py`: режимы/коды → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
   манифест (`required_rows` ↔ `rows[]`) → `:1158-1226`; разбор режимов → `:1241-1300`
+- `pdca_evidence.py`: `generate`/`lint`, замороженное синтетическое дерево, двустороннее покрытие → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
 
 **pdca-collection**
 - роль/вариант → `opencode/pdca-collection/SKILL.md:12-21`; P → `:49-105`; D/merge → `:107-155`;

@@ -730,7 +730,11 @@ differences are in the lenses, the thresholds and the additional gates.
   gate the ACT cleanup receipt. A non-zero exit code is **fail-closed** (refuse under uncertainty):
   do not begin editing / do not skip CHECK. The validator executes nothing; it only parses the
   recorded argument arrays and JSON artifacts. Codes: `0` — valid, `2` — a violation, `1` — a usage
-  error/unreadable/broken JSON.
+  error/unreadable/broken JSON. The canonical skill also ships the tracked
+  `scripts/pdca_evidence.py` (stdlib): `generate` writes the per-row receipts and replaces the
+  manifest atomically against a frozen synthetic tree, and `lint` recomputes that tree and checks
+  `required_rows` ↔ `rows[]` both ways. CHECK runs **both** helpers on the frozen manifest; a
+  non-zero exit is fail-closed.
 - **Explicit execution states.** Every actually-started run is recorded regardless of outcome:
   `finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` |
   `not-started`. Exit code and selected count are nullable and are never invented for a run that did
@@ -1135,13 +1139,14 @@ identical retries will not be passed off as progress.
 | **Test scope** | A mandatory structured set of projects/selectors/files/rebuild/boundary/rationale plus the integration projects and the planned boundary runs |
 | **Fail-closed** | Under uncertainty/an error the gate refuses rather than warns |
 | **The validator's `manifest` mode** | One of the modes of `validate_inner_loop.py` (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`): it checks the coverage `required_rows` ↔ `rows[]` of the frozen manifest, not the execution of commands |
+| **The mechanical evidence pipeline** | The tracked `scripts/pdca_evidence.py` (`generate`/`lint`): atomic publication of per-row receipts against a frozen synthetic tree, and a lint that recomputes the tree and checks two-way `required_rows` ↔ `rows[]` coverage |
 | **CS1591 / XML-doc** | The warning about a missing XML doc on a public member; enabled by a project setting |
 | **The `OPENCODE_CONFIG_REPO` env** | The path to a separate config repository: only then do the skill checks run against host artifacts (`config/…`); otherwise they are skipped |
 
 ### 14.2. Sources and correspondence
 
-The guide's normative claims were reconciled with the repository's current files (commit
-`69685b8`); where they disagree, `opencode/<skill>/SKILL.md` takes precedence. Below is the
+The guide's normative claims were reconciled with the repository's current files (`pdca-dotnet`
+mirrored from canonical `opencode-config` commit `063dffa`); where they disagree, `opencode/<skill>/SKILL.md` takes precedence. Below is the
 "topic → `file:line`" map over the repository files; the line ranges were checked with
 `sed -n 'A,Bp'`.
 
@@ -1159,7 +1164,7 @@ The guide's normative claims were reconciled with the repository's current files
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-117`; `opencode/pdca-coder/SKILL.md:92-118`
 - `check` may open the evidence artifacts (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:975-980`; `opencode/pdca-dotnet/SKILL.md:1108-1111`
+  `opencode/pdca-coder/SKILL.md:975-980`; `opencode/pdca-dotnet/SKILL.md:1138-1141`
 
 **The state machine, the counters, the todo**
 - the state machine → `opencode/pdca/SKILL.md:119-145`; `opencode/pdca-coder/SKILL.md:120-146`
@@ -1200,17 +1205,18 @@ The guide's normative claims were reconciled with the repository's current files
 
 **pdca-dotnet: .NET gates**
 - the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:540-576`
-- the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1055-1092,1446-1475`
-- the binding/applicability disposition → `:1029-1053,1287-1298`
-- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1027`
-- the CHECK completeness gate (a **binding** `open` forbids a PASS; the `diagnostic_nonbinding` disposition) → `:1024-1027,1261-1299`
-- the inner-loop evidence gate → `:1203-1215`; zero warnings → `:1097,1182,1252-1253`
+- the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1084-1122,1484-1513`
+- the binding/applicability disposition → `:1058-1082,1325-1336`
+- the versioned evidence contract + manifest + `artifacts/pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; the mechanical pipeline (`generate`/`lint`) → `:1035-1056`
+- the CHECK completeness gate (a **binding** `open` forbids a PASS; the `diagnostic_nonbinding` disposition) → `:1024-1034,1291-1337`
+- the inner-loop evidence gate → `:1233-1245`; zero warnings → `:1127,1212,1282-1283`
 - coverage/branches/mutations → `:911-920`; run safety → `:942-955`
-- the `dotnet-*` lenses → `:397-402,715-720,1097-1106,1151-1156`
-- `security-auditor` — a conditional gathering, its report into the `check` aggregate → `:1142-1149`
-- ACT → `:1324-1359`
+- the `dotnet-*` lenses → `:397-402,715-720,1127-1136,1181-1186`
+- `security-auditor` — a conditional gathering, its report into the `check` aggregate → `:1172-1179`
+- ACT → `:1362-1397`
 - `validate_inner_loop.py`: modes/codes → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
   the manifest (`required_rows` ↔ `rows[]`) → `:1158-1226`; mode parsing → `:1241-1300`
+- `pdca_evidence.py`: `generate`/`lint`, the frozen synthetic tree, the two-way coverage → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
 
 **pdca-collection**
 - the role/variant → `opencode/pdca-collection/SKILL.md:12-21`; P → `:49-105`; D/merge → `:107-155`;
