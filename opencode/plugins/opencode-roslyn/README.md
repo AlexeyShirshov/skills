@@ -30,11 +30,11 @@ implements this*, *rename this symbol everywhere*.
   4. bare `roslynq` on `PATH`.
 
 ```sh
-dotnet tool install --global opencode-roslyn   # once the package is on NuGet
+dotnet tool install --global opencode-roslyn
 dotnet tool update  --global opencode-roslyn
 ```
 
-Don't want to wait for the NuGet publish? Build the CLI from source — it lives next to this plugin, in
+Working on an unreleased version of the CLI? Build it from source — it lives next to this plugin, in
 [`roslynq/`](roslynq/) — and install it from the local package:
 
 ```sh
@@ -232,15 +232,14 @@ was published by hand. Never bootstrap with the version `0.0.0-stage`: since Oct
 is npm's own placeholder for `npm stage publish` on a package that does not exist yet, and the
 registry rejects it for an ordinary publish (`You cannot publish using the version`). Use a real
 version — `npx --yes npm@latest stage publish` then `stage approve` claims the name and publishes it.
-That is what `0.1.0` is: staged and approved by hand on 2026-10-18 (shasum `1cc12b07…`), which is why
-the first release made by CI has to be a *new* version (`opencode-roslyn-v0.2.0`).
+That is what `0.1.0` was: staged and approved by hand on 2026-10-18 (shasum `1cc12b07…`), which is why
+the first release made by CI is `0.1.1` — same plugin, built and published by the workflow, no
+functional change.
 
 Not done yet:
 
-- The plugin is on npm (`0.1.0`), but the CLI is not on NuGet yet, so `roslynq` still installs from
-  source as shown above.
 - The `~/.config/opencode/tools/roslyn-cli/` copy and the one in
   [`AlexeyShirshov/opencode-config`](https://github.com/AlexeyShirshov/opencode-config) are now legacy;
-  the global tool is installed from a package, not from them.
+  the global tool is installed from the NuGet package, not from them.
 
 

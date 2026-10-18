@@ -1,6 +1,6 @@
 {
   "name": "opencode-roslyn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "C# semantic analysis for OpenCode V2 — types, symbols, members, references, call sites, implementations and renames through the `roslynq` CLI (Roslyn + MSBuildWorkspace).",
   "type": "module",
   "exports": {
