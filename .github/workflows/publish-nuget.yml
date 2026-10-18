@@ -1,0 +1,81 @@
+name: publish-nuget
+
+# Publishes the roslynq CLI to nuget.org via OIDC trusted publishing — same shape as
+# nextorm/.github/workflows/dotnet.yml, and no API key anywhere.
+#
+#   git tag roslynq-v1.0.0 && git push origin roslynq-v1.0.0
+#
+# Setup on nuget.org, once: Account → Trusted Publishing → add a policy for
+#   Repository owner: AlexeyShirshov
+#   Repository:       skills
+#   Workflow file:    publish-nuget.yml
+# and add the repository secret NUGET_USER (the nuget.org *username*, not a key):
+#   gh secret set NUGET_USER --repo AlexeyShirshov/skills
+on:
+  push:
+    tags:
+      - "roslynq-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish (e.g. roslynq-v1.0.0)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for NuGet trusted publishing
+
+jobs:
+  nuget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: opencode/plugins/opencode-roslyn/roslynq
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check the tag matches the package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          WANT="${TAG#roslynq-v}"
+          HAVE="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Roslyn.Cli.csproj | head -1)"
+          if [ "$WANT" != "$HAVE" ]; then
+            echo "::error::tag $TAG says $WANT but Roslyn.Cli.csproj says $HAVE"
+            exit 1
+          fi
+          echo "publishing opencode-roslyn $HAVE"
+
+      - name: Pack
+        run: dotnet pack -c Release
+
+      - name: Verify the archive works
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet tool install --tool-path /tmp/roslynq-check --add-source ./nupkg opencode-roslyn
+          /tmp/roslynq-check/roslynq --help > /dev/null
+
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to nuget.org
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

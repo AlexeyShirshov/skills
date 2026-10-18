@@ -1,0 +1,40 @@
+{
+  "name": "opencode-roslyn",
+  "version": "0.1.0",
+  "description": "C# semantic analysis for OpenCode V2 — types, symbols, members, references, call sites, implementations and renames through the `roslynq` CLI (Roslyn + MSBuildWorkspace).",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-tool",
+    "csharp",
+    "dotnet",
+    "roslyn",
+    "roslynq",
+    "symbols",
+    "references",
+    "refactoring"
+  ],
+  "license": "MIT",
+  "author": "Alexey Shirshov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexeyShirshov/skills.git",
+    "directory": "opencode/plugins/opencode-roslyn"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  }
+}

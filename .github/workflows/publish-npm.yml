@@ -1,0 +1,74 @@
+name: publish-npm
+
+# Stages a plugin release on npm via OIDC trusted publishing — no long-lived tokens, and no
+# unreviewed publish: the CI only offers the version, a maintainer approves it with 2FA.
+# The tag carries the version and must match package.json (the workflow refuses a mismatch, so the
+# registry version is always the one the repo shows).
+#
+#   git tag opencode-roslyn-v0.1.0 && git push origin opencode-roslyn-v0.1.0
+#   npx --yes npm@latest stage list && npx --yes npm@latest stage approve <id>   # approve
+#
+# Setup on npmjs.com, once, after the package exists: Packages → opencode-roslyn → Settings →
+# Trusted publishing → GitHub Actions, with
+#   Organization or user: AlexeyShirshov
+#   Repository:           skills
+#   Workflow filename:    publish-npm.yml
+#   Allowed actions:      leave the default (stage-only) — the workflow stages, it never publishes
+on:
+  push:
+    tags:
+      - "opencode-roslyn-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish (e.g. opencode-roslyn-v0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for npm trusted publishing
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: opencode/plugins/opencode-roslyn
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          # Trusted publishing needs npm CLI >= 11.5.1 and Node >= 22.14.0.
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false # never cache in release builds
+
+      - name: Check the tag matches package.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          WANT="${TAG#opencode-roslyn-v}"
+          HAVE="$(node -p "require('./package.json').version")"
+          if [ "$WANT" != "$HAVE" ]; then
+            echo "::error::tag $TAG says $WANT but package.json says $HAVE"
+            exit 1
+          fi
+          echo "publishing opencode-roslyn $HAVE"
+
+      - name: Smoke test
+        run: node test/smoke.mjs
+
+      # Staged publishing: the CI only *offers* the version, a maintainer approves it with 2FA
+      # (`npm stage approve` or the package page on npmjs.com). That is what lets the trusted
+      # publisher keep its default stage-only rights instead of "Allow npm publish".
+      # npm detects the OIDC environment and uses it before any token.
+      - name: Stage the release
+        run: |
+          npm install -g npm@latest   # `npm stage` needs npm >= 11.5.1
+          npm stage publish
