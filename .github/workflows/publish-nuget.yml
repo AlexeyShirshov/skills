@@ -63,10 +63,12 @@ jobs:
         run: |
           set -euo pipefail
           dotnet tool install --tool-path /tmp/roslynq-check --add-source ./nupkg opencode-roslyn
-          # `roslynq` prints its usage to stderr and exits 1 by design (no arguments == no work),
-          # so assert on the installed launcher and on the text it prints, not on the status.
+          # `roslynq` prints its usage to stderr and exits 1 by design (no arguments == no work).
+          # Read the text it prints instead of trusting the status: with `pipefail` a pipeline whose
+          # left side exits 1 fails even when grep matched.
           test -x /tmp/roslynq-check/roslynq
-          /tmp/roslynq-check/roslynq --help 2>&1 | grep -q 'usage: roslynq <solution.sln>'
+          usage="$(/tmp/roslynq-check/roslynq --help 2>&1 || true)"
+          grep -q 'usage: roslynq <solution.sln>' <<<"$usage"
 
       - name: NuGet login (OIDC -> temp API key)
         uses: NuGet/login@v1
