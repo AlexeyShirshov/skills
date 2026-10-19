@@ -399,7 +399,8 @@ Changed files) и готовое **сообщение для следующей 
 Начните с обзора семейства — [`pdca.md`](pdca.md), — затем со стек-нейтрального
 «соседа» [`pdca-coder.md`](pdca-coder.md): `pdca-dotnet` отличается от него не
 машиной состояний, а предметными линзами и дополнительными гейтами (а если задач
-много и они независимы — [`pdca-collection.md`](pdca-collection.md)).
+много и они независимы — [`pdca-collection.md`](pdca-collection.md); если цель одна,
+но плана на весь объём нет — [`pdca-incremental.md`](pdca-incremental.md)).
 Первоисточник поведения — сам контракт: разделы «Versioned evidence contract» и
 «CHECK completeness gate — mandatory evidence contract» в
 [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md), а также

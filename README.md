@@ -21,8 +21,9 @@ Skills live under [`opencode/`](opencode/).
 | [`pdca-coder`](opencode/pdca-coder) | Stack-agnostic PDCA executor for software-engineering tasks (code, tests, docs, refactoring, config). Picks the build/test/lint toolchain per language. |
 | [`pdca-collection`](opencode/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups). |
 | [`pdca-dotnet`](opencode/pdca-dotnet) | PDCA cycle for .NET/C# tasks: parallel DO/CHECK streams, role routing, ACT handoff. |
+| [`pdca-incremental`](opencode/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds. |
 
-All four share the same cycle contract: a cheap orchestrator drives roles (planner, coder,
+All five share the same cycle contract: a cheap orchestrator drives roles (planner, coder,
 check, scout, escalate), every CHECK is evidence-based, and a required approval that cannot
 be obtained is a STOP rather than an open question.
 
@@ -35,6 +36,7 @@ npx skills add AlexeyShirshov/skills@pdca
 npx skills add AlexeyShirshov/skills@pdca-coder
 npx skills add AlexeyShirshov/skills@pdca-dotnet
 npx skills add AlexeyShirshov/skills@pdca-collection
+npx skills add AlexeyShirshov/skills@pdca-incremental
 ```
 
 Add `-g` for a user-level install (all projects) and `-y` to skip prompts:
@@ -53,7 +55,7 @@ Global (all projects):
 
 ```sh
 cp -r opencode/pdca opencode/pdca-coder opencode/pdca-collection opencode/pdca-dotnet \
-  ~/.config/opencode/skills/
+  opencode/pdca-incremental ~/.config/opencode/skills/
 ```
 
 Per project:
@@ -73,6 +75,7 @@ Invoke a skill by name, e.g. in an opencode session:
 - `pdca-coder` — "by the cycle" / "via PDCA" for code tasks.
 - `pdca-dotnet` — for .NET/C# work.
 - `pdca-collection` — for a list of independent tasks / a milestone.
+- `pdca-incremental` — for a goal without a committed whole-volume plan (per-task plans may already exist), moved forward in steps; includes per-step `repair` and an optional integrated `verify`.
 
 ## Tests
 
