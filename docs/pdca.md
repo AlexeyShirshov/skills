@@ -262,18 +262,18 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 | Claim | Source |
 |---|---|
 | `pdca` is domain-neutral: it names only roles and phases; what to verify with is decided by PLAN | `opencode/pdca/SKILL.md:6-14` |
-| Roles, tiers, fallback; an unavailable role is a resource blocker | `opencode/pdca/SKILL.md:38-88` |
-| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/agents/pdca-orchestrator.md` in every skill | `opencode/pdca/SKILL.md:48-52,63-71`; `opencode/pdca/assets/agents/pdca-orchestrator.md` |
-| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `opencode/pdca/SKILL.md:22-28,59`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
-| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md:89-117` |
-| The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md:118-142` |
-| The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md:129-141` |
-| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md:161-176,243-252` |
-| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md:178-221` |
-| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md:222-280` |
-| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md:281-324` |
-| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md:327-351` |
-| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md:343-350` |
-| The status file as the only progress mirror, evidence, recovery | `opencode/pdca/SKILL.md:143-160,369-420,421-438,439-466` |
-| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md:467-522` |
-| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md:523-547` |
+| Roles, tiers, fallback; an unavailable role is a resource blocker | `opencode/pdca/SKILL.md §Host requirements (roles → agents)` |
+| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/agents/pdca-orchestrator.md` in every skill | `opencode/pdca/SKILL.md §Host requirements (roles → agents)`; `opencode/pdca/assets/agents/pdca-orchestrator.md` |
+| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `opencode/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
+| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md §Orchestrator role` |
+| The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md §State machine` |
+| The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md §State machine` |
+| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md §Transition gates` |
+| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md §Phase contracts (generic)` |
+| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md §Frozen evidence manifest` |
+| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md §Normal and autonomous modes` |
+| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md §Normal and autonomous modes` |
+| The status file as the only progress mirror, evidence, recovery | `opencode/pdca/SKILL.md §Phase progress mirror (status file only) · §Skill workspace: .pdca/ · §Durable status · §Evidence over assertion · §Recovery after compaction and drift` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md §Escalation (pdca-escalate)` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md §Generic operating constraints` |

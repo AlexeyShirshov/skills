@@ -252,18 +252,18 @@ CHECK в ревизии r1 даёт по критерию «методика в�
 | Утверждение | Источник |
 |---|---|
 | `pdca` доменно-нейтрален: называет только роли и фазы; чем проверять — решает PLAN | `opencode/pdca/SKILL.md:6-14` |
-| Роли, тиры, fallback; недоступная роль — resource blocker | `opencode/pdca/SKILL.md:38-88` |
-| `pdca-orchestrator` — cheap-диспетчер, а не пятый скилл (промпт поставляется как `assets/agents/pdca-orchestrator.md` в каждом скилле) | `opencode/pdca/SKILL.md:48-52,63-71` |
-| CHECK видит артефакты доказательств цикла напрямую (scoped `read`), но не продукт | `opencode/pdca/SKILL.md:22-28,59`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
-| Оркестратор-диспетчер; запрет саморедактирования/самочтения/самовердикта | `opencode/pdca/SKILL.md:89-117` |
-| Машина состояний и ветка `DO → PLAN` | `opencode/pdca/SKILL.md:118-142` |
-| Счётчики `N`, `r`, `n/3` и история дефектов | `opencode/pdca/SKILL.md:129-141` |
-| Кандидат DO → PLAN; аддитивное предусловие vs замена области | `opencode/pdca/SKILL.md:161-176,243-252` |
-| Гейты 1–5 и финализация STOP | `opencode/pdca/SKILL.md:178-221` |
-| Фазовые контракты PLAN/DO/CHECK/ACT/STOP, критерий, зависящий от состояния, и возврат после `incomplete` | `opencode/pdca/SKILL.md:222-280` |
-| Замороженный манифест доказательств и каталог `.pdca/<task>/rv<k>/` | `opencode/pdca/SKILL.md:281-324` |
-| Режимы normal (апрув плана) и autonomous (`Notice:`, без вопросов) | `opencode/pdca/SKILL.md:327-351` |
-| Коллекционный `plan_handoff` на границе PLAN → DO | `opencode/pdca/SKILL.md:343-350` |
-| Статус-файл как единственное зеркало прогресса, доказательства, восстановление | `opencode/pdca/SKILL.md:143-160,369-420,421-438,439-466` |
-| Эскалация, триггеры 1–5, правило «нет четвёртой попытки» | `opencode/pdca/SKILL.md:467-522` |
-| Ограничения: права, инструкции, инъекции, секреты, авторизация | `opencode/pdca/SKILL.md:523-547` |
+| Роли, тиры, fallback; недоступная роль — resource blocker | `opencode/pdca/SKILL.md §Host requirements (roles → agents)` |
+| `pdca-orchestrator` — cheap-диспетчер, а не пятый скилл (промпт поставляется как `assets/agents/pdca-orchestrator.md` в каждом скилле) | `opencode/pdca/SKILL.md §Host requirements (roles → agents)` |
+| CHECK видит артефакты доказательств цикла напрямую (scoped `read`), но не продукт | `opencode/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
+| Оркестратор-диспетчер; запрет саморедактирования/самочтения/самовердикта | `opencode/pdca/SKILL.md §Orchestrator role` |
+| Машина состояний и ветка `DO → PLAN` | `opencode/pdca/SKILL.md §State machine` |
+| Счётчики `N`, `r`, `n/3` и история дефектов | `opencode/pdca/SKILL.md §State machine` |
+| Кандидат DO → PLAN; аддитивное предусловие vs замена области | `opencode/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| Гейты 1–5 и финализация STOP | `opencode/pdca/SKILL.md §Transition gates` |
+| Фазовые контракты PLAN/DO/CHECK/ACT/STOP, критерий, зависящий от состояния, и возврат после `incomplete` | `opencode/pdca/SKILL.md §Phase contracts (generic)` |
+| Замороженный манифест доказательств и каталог `.pdca/<task>/rv<k>/` | `opencode/pdca/SKILL.md §Frozen evidence manifest` |
+| Режимы normal (апрув плана) и autonomous (`Notice:`, без вопросов) | `opencode/pdca/SKILL.md §Normal and autonomous modes` |
+| Коллекционный `plan_handoff` на границе PLAN → DO | `opencode/pdca/SKILL.md §Normal and autonomous modes` |
+| Статус-файл как единственное зеркало прогресса, доказательства, восстановление | `opencode/pdca/SKILL.md §Phase progress mirror (status file only) · §Skill workspace: .pdca/ · §Durable status · §Evidence over assertion · §Recovery after compaction and drift` |
+| Эскалация, триггеры 1–5, правило «нет четвёртой попытки» | `opencode/pdca/SKILL.md §Escalation (pdca-escalate)` |
+| Ограничения: права, инструкции, инъекции, секреты, авторизация | `opencode/pdca/SKILL.md §Generic operating constraints` |

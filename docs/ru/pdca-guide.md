@@ -13,7 +13,7 @@
 Часть ссылок указывает на **хостовые артефакты репозитория `opencode-config`
 (`config/agents/*`, `config/AGENTS.md`, `config/profiles/*.jsonc`) — в этот репозиторий они
 не входят**; здесь такие ссылки не проверяются. Нормативные утверждения этого путеводителя
-прослеживаются к репозиторию; карта «тема → file:line» и оговорка о хостовых артефактах
+прослеживаются к репозиторию; карта «тема → источник» и оговорка о хостовых артефактах
 собраны в §14.
 
 **Учебные примеры помечены.** Всё, что начинается словами «Учебная история», — иллюстрация,
@@ -1242,52 +1242,55 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 
 Нормативные утверждения путеводителя сверены с текущими файлами репозитория (зеркало
 `pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `opencode/<skill>/SKILL.md`. Ниже — карта «тема →
-`file:line`» по репозиторным файлам; диапазоны строк проверены `sed -n 'A,Bp'`.
+источник» по репозиторным файлам: ссылка на скилл называет раздел
+(`opencode/<skill>/SKILL.md §Заголовок`), поэтому правки внутри скилла карту не ломают;
+диапазоны строк остались только для короткой преамбулы до первого заголовка `##` и для
+нескилловых файлов.
 
 **Семейство и вызовы**
 - состав семейства → `README.md:13-16`; способы вызова/триггеры → `README.md:42-49`
 - `pdca` — назначение и доменная нейтральность → `opencode/pdca/SKILL.md:11-14`
 - `pdca-coder` — назначение/стек-агностичность → `opencode/pdca-coder/SKILL.md:11-15`
 - `pdca-dotnet` — .NET-таргет → `opencode/pdca-dotnet/SKILL.md:11-13`
-- `pdca-collection` — роль и выбор варианта по задаче → `opencode/pdca-collection/SKILL.md:12-21`
+- `pdca-collection` — роль и выбор варианта по задаче → `opencode/pdca-collection/SKILL.md §Роль`
 
 **Роли и полномочия**
-- host requirements, таблица ролей/fallback → `opencode/pdca/SKILL.md:38-71`;
-  `opencode/pdca-coder/SKILL.md:49-71`; `opencode/pdca-dotnet/SKILL.md:47-69`
-- ассеты ролей: только `# tier:` и permission-блоки, без `model:` → `opencode/pdca/SKILL.md:63-71`;
-  `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
-- orchestrator role (диспетчер) → `opencode/pdca/SKILL.md:89-116`; `opencode/pdca-coder/SKILL.md:92-117`
+- host requirements, таблица ролей/fallback → `opencode/pdca/SKILL.md §Host requirements (roles → agents)`;
+  `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
+- ассеты ролей: только `# tier:` и permission-блоки, без `model:` → `opencode/pdca/SKILL.md §Host requirements (roles → agents)`;
+  `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
+- orchestrator role (диспетчер) → `opencode/pdca/SKILL.md §Orchestrator role`; `opencode/pdca-coder/SKILL.md §Orchestrator role`
 - `pdca-check` вправе открыть артефакты доказательств (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1129-1132`
+  `opencode/pdca-coder/SKILL.md §CHECK: audit checklist (generic)`; `opencode/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic)`
 
 **Машина состояний, счётчики, зеркало прогресса**
-- state machine → `opencode/pdca/SKILL.md:118-141`; `opencode/pdca-coder/SKILL.md:119-141`
-- счётчики `N/r/n` → `opencode/pdca/SKILL.md:129-141`
-- phase progress mirror → `opencode/pdca/SKILL.md:143-160`
-- DO → PLAN candidate (a–d) → `opencode/pdca/SKILL.md:161-176`
+- state machine → `opencode/pdca/SKILL.md §State machine`; `opencode/pdca-coder/SKILL.md §Orchestrator role · §State machine`
+- счётчики `N/r/n` → `opencode/pdca/SKILL.md §State machine`
+- phase progress mirror → `opencode/pdca/SKILL.md §Phase progress mirror (status file only)`
+- DO → PLAN candidate (a–d) → `opencode/pdca/SKILL.md §DO → PLAN candidate`
 
 **Гейты и эскалация**
-- гейты 1–5 → `opencode/pdca/SKILL.md:178-220`
-- фазовые контракты (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:222-279`
-- повторный заход (re-entry) после терминального `incomplete`/STOP → `opencode/pdca/SKILL.md:239-241`;
-  `opencode/pdca-coder/SKILL.md:696-700`; `opencode/pdca-dotnet/SKILL.md:757-761`
-- режимы normal/autonomous → `opencode/pdca/SKILL.md:326-367`
-- collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
-  `opencode/pdca-coder/SKILL.md:804-811`
-- escalation и триггеры → `opencode/pdca/SKILL.md:467-521`; `opencode/pdca-coder/SKILL.md:535-644`
+- гейты 1–5 → `opencode/pdca/SKILL.md §Transition gates`
+- фазовые контракты (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md §Phase contracts (generic)`
+- повторный заход (re-entry) после терминального `incomplete`/STOP → `opencode/pdca/SKILL.md §Phase contracts (generic)`;
+  `opencode/pdca-coder/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`
+- режимы normal/autonomous → `opencode/pdca/SKILL.md §Normal and autonomous modes`
+- collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md §Normal and autonomous modes`;
+  `opencode/pdca-coder/SKILL.md §Plan approval (PLAN → DO)`
+- escalation и триггеры → `opencode/pdca/SKILL.md §Escalation (pdca-escalate)`; `opencode/pdca-coder/SKILL.md §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §PLAN selects the toolchain and lenses (per task)`
 
 **Память, доказательства, восстановление, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md:369-419,626-694`
-- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md:281-324`
-- evidence over assertion → `opencode/pdca/SKILL.md:421-437`
-- recovery → `opencode/pdca/SKILL.md:439-465`
-- ACT / статус / сообщение → `opencode/pdca/SKILL.md:605-717`
+- durable status / progress log / unit states → `opencode/pdca/SKILL.md §Skill workspace: .pdca/ · §Durable status · §Cycle status file`
+- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md §Frozen evidence manifest`
+- evidence over assertion → `opencode/pdca/SKILL.md §Evidence over assertion`
+- recovery → `opencode/pdca/SKILL.md §Recovery after compaction and drift`
+- ACT / статус / сообщение → `opencode/pdca/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file · §Message for the next session`
 
 **Ограничения, безопасность, red flags**
-- generic constraints → `opencode/pdca/SKILL.md:523-546`
-- instruction priority / injection → `opencode/pdca-coder/SKILL.md:359-375`;
-  `opencode/pdca-dotnet/SKILL.md:361-377`
-- red flags / failure modes → `opencode/pdca/SKILL.md:548-603`
+- generic constraints → `opencode/pdca/SKILL.md §Generic operating constraints`
+- instruction priority / injection → `opencode/pdca-coder/SKILL.md §Evidence over assertion · §Instruction priority and injection defense`;
+  `opencode/pdca-dotnet/SKILL.md §Instruction priority and injection defense`
+- red flags / failure modes → `opencode/pdca/SKILL.md §Red flags (self-check) · §Cycle failure modes`
 
 **pdca-coder: инженерные потоки**
 - project overlay → `opencode/pdca-coder/SKILL.md:38-47`
@@ -1298,7 +1301,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - ACT → `:1137-1168`; economics → `:1313-1323`
 
 **pdca-dotnet: .NET-гейты**
-- обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md:524-568`
+- обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md §DO brief: mandatory test scope`
 - политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1084-1122,1484-1513`
 - binding/applicability disposition → `:1058-1082,1325-1336`
 - versioned evidence contract + манифест + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
@@ -1313,7 +1316,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - `pdca_evidence.py`: `generate`/`lint`, замороженное синтетическое дерево, двустороннее покрытие → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
 
 **pdca-collection**
-- роль/вариант → `opencode/pdca-collection/SKILL.md:12-21`; P → `:49-105`; D/merge → `:107-155`;
+- роль/вариант → `opencode/pdca-collection/SKILL.md §Роль`; P → `:49-105`; D/merge → `:107-155`;
   C → `:157-218`; A → `:220-233`; лейн/`incomplete` → `:235-282`;
   git-модель → `:306-336`; сбой → `:338-350`; статус → `:352-393`;
   параметры cap=4 → `:402-413`; fallback → `:439-448`
