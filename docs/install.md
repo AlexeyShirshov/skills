@@ -5,7 +5,8 @@ sets no models — so the cycle only runs after the host provides those agents, 
 dispatch them, and allows nested delegation. This page is the missing install checklist:
 skills → agents → orchestrator → delegation depth → permissions → model bindings → restart →
 verification. It is host-agnostic; the commands shown as the reference adapter are OpenCode V2, with
-the mapping for Claude Code, Codex and custom hosts (`dsh`, …) given inline.
+the OpenCode V1 mapping and the mapping for Claude Code, Codex and custom hosts (`dsh`, …) given
+inline.
 
 Without it the cycle does not fail loudly. It either degrades to the flat primary (a recorded
 `Notice:`), or hits a resource blocker on the first dispatch.
@@ -81,7 +82,7 @@ translates the frontmatter:
 
 | Host | Agents root | Frontmatter |
 |---|---|---|
-| OpenCode | `~/.config/opencode/agents/`, `.opencode/agents/` | as shipped |
+| OpenCode | `~/.config/opencode/agents/`, `.opencode/agents/` | as shipped (V1-native; V2 translates) |
 | Claude Code | `~/.claude/agents/`, `.claude/agents/` | `name`, `description`, `tools`; express permissions via the tool allowlist, drop `mode`/`permission` |
 | Codex | the host's subagent/workflow directory | keep the body, adapt the frontmatter |
 | custom (`dsh`, …) | the host's agent root | keep the body, adapt the frontmatter |
@@ -127,7 +128,7 @@ a role markdown** — model ids are bound by the host profile (§8).
 The runner is the cheap **dispatcher** that drives one child cycle, one collection group or one
 incremental step. It ships in every skill's `assets/agents/`, so step 3 copies it with the rest — do
 not write your own, and do not keep an older host copy under the same id. The `mode:`/`permission:`
-frontmatter is the OpenCode adapter; other hosts reuse the body.
+frontmatter is the legacy OpenCode adapter (V1-native; V2 translates it); other hosts reuse the body.
 
 What it must be (the asset already encodes this — check it after installation):
 
@@ -147,8 +148,10 @@ keeps working.
 
 The runner drives a child cycle, so a subagent must be able to launch subagents. The skill only needs
 the **capability**; the host decides how it is spelled — OpenCode V2 keeps the depth **only** under
-`experimental`, Claude Code and Codex use their own subagent settings. Without it the documented
-flat-primary fallback applies. The OpenCode reference:
+`experimental`, OpenCode V1 uses the top-level key, Claude Code and Codex use their own subagent
+settings. Without it the documented flat-primary fallback applies.
+
+OpenCode V2:
 
 ```jsonc
 {
@@ -158,9 +161,18 @@ flat-primary fallback applies. The OpenCode reference:
 }
 ```
 
-A top-level `subagent_depth` is accepted but **ignored** in V2 (warning
-`omitted unsupported legacy setting`) and the depth falls back to a single level — the runner can no
-longer delegate and every autonomous cycle degrades to the flat primary. Requires a restart.
+OpenCode V1:
+
+```jsonc
+{
+  "subagent_depth": 3
+}
+```
+
+The forms are not interchangeable: V2 accepts a top-level `subagent_depth` but **ignores** it
+(warning `omitted unsupported legacy setting`), and V1 ignores `experimental.subagent_depth`. In both
+cases the depth falls back to a single level — the runner can no longer delegate and every autonomous
+cycle degrades to the flat primary. Requires a restart.
 
 ## 7. Permissions: let the cheap primary dispatch
 
@@ -184,6 +196,24 @@ primary — must allow each role explicitly:
 }
 ```
 
+OpenCode V1 uses the `permission` map and the `task` action; the `subagent` action and the
+`permissions` array are V2-only:
+
+```jsonc
+{
+  "permission": {
+    "task": {
+      "*": "deny",
+      "pdca-*": "allow"
+    },
+    "skill": "allow"
+  }
+}
+```
+
+The `task` pattern matches the subagent name, last match wins; `pdca-*` covers the six roles, and
+`skill` lets the runner load its contract. V1 has no `subagent` action to translate.
+
 All six ids are the same in every variant (`pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`), so one allowlist serves the family. The
 runner gets the same allowlist for its own children — and it may **not** widen the expensive roles'
@@ -191,6 +221,21 @@ permissions.
 
 If the host forbids `general`/`explore`, do not bypass it: a missing role is a **resource blocker**
 (normal mode: reported to you; autonomous: `Notice:` plus a recorded summary), not a silent run.
+
+### OpenCode V1 and V2 at a glance
+
+| Item | V1 | V2 |
+|---|---|---|
+| nested delegation | top-level `subagent_depth` | `experimental.subagent_depth` |
+| dispatch permission | `permission: { task: ... }` | `permissions: [{ action: "subagent", ... }]` |
+| skill auto-selection | `metadata.opencode/autoinvoke: "false"` | same, plus optional `disable-model-invocation` |
+| agent frontmatter | `mode: subagent`, `permission:` (native) | the same legacy map, translated |
+| `skills` config | `{ paths, urls }` | one array |
+| restart / verify | restart the TUI; `opencode agent list` | `opencode service restart`; `opencode debug agents` / `debug config` |
+
+Both versions share the config locations and are not installed side by side by default; identify the
+major with `opencode --version`. The install prompt (`docs/install-prompt.md`) takes
+`OPENCODE_MAJOR=auto|1|2` and stops on an unknown or mismatched version.
 
 ## 8. Bind models by tier
 

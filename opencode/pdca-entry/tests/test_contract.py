@@ -183,6 +183,38 @@ class PortabilityTest(unittest.TestCase):
                 self.assertIn(host, install)
 
 
+class InstallAdapterTest(unittest.TestCase):
+    """The install prompt and docs must branch on the OpenCode major, not mix keys."""
+
+    def setUp(self) -> None:
+        self.prompt = read(REPO / "docs/install-prompt.md")
+        self.install = read(REPO / "docs/install.md")
+
+    def test_prompt_takes_and_detects_the_major(self) -> None:
+        for marker in ("OPENCODE_MAJOR=auto", "OPENCODE_MAJOR=<auto | 1 | 2>",
+                       "opencode --version", "opencode_major"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, self.prompt)
+
+    def test_v1_branch_uses_v1_keys(self) -> None:
+        for marker in ('"subagent_depth": 3', "`permission` map", "`task`",
+                       "opencode agent list"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, self.prompt)
+
+    def test_v2_branch_uses_v2_keys(self) -> None:
+        for marker in ("experimental.subagent_depth", "action `subagent`",
+                       "`permissions`", "opencode debug agents"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, self.prompt)
+
+    def test_install_docs_document_both_adapters(self) -> None:
+        for marker in ("OpenCode V1", "subagent_depth", "permission",
+                       "opencode agent list", "OPENCODE_MAJOR"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, self.install)
+
+
 class ArtifactsTest(unittest.TestCase):
     def test_target_contracts_exist_and_are_named(self):
         for name in FAMILY:
