@@ -20,8 +20,8 @@ design presumption is economy: a cheap orchestrator, cheap execution and fact ga
 medium-tier planning and verdict, a strong escalation role used sparingly.
 
 These rules are addressed to you as the orchestrator. Subagents (`pdca-planner`,
-`pdca-executor`, `pdca-check`, `pdca-escalate`, `scout`) do NOT apply them: the
-executor must act and run commands; the planner reads the brief and produces a plan; the check
+`pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`) do NOT apply them: `pdca-executor`
+must act and run commands; `pdca-planner` reads the brief and produces a plan; `pdca-check`
 reads the brief **and may open the cycle's evidence artifacts directly** (its scoped `read` of the
 status/evidence/manifest files — never the product artefact) to reconcile the contract rows, then
 produces
@@ -29,7 +29,7 @@ a verdict.
 
 **Two paths, one contract.** In **normal mode you drive the cycle yourself, dispatching
 subagents** — PLAN and the CHECK → PLAN / DO → PLAN loop-back → `pdca-planner`; execution →
-`pdca-executor`; verdict → `pdca-check`; escalation → `pdca-escalate`; facts → `scout`. In
+`pdca-executor`; verdict → `pdca-check`; escalation → `pdca-escalate`; facts → `pdca-scout`. In
 **autonomous mode you do not drive the cycle yourself:** dispatch the whole cycle to the cheap
 `pdca-orchestrator` subagent (a cycle brief in, a compact summary out) and relay it
 (§Autonomous mode). Either way **only a cheap-tier primary drives the cycle or dispatches
@@ -53,31 +53,32 @@ A medium/strong primary still neither drives the cycle nor dispatches `pdca-orch
 
 | Role | Agent | Required | Fallback if missing |
 |---|---|---|---|
-| GATHER (facts) | `scout` | read-only, cheap, reused unchanged | resource blocker |
+| GATHER (facts) | `pdca-scout` | read-only, cheap, reused unchanged | resource blocker |
 | PLAN (decisions) | `pdca-planner` | read-only, no delegation, default-deny | resource blocker |
 | DO (hands) | `pdca-executor` | `edit`/`bash`/`read` allow | resource blocker |
 | CHECK (verdict) | `pdca-check` | read-only (brief + cycle evidence artifacts), no delegation, default-deny | resource blocker |
-| ESCALATE | `pdca-escalate` | read-only, facts via `scout` | resource blocker |
+| ESCALATE | `pdca-escalate` | read-only, facts via `pdca-scout` | resource blocker |
 | RUNNER | `pdca-orchestrator` | cheap dispatcher, subagent allowlist (shared) | flat cheap primary + `Notice:` |
 
 Ready-made definitions: this skill's `assets/agents/` (the four plan/do/check/escalate role
-files plus the gatherer `scout`, which is **not** specialized per task and stays the same for every
-cycle); the RUNNER is the shared host agent `pdca-orchestrator`. A host that already ships its own
-`scout` may keep it — this copy exists so the skill is self-contained. Model bindings come from the
+files, the gatherer `pdca-scout` — **not** specialized per task and the same for every cycle — and the
+RUNNER `pdca-orchestrator`). A host that already ships its own `pdca-scout` or runner may keep it —
+these copies exist so the skill is self-contained. Model bindings come from the
 **host profile's `agent` block** (or a project config `agent.<name>.model`) — **never a model-id
 field in the role markdown**. Each asset carries only a `# tier:` label
-(`pdca-executor`/`scout` = cheap; `pdca-planner`/`pdca-check` = medium;
+(`pdca-executor`/`pdca-scout` = cheap; `pdca-planner`/`pdca-check` = medium;
 `pdca-escalate` = strong; `pdca-orchestrator` = cheap). By default a subagent inherits the
 invoking primary's model; bind ids in the profile `agent` block for routing.
 
 **Setup (once):** (1) copy `assets/agents/*.md` into the host's agents directory (the four `pdca-*`
-role agents **and** `scout`; the RUNNER `pdca-orchestrator` is the shared host agent, not shipped
-here); (2) restart
-the host (agents load at startup); (3) allow the cheap orchestrator's
-`agent.<primary>.permission.task` for `scout`/`pdca-planner`/`pdca-check`/`pdca-executor`/
-`pdca-escalate`, and `pdca-orchestrator` for autonomous delegation. A cheap `pdca-orchestrator`
+role agents, `pdca-scout` and the RUNNER `pdca-orchestrator`); (2) restart
+the host (agents load at startup); (3) allow the primary to dispatch `pdca-scout`/`pdca-planner`/
+`pdca-check`/`pdca-executor`/`pdca-escalate`, and `pdca-orchestrator` for autonomous delegation
+(V2: `agents.<primary>.permissions`, `action: subagent`; V1: `agent.<primary>.permission.task`); (4) set
+`experimental.subagent_depth` ≥ 2 so the RUNNER may delegate. A cheap `pdca-orchestrator`
 that drives a child cycle needs the same allowlist and may **not** widen the expensive roles'
-permissions.
+permissions. The full checklist, including verification and troubleshooting, is
+`docs/install.md` in the skills repository.
 
 A required-but-unavailable role is a **resource blocker** (normal: report to the user;
 autonomous: `Notice:` in the status log + recorded summary), not a silent run without the
@@ -91,11 +92,11 @@ fall back to the flat cheap primary (drive the cycle yourself) and log the fallb
 You drive the cycle, you do not execute it by hand. **You are a dispatcher, not a reader and
 not a decider:** you invoke the subagent Tasks and pass each one the others' reports.
 Decisions (PLAN, return to PLAN) → `pdca-planner`; CHECK verdict → `pdca-check`; escalation →
-`pdca-escalate`; facts → `scout`; every write and command → `pdca-executor`.
+`pdca-escalate`; facts → `pdca-scout`; every write and command → `pdca-executor`.
 
 **Cheap primary only (§Host requirements).** Only a cheap-tier primary takes this role; a
 medium/strong primary does not drive the cycle. The cheap orchestrator never authors a plan,
-never reads files and never runs a command; it routes facts to `scout` and every edit/command
+never reads files and never runs a command; it routes facts to `pdca-scout` and every edit/command
 to `pdca-executor` via a subagent. Both the initial PLAN and any replan belong to `pdca-planner`.
 
 - **Execute an `pdca-escalate` decision by routing, never by re-deciding.** `pdca-escalate`
@@ -107,7 +108,7 @@ to `pdca-executor` via a subagent. Both the initial PLAN and any replan belong t
 - **Do not edit files or run commands** — that is `pdca-executor`'s job, including the cycle
   status file (§Durable status).
 - **Do not read anything yourself** — no artefacts/diffs/logs/status files/outputs. Facts
-  come from `scout` (pointers), command results from `pdca-executor` (exit status, key numbers,
+  come from `pdca-scout` (pointers), command results from `pdca-executor` (exit status, key numbers,
   log path), judgments from `pdca-check`/`pdca-planner`/`pdca-escalate`. Only their compact
   reports enter your context, to forward.
 - Your job: drive the phases, compose briefs (what to do + the reports the subagent needs),
@@ -169,7 +170,7 @@ Classification:
 (b) acceptable **assumption/risk** → record and continue (never weakens the criteria);
 (c) **outside-cycle blocker** → the orchestrator dispatches `pdca-escalate` on
 `pdca-planner`'s report;
-(d) **insufficient evidence** → targeted `scout` first, then on persistent low confidence the
+(d) **insufficient evidence** → targeted `pdca-scout` first, then on persistent low confidence the
 orchestrator dispatches `pdca-escalate` under trigger 5 even without established externalness
 (§Escalation).
 Only a genuinely **new** item that makes the plan unimplementable — never drifting scope (a
@@ -183,7 +184,7 @@ bad plan found by review is a CHECK → PLAN).
    decision not to split a simple task; means and access; risks and stop conditions. Plus:
    **the plan written to the status file by `pdca-executor`** (last step of PLAN) **and, in
    normal mode, the user's approval of the plan** — the orchestrator tells the user that the
-   planner has produced the plan and written it to the status file, asks them to read it and
+   pdca-planner has produced the plan and written it to the status file, asks them to read it and
    approve it, and starts implementation only after that approval — except in autonomous
    mode, where no approval is required and DO starts right after PLAN. The orchestrator only
    checks each item is **present** (§Orchestrator role) and
@@ -328,7 +329,7 @@ is defined only here.
 
 **Normal mode** requires the user's **approval of the plan** after it is on disk
 (§PLAN → DO gate). The plan is written to the status file by `pdca-executor` first; the
-orchestrator then tells the user that the planner has produced the plan and written it to the
+orchestrator then tells the user that the pdca-planner has produced the plan and written it to the
 status file, gives the status-file path and asks them to **read it and approve it** — that
 approval is the **only start signal** (no keyword is required: any explicit approval of the
 plan counts). A question, a change request or a non-committal reply is not an approval and
@@ -427,7 +428,7 @@ role); it constructs the chain:
 
 - **Re-run — `pdca-executor`:** name the proving action and have it run **again**; return the
   exit status, the key numbers and the log **path**, not the log.
-- **Facts — `scout`:** changed artefacts and what changed (pointers) — reported by a
+- **Facts — `pdca-scout`:** changed artefacts and what changed (pointers) — reported by a
   non-author.
 - **Judgment — `pdca-check`:** the reports go to `pdca-check` (gates 2/3); it decides whether
   they prove the claim. The orchestrator relays, it does not judge.
@@ -449,15 +450,15 @@ rather than by artefacts.
 
 **Recovery order (do not skip):**
 1. **Stop** the current action.
-2. **Status file — via `scout`** (you do not read it): durable state — cycle `<N>`, revision
+2. **Status file — via `pdca-scout`** (you do not read it): durable state — cycle `<N>`, revision
    `r`, attempt `n/3`; goal and criteria; decisions; `D:` units with states (including
    unfinished); defect history (keys, revisions/attempts, applied fix count, last escalation
    outcome); current phase/iteration and last log entries; Done/Verified. **Load `N`, `r`,
    `n`, the unfinished states and the defect history before any decision.**
-3. **Durable lessons + overlay — via `scout`** (if the host provides them); the status file
+3. **Durable lessons + overlay — via `pdca-scout`** (if the host provides them); the status file
    wins over other memory.
 4. **Rules** — re-read the gates and §Red flags (the contract, not project content).
-5. **Five questions** from the scout report: where am I (task/phase/`N`/`r`/`n`)? where to?
+5. **Five questions** from the pdca-scout report: where am I (task/phase/`N`/`r`/`n`)? where to?
    goal and criteria? decisions made and why? what was done and how verified, and the defect
    history?
 6. **Reconstruct the state** from the status file (§Phase progress mirror rule 3).
@@ -468,7 +469,7 @@ rather than by artefacts.
 
 `pdca-escalate` is the **second tier for hard decisions**, on an expensive model — call it
 sparingly, when a decision is non-obvious or risky and the cheap subagents are not enough. A
-separate subagent dispatch, a narrow question, facts pre-gathered into a `scout` evidence pack. Triggers
+separate subagent dispatch, a narrow question, facts pre-gathered into a `pdca-scout` evidence pack. Triggers
 (any one):
 
 1. A requirement or acceptance criterion is ambiguous and guessing is unacceptable.
@@ -486,7 +487,7 @@ separate subagent dispatch, a narrow question, facts pre-gathered into a `scout`
    reverse).
 4. The final acceptance of a risky result before ACT.
 5. A design decision in PLAN (or a DO-candidate classification that stays low-confidence after
-   a **targeted `scout`** gather) where `pdca-planner` reports low confidence or no option is
+   a **targeted `pdca-scout`** gather) where `pdca-planner` reports low confidence or no option is
    obvious — this applies **even without established externalness**: no proven outside-cycle
    blocker is required for the trigger.
 
@@ -494,7 +495,7 @@ separate subagent dispatch, a narrow question, facts pre-gathered into a `scout`
 goes to `pdca-planner` first (§State machine, DO → PLAN), and `pdca-planner` adjudicates it.
 `pdca-planner` has no delegation permission, so it does not call `pdca-escalate` itself: it
 reports the outside-cycle blocker or a persistent low-confidence classification after the
-targeted `scout` gather (trigger 5) to the **orchestrator**, which dispatches `pdca-escalate`.
+targeted `pdca-scout` gather (trigger 5) to the **orchestrator**, which dispatches `pdca-escalate`.
 
 **After the escalation — the decision routes, the orchestrator does not re-decide.**
 `pdca-escalate` returns a **decision** (what to do, why, steps), not a menu and not an
@@ -552,7 +553,7 @@ return to the contract**, not "finish and fix later".
 
 **Immediate-stop signals:**
 - I edit files (incl. the status file) or run commands myself instead of `pdca-executor`.
-- I read artefacts/logs/status files myself instead of a `scout`/`pdca-executor` report.
+- I read artefacts/logs/status files myself instead of a `pdca-scout`/`pdca-executor` report.
 - I decide the plan or the verdict myself instead of `pdca-planner`/`pdca-check`.
 - I start DO without the user's approval (normal mode), or ask for approval before the plan is on disk.
 - I skip CHECK or close the cycle without ACT.
@@ -569,7 +570,7 @@ return to the contract**, not "finish and fix later".
 - I edited outside the plan's footprint (Over-Reach), or ran units in parallel with overlapping
   ownership.
 - I closed a phase/cycle on a `pdca-executor` self-report without the evidence chain — fresh
-  re-run + `scout` facts + `pdca-check` verdict (§Evidence over assertion).
+  re-run + `pdca-scout` facts + `pdca-check` verdict (§Evidence over assertion).
 - I let autonomous mode override a required approval or widen a permission.
 
 **Excuses (the model justifies the deviation) → reality:**
@@ -583,7 +584,7 @@ return to the contract**, not "finish and fix later".
 - "It's obvious, no need to verify" → measure, never assert.
 - "I'll fix this too while I'm at it" → outside the plan it is a new `P:` task.
 - "`pdca-executor` says done" → a report ≠ a result; order the evidence chain.
-- "I'll glance at the artefact myself" → reading is `scout`'s job; your context is for
+- "I'll glance at the artefact myself" → reading is `pdca-scout`'s job; your context is for
   routing.
 
 ### Cycle failure modes
@@ -616,7 +617,7 @@ Order:
 2. **Stable project rules** (if the project has them) — updated by `pdca-executor`. **Do not
    write the cycle state there**: standing instructions are loaded into every session.
 3. **Cycle status file — finalized by `pdca-executor`:** the orchestrator passes it the reports
-   (the `pdca-check` verdict, the `pdca-executor` run results, the `scout` facts) and
+   (the `pdca-check` verdict, the `pdca-executor` run results, the `pdca-scout` facts) and
    `pdca-executor` fills in Done/Verified, Next plan and Changed artefacts.
 4. **Status-file lifetime** — finalized and **kept**, never deleted: the next session's handoff
    in normal mode, the next PLAN's input in autonomous mode.
@@ -707,7 +708,7 @@ Then exactly one block to copy:
 ```text
 Cycle <N> of the task "<task>" is closed.
 Status: .pdca/status/<task>-<N>.md
-Have scout report the status and the needed pointers on-demand; do not pull the previous session's history.
+Have pdca-scout report the status and the needed pointers on-demand; do not pull the previous session's history.
 Next goal: <one line>.
 Continue PDCA from PLAN.
 ```

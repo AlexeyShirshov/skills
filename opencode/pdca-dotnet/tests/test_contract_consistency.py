@@ -23,7 +23,7 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_PATH = SKILL_DIR / "SKILL.md"
 ASSET_BRIEFS = [
     SKILL_DIR / f"assets/agents/{name}.md"
-    for name in ("planner", "coder", "check", "escalate")
+    for name in ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate")
 ]
 # Host config (agents/profiles/AGENTS.md/README) lives in the `opencode-config` repo, not in this
 # one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
@@ -37,18 +37,26 @@ CONFIG_BRIEFS = [
     CONFIG_AGENTS / f"{name}.md"
     for name in ("planner", "coder", "check", "escalate")
 ] if CONFIG_AGENTS else []
-# Task 2: the six published EN assets and the tier each must carry (no `model:`).
+# Asset stem -> host stem, for the shared contract branches.
+CANON = {
+    "pdca-planner": "planner", "pdca-executor": "coder", "pdca-check": "check",
+    "pdca-escalate": "escalate", "pdca-scout": "scout",
+    "pdca-security-auditor": "security-auditor",
+}
+# Task 2: the seven published EN assets and the tier each must carry (no `model:`).
 PUBLISHED_ASSETS = [
     SKILL_DIR / f"assets/agents/{name}.md"
-    for name in ("planner", "coder", "check", "escalate", "scout", "security-auditor")
+    for name in ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
+                 "pdca-scout", "pdca-security-auditor", "pdca-orchestrator")
 ]
 ROLE_TIER = {
-    "planner": "medium",
-    "coder": "cheap",
-    "check": "medium",
-    "escalate": "strong",
-    "scout": "cheap",
-    "security-auditor": "medium",
+    "pdca-orchestrator": "cheap",
+    "pdca-planner": "medium",
+    "pdca-executor": "cheap",
+    "pdca-check": "medium",
+    "pdca-escalate": "strong",
+    "pdca-scout": "cheap",
+    "pdca-security-auditor": "medium",
 }
 # Task 3: cross-artifact label sources (host README + diagram source) and the
 # non-executable scenario matrix.  These are text/JSON presence guards only.
@@ -100,7 +108,7 @@ class ContractConsistencyTest(unittest.TestCase):
             between(cls.skill_raw, "### Parallel CHECK streams", "Then follows the checklist")
         )
         cls.escalation = norm(
-            between(cls.skill_raw, "### Escalation (`escalate`)", "## PLAN: design checklist")
+            between(cls.skill_raw, "### Escalation (`pdca-escalate`)", "## PLAN: design checklist")
         )
         cls.autonomous = norm(
             between(cls.skill_raw, "## Autonomous mode", "## Red flags")
@@ -134,7 +142,7 @@ class ContractConsistencyTest(unittest.TestCase):
     def test_plan_revision_counter_definition(self):
         self.assertIn("Plan revision r", self.counters)
         self.assertIn("starts at 1", self.counters)
-        self.assertIn("only when planner actually issued a revised plan", self.counters)
+        self.assertIn("only when pdca-planner actually issued a revised plan", self.counters)
 
     def test_plan_to_do_starts_at_one(self):
         self.assertIn("PLAN(r) → DO starts at 1", self.counters)
@@ -142,7 +150,7 @@ class ContractConsistencyTest(unittest.TestCase):
     def test_check_to_do_increments_and_third_check_escalates(self):
         self.assertIn("CHECK → DO increments", self.counters)
         self.assertIn("third failed CHECK of the same revision", self.counters)
-        self.assertIn("escalate before a fourth", self.counters)
+        self.assertIn("pdca-escalate before a fourth", self.counters)
         self.assertIn("there is no 4th", self.counters)
 
     def test_plan_returns_do_not_consume_attempts_and_new_revision_resets(self):
@@ -157,7 +165,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("same-defect history is not erased by a replan", self.counters)
         # The same-defect trigger itself is canonical in §Escalation (counters point there).
         self.assertIn("same defect came back after one fix", self.escalation)
-        self.assertIn("escalate before the second fix", self.escalation)
+        self.assertIn("pdca-escalate before the second fix", self.escalation)
 
     def test_no_arbitrary_replan_cap(self):
         self.assertIn("No cap on revisions", self.counters)
@@ -229,7 +237,7 @@ class ContractConsistencyTest(unittest.TestCase):
         # Red flags name the deviation (next attempt instead of escalate); the
         # exact revision-scoped counter rules are canonical in §State machine /
         # §Escalation, to which the red flag points.
-        self.assertIn("I made a next attempt instead of escalate", self.red_flags)
+        self.assertIn("I made a next attempt instead of pdca-escalate", self.red_flags)
         self.assertIn("third failed CHECK of the same revision", self.counters)
         self.assertIn("there is no 4th", self.counters)
         self.assertIn("history persists across revisions", self.escalation)
@@ -290,7 +298,9 @@ class ContractConsistencyTest(unittest.TestCase):
 
     def _assert_brief_contract(self, path: Path) -> None:
         en = "assets/agents" in str(path)
-        name = path.stem
+        # The host briefs carry the unprefixed stems; the published assets the
+        # prefixed ids. One canonical stem selects the contract branch.
+        name = CANON.get(path.stem, path.stem)
         if name == "coder":
             status = self._scoped(
                 path,
@@ -303,7 +313,7 @@ class ContractConsistencyTest(unittest.TestCase):
                 "Unfinished work" if en else "Незавершённая",
                 "Evidence, not claims" if en else "Доказательства",
             )
-            self._assert_patterns(retention, f"coder retention {path}", [
+            self._assert_patterns(retention, f"pdca-executor retention {path}", [
                 r"gate 2|гейта 2|гейт 2",
                 r"rejected candidate|отвергнутый кандидат",
                 r"original `?D`?|исходный `?D`?",
@@ -311,7 +321,7 @@ class ContractConsistencyTest(unittest.TestCase):
             ])
         elif name == "planner":
             step = self._scoped(path, "10.", "11.")
-            self._assert_patterns(step, f"planner step10 {path}", [
+            self._assert_patterns(step, f"pdca-planner step10 {path}", [
                 r"revised plan|пересмотренный план",
                 r"increments the revision|увеличивает ревизию",
                 r"resets the attempt n to 1|сбрасывает попытку n в 1",
@@ -322,7 +332,7 @@ class ContractConsistencyTest(unittest.TestCase):
             ])
         elif name == "check":
             step = self._scoped(path, "5.", "6.")
-            self._assert_patterns(step, f"check item5 {path}", [
+            self._assert_patterns(step, f"pdca-check item5 {path}", [
                 r"third failed CHECK of the same revision|"
                 r"третьего провального CHECK той же ревизии",
                 r"same defect|тот же дефект",
@@ -334,7 +344,7 @@ class ContractConsistencyTest(unittest.TestCase):
                 "The counter is scoped" if en else "Счётчик привязан",
                 "## What you do" if en else "## Что делаешь",
             )
-            self._assert_patterns(para, f"escalate counter {path}", [
+            self._assert_patterns(para, f"pdca-escalate counter {path}", [
                 r"PLAN\(r\) → DO",
                 r"n=1",
                 r"third failed CHECK of the same revision|"
@@ -387,8 +397,8 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("No questions at all, ever", self.autonomous)
 
     def test_autonomous_blocker_routed_through_planner_or_escalate_to_stop(self):
-        self.assertIn("planner", self.autonomous)
-        self.assertIn("escalate", self.autonomous)
+        self.assertIn("pdca-planner", self.autonomous)
+        self.assertIn("pdca-escalate", self.autonomous)
         self.assertIn("STOP", self.autonomous)
         self.assertIn("no question", self.autonomous)
 
@@ -403,7 +413,7 @@ class ContractConsistencyTest(unittest.TestCase):
         # The gate-1 ask-user instruction must be explicitly normal-mode only.
         self.assertNotRegex(self.gate1, r"acceptance criteria\s*—\s*ask, do not guess")
         self.assertIn("Normal mode with no acceptance criteria", self.gate1)
-        self.assertIn("autonomous → route through planner/escalate", self.gate1)
+        self.assertIn("autonomous → route through pdca-planner/pdca-escalate", self.gate1)
 
     def test_normal_mode_retains_questions_and_approval(self):
         self.assertIn("the user's approval of the plan", self.gate1)
@@ -419,14 +429,14 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("low confidence", self.escalation)
         self.assertIn("without established externalness", self.escalation)
         # The old "only if outside-cycle confirmed" local restriction must be gone.
-        self.assertNotIn("escalate is called only if", self.escalation)
+        self.assertNotIn("pdca-escalate is called only if", self.escalation)
         self.assertIn("provisional candidate", self.escalation)
 
     def _assert_planner_classification(self, path: Path) -> None:
         step = self._scoped(path, "10.", "11.")
-        self._assert_patterns(step, f"planner classification {path}", [
+        self._assert_patterns(step, f"pdca-planner classification {path}", [
             r"insufficient evidence|недостат\w* доказательств",
-            r"scout",
+            r"pdca-scout|scout",
             r"low confidence|низк\w* уверенност",
             r"trigger 5|триггер\w* 5",
             r"even without|даже без|без доказанной",
@@ -447,7 +457,7 @@ class ContractConsistencyTest(unittest.TestCase):
             "## Response format" if "assets/agents" in str(path) else "## Формат ответа",
             "A missing item" if "assets/agents" in str(path) else "Пропущенный пункт",
         )
-        self._assert_patterns(resp, f"planner response {path}", [
+        self._assert_patterns(resp, f"pdca-planner response {path}", [
             r"(?i)confidence and gaps|уверенность и пробелы",
             r"(?i)classif|классифик",
         ])
@@ -475,7 +485,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("never authors a plan", self.orchestrator)
         self.assertIn("never reads files", self.orchestrator)
         self.assertIn(
-            "Both the initial PLAN and any replan belong to planner",
+            "Both the initial PLAN and any replan belong to pdca-planner",
             self.orchestrator,
         )
         self.assertNotIn("every primary", self.orchestrator)
@@ -533,7 +543,7 @@ class ContractConsistencyTest(unittest.TestCase):
             self.orchestrator.lower(),
         )
         self.assertIn(
-            "both the initial plan and any replan belong to planner",
+            "both the initial plan and any replan belong to pdca-planner",
             self.orchestrator.lower(),
         )
         self.assertNotIn("every primary", self.orchestrator.lower())
@@ -566,7 +576,7 @@ class ContractConsistencyTest(unittest.TestCase):
             "11. Take into account" if en else "11. Учти",
             "## Boundaries" if en else "## Границы",
         )
-        self._assert_patterns(para, f"planner plan-disk {path}", [
+        self._assert_patterns(para, f"pdca-planner plan-disk {path}", [
             r"(?i)normal mode|обычн\w* режим",
             r"(?i)user approves|user's approval|пользователь утверждает",
             r"(?i)autonomous mode|автономн\w* режим",
@@ -600,8 +610,8 @@ class ContractConsistencyTest(unittest.TestCase):
             "cheap orchestrator forwards the request and gathered evidence", section
         )
         self.assertIn("formulates the P: task/plan", section)
-        self.assertIn("coder writes", section)
-        self.assertIn("belong to planner", section)
+        self.assertIn("pdca-executor writes", section)
+        self.assertIn("belong to pdca-planner", section)
         self.assertNotIn("every primary", section)
         self.assertNotIn("architect", section)
 
@@ -894,7 +904,7 @@ class FinalFixGuardTest(unittest.TestCase):
         )
         cls.autonomous = norm(between(cls.skill_raw, "## Autonomous mode", "## Red flags"))
         cls.escalation = norm(
-            between(cls.skill_raw, "### Escalation (`escalate`)", "## PLAN: design checklist")
+            between(cls.skill_raw, "### Escalation (`pdca-escalate`)", "## PLAN: design checklist")
         )
         cls.check_streams = norm(
             between(cls.skill_raw, "### Parallel CHECK streams", "Then follows the checklist")
@@ -911,7 +921,7 @@ class FinalFixGuardTest(unittest.TestCase):
         cls.coder_ru = norm(read(CONFIG_BRIEFS[1])) if HOST_AVAILABLE else ""
         cls.check_en = norm(read(ASSET_BRIEFS[2]))
         cls.check_ru = norm(read(CONFIG_BRIEFS[2])) if HOST_AVAILABLE else ""
-        cls.scout_en = norm(read(SKILL_DIR / "assets/agents/scout.md"))
+        cls.scout_en = norm(read(SKILL_DIR / "assets/agents/pdca-scout.md"))
         cls.scenarios = read(SCENARIOS_PATH)
         cls.plan = norm(read(PLAN_PATH)) if HOST_AVAILABLE else ""
         cls.readme = norm(read(README_PATH)) if HOST_AVAILABLE else ""
@@ -1047,7 +1057,7 @@ class FinalFixGuardTest(unittest.TestCase):
 
     def test_exhausted_revision_no_fourth_attempt_even_after_escalate(self):
         self.assertIn(
-            "exhausted revision r gets no 4th attempt even after escalate",
+            "exhausted revision r gets no 4th attempt even after pdca-escalate",
             self.escalation,
         )
 
@@ -1067,10 +1077,10 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("non-exhausted attempt", self.escalation)
         self.assertIn("decision applies to the current plan", self.escalation)
         self.assertIn("implementation under the current plan", self.escalation)
-        self.assertIn("coder", self.escalation)
+        self.assertIn("pdca-executor", self.escalation)
         self.assertNotIn("recommendation", self.escalation)
         self.assertIn(
-            "Execute an escalate decision by routing, never by re-deciding", self.skill
+            "Execute an pdca-escalate decision by routing, never by re-deciding", self.skill
         )
 
     def test_autonomous_stop_conditional_not_after_every_escalate(self):
@@ -1103,10 +1113,10 @@ class FinalFixGuardTest(unittest.TestCase):
     def test_no_dedicated_primary_plan_required(self):
         # No dedicated primary plan author: the cheap orchestrator routes, planner
         # owns the PLAN (initial and every replan).
-        self.assertIn("the PLAN decision always belongs to planner", self.skill)
+        self.assertIn("the PLAN decision always belongs to pdca-planner", self.skill)
         self.assertIn("The cheap orchestrator never authors a plan", self.skill)
         self.assertIn(
-            "Both the initial PLAN and any replan belong to planner", self.skill
+            "Both the initial PLAN and any replan belong to pdca-planner", self.skill
         )
 
     def test_build_is_default_shorthand_for_cheap_primary(self):

@@ -32,7 +32,7 @@ CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
 
 SCRIPT = SKILL_DIR / "scripts/validate_inner_loop.py"
 SKILL = SKILL_DIR / "SKILL.md"
-EN_CODER = SKILL_DIR / "assets/agents/coder.md"
+EN_CODER = SKILL_DIR / "assets/agents/pdca-executor.md"
 # The RU coder brief is a host artifact (config/agents) and needs the host repo.
 RU_CODER = CONFIG_AGENTS / "coder.md" if CONFIG_AGENTS else None
 

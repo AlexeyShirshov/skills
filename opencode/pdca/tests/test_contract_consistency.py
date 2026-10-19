@@ -53,6 +53,12 @@ HOST_AGENTS = tuple(
     for name in ("planner", "executor", "check", "escalate")
 ) if CONFIG else ()
 
+# The runner is host-facing routing glue: it must name the family's variants
+# (`pdca-coder`/`pdca-dotnet`) and the stack they cover. It is exempt from the
+# domain/stack token scan; the exemption is pinned to exactly this file.
+RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+SCAN_EXEMPT = frozenset((RUNNER_ASSET,))
+
 # Word-boundary (where applicable) domain/stack tokens that must never appear
 # in the universal runtime surface.
 FORBIDDEN_WORDS = (
@@ -77,7 +83,7 @@ FORBIDDEN_WORDS = (
     "docfx",
     "pdca-coder",
     "pdca-dotnet",
-    "security-auditor",
+    "pdca-security-auditor",
 )
 # Tokens whose punctuation makes a word boundary awkward; matched literally.
 FORBIDDEN_LITERALS = (".net", "c#")
@@ -118,7 +124,10 @@ def parse_frontmatter(block: str) -> dict:
 def runtime_files() -> list:
     files = [SKILL_PATH]
     if ASSET_AGENTS.is_dir():
-        files += sorted(p for p in ASSET_AGENTS.glob("*.md") if p.is_file())
+        files += sorted(
+            p for p in ASSET_AGENTS.glob("*.md")
+            if p.is_file() and p not in SCAN_EXEMPT
+        )
     if DIAGRAM.is_dir():
         files += sorted(p for p in DIAGRAM.iterdir() if p.is_file())
     files += [p for p in HOST_AGENTS if p.is_file()]
@@ -284,6 +293,13 @@ class ContractConsistencyTest(unittest.TestCase):
 
 class ForbiddenTokenGuardTest(unittest.TestCase):
     """Zero matches for all domain/stack tokens anywhere on the runtime surface."""
+
+    def test_only_the_runner_is_exempt_from_the_token_scan(self):
+        self.assertEqual({RUNNER_ASSET}, set(SCAN_EXEMPT))
+        self.assertTrue(RUNNER_ASSET.is_file(), "runner asset missing")
+        scanned = set(runtime_files())
+        self.assertNotIn(RUNNER_ASSET, scanned)
+        self.assertEqual(set(ASSET_AGENTS.glob("*.md")) - scanned, {RUNNER_ASSET})
 
     def test_no_forbidden_token_in_runtime_surface(self):
         hits = scan_forbidden()

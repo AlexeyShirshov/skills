@@ -22,12 +22,12 @@ SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
 
 # The generic roles the skill names.  All must classify.
 KNOWN_ROLES = (
-    "scout",
-    "coder",
-    "planner",
-    "check",
-    "escalate",
-    "security-auditor",
+    "pdca-scout",
+    "pdca-executor",
+    "pdca-planner",
+    "pdca-check",
+    "pdca-escalate",
+    "pdca-security-auditor",
     "pdca-orchestrator",
 )
 UNKNOWN_ROLE = "mystery-role"
@@ -105,8 +105,8 @@ class CostAccountingTest(unittest.TestCase):
     def test_store_from_records_walks_descendants(self):
         records = [
             record(0, "build", cost=1.0),
-            record(1, "scout", cost=2.0, parent="s0"),
-            record(2, "coder", cost=4.0, parent="s0"),
+            record(1, "pdca-scout", cost=2.0, parent="s0"),
+            record(2, "pdca-executor", cost=4.0, parent="s0"),
         ]
         store = self.mod.Store.from_records(records)
         try:

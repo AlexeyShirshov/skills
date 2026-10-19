@@ -24,8 +24,8 @@
 .NET-вариант; «по циклу»/«через PDCA» ведут в общий `pdca-coder` — так скиллы
 разведены в `README.md` репозитория). Вариант под задачу выбирает драйвер: логика
 «`.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе → `pdca`» описана в
-`opencode/pdca-collection/SKILL.md`, а сам `pdca-orchestrator` — хостовый агент (в
-этом репозитории его нет). Скилл запускается **явно** и не подменяет обычные
+`opencode/pdca-collection/SKILL.md`, а сам `pdca-orchestrator` поставляется как
+`assets/agents/pdca-orchestrator.md` в каждом скилле семейства. Скилл запускается **явно** и не подменяет обычные
 задачи — правка без цикла выполняется напрямую.
 
 ## 3. Участники и тиры
@@ -36,31 +36,31 @@
 в замысел:
 
 - **оркестратор** — дешёвый: ведёт цикл, не тащит код в свой контекст;
-- **`scout`** и **`coder`** — дешёвые: факты (`file:line`) и правки/команды;
-- **`planner`** и **`check`** — средний тир: решения (декомпозиция, план) и
+- **`pdca-scout`** и **`pdca-executor`** — дешёвые: факты (`file:line`) и правки/команды;
+- **`pdca-planner`** и **`pdca-check`** — средний тир: решения (декомпозиция, план) и
   вердикт (pass/fail, ранжирование, loop-back);
-- **`escalate`** — дорогой и вызывается **редко, по триггерам**, когда дешёвые
+- **`pdca-escalate`** — дорогой и вызывается **редко, по триггерам**, когда дешёвые
   роли не могут дать ответ;
-- **`security-auditor`** — средний тир, включается **по триггеру** (auth, секреты,
+- **`pdca-security-auditor`** — средний тир, включается **по триггеру** (auth, секреты,
   внешний ввод, крипто) как gather-поток CHECK: его отчёт возвращается в агрегат
-  `check`, собственного вердикта у потока нет.
+  `pdca-check`, собственного вердикта у потока нет.
 
-Права у ролей разные и закреплены в шаблонах: `planner` работает по сводке,
-`check` вправе читать только артефакты доказательств цикла (статус, evidence,
-манифест — но никогда продуктовый код), `scout` из `bash` имеет лишь read-only-git
+Права у ролей разные и закреплены в шаблонах: `pdca-planner` работает по сводке,
+`pdca-check` вправе читать только артефакты доказательств цикла (статус, evidence,
+манифест — но никогда продуктовый код), `pdca-scout` из `bash` имеет лишь read-only-git
 из allowlist. Экономику видно и по факту: `.pdca/scripts/pdca_cost.py` считает стоимость и
 токены по фазам и тирам, а имена моделей в нём не зашиты.
 
 Предметные линзы PLAN/CHECK — `dotnet-*`-субагенты: `dotnet-architect`/
 `dotnet-code-review-agent` — дизайн и перф в сборе PLAN (findings `file:line`,
-счётчики, без кода), а вердикт всё равно за `check`; `dotnet-testing-specialist`
+счётчики, без кода), а вердикт всё равно за `pdca-check`; `dotnet-testing-specialist`
 (что и как тестировать),
 `dotnet-benchmark-designer`/`dotnet-async-performance-specialist`/
 `dotnet-csharp-concurrency-specialist`/`dotnet-performance-analyst` (перф, причём
 последний — **только с готовыми артефактами**), `dotnet-docs-generator` и
 `docfx-specialist` (документация). Специализированные субагенты —
 дополнительные **сборщики** evidence (доказательств), а не новые гейты: вердикт
-всё равно принадлежит `check`.
+всё равно принадлежит `pdca-check`.
 
 ## 4. Чем .NET-вариант отличается
 
@@ -70,7 +70,7 @@
 `projects`, `selectors`, `files`, `rebuild` (`affected` | `none`), `boundary`,
 `rationale` — и, для политики прогонов, `integration_projects` и
 `integration_boundary_runs`. Без него оркестратор **не отправляет** бриф — он
-возвращается `planner`-у на доукомплектование. `selectors` должны быть точными;
+возвращается `pdca-planner`-у на доукомплектование. `selectors` должны быть точными;
 широкий селектор («всё решение») отвергается. `rebuild: "affected"` корректен для
 компилируемого изменения, а для docs-only изменение обязано идти с
 `rebuild: "none"` (выдуманный пересбор валит гейт). `boundary` — единственная
@@ -349,15 +349,15 @@ DO-отчёт приходит с четырьмя строками evidence. В
 
 Цикл не «заканчивается молча»: ACT — обязательный гейт, и у него есть наблюдаемый
 результат. В normal-режиме он оставляет **два артефакта**: финализированный
-**цикл-статус-файл** (его заполняет `coder` по отчётам — вердикт `check`,
-результаты прогонов, факты `file:line` из `scout`: Done/Verified, Next plan,
+**цикл-статус-файл** (его заполняет `pdca-executor` по отчётам — вердикт `pdca-check`,
+результаты прогонов, факты `file:line` из `pdca-scout`: Done/Verified, Next plan,
 Changed files) и готовое **сообщение для следующей сессии**. В autonomous-режиме
 второго артефакта нет — адресата-пользователя не существует, работа продолжается
 в той же сессии, а статус-файл сохраняется.
 
 Порядок ACT: переносимый урок (необязательно, 0–2 за цикл; no-op — норма) →
-обновление `AGENTS.md`/тестов (`coder`) → стабильные правила в проектный оверлей →
-финализация цикл-статус-файла (`coder`) → при действительном терминальном закрытии —
+обновление `AGENTS.md`/тестов (`pdca-executor`) → стабильные правила в проектный оверлей →
+финализация цикл-статус-файла (`pdca-executor`) → при действительном терминальном закрытии —
 **гейтованная очистка** тяжёлого staged-материала этой задачи с её машинно проверяемой
 квитанцией (§4.5); последним в normal-режиме идёт блок «commit advice + сообщение», после
 него — ничего. Статус-файл **сохраняется
@@ -389,7 +389,7 @@ Changed files) и готовое **сообщение для следующей 
   получаемо (новое evidence или починенная обвязка), либо критерий переопределяется на
   воспроизводимый оракул. План, молча повторяющий провалившийся критерий, не `ready`.
 - **Линзы — сборщики, не судьи.** `dotnet-*`-субагенты приносят кандидатов и
-  числа. Вердикт, ранжирование и loop-back — за `check`; ноль чисел или
+  числа. Вердикт, ранжирование и loop-back — за `pdca-check`; ноль чисел или
   самоотчёт автора — fail («театр проверяющего», Verifier Theater).
 - **`.NET`-вариант не заменяет общий цикл.** Это тот же контракт с добавленной
   .NET-спецификой; машина состояний, гейт «all green» и loop-back — общие.
@@ -405,8 +405,8 @@ Changed files) и готовое **сообщение для следующей 
 «CHECK completeness gate — mandatory evidence contract» в
 [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md), а также
 ссылающиеся на них шаблоны ролей
-([`planner.md`](../../opencode/pdca-dotnet/assets/agents/planner.md),
-[`check.md`](../../opencode/pdca-dotnet/assets/agents/check.md)) и компактная
+([`pdca-planner.md`](../../opencode/pdca-dotnet/assets/agents/pdca-planner.md),
+[`check.md`](../../opencode/pdca-dotnet/assets/agents/pdca-check.md)) и компактная
 реализация гейта —
 [`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
 Обзор всего семейства — [`docs/ru/pdca-guide.md`](pdca-guide.md).
@@ -423,8 +423,8 @@ Changed files) и готовое **сообщение для следующей 
 | Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `opencode/pdca-collection/SKILL.md:16-21,412-414` |
 | Явный триггер и разведение скиллов; «правка без цикла — напрямую» | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
 | Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `opencode/pdca-dotnet/SKILL.md:15-19,62-69,71-75,84-88`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
-| `check` вправе открывать артефакты доказательств (не продуктовый код); `scout` — только read-only-git | `opencode/pdca-dotnet/SKILL.md:21-26,1120-1123`; `opencode/pdca-dotnet/assets/agents/check.md:6-22`; `opencode/pdca-dotnet/assets/agents/scout.md:6-23` |
-| `security-auditor` — conditional gather, отчёт возвращается в агрегат `check` | `opencode/pdca-dotnet/SKILL.md:69,1154-1161` |
+| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `opencode/pdca-dotnet/SKILL.md:21-26,1120-1123`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| `pdca-security-auditor` — conditional gather, отчёт возвращается в агрегат `pdca-check` | `opencode/pdca-dotnet/SKILL.md:69,1154-1161` |
 | Экономика по факту (стоимость/токены по фазам и тирам, без имён моделей) | `opencode/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
 | Обязательный `test scope` (поля, широкие селекторы, docs-only/`rebuild`, граница) | `opencode/pdca-dotnet/SKILL.md:521-557` |
 | Валидатор: режимы `brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`, сверка `--journal`, коды `0`/`2`/`1`, «ничего не исполняет» | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |

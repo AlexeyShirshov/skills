@@ -82,10 +82,19 @@ def parse_frontmatter(block: str) -> dict:
     return keys
 
 
+# The runner is host-facing routing glue: it must name the .NET variant and the
+# .NET lenses it may dispatch. Exempt it from the stack-token guard; the
+# exemption is pinned to exactly this file in the test below.
+RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+SCAN_EXEMPT = frozenset((RUNNER_ASSET,))
+
+
 def scan_tree(root: Path, patterns) -> list:
     hits = []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or "__pycache__" in path.parts:
+            continue
+        if path.resolve() in {p.resolve() for p in SCAN_EXEMPT}:
             continue
         try:
             text = path.read_text(encoding="utf-8")
@@ -109,7 +118,7 @@ class ContractConsistencyTest(unittest.TestCase):
         )
         cls.autonomous = norm(between(cls.skill_raw, "## Autonomous mode", "## Red flags"))
         cls.escalation = norm(
-            between(cls.skill_raw, "### Escalation (`escalate`)",
+            between(cls.skill_raw, "### Escalation (`pdca-escalate`)",
                     "## PLAN selects the toolchain and lenses")
         )
         cls.evidence = norm(
@@ -227,7 +236,7 @@ class ContractConsistencyTest(unittest.TestCase):
 
     def test_escalation_no_fourth_attempt(self):
         self.assertIn("there is no 4th attempt", self.escalation)
-        self.assertIn("gets no 4th attempt even after escalate", self.escalation)
+        self.assertIn("gets no 4th attempt even after pdca-escalate", self.escalation)
 
     def test_escalation_is_routed_not_re_decided(self):
         self.assertIn("never by re-deciding", self.skill)
@@ -284,6 +293,12 @@ class ForbiddenTokenGuardTest(unittest.TestCase):
     def test_no_forbidden_token_in_any_pdca_file(self):
         hits = scan_tree(SKILL_DIR, forbidden_tokens())
         self.assertEqual([], hits, "forbidden tokens found: %r" % hits)
+
+    def test_only_the_runner_is_exempt_from_the_stack_scan(self):
+        self.assertEqual({RUNNER_ASSET}, set(SCAN_EXEMPT))
+        self.assertTrue(RUNNER_ASSET.is_file(), "runner asset missing")
+        hits = [p for p, _ in scan_tree(SKILL_DIR, forbidden_tokens())]
+        self.assertNotIn(str(RUNNER_ASSET), hits)
 
     def test_detector_catches_a_rejected_sample(self):
         patterns = forbidden_tokens()

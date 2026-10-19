@@ -47,6 +47,14 @@ npx skills add AlexeyShirshov/skills@pdca-coder -g -y
 
 Without `-g` the CLI targets the current project.
 
+Installing a skill is only half of the setup: the cycle dispatches **subagents**, so the host needs
+the role agents and the runner `pdca-orchestrator` (both ship in the skill's `assets/agents/`),
+nested delegation (`experimental.subagent_depth`) and `subagent` permissions. Every agent id is
+`pdca-`prefixed (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`,
+`pdca-security-auditor`, `pdca-orchestrator`), so it cannot collide with an existing
+`planner`/`coder`/`scout`. The full checklist — with a verification step and a troubleshooting table —
+is in [`docs/install.md`](docs/install.md) ([`docs/ru/install.md`](docs/ru/install.md)).
+
 ### From a checkout
 
 Clone the repository and copy the skill(s) you want into an opencode skills directory.

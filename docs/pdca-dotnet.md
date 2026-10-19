@@ -23,8 +23,8 @@ This skill's trigger is **explicit**: the phrase "по pdca-dotnet" (that phrase
 .NET variant; "по циклу"/"через PDCA" lead into the general `pdca-coder` — that is how the skills
 are separated in the repository's `README.md`). The variant for a task is chosen by the driver: the
 logic "`.NET/C#` → `pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`" is described in
-`opencode/pdca-collection/SKILL.md`, while `pdca-orchestrator` itself is a host agent (it is not in
-this repository). The skill is launched **explicitly** and does not replace ordinary tasks — an
+`opencode/pdca-collection/SKILL.md`, while `pdca-orchestrator` itself ships as
+`assets/agents/pdca-orchestrator.md` in every skill of the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
 edit without the cycle is performed directly.
 
 ## 3. Participants and tiers
@@ -34,29 +34,29 @@ The skill names only **roles**, not models: the host binds a role to a specific 
 field is not there and must not be. The economics are built into the design:
 
 - **the orchestrator** — cheap: it drives the cycle without pulling code into its context;
-- **`scout`** and **`coder`** — cheap: facts (`file:line`) and edits/commands;
-- **`planner`** and **`check`** — the medium tier: decisions (decomposition, plan) and the verdict
+- **`pdca-scout`** and **`pdca-executor`** — cheap: facts (`file:line`) and edits/commands;
+- **`pdca-planner`** and **`pdca-check`** — the medium tier: decisions (decomposition, plan) and the verdict
   (pass/fail, ranking, loop-back);
-- **`escalate`** — expensive and called **rarely, by triggers**, when the cheap roles cannot give an
+- **`pdca-escalate`** — expensive and called **rarely, by triggers**, when the cheap roles cannot give an
   answer;
-- **`security-auditor`** — the medium tier, switched on **by trigger** (auth, secrets, external
-  input, crypto) as a CHECK gather stream: its report returns into the `check` aggregate, and the
+- **`pdca-security-auditor`** — the medium tier, switched on **by trigger** (auth, secrets, external
+  input, crypto) as a CHECK gather stream: its report returns into the `pdca-check` aggregate, and the
   stream has no verdict of its own.
 
-The roles' permissions differ and are fixed in the templates: `planner` works from the summary,
-`check` may read only the cycle's evidence artifacts (status, evidence, manifest — but never
-product code), and `scout` has only read-only git from the allowlist among `bash` commands. The
+The roles' permissions differ and are fixed in the templates: `pdca-planner` works from the summary,
+`pdca-check` may read only the cycle's evidence artifacts (status, evidence, manifest — but never
+product code), and `pdca-scout` has only read-only git from the allowlist among `bash` commands. The
 economics are visible in practice too: `.pdca/scripts/pdca_cost.py` computes cost and tokens by phase and
 tier, and model names are not hard-coded in it.
 
 The PLAN/CHECK domain lenses are the `dotnet-*` subagents: `dotnet-architect`/
 `dotnet-code-review-agent` — design and performance during PLAN gathering (findings `file:line`,
-counters, no code), while the verdict still belongs to `check`; `dotnet-testing-specialist` (what
+counters, no code), while the verdict still belongs to `pdca-check`; `dotnet-testing-specialist` (what
 to test and how), `dotnet-benchmark-designer`/`dotnet-async-performance-specialist`/
 `dotnet-csharp-concurrency-specialist`/`dotnet-performance-analyst` (performance, the last one
 **only with ready-made artifacts**), `dotnet-docs-generator` and `docfx-specialist`
 (documentation). The specialized subagents are additional **gatherers** of evidence, not new gates:
-the verdict still belongs to `check`.
+the verdict still belongs to `pdca-check`.
 
 ## 4. How the .NET variant differs
 
@@ -65,7 +65,7 @@ the verdict still belongs to `check`.
 Every implementation brief **must** carry a structured `test scope`: `projects`, `selectors`,
 `files`, `rebuild` (`affected` | `none`), `boundary`, `rationale` — and, for the run policy,
 `integration_projects` and `integration_boundary_runs`. Without it the orchestrator **does not
-send** the brief — it goes back to `planner` to be completed. `selectors` must be precise; a wide
+send** the brief — it goes back to `pdca-planner` to be completed. `selectors` must be precise; a wide
 selector ("the whole solution") is rejected. `rebuild: "affected"` is correct for a compilable
 change, while a docs-only change must go with `rebuild: "none"` (an invented rebuild fails the
 gate). `boundary` is the single comprehensive point at the DO → CHECK boundary.
@@ -325,15 +325,15 @@ is defective" (FAIL and loop-back) — and in both cases it does not let a "gree
 ## 6. The cycle's outcome and ACT
 
 The cycle does not "end silently": ACT is a mandatory gate, and it has an observable outcome. In
-normal mode it leaves **two artifacts**: a finalized **cycle status file** (filled in by `coder`
-from the reports — the `check` verdict, the run results, the `file:line` facts from `scout`:
+normal mode it leaves **two artifacts**: a finalized **cycle status file** (filled in by `pdca-executor`
+from the reports — the `pdca-check` verdict, the run results, the `file:line` facts from `pdca-scout`:
 Done/Verified, Next plan, Changed files) and a ready **message for the next session**. In
 autonomous mode there is no second artifact — there is no user to address, the work continues in
 the same session, and the status file is kept.
 
 The order of ACT: a transferable lesson (optional, 0–2 per cycle; a no-op is normal) → updating
-`AGENTS.md`/tests (`coder`) → stable rules into the project overlay → finalizing the cycle status
-file (`coder`) → on a genuine terminal closure, the **gated cleanup** of this task's heavy staged
+`AGENTS.md`/tests (`pdca-executor`) → stable rules into the project overlay → finalizing the cycle status
+file (`pdca-executor`) → on a genuine terminal closure, the **gated cleanup** of this task's heavy staged
 material with its machine-checkable receipt (§4.5); last in normal mode comes the "commit advice +
 message" block, and after it nothing.
 The status file is **always kept**: via the recorded `Next plan` it either becomes the input of the
@@ -364,7 +364,7 @@ ACT does not edit them.
   redefined onto a reproducible oracle. A plan that silently repeats the failed criterion is not
   `ready`.
 - **Lenses are gatherers, not judges.** The `dotnet-*` subagents bring candidates and numbers. The
-  verdict, ranking and loop-back belong to `check`; zero numbers or the author's self-report is a
+  verdict, ranking and loop-back belong to `pdca-check`; zero numbers or the author's self-report is a
   fail ("verifier theater", Verifier Theater).
 - **The .NET variant does not replace the general cycle.** It is the same contract with added .NET
   specifics; the state machine, the "all green" gate and the loop-back are shared.
@@ -379,8 +379,8 @@ The primary source of behaviour is the contract itself: the sections "Versioned 
 and "CHECK completeness gate — mandatory evidence contract" in
 [`opencode/pdca-dotnet/SKILL.md`](../opencode/pdca-dotnet/SKILL.md), as well as the role
 templates that reference them
-([`planner.md`](../opencode/pdca-dotnet/assets/agents/planner.md),
-[`check.md`](../opencode/pdca-dotnet/assets/agents/check.md)) and the compact implementation of
+([`pdca-planner.md`](../opencode/pdca-dotnet/assets/agents/pdca-planner.md),
+[`check.md`](../opencode/pdca-dotnet/assets/agents/pdca-check.md)) and the compact implementation of
 the gate —
 [`scripts/validate_inner_loop.py`](../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
 An overview of the whole family is in [`docs/pdca-guide.md`](pdca-guide.md).
@@ -397,8 +397,8 @@ The article's normative claims were reconciled with the repository's current fil
 | The variant per task (`.NET/C#` → `pdca-dotnet`) and the identity of the `pdca-coder`/`pdca-dotnet` base | `opencode/pdca-collection/SKILL.md:16-21,412-414` |
 | The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
 | Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `opencode/pdca-dotnet/SKILL.md:15-19,62-69,71-75,84-88`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
-| `check` may open the evidence artifacts (not product code); `scout` — read-only git only | `opencode/pdca-dotnet/SKILL.md:21-26,1120-1123`; `opencode/pdca-dotnet/assets/agents/check.md:6-22`; `opencode/pdca-dotnet/assets/agents/scout.md:6-23` |
-| `security-auditor` is a conditional gather, its report returns into the `check` aggregate | `opencode/pdca-dotnet/SKILL.md:69,1154-1161` |
+| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `opencode/pdca-dotnet/SKILL.md:21-26,1120-1123`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `opencode/pdca-dotnet/SKILL.md:69,1154-1161` |
 | The economics in practice (cost/tokens by phase and tier, no model names) | `opencode/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
 | The mandatory `test scope` (fields, wide selectors, docs-only/`rebuild`, the boundary) | `opencode/pdca-dotnet/SKILL.md:521-557` |
 | The validator modes (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`), the `--journal` reconciliation, the `0`/`2`/`1` codes, "executes nothing" | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |

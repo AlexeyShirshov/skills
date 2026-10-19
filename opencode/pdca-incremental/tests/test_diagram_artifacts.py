@@ -45,10 +45,10 @@ LABELS = (
     "next step · baseline = принято", "repair · parent N",
     "verify — опциональный интегральный gate",
     "met · unreachable · blocked · stopped",
-    "Оркестратор · cheap", "planner · read-only", "coder · edit/bash",
-    "scout · факты, не решение", "check · read-only · evidence", "primary · status-only",
-    "дешёвая ступень", "средняя ступень", "check · medium",
-    "strong · escalate — не роль кампании",
+    "Оркестратор · cheap", "pdca-planner · read-only", "pdca-executor · edit/bash",
+    "pdca-scout · факты, не решение", "pdca-check · read-only · evidence", "primary · status-only",
+    "дешёвая ступень", "средняя ступень", "pdca-check · medium",
+    "strong · pdca-escalate — не роль кампании",
 )
 BAD_TOKENS = ("nextorm", "dot" + "net", "python")
 

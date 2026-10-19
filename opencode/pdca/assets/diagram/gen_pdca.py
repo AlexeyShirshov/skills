@@ -52,7 +52,7 @@ TIER_MODEL = {"weak": "cheap", "medium": "medium", "strong": "strong"}
 # Universal phase cards, with the responsible role tier on each.
 BLOCKS = {
     "P": [
-        ("Сбор · gather", "scout · факты · file:line", "weak"),
+        ("Сбор · gather", "pdca-scout · факты · file:line", "weak"),
         ("Цель · результат", "что и зачем", "medium"),
         ("Ограничения · допущения", "границы задачи", "medium"),
         ("Критерии приёмки", "каждый + способ проверки", "medium"),
@@ -74,11 +74,11 @@ BLOCKS = {
         ("Маршрутизация", "дефект→DO · план→PLAN", "medium"),
     ],
     "E": [
-        ("Скаут", "scout · факты · file:line", "weak"),
+        ("Скаут", "pdca-scout · факты · file:line", "weak"),
         ("Триггеры", "неоднозначность · повтор", "strong"),
         ("3-й провал", "CHECK(r) исчерпан", "strong"),
         ("Необратимый trade-off", "цена решения", "strong"),
-        ("Решение → роутинг", "planner или STOP", "strong"),
+        ("Решение → роутинг", "pdca-planner или STOP", "strong"),
     ],
     "A": [
         ("Финализация", "принятого результата", "weak"),
@@ -93,7 +93,7 @@ INPUTS = [
     "PLAN ← «старт» · «реплан от DO / CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»",
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
     "CHECK ← «units done от DO»",
-    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после scout»",
+    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»",
     "ACT ← «все criteria met от CHECK»",
     "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в требуемом approval»",
     "EXIT ← «ACT закрыт»",
@@ -110,7 +110,7 @@ DISPATCH = {
 
 # tier legend, cheap / medium / strong
 LEGEND = [
-    ("#0d9488", "дешёвая ступень", "cheap", "pdca-executor · pdca-orchestrator · scout"),
+    ("#0d9488", "дешёвая ступень", "cheap", "pdca-executor · pdca-orchestrator · pdca-scout"),
     ("#4f46e5", "средняя ступень", "medium", "pdca-planner · pdca-check"),
     ("#ea580c", "дорогая ступень", "strong", "pdca-escalate"),
 ]
@@ -156,13 +156,13 @@ _TR_EN = {
         "pdca · orchestrator — per-phase inputs · normal: primary · autonomous: pdca-orchestrator (cheap tier only)",
     # PLAN cards
     "Сбор · gather": "Gather",
-    "scout · факты · file:line": "scout: facts · file:line",
+    "pdca-scout · факты · file:line": "pdca-scout: facts · file:line",
     "Цель · результат": "Goal · result",
     "что и зачем": "what and why",
     "Ограничения · допущения": "Constraints · assumptions",
     "границы задачи": "task boundaries",
     "Критерии приёмки": "Acceptance criteria",
-    "каждый + способ проверки": "each + a check",
+    "каждый + способ проверки": "each + a pdca-check",
     "Декомпозиция": "Decomposition",
     "units · зависимости": "units · dependencies",
     "Средства · доступ": "Means · access",
@@ -192,7 +192,7 @@ _TR_EN = {
     "Необратимый trade-off": "Irreversible trade-off",
     "цена решения": "cost of the call",
     "Решение → роутинг": "Decision → routing",
-    "planner или STOP": "planner or STOP",
+    "pdca-planner или STOP": "pdca-planner or STOP",
     # ACT cards
     "Финализация": "Finalization",
     "принятого результата": "of the accepted result",
@@ -205,8 +205,8 @@ _TR_EN = {
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»":
         "DO ← “approval from PLAN” · “defect from CHECK” · “r not exhausted from ESCALATE”",
     "CHECK ← «units done от DO»": "CHECK ← “units done from DO”",
-    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после scout»":
-        "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after scout”",
+    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»":
+        "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after pdca-scout”",
     "ACT ← «все criteria met от CHECK»": "ACT ← “all criteria met from CHECK”",
     "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в требуемом approval»":
         "STOP ← “no doable PLAN r+1” · “unsolvable constraint” · “refused required approval”",
@@ -238,7 +238,7 @@ _TR_EN = {
     "следующий цикл · N+1": "next cycle · N+1",
     "новое предусловие": "new precondition",
     "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
-    "неверный план → planner · r+1 при ревизии": "wrong plan → planner · r+1 on revision",
+    "неверный план → pdca-planner · r+1 при ревизии": "wrong plan → pdca-planner · r+1 on revision",
     "r не исчерпан → DO": "r not exhausted → DO",
     "исчерпан r → PLAN r+1": "r exhausted → PLAN r+1",
     "STOP: нет плана r+1": "STOP: no plan r+1",
@@ -504,7 +504,7 @@ def render(P):
     s.append(label(682, R1_TOP - 108, "дефект · n+1 (n/3)", P["label"]))
     s.append(curve(f"M798,{R1_TOP} C798,{R1_TOP-136} 334,{R1_TOP-136} 334,{R1_TOP}",
                    P["arrow"], "check_plan_replan"))
-    s.append(label(566, R1_TOP - 140, "неверный план → planner · r+1 при ревизии", P["label"]))
+    s.append(label(566, R1_TOP - 140, "неверный план → pdca-planner · r+1 при ревизии", P["label"]))
 
     # escalation row
     s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "решение", P["escalate"], "ESCALATE"))

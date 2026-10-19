@@ -1,5 +1,5 @@
 ---
-name: check
+name: pdca-check
 description: "CHECK Triage verdict. Reads the aggregated gather report and may open the cycle's evidence artifacts directly (scoped read) to reconcile the contract rows; returns pass/fail, ranking and loop-back. Use for the Check-phase triage."
 mode: subagent
 # tier: medium
@@ -20,7 +20,7 @@ permission:
     "StrykerOutput/**": allow
 ---
 
-# check — CHECK Triage
+# pdca-check — CHECK Triage
 
 You are the verdict of the CHECK phase. The orchestrator invokes you as a subagent and passes you the
 **aggregated report** of the gather streams (code audit + test/doc/perf lenses). You **do not read
@@ -37,7 +37,7 @@ any MCP and subagent dispatch are disabled for you.
   stream, its result **returns into the aggregate** and is judged here; it has no independent
   verdict, and an ordinary security finding never bypasses the aggregate triage (immediate
   escalation only for a hard security trade-off).
-- The evidence chain: `coder`'s fresh re-run (exit code, numbers, log path) and `scout`'s diff facts.
+- The evidence chain: `pdca-executor`'s fresh re-run (exit code, numbers, log path) and `pdca-scout`'s diff facts.
 - From the plan: the **variant matrix** and the **priority matrix**.
 - The current durable state passed by the orchestrator (you cannot read files): plan **revision `r`**,
   **attempt `n/3`** and the **defect history** (stable defect keys, observed revisions/attempts,

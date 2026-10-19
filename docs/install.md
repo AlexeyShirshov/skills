@@ -16,15 +16,19 @@ The roles are **subagent names**. Every skill in the family is explicit about it
 
 | Skill | Roles it dispatches | Role assets shipped |
 |---|---|---|
-| `pdca` | `scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/agents/*.md` (5 files) |
-| `pdca-coder` | `scout`, `planner`, `coder`, `check`, `escalate`, `security-auditor` | `assets/agents/*.md` (6 files) |
-| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/agents/*.md` (6 files) |
-| `pdca-collection` | all of the above per task, plus the runner `pdca-orchestrator` | none (uses the family's) |
-| `pdca-incremental` | `planner`, `coder`, `scout`, `check`, `escalate` + `pdca-orchestrator` | none (uses the family's) |
+| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/agents/*.md` (6 files) |
+| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/agents/*.md` (7 files) |
+| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/agents/*.md` (7 files) |
+| `pdca-collection` | all of the above per task, plus the runner `pdca-orchestrator` | `assets/agents/pdca-orchestrator.md` |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per block, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/agents/pdca-orchestrator.md` |
 
-The runner **`pdca-orchestrator` is not shipped by any skill**: it is a shared host agent. Every
-skill also needs a cheap-tier primary — the tier is taken from the host profile's effective tier,
-not from the agent's name.
+Every shipped agent id carries the `pdca-` prefix and is **the same across the variants**, so a
+skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
+
+The runner **`pdca-orchestrator` ships in every skill's `assets/agents/`** (the same file, so any
+install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
+profile's effective tier, not from the agent's name. A medium or strong primary (for example `architect`) **does not** drive
+the cycle; switch to the cheap primary (`build` by default) before asking for a cycle.
 
 ## 2. Install the skills
 
@@ -46,7 +50,8 @@ the cycle itself in the project it runs in.
 ## 3. Install the role agents
 
 OpenCode discovers agents at `~/.config/opencode/agents/<name>.md` (global) and
-`.opencode/agents/<name>.md` (project). The file name or the `name` field gives the agent ID.
+`.opencode/agents/<name>.md` (project). The path gives the agent ID (a nested path becomes part of
+it, e.g. `.opencode/agents/team/reviewer.md` → `team/reviewer`).
 
 ```sh
 # pdca
@@ -56,84 +61,47 @@ cp opencode/pdca/assets/agents/*.md ~/.config/opencode/agents/
 cp opencode/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
 ```
 
-> **Name collision.** `pdca-coder` and `pdca-dotnet` ship agents under the **same** names
-> (`planner`, `check`, `coder`, `escalate`, `scout`, `security-auditor`) with **different bodies** —
-> the .NET copies carry the evidence contract and the inner-loop gate. Copying both into one
-> directory silently overwrites one family with the other. Install one family's assets, or keep a
-> single shared set (see §4).
+> **One variant, one asset set.** All three cycle variants ship **the same six ids**
+> (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, and — in the
+> `pdca-coder`/`pdca-dotnet` variants — `pdca-security-auditor`) with **different bodies**: `pdca` is
+> domain-neutral, `pdca-coder` selects a toolchain per task, `pdca-dotnet` carries the evidence
+> contract and the inner-loop gate. Copying two variants into one directory silently overwrites
+> one with the other. Install one variant's assets, or keep a single shared set (§4).
 
-### 4. Keep one shared set when you use several families
+## 4. Keep one shared set when you use several families
 
-`pdca` uses distinct `pdca-*` names, so it never collides. `pdca-coder` and `pdca-dotnet` do, and a
-third, richer copy may already live in your config repository. Pick one source of truth:
+The variants are alternatives, not layers: their role ids coincide by design, so one deployed copy
+always wins. A third, richer copy may already live in your config repository. Pick one source of
+truth:
 
 - **one family** — copy that skill's `assets/agents/*.md`;
-- **shared host set** — keep `agents/*.md` in the host config repository and mirror it into the
-  skill assets mechanically (this repository's config uses `tools/sync-roles.mjs --check` as a CI
-  gate; `--fix` rewrites the asset frontmatter from the host agents).
+- **shared host set** — keep the role files in your host config repository and mirror them into the
+  skill assets mechanically (a small sync script that rewrites the asset frontmatter from the host
+  agents and fails in CI when they drift). This is what keeps a `.NET` host from silently losing the
+  `pdca-coder` bodies, and vice versa.
 
 Either way the role files carry only a `# tier:` label and permissions. **Never put a `model:` into
-a role markdown** — model ids are bound by the host profile (§7).
+a role markdown** — model ids are bound by the host profile (§8).
 
-## 5. Provide the runner `pdca-orchestrator`
+## 5. Install the runner `pdca-orchestrator`
 
-It is a cheap **dispatcher**: it may call subagents, and may not edit, run commands or read files.
-Minimal frontmatter (the body is the dispatcher prompt — see the skill's §Orchestrator role, or the
-host's own copy):
+The runner is the cheap **dispatcher** that drives one child cycle, one collection group or one
+incremental step. It ships in every skill's `assets/agents/`, so step 3 copies it with the rest — do
+not write your own, and do not keep an older host copy under the same id.
 
-```yaml
----
-description: PDCA orchestrator (cheap tier) — drives one cycle via subagents; dispatches only.
-mode: subagent
-# tier: cheap
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: subagent
-    resource: planner
-    effect: allow
-  - action: subagent
-    resource: coder
-    effect: allow
-  - action: subagent
-    resource: check
-    effect: allow
-  - action: subagent
-    resource: escalate
-    effect: allow
-  - action: subagent
-    resource: scout
-    effect: allow
-  - action: subagent
-    resource: security-auditor
-    effect: allow
-  - action: subagent
-    resource: pdca-planner
-    effect: allow
-  - action: subagent
-    resource: pdca-executor
-    effect: allow
-  - action: subagent
-    resource: pdca-check
-    effect: allow
-  - action: subagent
-    resource: pdca-escalate
-    effect: allow
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "*"
-    effect: allow
----
-```
+What it must be (the asset already encodes this — check it after installation):
 
-Add `dotnet-*` (or any other lens the PLAN selects) to the allowlist if your tasks use them. Without
-the runner, autonomous mode falls back to the flat cheap primary; normal mode keeps working.
+- `mode: subagent`, `# tier: cheap`, no `model:`;
+- `edit`/`write`/`shell`: **deny** — it dispatches, it does not work;
+- a `subagent` allowlist for `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`/
+  `pdca-scout`/`pdca-security-auditor` (+ the `dotnet-*` lenses and `docfx-specialist` where used),
+  with `*` denied;
+- `skill` allowed (it loads the selected variant).
+
+A host that already ships its own runner may keep it only if it grants the same allowlist; otherwise
+the shipped copy should win, because a dispatcher without the `pdca-*` allowlist cannot start a
+cycle. Without a runner at all, autonomous mode falls back to the flat cheap primary; normal mode
+keeps working.
 
 ## 6. Allow nested delegation
 
@@ -163,20 +131,21 @@ primary — must allow each role explicitly:
 {
   "permissions": [
     { "action": "*", "resource": "*", "effect": "deny" },
-    { "action": "subagent", "resource": "scout", "effect": "allow" },
-    { "action": "subagent", "resource": "planner", "effect": "allow" },
-    { "action": "subagent", "resource": "coder", "effect": "allow" },
-    { "action": "subagent", "resource": "check", "effect": "allow" },
-    { "action": "subagent", "resource": "escalate", "effect": "allow" },
-    { "action": "subagent", "resource": "security-auditor", "effect": "allow" },
+    { "action": "subagent", "resource": "pdca-scout", "effect": "allow" },
+    { "action": "subagent", "resource": "pdca-planner", "effect": "allow" },
+    { "action": "subagent", "resource": "pdca-executor", "effect": "allow" },
+    { "action": "subagent", "resource": "pdca-check", "effect": "allow" },
+    { "action": "subagent", "resource": "pdca-escalate", "effect": "allow" },
+    { "action": "subagent", "resource": "pdca-security-auditor", "effect": "allow" },
     { "action": "subagent", "resource": "pdca-orchestrator", "effect": "allow" }
   ]
 }
 ```
 
-`pdca`-family names (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) go in the same
-list. The runner gets the same allowlist for its own children — and it may **not** widen the
-expensive roles' permissions.
+All six ids are the same in every variant (`pdca-planner`, `pdca-executor`, `pdca-check`,
+`pdca-escalate`, `pdca-scout`, `pdca-security-auditor`), so one allowlist serves the family. The
+runner gets the same allowlist for its own children — and it may **not** widen the expensive roles'
+permissions.
 
 If the host forbids `general`/`explore`, do not bypass it: a missing role is a **resource blocker**
 (normal mode: reported to you; autonomous: `Notice:` plus a recorded summary), not a silent run.
@@ -185,18 +154,18 @@ If the host forbids `general`/`explore`, do not bypass it: a missing role is a *
 
 | Tier | Roles |
 |---|---|
-| cheap | `scout`, `coder` / `pdca-executor`, `pdca-orchestrator` |
-| medium | `planner` / `pdca-planner`, `check` / `pdca-check`, `security-auditor` |
-| strong | `escalate` / `pdca-escalate` |
+| cheap | `pdca-scout`, `pdca-executor`, `pdca-orchestrator` |
+| medium | `pdca-planner`, `pdca-check`, `pdca-security-auditor` |
+| strong | `pdca-escalate` |
 
 Bind ids in the profile's agent block (or a project config), never in the role markdown:
 
 ```jsonc
 {
   "agents": {
-    "planner": { "model": "provider/model#high" },
-    "check": { "model": "other-provider/other-model#high" },
-    "coder": { "model": "cheap-provider/cheap-model" }
+    "pdca-planner": { "model": "provider/model#high" },
+    "pdca-check": { "model": "other-provider/other-model#high" },
+    "pdca-executor": { "model": "cheap-provider/cheap-model" }
   }
 }
 ```
@@ -222,8 +191,8 @@ Then check, in this order:
 3. **Permissions resolve.** The same `debug agents` output shows the merged rule list per agent; the
    `subagent`/`edit`/`shell` rules must be present and in the right order (last match wins).
 4. **Smoke run.** Start a trivial cycle on a throwaway task. Success criteria: the primary dispatches
-   the planner (not itself), the executor writes the status file under `.pdca/`, and CHECK is done by
-   `check`, not by the author. If you see `Notice:` in the status file, the cycle fell back — read
+   the `pdca-planner` (not itself), `pdca-executor` writes the status file under `.pdca/`, and CHECK is done by
+   `pdca-check`, not by the author. If you see `Notice:` in the status file, the cycle fell back — read
    the recorded reason instead of treating the run as normal.
 
 ## 10. Troubleshooting
@@ -232,8 +201,9 @@ Then check, in this order:
 |---|---|---|
 | A role is "not found" on dispatch | agent file missing, or installed into a directory the host does not discover | put it in `~/.config/opencode/agents/` (or `.opencode/agents/`), restart, re-check with `debug agents` |
 | Cycle falls back to the flat primary | no `pdca-orchestrator`, or `subagent_depth` < 2, or the host forbids delegation | §5 and §6 |
-| `Notice:` about a missing role | the skill's role name differs from the installed agent name (e.g. `pdca-planner` vs `planner`) | install the matching family, or alias the agent |
-| A role behaves like its V1 twin | the asset uses the legacy `permission:` map | V2 translates it; the merged rules are visible in `debug agents` — prefer `permissions:` in new agents |
+| `Notice:` about a missing role | the skill's role name differs from the installed agent name (e.g. `pdca-planner` vs `pdca-planner`) | install the matching family, or alias the agent |
+| A role behaves like its V1 twin | the asset uses the legacy `permission:` map | V2 translates it (`permission` → `permissions`, `task` → `subagent`, `bash` → `shell`, `write`/`patch` → `edit`); the merged rules are visible in `debug agents` — prefer `permissions:` in new agents |
+| A rule has no effect | the asset names an action outside the V2 Core list | `todowrite`, `doom_loop` and `list` are not V2 Core permission actions (plugins may define their own). They pass through the config but match no built-in tool. Harmless, but do not rely on them |
 | Expensive model used for gathering | no tier binding in the profile | §8 |
 | `.pdca/` reads are asked for approval | the host denies `.pdca/**` to the check/executor | allow `read`/`edit` on `.pdca/**` for those agents |
 

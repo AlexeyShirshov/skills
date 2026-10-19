@@ -58,16 +58,19 @@ UNCLASSIFIED = "unclassified"
 # is not listed maps to `unclassified`.
 PHASE = {
     "pdca-orchestrator": "orchestrator",
-    "planner": "PLAN",
     "pdca-planner": "PLAN",
+    "planner": "PLAN",
+    "pdca-scout": "GATHER",
     "scout": "GATHER",
     "explore": "GATHER",
-    "coder": "DO",
     "pdca-executor": "DO",
-    "check": "CHECK",
+    "coder": "DO",
     "pdca-check": "CHECK",
-    "escalate": "ESCALATE",
+    "check": "CHECK",
     "pdca-escalate": "ESCALATE",
+    "escalate": "ESCALATE",
+    "pdca-security-auditor": "SECURITY",
+    "security-auditor": "SECURITY",
 }
 
 PHASE_ORDER = [

@@ -44,7 +44,7 @@ SVG_NS = "{http://www.w3.org/2000/svg}"
 PHASE_COLUMNS = ("P · PLAN", "D · DO", "C · CHECK", "E · ESCALATE", "A · ACT")
 GATHER_CARD = "Сбор · gather"
 TIER_BADGES = ("cheap", "medium", "strong")
-TIER_ROLES = ("pdca-executor", "pdca-orchestrator", "scout",
+TIER_ROLES = ("pdca-executor", "pdca-orchestrator", "pdca-scout",
               "pdca-planner", "pdca-check", "pdca-escalate")
 
 # Domain/stack tokens (as in the contract guard) plus the security markers.
@@ -52,7 +52,7 @@ FORBIDDEN_WORDS = (
     "coding", "code", "код", "dotnet", "python", "roslyn", "build", "lint",
     "tdd", "coverage", "xml", "analyzer", "solid", "benchmark", "perf",
     "worktree", "debug", "regression", "docfx", "pdca-coder", "pdca-dotnet",
-    "readme", "test", "tests", "security-auditor", "sec", "security",
+    "readme", "test", "tests", "pdca-security-auditor", "sec", "security",
     "безопасность",
 )
 FORBIDDEN_LITERALS = (".net", "c#")

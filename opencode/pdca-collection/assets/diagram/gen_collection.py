@@ -66,9 +66,9 @@ MAIN_COLUMN_TO_STATE = {
 # DO→ESCALATE) are absent by construction.  The normal path is DO→MERGE→C;
 # the single-group degradation keeps the direct DO→C bypass; a conflict goes
 # MERGE→ESCALATE and the resolution returns ESCALATE→MERGE (the orchestrator
-# re-dispatches the retry to `coder`, or the group tip is skipped as
+# re-dispatches the retry to `pdca-executor`, or the group tip is skipped as
 # `incomplete`).  MERGE therefore has exactly two inputs: the phase-DO
-# completion and the escalate decision.  The corrective `REPAIR` composition
+# completion and the pdca-escalate decision.  The corrective `REPAIR` composition
 # returns to a full `C` on success and terminates in the distinct lower `STOP`
 # node when the corrective revision is exhausted with no actionable revised
 # plan (no 4th implementation CHECK; the collection stays `unverified`).
@@ -201,16 +201,16 @@ BLOCKS = {
         # own PLAN of EVERY task runs first, then the all-plans barrier, and only
         # then clustering (DAG/groups); the three planning sub-steps are the
         # semantic `data-step` anchors below.
-        ("Свой PLAN задачи", "scout + planner · каждой задачи", "medium"),
+        ("Свой PLAN задачи", "pdca-scout + pdca-planner · каждой задачи", "medium"),
         ("ALL-barrier", "все планы готовы · до DAG", "weak"),
-        ("DAG · группы", "planner · после барьера", "medium"),
+        ("DAG · группы", "pdca-planner · после барьера", "medium"),
         ("Статус-файл", "plan_state + groups/tasks", "weak"),
     ],
     "DO": [
-        ("Worktree + ветки", "coder · на группу", "weak"),
+        ("Worktree + ветки", "pdca-executor · на группу", "weak"),
         ("Запуск лейнов", "параллельно · ≤ cap (4)", "weak"),
         ("Лейн · группа", "один субагент · оркеструет, не решает", "weak"),
-        ("Ветка задачи", "от tip предыдущей · coder", "weak"),
+        ("Ветка задачи", "от tip предыдущей · pdca-executor", "weak"),
         (("pdca-цикл · continue from saved PLAN", "DO→CHECK→ACT"), "руки cheap · решения medium · эскалация strong", "composite"),
         # autocommit is only available inside the explicitly authorized
         # collection mode (otherwise the next task cannot branch from a committed
@@ -219,14 +219,14 @@ BLOCKS = {
         ("Коммит · если разрешён автокоммит", "иначе patch · только файлы задачи", "weak"),
     ],
     "MERGE": [
-        ("merge --no-ff", "coder · в текущий бранч", "weak"),
+        ("merge --no-ff", "pdca-executor · в текущий бранч", "weak"),
         ("По группам", "последовательно · «#<n>»", "weak"),
     ],
     "C": [
-        # the mandatory general-`C` measurements, gathered by `coder` (cheap).
+        # the mandatory general-`C` measurements, gathered by `pdca-executor` (cheap).
         # which checks are obligatory is defined by the task/acceptance criteria
         # (build/tests/lint for code, render/preview for design, …), never
-        # hardcoded here.  The verdict itself is the always-run medium `check`
+        # hardcoded here.  The verdict itself is the always-run medium `pdca-check`
         # card appended inside the column (see render below).
         ("Проверки задачи", "обязательные · по типу работы", "weak"),
         ("Тесты", "функциональные · приёмка", "weak"),
@@ -241,7 +241,7 @@ BLOCKS = {
         (("PDCA", "исправления"), "стандартный PDCA · оркестратор", "composite"),
     ],
     "E": [
-        ("Скаут", "scout · факты · file:line", "weak"),
+        ("Скаут", "pdca-scout · факты · file:line", "weak"),
         (("Разрешение", "конфликтов слияния"), "merge fail · решает", "strong"),
     ],
     "A": [
@@ -264,7 +264,7 @@ P_SUBSTEP = {
 
 # columns that apply only when the collection has >=2 groups; with a single group
 # there is nothing to merge (work happens on the current branch).
-CONDITIONAL = {"MERGE": "только при ≥2 группах", "REPAIR": "по FAIL от check",
+CONDITIONAL = {"MERGE": "только при ≥2 группах", "REPAIR": "по FAIL от pdca-check",
                # per-task cycle variant chosen by the orchestrator
                "DO": ("цикл: .NET/C# → pdca-dotnet · другой код → pdca-coder",
                       "иначе → pdca (по умолчанию)")}
@@ -297,10 +297,10 @@ INPUTS = [
 # ---- state-graph layout: single source of nodes and routes ----------------
 # Node ids keep the pre-existing ids minus the removed bespoke TRIAGE/BLOCKED
 # stages.  The verification node is the semantic id `C` (the standard CHECK
-# owned by `check`/medium); `A` is the parent collection ACT (report /
+# owned by `pdca-check`/medium); `A` is the parent collection ACT (report /
 # authorized cleanup / finalize), a real reachable node.  `REPAIR` is the
 # standard corrective PDCA composition (composite), triggered by the
-# orchestrator on FAIL.  `MERGE` is the explicit integration node (`coder`
+# orchestrator on FAIL.  `MERGE` is the explicit integration node (`pdca-executor`
 # cheap): lanes reach it at their terminal barrier, it hands the integrated
 # tree to `C`, and a merge conflict routes through it to `ESCALATE`.
 # Two main rows: the peer row (header + cards) then the corrective row, each
@@ -372,19 +372,19 @@ STATE_NODES = {
     "P":          {"x": GX["P"],     "y": R1_TOP, "label": "PLAN",          "tier": None},
     "DO":         {"x": GX["DO"],    "y": R1_TOP, "label": ["DO · ПОДГОТОВКА", "+ ЛЕЙНЫ"], "tier": "cheap"},
     "MERGE":      {"x": GX["MERGE"], "y": R1_TOP, "label": "MERGE",         "tier": "cheap",
-                   "owner": "coder · cheap"},
+                   "owner": "pdca-executor · cheap"},
     "C":          {"x": GX["C"],     "y": R1_TOP, "label": "CHECK",         "tier": "medium",
-                   "owner": "check · medium"},
+                   "owner": "pdca-check · medium"},
     "A":          {"x": GX["A"],     "y": R1_TOP, "label": "ACT",           "tier": None},
     "EXIT":       {"x": GX["EXIT"],  "y": R1_TOP, "label": "EXIT",          "tier": None},
     "REPAIR":     {"x": GX["C"],     "y": R2_TOP, "label": "REPAIR",         "composite": True,
                    "owner": "pdca · составной"},
     "ESCALATE":   {"x": GX["MERGE"], "y": R2_TOP, "label": "ESCALATE",      "tier": "strong",
                    # the escalated decision is only routed by the orchestrator:
-                   # a revised plan goes to planner, implementation/STOP to coder.
+                   # a revised plan goes to pdca-planner, implementation/STOP to pdca-executor.
                    # kept left of the node so it clears the REPAIR->ESCALATE route.
-                   "annotation": ["решение → planner (план)",
-                                  "или coder (реализация, STOP)"],
+                   "annotation": ["решение → pdca-planner (план)",
+                                  "или pdca-executor (реализация, STOP)"],
                    "annotation_x": GX["MERGE"] - 12, "annotation_anchor": "end"},
     "STOP":       {"x": GX["C"],     "y": R3_TOP, "label": "STOP",          "tier": None,
                    "annotation": "unverified · без ACT/cleanup"},
@@ -441,13 +441,13 @@ ROUTES = {
     ("MERGE", "ESCALATE"): {"points": [(_GMC - 15, R1_BOT), (_GMC - 15, R2_TOP)],
                             "caption": EDGE_LABELS[("MERGE", "ESCALATE", "merge-конфликт")],
                             "label": (_GMC - 107, _MID - 8)},
-    # resolution returns to MERGE; the ORCHESTRATOR re-dispatches coder's retry
+    # resolution returns to MERGE; the ORCHESTRATOR re-dispatches pdca-executor's retry
     # (the strong expert itself never patches) or the group tip is skipped as
     # `incomplete`.  Reverse arrows are uncaptioned.
     ("ESCALATE", "MERGE"): {"points": [(_GMC + 15, R2_TOP), (_GMC + 15, R1_BOT)],
                             "caption": [],
                             "dispatched_by": "orchestrator"},
-    # repeat of the same defect after one fix -> escalate before the second fix;
+    # repeat of the same defect after one fix -> pdca-escalate before the second fix;
     # routed through the clear band below the corrective row (no crossing of the
     # dispatch/return pair above).
     ("REPAIR", "ESCALATE"): {"points": [(GX["C"] + 40, R2_BOT),
@@ -601,8 +601,8 @@ def render(P, title):
         _cattrs = f'data-column="{c}"'
         if c == "C":
             # the whole verification column is one addressable group owned by
-            # the medium `check`: four cheap measurements + the verdict card.
-            _cattrs += ' data-role="check" data-tier="medium"'
+            # the medium `pdca-check`: four cheap measurements + the verdict card.
+            _cattrs += ' data-role="pdca-check" data-tier="medium"'
         elif c == "REPAIR":
             _cattrs += (' data-main-recovery="corrective-pdca"'
                         ' data-dispatched-by="orchestrator"'
@@ -670,8 +670,8 @@ def render(P, title):
             vy = COL_Y + len(blocks) * BOX_STEP
             y1 = COL_Y + (len(blocks) - 1) * BOX_STEP + BOX_H
             s.append(poly([(cx(c), y1), (cx(c), vy)], P["bus"]))
-            s.append('<g data-step="check-verdict" data-role="check" data-tier="medium">')
-            s.append(box(x, vy, w, BOX_H, "Вердикт", "check · PASS / FAIL", "medium"))
+            s.append('<g data-step="check-verdict" data-role="pdca-check" data-tier="medium">')
+            s.append(box(x, vy, w, BOX_H, "Вердикт", "pdca-check · PASS / FAIL", "medium"))
             s.append('</g>')
             bottom = vy + BOX_H
         _frame = f'<rect x="{x-6}" y="{COL_Y-8}" width="{w+12}" height="{bottom-COL_Y+16}" rx="12" fill="none" stroke="{COLOR[c]}" stroke-opacity="{P["frame_op"]}" stroke-width="{P["frame_w"]}" data-frame="{c}"/>'
@@ -798,9 +798,9 @@ def render(P, title):
         s.append('</g>')
 
     legend = [
-        ("#0d9488", "дешёвая ступень", "cheap", "pdca-orchestrator · scout · coder"),
-        ("#4f46e5", "средняя ступень", "medium", "planner · check · security-auditor"),
-        ("#ea580c", "дорогая ступень", "strong", "escalate"),
+        ("#0d9488", "дешёвая ступень", "cheap", "pdca-orchestrator · pdca-scout · pdca-executor"),
+        ("#4f46e5", "средняя ступень", "medium", "pdca-planner · pdca-check · pdca-security-auditor"),
+        ("#ea580c", "дорогая ступень", "strong", "pdca-escalate"),
     ]
     ly = LEG_Y
     _titles_y = ly - 22
@@ -857,7 +857,7 @@ def render(P, title):
         s.append(f'<g data-node="{_k}"{_tier}{_comp}>')
         s.append(f'<rect x="{_n["x"]}" y="{_n["y"]}" width="{NW}" height="{NH}" rx="10" fill="{_c}" fill-opacity="0.08" stroke="{_c}" stroke-width="1.6"{_da}/>')
         if _n.get("owner"):
-            # visible owner label on the actual node (e.g. `check · medium`)
+            # visible owner label on the actual node (e.g. `pdca-check · medium`)
             s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+17}" class="st" fill="{_c}" text-anchor="middle">{esc(_n["label"])}</text>')
             s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+33}" class="ls" fill="{_c}" text-anchor="middle">{esc(_n["owner"])}</text>')
         else:
@@ -910,7 +910,7 @@ def render(P, title):
         "коммитов и цепочки незакоммиченных веток нет (исключение задаётся overlay проекта, не глобально)",
         # merge barrier: terminal = readiness; only successful (done) tips merge
         "≥2: барьер ждёт терминальности ВСЕХ лейнов (done | incomplete) — это готовность, не успех; "
-        "MERGE только успешных (done) tip, incomplete пропускается; конфликт → abort → escalate",
+        "MERGE только успешных (done) tip, incomplete пропускается; конфликт → abort → pdca-escalate",
         # STOP is not success; ACT cleanup preserves incomplete results;
         # re-gather is a blocked/no-defect state, never a code repair
         "C: re-gather остаётся blocked (нет отчёта) — не дефект, правок кода нет; "

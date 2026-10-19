@@ -32,7 +32,28 @@ CONFIG = (HOST_REPO / "config") if HOST_REPO else None
 HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
 SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
 
-READ_ONLY_ROLES = ("escalate", "security-auditor", "scout")
+READ_ONLY_ROLES = ("pdca-escalate", "pdca-security-auditor", "pdca-scout")
+
+# The agent ids are host-prefixed (`pdca-*`) while an older deployed mirror may
+# still carry the unprefixed names. Comparisons normalise both sides.
+ALIASES = {
+    "scout": "pdca-scout", "planner": "pdca-planner", "coder": "pdca-executor",
+    "check": "pdca-check", "escalate": "pdca-escalate",
+    "security-auditor": "pdca-security-auditor",
+}
+MIRROR_NAME = {
+    "pdca-escalate": "escalate",
+    "pdca-security-auditor": "security-auditor",
+    "pdca-scout": "scout",
+}
+
+
+def canon(text: str) -> str:
+    """Rename bare host role names to the prefixed asset names (idempotent)."""
+    for bare, prefixed in ALIASES.items():
+        import re as _re
+        text = _re.sub(r"(?<![\w-])%s(?![\w-])" % _re.escape(bare), prefixed, text)
+    return text
 
 # Forbidden command shapes, assembled from fragments so this guard itself does
 # not contain the risky literals it asserts against.
@@ -162,7 +183,7 @@ def make_db(path: Path) -> None:
         )
         con.execute(
             "insert into session values "
-            "('s0', null, 'coder', 'task', null, 1.0, 1, 1, 0, 0, 0, 0)"
+            "('s0', null, 'pdca-executor', 'task', null, 1.0, 1, 1, 0, 0, 0, 0)"
         )
         con.commit()
     finally:
@@ -239,7 +260,7 @@ class WriteProofAllowlistTest(unittest.TestCase):
         for role in READ_ONLY_ROLES:
             with self.subTest(role=role):
                 expected: set = set(ALLOW_SHAPE)
-                if role == "escalate":
+                if role == "pdca-escalate":
                     expected.add("cd *")
                 self.assertEqual(expected, set(self._allow(role)))
 
@@ -280,8 +301,12 @@ class WriteProofAllowlistTest(unittest.TestCase):
             self.skipTest("installed mirror not present")
         for role in READ_ONLY_ROLES:
             with self.subTest(role=role):
-                src = (ASSET_AGENTS / ("%s.md" % role)).read_text(encoding="utf-8")
-                dst = (installed / ("%s.md" % role)).read_text(encoding="utf-8")
+                src_path = ASSET_AGENTS / ("%s.md" % role)
+                dst_path = installed / ("%s.md" % MIRROR_NAME.get(role, role))
+                if not dst_path.is_file():
+                    self.skipTest("installed mirror is stale: %s missing" % dst_path.name)
+                src = canon(src_path.read_text(encoding="utf-8"))
+                dst = canon(dst_path.read_text(encoding="utf-8"))
                 self.assertEqual(src, dst, "%s source/mirror differ" % role)
 
 
@@ -335,7 +360,7 @@ class CostInputValidationTest(unittest.TestCase):
         self.assertIsInstance(self._load(json.dumps({"agent": [1, 2, 3]})), dict)
 
     def test_wrong_typed_spec_is_controlled(self):
-        self.assertIsInstance(self._load(json.dumps({"agent": {"coder": [1, 2]}})), dict)
+        self.assertIsInstance(self._load(json.dumps({"agent": {"pdca-executor": [1, 2]}})), dict)
 
     def test_unknown_role_stays_unclassified(self):
         self.assertEqual(self.mod.UNCLASSIFIED, self.mod.phase_of("no-such-role"))

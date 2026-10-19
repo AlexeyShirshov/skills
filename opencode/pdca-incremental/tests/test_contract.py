@@ -86,7 +86,7 @@ class RolesTests(unittest.TestCase):
             self.assertIn(block, self.roles)
 
     def test_roles_tiers_and_permissions_are_named(self) -> None:
-        for role in ("planner", "coder", "scout", "pdca-orchestrator", "check", "primary", "escalate"):
+        for role in ("pdca-planner", "pdca-executor", "pdca-scout", "pdca-orchestrator", "pdca-check", "primary", "pdca-escalate"):
             self.assertIn(role, self.roles)
         for tier in ("cheap", "medium", "strong"):
             self.assertIn(tier, self.roles)
@@ -200,7 +200,7 @@ class StepKindTests(unittest.TestCase):
         self.assertIn("тот же target", self.kinds)
         self.assertIn("parent = N", self.kinds)
         self.assertIn("один repair на провальный шаг", self.kinds)
-        self.assertIn("escalate", self.kinds)
+        self.assertIn("pdca-escalate", self.kinds)
 
     def test_verify_does_not_move_baseline_or_replace_accept(self) -> None:
         self.assertIn("не двигает baseline", self.kinds)

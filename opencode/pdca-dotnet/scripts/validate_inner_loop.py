@@ -12,7 +12,7 @@ command's name or the presence of ``--filter``:
 
 This helper validates the JSON artifacts that make that enforceable:
 
-  * a **brief** scope, produced before dispatch to `coder`;
+  * a **brief** scope, produced before dispatch to `pdca-executor`;
   * a **journal** — the raw, append-only execution capture (a `start` event at
     launch, the result appended on completion) that the report is projected from;
   * a **report** (brief + `executions`), produced before CHECK passes; with

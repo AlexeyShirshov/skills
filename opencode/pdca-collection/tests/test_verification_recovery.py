@@ -579,10 +579,10 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 cols = [g for g in _groups(root) if g.get("data-column") == "C"]
                 self.assertEqual(1, len(cols), "expected exactly one data-column=C group")
                 col = cols[0]
-                self.assertEqual("check", col.get("data-role"))
+                self.assertEqual("pdca-check", col.get("data-role"))
                 self.assertEqual("medium", col.get("data-tier"))
                 col_text = group_visible_text(col).lower()
-                self.assertIn("check", col_text)
+                self.assertIn("pdca-check", col_text)
                 self.assertIn("medium", col_text)
                 # the four generic mandatory-check cards survive (task-typed,
                 # not tied to any single technology) ...
@@ -603,11 +603,11 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 ]
                 self.assertEqual(1, len(verdict), "no always-run check-verdict group")
                 vg = verdict[0]
-                self.assertEqual("check", vg.get("data-role"))
+                self.assertEqual("pdca-check", vg.get("data-role"))
                 self.assertEqual("medium", vg.get("data-tier"))
                 vtext = group_visible_text(vg).lower()
                 self.assertIn("вердикт", vtext)
-                self.assertIn("check", vtext)
+                self.assertIn("pdca-check", vtext)
                 self.assertIn("pass", vtext)
                 self.assertIn("fail", vtext)
                 self.assertIn("medium", _texts_with_class(vg, "bm"))
@@ -964,10 +964,10 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # 2026-10-02 merge-retry follow-up (PHASE1 focused contract tests).
 #
-# Post-merge conflict: a *successful* `escalate` merge advice must return to the
-# orchestrator, which re-dispatches the merge to `coder` (or the group tip is
-# skipped as `incomplete`); `escalate`/strong never edits and never spawns
-# `coder`.  The main diagram must show two real incoming MERGE dispatch routes
+# Post-merge conflict: a *successful* `pdca-escalate` merge advice must return to the
+# orchestrator, which re-dispatches the merge to `pdca-executor` (or the group tip is
+# skipped as `incomplete`); `pdca-escalate`/strong never edits and never spawns
+# `pdca-executor`.  The main diagram must show two real incoming MERGE dispatch routes
 # (initial all-lanes-terminal + post-escalate retry/skip) and a labelled
 # `E -> orchestrator` decision result; the lower state graph must expose an
 # explicit MERGE node (10 nodes / 14 edges, including the terminal corrective
@@ -1195,7 +1195,7 @@ class MergeRetryContractTest(unittest.TestCase):
                 self.assertRegex(cond[("MERGE", "C")], _MERGE_C_COND)
                 # MERGE is the coder/cheap integration role, rendered like the column
                 self.assertEqual("cheap", nodes["MERGE"]["tier"])
-                self.assertIn("coder", group_visible_text(nodes["MERGE"]["element"]).lower())
+                self.assertIn("pdca-executor", group_visible_text(nodes["MERGE"]["element"]).lower())
 
     def test_escalate_returns_through_merge_not_bypass(self):
         for theme, stem in THEME_STEMS.items():
@@ -1270,7 +1270,7 @@ class MergeRetryContractTest(unittest.TestCase):
         problems = []
         if not re.search(r"escalat|эскалац", section, re.I):
             problems.append("§D does not name the escalate decision")
-        if not re.search(r"coder", section, re.I):
+        if not re.search(r"pdca-executor", section, re.I):
             problems.append("§D does not name coder as the merge executor")
         if not re.search(r"оркестратор|orchestrator", section, re.I):
             problems.append("§D does not route the retry through the orchestrator")
@@ -1883,7 +1883,7 @@ class DispatchLabelConsistencyTest(unittest.TestCase):
 #     descriptive Russian phrase "Разрешение конфликтов слияния" is rendered on
 #     the body card and the orchestrator band input; the internal `ESCALATE` id
 #     and the `strong` tier are kept; the legend agent id remains lowercase
-#     `escalate` (a different, untouched token);
+#     `pdca-escalate` (a different, untouched token);
 #   * the shared `C -> REPAIR FAIL` display reads the exact phrase
 #     "CHECK FAIL" (main incoming entry + lower caption), while the real
 #     orchestrator dispatch stays proven by `data-dispatched-by=orchestrator`.
@@ -1904,7 +1904,7 @@ REPAIR_COMPLETED_CAPTION = "REPAIR completed"
 # 2026-10-02 user correction: the MAIN C column no longer renders the visible
 # owner label under its header; the lower state-graph `C` node keeps its owner
 # label and its `medium` tier.
-C_OWNER_LABEL = "check · medium"
+C_OWNER_LABEL = "pdca-check · medium"
 
 _TEXT_CW = {"h": 7.0, "t": 7.4, "st": 7.6, "ol": 6.3}
 

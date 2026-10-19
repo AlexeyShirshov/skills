@@ -50,7 +50,7 @@ host binds specific agents and models; the skill names only roles.
 
 | Role | What it does | Agent of the domain-neutral `pdca` | Tier |
 |---|---|---|---|
-| GATHER — fact gathering | Collects `file:line` pointers, URLs, numbers; no recommendations | `scout` | cheap |
+| GATHER — fact gathering | Collects `file:line` pointers, URLs, numbers; no recommendations | `pdca-scout` | cheap |
 | PLAN — decisions | Goal, acceptance criteria, decomposition, risks, verification method | `pdca-planner` | medium |
 | DO — hands | Edits files, runs commands, keeps the status file (the cycle's state on disk) | `pdca-executor` | cheap |
 | CHECK — verdict | Independently verifies every criterion against actual evidence | `pdca-check` | medium |
@@ -59,11 +59,11 @@ host binds specific agents and models; the skill names only roles.
 
 A few rules keep the table working. **The orchestrator is a dispatcher, not a reader and not a
 decision maker**: it dispatches the roles to subagents and passes their reports to one another, but it
-does not write the plan, read files or run commands. **PLAN always belongs to the planner**: both
+does not write the plan, read files or run commands. **PLAN always belongs to the pdca-planner**: both
 the initial plan and a revision are formulated by `pdca-planner`. **Only the executor may write
 and run**, including the status file.
 **The checker is independent of the author**: it judges by the aggregated report with fresh runs and
-facts from `scout`, but it may also **open the cycle's evidence artifacts directly** — the status
+facts from `pdca-scout`, but it may also **open the cycle's evidence artifacts directly** — the status
 file and the manifest with their pointers (scoped `read`), never the product itself. Hence the
 prohibition on self-editing, self-reading and self-verdict: the executor does not render a verdict
 and does not declare STOP, the checker does not verify its own work, the orchestrator does not
@@ -92,7 +92,7 @@ PLAN → (normal: the user approves the plan) → DO → CHECK → ACT → (EXIT
 
 Plus a separate terminal path, **STOP** — neither a "green" gate nor a successful ACT.
 
-**PLAN.** The planner restores the goal by essence — "what result is needed", not "what action to
+**PLAN.** The pdca-planner restores the goal by essence — "what result is needed", not "what action to
 perform" — and returns the mandatory fields: goal/expected result, constraints, assumptions,
 acceptance criteria **each with a way to verify it**, a decomposition with dependencies or an
 explicit decision not to split, means and access, risks and stop conditions. A gap is closed with a
@@ -121,8 +121,8 @@ closed, and without an accepted check there is no ACT; `rework`/`replan` are not
 **returns before** it.
 
 **Returns.** `CHECK → DO` — an implementation defect: fix it and verify again. `CHECK → PLAN` — a
-wrong plan: the planner issues a new revision. `DO → PLAN` — a new precondition or a blocker: not a
-unilateral revision but a candidate for the planner to review. An **additive precondition** (a new
+wrong plan: the pdca-planner issues a new revision. `DO → PLAN` — a new precondition or a blocker: not a
+unilateral revision but a candidate for the pdca-planner to review. An **additive precondition** (a new
 active unit, the original one stays `blocked` with its own criteria, no mapping) differs from a
 **scope replacement** (a genuine supersession: `superseded` and a mandatory "superseded →
 replacement" mapping covering all the original criteria).
@@ -167,7 +167,7 @@ It lives on disk, survives compaction and a new session, and the executor update
 event. It is the **only** progress mirror: there is no separate todo or sidebar mirror, so a host
 that provides no todo tool (V2 does) loses nothing, and a second mirror cannot diverge from it.
 After compaction the state is restored from the status file (through
-`scout`), not from memory. The cycle closes only on **fresh evidence** — an exit code, numbers, a
+`pdca-scout`), not from memory. The cycle closes only on **fresh evidence** — an exit code, numbers, a
 log path, `file:line` — and never on an assertion, including subagent reports. Marker words like
 "should work", "probably" are a signal to schedule a re-run: **a report ≠ a result**.
 
@@ -191,13 +191,13 @@ live in `.pdca/<task>/rv<k>/` — next to the status directory `.pdca/status/`.
 > schematically; the real wordings and lines are in the sources at the end of the article.
 
 Imagine a task: answer whether caching intermediate results speeds up a nightly report. In PLAN r1
-the planner formulates the criteria: (1) run times with and without the cache on the same data set;
+the pdca-planner formulates the criteria: (1) run times with and without the cache on the same data set;
 (2) the conclusion follows from the numbers; (3) the methodology is reproducible. Units: the
 baseline measurement, the measurement with the cache, writing up the conclusion. The plan is
 written, the user approves the plan — DO begins (`N=1`, `r=1`, `n=1`).
 
 During DO the executor discovers that the promised data set of the required size is not available.
-It may not unilaterally fix the plan: DO returns a preliminary candidate, and the planner classifies
+It may not unilaterally fix the plan: DO returns a preliminary candidate, and the pdca-planner classifies
 it as an **additive precondition** — the "measurement with the cache" unit stays active but
 `blocked` on a dependency, and a new active unit, "obtain the data set", is added. This is not a
 scope replacement, no mapping is needed. The precondition is closed, the measurements are taken,
@@ -221,7 +221,7 @@ after an escalation as well.
 ## Limitations and false expectations
 
 - **"The task is too simple for the cycle."** The size of a task does not cancel the gates: it is
-  on "simple" tasks that rework happens most often. Declining to split is a decision of the planner
+  on "simple" tasks that rework happens most often. Declining to split is a decision of the pdca-planner
   inside PLAN, not an exemption from criteria and verification.
 - **Only a cheap primary drives the cycle.** A medium/strong primary (for example, `architect`)
   does not dispatch the cycle; outside the cycle it remains the decision maker.
@@ -251,6 +251,8 @@ after an escalation as well.
   test scope) is the article [`pdca-dotnet.md`](pdca-dotnet.md).
 - A batch of independent tasks split into parallel group lanes (a merge barrier, a terminal
   `incomplete`) is the article [`pdca-collection.md`](pdca-collection.md).
+- Host setup after installing a skill (role agents, the `pdca-orchestrator` runner, delegation depth,
+  permissions, verification) is [`install.md`](install.md).
 
 ## Sources
 
@@ -261,7 +263,7 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 |---|---|
 | `pdca` is domain-neutral: it names only roles and phases; what to verify with is decided by PLAN | `opencode/pdca/SKILL.md:6-14` |
 | Roles, tiers, fallback; an unavailable role is a resource blocker | `opencode/pdca/SKILL.md:38-88` |
-| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill (the agent prompt lives in the host config and is not shipped here) | `opencode/pdca/SKILL.md:48-52,63-71` |
+| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/agents/pdca-orchestrator.md` in every skill | `opencode/pdca/SKILL.md:48-52,63-71`; `opencode/pdca/assets/agents/pdca-orchestrator.md` |
 | CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `opencode/pdca/SKILL.md:22-28,59`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
 | The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md:89-117` |
 | The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md:118-142` |

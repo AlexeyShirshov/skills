@@ -59,12 +59,18 @@ UNCLASSIFIED = "unclassified"
 PHASE = {
     "build": "orchestrator",
     "pdca-orchestrator": "orchestrator",
+    "pdca-planner": "PLAN",
     "planner": "PLAN",
+    "pdca-scout": "GATHER",
     "scout": "GATHER",
     "explore": "GATHER",
+    "pdca-executor": "DO",
     "coder": "DO",
+    "pdca-check": "CHECK",
     "check": "CHECK",
+    "pdca-security-auditor": "SECURITY",
     "security-auditor": "SECURITY",
+    "pdca-escalate": "ESCALATE",
     "escalate": "ESCALATE",
 }
 

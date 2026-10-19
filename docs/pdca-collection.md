@@ -44,10 +44,10 @@ PLAN's job — and that only after each task has had its own PLAN, not yours.
 
 ## 3. Participants: the base roles plus one wrapper agent
 
-The collection **introduces no new roles**. For `pdca-coder` and `pdca-dotnet`, `planner` still
-plans, `coder` does, `check` renders the verdict, `escalate` escalates and `scout` gathers facts;
+The collection **introduces no new roles**. For `pdca-coder` and `pdca-dotnet`, `pdca-planner` still
+plans, `pdca-executor` does, `pdca-check` renders the verdict, `pdca-escalate` escalates and `pdca-scout` gathers facts;
 for the universal `pdca` the same roles are called `pdca-planner`, `pdca-executor`, `pdca-check` and
-`pdca-escalate`, and facts are still gathered by `scout`. The only addition is the **wrapper agent
+`pdca-escalate`, and facts are still gathered by `pdca-scout`. The only addition is the **wrapper agent
 `pdca-orchestrator`** (the cheap tier), which runs **one** group: it drives that group as a single
 parallel stream of work. It conducts each task's own PLAN already in phase P (the `COLLECTION TASK
 PLAN` input) and stops at the PLAN→DO boundary, handing control to the collection
@@ -56,9 +56,9 @@ PLAN.
 
 The wrapper has hard constraints, and this matters: `pdca-orchestrator` **does not make
 decisions**. It does not decide that a task is infeasible, not ready or independent, does not choose
-the scope and does not judge the result — any question is addressed to `planner` (in the PLAN
+the scope and does not judge the result — any question is addressed to `pdca-planner` (in the PLAN
 phase), not to the user. It also **does not edit files or run commands**: the infrastructure
-(worktree, branches), `git merge` and the mandatory checks are performed by `coder` on the command
+(worktree, branches), `git merge` and the mandatory checks are performed by `pdca-executor` on the command
 of the collection's **primary orchestrator** — that is who keeps the tracking, watches the gates and
 makes the merge decision.
 
@@ -74,19 +74,19 @@ commands.
 
 The order is strict: **first the real PLAN of every task, then the ALL-barrier, and only then the
 DAG and the groups.** `pdca-orchestrator` conducts the task's own PLAN phase (of its variant) in the
-**COLLECTION TASK PLAN** input: `scout` gathers facts, `planner` makes decisions, `coder` persists
+**COLLECTION TASK PLAN** input: `pdca-scout` gathers facts, `pdca-planner` makes decisions, `pdca-executor` persists
 the status. The task stops at the PLAN→DO boundary and hands control to the collection (a
 `plan_handoff`); no code is written at this step. Until the own PLAN of **all** tasks is ready
 (`plan_state=ready`), the DAG is not built and an early DO is forbidden; a task without a
 meaningful plan remains a gap and does not pass the barrier.
 
 Separately, the contract closes the **re-entry** case: after a terminal `incomplete`/STOP the
-previous terminal cause is a **mandatory input** to the task's own PLAN, and `planner` either proves
+previous terminal cause is a **mandatory input** to the task's own PLAN, and `pdca-planner` either proves
 that the failed evidence is now obtainable or redefines the oracle. A silent re-run of the same
 criterion is forbidden — otherwise the task again remains a gap.
 
 After the barrier, contradictions from the handoff metadata (the planned footprint, requirements on
-predecessors' results, assumptions) are validated, and `planner` builds the **DAG** — a directed
+predecessors' results, assumptions) are validated, and `pdca-planner` builds the **DAG** — a directed
 acyclic dependency graph — and cuts it into groups. A group is a connected component or a line by
 dependencies and shared files; the **footprints of the groups do not intersect**, and inside a group
 the tasks are ordered **topologically** (those that others depend on come first). The list of
@@ -106,7 +106,7 @@ isolation is needed (see below). The current branch's existing commits stay in p
 
 The lanes (worktrees, group/task branches, executors) are allocated **only** after the ALL-barrier
 and a persistent binding of the schedule — before that step they do not exist. With **two or more**
-groups, `coder` creates for each its own **worktree** — an isolated working copy of the repository
+groups, `pdca-executor` creates for each its own **worktree** — an isolated working copy of the repository
 in a separate directory `<repo>-worktrees/<collection-id>/<group>` — and its own branch
 `collection/<id>/group-<g>`. Inside a group the tasks go **sequentially**: a task branch
 `collection/<id>/task-<g>-<k>` branches off the **committed tip** (the last commit) of the previous
@@ -116,37 +116,37 @@ launching a new PLAN).
 
 The groups run in parallel — one `pdca-orchestrator` per group, no more than **cap** at a time. By
 default `cap = 4` (configurable), and the actual ceiling is `min(#groups, cap)`. After each task, in
-the permitted mode, `coder` makes an **auto-commit** — and only of the task's files (`git add
+the permitted mode, `pdca-executor` makes an **auto-commit** — and only of the task's files (`git add
 <paths>`, never `git add -A`, so as not to pick up someone else's). With one group, no worktree,
 group/task branches or merging are created: the work goes on in the current directory on the current
 branch.
 
 The key element is the **merge barrier**. Merging begins only when **all** lanes (parallel streams
 of work) have reached a terminal state: `done`, or `incomplete` with an explicit outcome; a running
-lane is not merged early. Readiness here means **terminality, not success**. After that, `coder`
+lane is not merged early. Readiness here means **terminality, not success**. After that, `pdca-executor`
 sequentially runs `git merge --no-ff` (a merge with a forced merge commit, to preserve the branch
 history) **only for the `done` groups**; for issue tasks the merge message begins with `#<n>`. A
 successfully merged group goes `done` → `merged`. An `incomplete` group is **never merged**, even if
 it had successful tasks and commits before the failure: its tip does not enter the integration.
 
-If a merge conflicts, `coder` runs `git merge --abort` (rolling back the unfinished merge). The
-group is **escalated**: `escalate` (the strong role) decides — to resolve manually, to reorder, or
+If a merge conflicts, `pdca-executor` runs `git merge --abort` (rolling back the unfinished merge). The
+group is **escalated**: `pdca-escalate` (the strong role) decides — to resolve manually, to reorder, or
 to mark the group `incomplete`. The escalation **does not execute**: a decision to "resolve
 manually" or "reorder" returns control to the merge phase, and the orchestrator itself dispatches
-`coder` to repeat `git merge --no-ff` on the **unmerged** tip. The order can only be changed for
+`pdca-executor` to repeat `git merge --no-ff` on the **unmerged** tip. The order can only be changed for
 groups not yet integrated; previously merged tips are not touched — no rerun/reset/revert/remerge. A
 repeated conflict again leads to `abort` and an escalation, with no new attempt counter.
 
 ### C — the common verification
 
 The collection's common verification is the **standard CHECK of the base contract** (two beats: a
-cheap gathering of raw measurements → the `check` verdict), not a separate home-made stage. The full
+cheap gathering of raw measurements → the `pdca-check` verdict), not a separate home-made stage. The full
 CHECK of the parent collection runs when all the selected `done` groups are integrated and there is
 no active conflict or unfinished merge state. The orchestrator **always** — even when all checks are
-green — gathers through `coder` and `scout` the mandatory reports (tests universally plus checks by
+green — gathers through `pdca-executor` and `pdca-scout` the mandatory reports (tests universally plus checks by
 type of work: build/linter for code, rendering for design and presentations, measurements if there
-is a hot path, and the review lenses' reports) and passes the aggregate to `check`. Raw
-measurements never decide a PASS by themselves: the verdict is rendered by `check`.
+is a hot path, and the review lenses' reports) and passes the aggregate to `pdca-check`. Raw
+measurements never decide a PASS by themselves: the verdict is rendered by `pdca-check`.
 
 **A PASS can coexist with `incomplete` groups.** The completion report (how many tasks and groups
 were carried through) and the verification verdict of the integrated tree are separate fields. Even
@@ -165,7 +165,7 @@ are the base ones (`r`, `n/3`), with no collection counter.
 
 Completion is permitted **only by a PASS of the common verification**. The report lists the groups,
 tasks, branches, `merged`/`incomplete`, the evidence and the outcome of the corrective tasks.
-`coder` removes **only the one-off** worktrees and temporary group/task branches that are
+`pdca-executor` removes **only the one-off** worktrees and temporary group/task branches that are
 `done`/`merged`. The worktrees, branches, commits and patches (applied "band-aids" with uncommitted
 changes) of **`incomplete` groups are never deleted**: their refs (branch pointers), patch paths,
 status and evidence paths are preserved — most simply, leave everything in place and record that
@@ -177,9 +177,9 @@ a PASS — no cleanup.**
 > Below is a **teaching example**, not a description of a real run.
 
 Imagine a collection of three groups: A, B, C. Group B, on its second task, hits an impossibility by
-the contract. The failure first goes to `planner` (PLAN): it tries to return to DO (the base
+the contract. The failure first goes to `pdca-planner` (PLAN): it tries to return to DO (the base
 contract's usual loop-back and counters) and, having failed, **finally** closes the task as
-`incomplete` — `coder` saves its changes as a patch, returns only its paths to the last green tip,
+`incomplete` — `pdca-executor` saves its changes as a patch, returns only its paths to the last green tip,
 and writes the reason into the status.
 
 What happens next is the main idea:
@@ -210,14 +210,14 @@ not carried through.
   results are saved as a patch, and the group is marked `incomplete`.
 - **Push — never.** That is not part of the collection in any mode.
 - **Merge conflict → abort → escalate.** There is no automatic "resolution" of a conflict; an
-  escalation only returns a decision, and `coder` executes again.
+  escalation only returns a decision, and `pdca-executor` executes again.
 - **`blocked` is not a group or task status.** It is a state of the common verification: groups and
   tasks have no `blocked` status; `incomplete` is a consequence of a contract failure, not a lane's
   judgement. A group has exactly five statuses — `pending`, `in-progress`, `done`, `incomplete`,
   `merged`; `skipped` ("not selected for integration") is an integration note, not a status; a task
   never has `merged`.
 - **The two failure mechanisms are not mixed.** A task's terminal `incomplete` inside a lane is a
-  single task's failure and a decision of that cycle's `planner`; a STOP of a corrective task is a
+  single task's failure and a decision of that cycle's `pdca-planner`; a STOP of a corrective task is a
   recurrence of a defect of the **common** verification under the base `r`/`n`.
 - **No automatic rerun/remerge/recluster/reset/revert** and no new branch chains; a corrective task
   is a separate record, not an extra lane.
@@ -229,7 +229,7 @@ not carried through.
   delegation). Then there is no one to orchestrate, and the primary takes the groups on itself: it
   drives one task per group itself and starts the next when the previous finishes, and in phase P it
   likewise conducts each task's `COLLECTION TASK PLAN` itself (through its variant's
-  `planner`/`coder`/`scout`), respecting the ALL-barrier, and continues the saved PLAN in the lane
+  `pdca-planner`/`pdca-executor`/`pdca-scout`), respecting the ALL-barrier, and continues the saved PLAN in the lane
   from DO. In autonomous mode the fallback is marked with a `Notice:` line and the recorded reason,
   in normal mode with a message to the user; a host prohibition is not bypassed.
 
@@ -238,9 +238,9 @@ not carried through.
 - The full text of the skill, its role (the wrapper agent `pdca-orchestrator`, the `COLLECTION TASK
   PLAN` input, the group lane), the P/D/C/A phases, the status, the git model and the failure
   semantics —
-  [`opencode/pdca-collection/SKILL.md`](../opencode/pdca-collection/SKILL.md). The agent's prompt
-  runner (`config/agents/pdca-orchestrator.md`), the profiles and `AGENTS.md` are host artifacts of
-  the `opencode-config` repository; they are not part of this repository.
+  [`opencode/pdca-collection/SKILL.md`](../opencode/pdca-collection/SKILL.md). The runner ships as
+  [`assets/agents/pdca-orchestrator.md`](../opencode/pdca-collection/assets/agents/pdca-orchestrator.md);
+  the profiles and `AGENTS.md` remain host artifacts of the `opencode-config` repository.
 - The cycle base: [`opencode/pdca-coder/SKILL.md`](../opencode/pdca-coder/SKILL.md) (for .NET, the
   identical base [`opencode/pdca-dotnet/SKILL.md`](../opencode/pdca-dotnet/SKILL.md)).
   The family's neighbouring articles: [`pdca.md`](pdca.md) — the domain-neutral core,
@@ -262,7 +262,7 @@ precedence.
 | --- | --- |
 | The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md:10-33` |
 | Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md:35-45` |
-| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `planner`, the revision vector, lane allocation only after the schedule is bound; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md:51-82` |
+| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md:51-82` |
 | P: the status file as the only progress mirror (per-group and per-task tables), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md:83-93` |
 | D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md:103-149` |
 | C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md:153-212` |
@@ -273,6 +273,6 @@ precedence.
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md:332-387` |
 | Parameters: cap = 4, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md:390-401` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md:432-440` |
-| The role tiers (cheap: `pdca-orchestrator`/`scout`/`coder`; medium: `planner`/`check`; strong: `escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
+| The role tiers (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
 | The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md:942-976,119-141,535-597,49-91` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md:1075-1109,117-139,630-692,47-89`); `opencode/pdca/SKILL.md:22-36,57-59` |
 | The contract texts are checked by tests, and the scenario matrix is marked as static (not proof of behaviour); the host artifacts (the `pdca-orchestrator` prompt runner, the profiles, `AGENTS.md`) are outside this repository | `opencode/pdca-collection/tests/test_plan_barrier.py` (including `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

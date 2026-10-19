@@ -6,7 +6,7 @@ mode: subagent
 steps: 12
 permission:
   # Default-deny: any MCP tool of any server (`<server>_<tool>`), plus
-  # read/grep/glob/list/lsp/webfetch/websearch/edit/write/task/bash. The planner
+  # read/grep/glob/list/lsp/webfetch/websearch/edit/write/task/bash. The pdca-planner
   # works only over the supplied brief — tools are not needed; enumerate servers is not needed.
   "*": deny
 ---
@@ -53,7 +53,7 @@ You own the quality of the plan.
    prerequisite → a new active unit while the original stays active (`blocked`), not
    `superseded` and without mapping; (b) acceptable assumption/risk → record and continue
    without weakening criteria; (c) a true outside-cycle blocker → recommend that the
-   orchestrator dispatch `pdca-escalate`; (d) insufficient evidence → targeted `scout` first,
+   orchestrator dispatch `pdca-escalate`; (d) insufficient evidence → targeted `pdca-scout` first,
    and on persistent low confidence recommend `pdca-escalate` (trigger 5) even without proven
    externalness.
 7. On a **replan**, produce a **genuinely revised plan** (`r+1`) whose tasks/remediation actions

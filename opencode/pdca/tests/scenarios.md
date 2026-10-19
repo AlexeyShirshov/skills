@@ -78,4 +78,4 @@ unit/integration policy.
 нового hashing/provenance-графа; runtime (`config/agents/**`) и canonical (`assets/agents/**`)
 role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
 **Оперативные источники:** `config/agents/check.md`, `config/agents/pdca-check.md`,
-`assets/agents/check.md` — пункт «binding/applicable».
+`assets/agents/pdca-check.md` — пункт «binding/applicable».

@@ -19,12 +19,12 @@ SKILL = SKILL_DIR / "SKILL.md"
 ASSET_AGENTS = SKILL_DIR / "assets/agents"
 
 ROLE_TIER = {
-    "planner": "medium",
-    "coder": "cheap",
-    "check": "medium",
-    "scout": "cheap",
-    "escalate": "strong",
-    "security-auditor": "medium",
+    "pdca-planner": "medium",
+    "pdca-executor": "cheap",
+    "pdca-check": "medium",
+    "pdca-scout": "cheap",
+    "pdca-escalate": "strong",
+    "pdca-security-auditor": "medium",
 }
 
 def _cat(*fragments):
@@ -95,12 +95,12 @@ class RoleAssetTest(unittest.TestCase):
                 self.assertTrue(data["permission"])
 
     def test_permission_roles_stay_narrow(self):
-        planner = frontmatter(ASSET_AGENTS / "planner.md")["permission"]
-        check = frontmatter(ASSET_AGENTS / "check.md")["permission"]
-        coder = frontmatter(ASSET_AGENTS / "coder.md")["permission"]
-        scout = frontmatter(ASSET_AGENTS / "scout.md")["permission"]
-        escalate = frontmatter(ASSET_AGENTS / "escalate.md")["permission"]
-        sec = frontmatter(ASSET_AGENTS / "security-auditor.md")["permission"]
+        planner = frontmatter(ASSET_AGENTS / "pdca-planner.md")["permission"]
+        check = frontmatter(ASSET_AGENTS / "pdca-check.md")["permission"]
+        coder = frontmatter(ASSET_AGENTS / "pdca-executor.md")["permission"]
+        scout = frontmatter(ASSET_AGENTS / "pdca-scout.md")["permission"]
+        escalate = frontmatter(ASSET_AGENTS / "pdca-escalate.md")["permission"]
+        sec = frontmatter(ASSET_AGENTS / "pdca-security-auditor.md")["permission"]
 
         self.assertEqual("deny", planner.get("*"))
         self.assertNotIn("task", planner)
@@ -113,13 +113,13 @@ class RoleAssetTest(unittest.TestCase):
         self.assertEqual("deny", escalate.get("*"))
         self.assertEqual("deny", escalate["task"].get("*"))
         allowed = {k for k, v in escalate["task"].items() if v == "allow"}
-        self.assertEqual({"scout"}, allowed)
+        self.assertEqual({"pdca-scout"}, allowed)
         self.assertEqual("deny", sec.get("*"))
 
     def test_check_may_read_only_the_cycle_evidence(self):
         # The description and §CHECK promise a scoped read of the cycle's own evidence
         # (status + frozen manifest), never product code — the permissions must grant it.
-        check = frontmatter(ASSET_AGENTS / "check.md")["permission"]
+        check = frontmatter(ASSET_AGENTS / "pdca-check.md")["permission"]
         self.assertEqual("deny", check.get("*"))
         for tool in ("read", "glob", "list"):
             with self.subTest(tool=tool):
@@ -144,6 +144,38 @@ class LensSelectionWordingTest(unittest.TestCase):
         self.assertNotIn(STACK_LENS, skill)
         self.assertNotIn("mandatory stack", skill)
         self.assertNotIn("stack-specific specialist is mandatory", skill)
+
+
+RUNNER_ASSET = ASSET_AGENTS / "pdca-orchestrator.md"
+# Assembled at runtime: the stack-token guard must not match this test file.
+DOTNET_LENS = _cat("dot", "net-*")
+DOCS_SPECIALIST = _cat("doc", "fx-specialist")
+
+
+class RunnerAssetTest(unittest.TestCase):
+    """The cheap child-cycle dispatcher ships with the skill."""
+
+    def test_runner_asset_is_shipped(self):
+        self.assertTrue(RUNNER_ASSET.is_file(), "assets/agents/pdca-orchestrator.md missing")
+        data = frontmatter(RUNNER_ASSET)
+        self.assertEqual("pdca-orchestrator", data.get("name"))
+        self.assertEqual("subagent", data.get("mode"))
+
+    def test_runner_is_cheap_and_carries_no_model(self):
+        raw = read(RUNNER_ASSET)
+        self.assertRegex(raw, r"(?m)^# tier: cheap\s*$")
+        self.assertNotRegex(raw, r"(?m)^\s*model\s*:")
+
+    def test_runner_is_a_dispatcher(self):
+        perm = frontmatter(RUNNER_ASSET)["permission"]
+        self.assertEqual("deny", perm.get("edit"))
+        self.assertEqual("deny", perm.get("bash"))
+        allowed = {k for k, v in perm["task"].items() if v == "allow"}
+        self.assertEqual(
+            {"pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
+             "pdca-scout", "pdca-security-auditor", DOCS_SPECIALIST, DOTNET_LENS},
+            allowed,
+        )
 
 
 if __name__ == "__main__":

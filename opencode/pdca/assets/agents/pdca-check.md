@@ -32,7 +32,7 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 
 - The acceptance criteria set from the plan, each with its verification method.
 - The **evidence pack**: fresh run results (exit statuses, key numbers, log paths) and the facts
-  reported by a non-author (`scout`).
+  reported by a non-author (`pdca-scout`).
 - The durable state given by the orchestrator: plan revision `r`, attempt `n/3`, and the
   **defect history** (stable defect keys, observed revisions/attempts, applied fix count, last
   outcome).

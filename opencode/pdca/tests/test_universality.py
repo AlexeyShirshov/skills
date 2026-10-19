@@ -37,12 +37,19 @@ SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/ope
 
 HOST_AGENTS = tuple(
     CONFIG / ("agents/pdca-%s.md" % name)
-    for name in ("planner", "executor", "check", "escalate")
+    for name in ("pdca-planner", "executor", "pdca-check", "pdca-escalate")
 ) if CONFIG else ()
+
+# The runner is the one host-facing artifact that must know the family's variants
+# (`pdca-coder`/`pdca-dotnet`): it *routes* work, it is not part of the neutral
+# contract. It is exempt from the domain/role-token scan; the exemption is pinned
+# to exactly this file below.
+RUNNER = ASSET_AGENTS / "pdca-orchestrator.md"
+NEUTRAL_EXEMPT = frozenset((RUNNER,))
 
 ALLOWED_ROLES = frozenset(
     ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
-     "pdca-orchestrator", "scout")
+     "pdca-orchestrator", "pdca-scout")
 )
 ROLE_TOKEN = re.compile(r"pdca-[a-z]+")
 
@@ -78,6 +85,8 @@ def runtime_texts() -> dict:
     texts = {SKILL_PATH: read(SKILL_PATH)}
     if ASSET_AGENTS.is_dir():
         for p in sorted(ASSET_AGENTS.glob("*.md")):
+            if p in NEUTRAL_EXEMPT:
+                continue
             texts[p] = read(p)
     for p in HOST_AGENTS:
         if p.is_file():
@@ -115,9 +124,18 @@ class UniversalityTest(unittest.TestCase):
                     offenders.add((str(path), hit))
         self.assertEqual(set(), offenders, "non-universal role names: %r" % sorted(offenders))
 
+    def test_only_the_runner_is_exempt_from_the_neutral_scan(self):
+        self.assertEqual({RUNNER}, set(NEUTRAL_EXEMPT))
+        self.assertTrue(RUNNER.is_file(), "runner asset missing")
+        scanned = set(runtime_texts())
+        self.assertNotIn(RUNNER, scanned)
+        self.assertEqual(
+            {p for p in (ASSET_AGENTS.glob("*.md"))} - scanned, {RUNNER}
+        )
+
     def test_no_security_auditor_or_domain_specialist(self):
         joined = " ".join(self.texts.values()).lower()
-        self.assertNotIn("security-auditor", joined)
+        self.assertNotIn("pdca-security-auditor", joined)
         self.assertNotIn("security lens", joined)
         self.assertNotIn("specialist is mandatory", joined)
         self.assertNotIn("mandatory stack", joined)

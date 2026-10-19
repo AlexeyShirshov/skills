@@ -27,41 +27,41 @@ COLOR = {"B": "#0e7490", "P": "#2563eb", "S": "#7c3aed",
          "A": "#d97706", "R": "#059669", "X": "#b91c1c"}
 NAME = {"B": "B · BOOTSTRAP", "P": "P · PLAN", "S": "S · STEP N",
         "A": "A · ACCEPT", "R": "R · DECIDE", "X": "X · STOP"}
-OWNER = {"B": "planner + coder · medium/cheap", "P": "scout + planner · cheap/medium",
-         "S": "orchestrator · cheap", "A": "check · medium",
-         "R": "planner · medium", "X": "primary · cheap"}
+OWNER = {"B": "pdca-planner + pdca-executor · medium/cheap", "P": "pdca-scout + pdca-planner · cheap/medium",
+         "S": "orchestrator · cheap", "A": "pdca-check · medium",
+         "R": "pdca-planner · medium", "X": "primary · cheap"}
 TIER_COLOR = {"cheap": "#0d9488", "medium": "#4f46e5", "strong": "#ea580c"}
 TIER_MODEL = {"cheap": "cheap", "medium": "medium", "strong": "strong"}
 
 BLOCKS = {
     "B": [
-        ("Цель + рецепт", "planner · read-only · фиксация", "medium"),
-        ("Baseline", "coder · edit/bash · тот же рецепт", "cheap"),
-        ("Флор · target", "planner · baseline + флор", "medium"),
+        ("Цель + рецепт", "pdca-planner · read-only · фиксация", "medium"),
+        ("Baseline", "pdca-executor · edit/bash · тот же рецепт", "cheap"),
+        ("Флор · target", "pdca-planner · baseline + флор", "medium"),
         ("Статус-файл", "primary · status-only · один файл", "cheap"),
     ],
     "P": [
-        ("Discover · карта", "scout · разрыв + deferred · read-only", "cheap"),
-        ("Ranked seed", "scout · факты, не решение", "cheap"),
-        ("Brief · 6 блоков", "planner · read-only", "medium"),
-        ("Acceptance · targets", "planner · флор · скоуп", "medium"),
+        ("Discover · карта", "pdca-scout · разрыв + deferred · read-only", "cheap"),
+        ("Ranked seed", "pdca-scout · факты, не решение", "cheap"),
+        ("Brief · 6 блоков", "pdca-planner · read-only", "medium"),
+        ("Acceptance · targets", "pdca-planner · флор · скоуп", "medium"),
     ],
     "S": [
-        ("P · PLAN", "planner · план шага · ревизия r", "medium"),
-        ("D · DO", "coder · edit/bash · факты", "cheap"),
-        ("C · CHECK", "check · read-only · evidence", "medium"),
-        ("A · ACT", "coder · статус/доки", "cheap"),
+        ("P · PLAN", "pdca-planner · план шага · ревизия r", "medium"),
+        ("D · DO", "pdca-executor · edit/bash · факты", "cheap"),
+        ("C · CHECK", "pdca-check · read-only · evidence", "medium"),
+        ("A · ACT", "pdca-executor · статус/доки", "cheap"),
         ("Тип шага", "increment · repair · verify", "medium"),
     ],
     "A": [
-        ("Вердикт", "check · read-only · по строкам", "medium"),
+        ("Вердикт", "pdca-check · read-only · по строкам", "medium"),
         ("Число", "один прогон · красное в архив", "cheap"),
         ("Строка шага", "primary · запись в статус-файл", "cheap"),
     ],
     "R": [
-        ("Цель?", "planner · read-only · предикат", "medium"),
+        ("Цель?", "pdca-planner · read-only · предикат", "medium"),
         ("Остаток", "доказать числами · блокер", "medium"),
-        ("Next seed", "planner · read-only · следующий шаг", "medium"),
+        ("Next seed", "pdca-planner · read-only · следующий шаг", "medium"),
         ("Маршрут", "next · repair · verify", "medium"),
     ],
     "X": [
@@ -243,8 +243,8 @@ def render(P):
 
     # ---- tier legend ----
     legend = [
-        ("#0d9488", "дешёвая ступень", "cheap", "primary · scout · coder · orchestrator"),
-        ("#4f46e5", "средняя ступень", "medium", "planner · check"),
+        ("#0d9488", "дешёвая ступень", "cheap", "primary · pdca-scout · pdca-executor · orchestrator"),
+        ("#4f46e5", "средняя ступень", "medium", "pdca-planner · pdca-check"),
     ]
     iw = (W - 2 * M) / 2
     for i, (col, title, model, roles) in enumerate(legend):
@@ -264,7 +264,7 @@ def render(P):
         s.append(f'<text x="{lx + 22 + mw + 10}" y="{LEG_Y + 23}" class="ls">{esc(roles)}</text>')
         if i == len(legend) - 1:
             s.append(f'<text x="{W / 2}" y="{LEG_Y + 44}" class="ls" text-anchor="middle">'
-                     'strong · escalate — не роль кампании: вызывается внутри STEP по триггерам, '
+                     'strong · pdca-escalate — не роль кампании: вызывается внутри STEP по триггерам, '
                      'кампания получает результат</text>')
 
     # ---- campaign state graph (20 % narrower than the canvas content) ----

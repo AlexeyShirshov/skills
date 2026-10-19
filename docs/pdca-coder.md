@@ -50,30 +50,30 @@ enters a role definition — a role carries only a `# tier:` label. The economic
 separating cost from quality: that is why roles are marked with **tiers** — labels of
 cost/quality, not of authority:
 
-- **`scout`** — fact gathering, read-only, the cheap tier; it returns references of the form
+- **`pdca-scout`** — fact gathering, read-only, the cheap tier; it returns references of the form
   `file:line` and URLs, with no recommendations.
-- **`coder`** — the cycle's "hands", the cheap tier; it is allowed file edits and commands. Every
+- **`pdca-executor`** — the cycle's "hands", the cheap tier; it is allowed file edits and commands. Every
   write and every run in the cycle goes through it.
-- **`planner`** — decisions and decomposition, the medium tier; it only reads the summary and
+- **`pdca-planner`** — decisions and decomposition, the medium tier; it only reads the summary and
   draws up the plan.
-- **`check`** — the verdict, the medium tier; it judges candidates and renders `pass/fail`, a
+- **`pdca-check`** — the verdict, the medium tier; it judges candidates and renders `pass/fail`, a
   return, or a new attempt.
-- **`security-auditor`** — security audit, the medium tier, engaged by trigger (if the change
+- **`pdca-security-auditor`** — security audit, the medium tier, engaged by trigger (if the change
   touches authentication, secrets, external input, cryptography).
-- **`escalate`** — escalation of hard decisions, the strong tier, called rarely and by triggers: an
+- **`pdca-escalate`** — escalation of hard decisions, the strong tier, called rarely and by triggers: an
   ambiguous criterion, an exhausted attempt counter, an architectural or cryptographic trade-off
   with long-lasting consequences.
 
 Only a cheap-tier primary drives the cycle — by the **host profile's effective tier**, not by the
 agent's name; a medium or strong primary does not conduct the cycle and outside the cycle remains
 the deciding primary. The ready-made role assets (`assets/agents/*.md`) carry explicit permissions
-as well: `scout` has bash only via an allowlist of read-only commands, `coder` has `edit`/`bash`,
-`check` has default-deny (except a scoped read of the cycle's artifacts), and `escalate` and
-`security-auditor` have `doom_loop: ask`.
+as well: `pdca-scout` has bash only via an allowlist of read-only commands, `pdca-executor` has `edit`/`bash`,
+`pdca-check` has default-deny (except a scoped read of the cycle's artifacts), and `pdca-escalate` and
+`pdca-security-auditor` have `doom_loop: ask`.
 
 If the host has no ready-made roles, the contract **explicitly describes the fallback to built-in
-agents**: `scout` → `explore`, `planner`/`check`/`coder` → `general`, `escalate` → `general` (with
-a warning to the user), `security-auditor` → `explore`. A host that has **forbidden** the built-in
+agents**: `pdca-scout` → `explore`, `pdca-planner`/`pdca-check`/`pdca-executor` → `general`, `pdca-escalate` → `general` (with
+a warning to the user), `pdca-security-auditor` → `explore`. A host that has **forbidden** the built-in
 `general`/`explore` must not be bypassed — an unavailable mandatory role is a resource blocker, not
 a reason to work silently without it.
 
@@ -95,7 +95,7 @@ and do not wait for one another.
 
 **PLAN chooses the toolchain and the lenses.** Since the skill is stack-agnostic, PLAN must, for
 each specific task, determine the type of result; find the build/test/lint toolchain declared in the
-project through `scout`; choose the appropriate correctness lenses; bind each lens to an available
+project through `pdca-scout`; choose the appropriate correctness lenses; bind each lens to an available
 agent or an explicit general path; and **freeze** that choice together with the evidence each lens
 must return. A missing optional lens is replaced by an explicit general path, not silently dropped.
 Gate 1 (PLAN → DO) checks that this choice is written down together with the acceptance criteria,
@@ -106,9 +106,9 @@ evidence failed cannot be re-run unchanged — either it is proven to be reachab
 criterion is reformulated against a reproducible oracle.
 
 **CHECK in two beats and parallel streams.** Verification does not mix fact gathering with
-judging. First the cheap **gathering**: the mechanics — commands through `coder` (build and lint
+judging. First the cheap **gathering**: the mechanics — commands through `pdca-executor` (build and lint
 clean under the project's policy), the semantics — code lenses (raw `file:line` candidates + a rule
-id, no verdict), tests, documentation, performance; then the **triage** — `check` on the medium
+id, no verdict), tests, documentation, performance; then the **triage** — `pdca-check` on the medium
 tier renders the verdict. The gathered evidence converges into a single machine-readable **evidence
 manifest**: DO writes it at the path fixed in the plan and freezes it at the DO→CHECK boundary; in
 CHECK the manifest is only appended to, and `pass` is forbidden while even one mandatory item is
@@ -116,7 +116,7 @@ open **and binding**. A self-imposed extra *audit* row that follows from no agre
 rewritten or dropped: CHECK appends an explicit disposition to it in the same manifest (a stable row
 ID plus the `diagnostic_nonbinding` classification and a reason), so the row may stay `open` while
 it is excluded from the binding blockers, with binding unmet rows and audit notes reported
-separately. `check` reads the aggregated report and may open the cycle's artifacts directly — a scoped
+separately. `pdca-check` reads the aggregated report and may open the cycle's artifacts directly — a scoped
 read of the status, the evidence and the manifest, but never the product's code. Four streams are
 unconditional: code audit, tests, documentation, performance; the fifth — the security audit — is
 conditional and engaged by trigger, and its report returns into the common verdict rather than
@@ -125,14 +125,14 @@ counts as a failed CHECK for the attempt counter; only a hard security trade-off
 immediately. Independently green branches of work do not combine automatically: if subtasks were
 carried out in separate worktrees (isolated working copies of git), CHECK is supplemented by two
 mandatory steps — merging the branches into a common tree and **re-verifying the merged code**. Any
-CHECK stream failure becomes a `D:` task (a DO stream item) for `coder` or a return to the plan,
+CHECK stream failure becomes a `D:` task (a DO stream item) for `pdca-executor` or a return to the plan,
 and does not cancel the other streams.
 
 **The project overlay.** A repository may add its own cycle rules: a file in `instructions`, a
 project skill `*-pdca`, or `.opencode/skills/<name>/SKILL.md`. The overlay refines invariants,
 finding registries, report formats and thresholds, and takes precedence over the general
 recommendation, but **does not cancel** the state machine and the gates — the plan approval, "everything green",
-returns, autonomous mode. Before PLAN, `scout` looks for such an overlay and brings back its rules.
+returns, autonomous mode. Before PLAN, `pdca-scout` looks for such an overlay and brings back its rules.
 
 ## A teaching scenario (an illustration, not a rule)
 
@@ -142,14 +142,14 @@ returns, autonomous mode. Before PLAN, `scout` looks for such an overlay and bri
 Task: add to a console utility a `--strict` flag that exits the process with a non-zero code if
 there were warnings while parsing the config.
 
-**PLAN.** `scout` finds the test and lint commands declared in the project. `planner` formulates the
+**PLAN.** `pdca-scout` finds the test and lint commands declared in the project. `pdca-planner` formulates the
 goal and the acceptance criteria with negative cases: without the flag, warnings do not change the
 exit code; with the flag, they do; an empty config does not crash. A matrix of variants is built
 (each row is closed as a test, a guard check, or deferred with a trigger): a config with no
 warnings, with one, with several, a missing file. Lenses are chosen: correctness and error
 handling, CLI/UX, security — if an untrusted file is read. Performance decision: not needed, the
 work is not on a line-by-line hot path, with `file:line` given. Documentation decision: update the
-README and the guide section. `coder` writes the plan into the status file. After the approval, DO begins.
+README and the guide section. `pdca-executor` writes the plan into the status file. After the approval, DO begins.
 
 **DO.** Three streams start in one turn: the code adds the flag and changes the exit code; the tests
 write the cases from the matrix; the prose docs describe the flag. All three rely only on the plan.
@@ -158,8 +158,8 @@ Generated API docs, if the project requires them, are added after the code strea
 **CHECK.** Four streams gather evidence: the build/lint commands (exit code, log path), the test
 lens (a run, coverage against the project threshold, a branch report, not just lines), the
 documentation lens (the README is created and matches the implementation), the performance lens
-(confirmation that the path is not line-by-line). `check` finds that one negative case from the
-matrix is not covered and returns a `D:` for `coder`. After the fix the streams are re-gathered and
+(confirmation that the path is not line-by-line). `pdca-check` finds that one negative case from the
+matrix is not covered and returns a `D:` for `pdca-executor`. After the fix the streams are re-gathered and
 the verdict turns green.
 
 **ACT.** The skill records 0–2 transferable lessons into memory (optional; no lesson is a normal
@@ -229,7 +229,7 @@ configuration repository.
 | Re-entry after a terminal `incomplete`/STOP | `:715-719` |
 | The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `:427-461` |
 | Generated/API docs — after the code stream | `:432-447` |
-| The editing discipline of `coder`; the ban on commit/push except `pdca/<task>` branches in a worktree | `:477-503` |
+| The editing discipline of `pdca-executor`; the ban on commit/push except `pdca/<task>` branches in a worktree | `:477-503` |
 | The subagent report format (pointers, not dumps) | `:511-520` |
 | The worktree subtask template, the `pdca/<task>` branch, the push ban | `:522-546` |
 | Escalation: triggers, no 4th attempt, decision routing | `:554-615` |
@@ -242,7 +242,7 @@ configuration repository.
 | Test-run safety (limits, timeout, serialization, streamed log) | `:881-894` |
 | Documentation: prose vs generated, owners by phase | `:896-912` |
 | The frozen evidence manifest; CHECK reads it first | `:914-937` |
-| CHECK in two beats; `check` may read the cycle's artifacts (scoped read, not the product's code) | `:23-28`, `:954-959` |
+| CHECK in two beats; `pdca-check` may read the cycle's artifacts (scoped read, not the product's code) | `:23-28`, `:954-959` |
 | Four unconditional streams + security by trigger; a failure is a `D:` or a return to the plan | `:974-1006` |
 | "No numbers — no pass": a verdict without numbers/`file:line` is a fail; a report ≠ a result | `:327`, `:361-376`, `:1013-1016` |
 | Worktrees: merging and re-verifying the merged tree | `:1067-1090` |

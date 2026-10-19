@@ -35,8 +35,8 @@ TIER_MODEL = {"weak": "cheap", "medium": "medium", "strong": "strong"}
 BLOCKS = {
     "P": [
         ("PLAN", "старт · дизайн", "medium"),
-        ("Сбор · gather", "scout + доменные линзы", "weak"),
-        ("Decide · planner", "fix / defer · декомпозиция", "medium"),
+        ("Сбор · gather", "pdca-scout + доменные линзы", "weak"),
+        ("Decide · pdca-planner", "fix / defer · декомпозиция", "medium"),
         ("Критерии · цель", "goal · приёмка (+негатив)", "medium"),
         ("Задачи · риски", "шаги · без TBD", "medium"),
         ("Тесты · Доки", "стратегия · план", "medium"),
@@ -61,7 +61,7 @@ BLOCKS = {
         ("Аудит безопасности", "read-only · отчёт → CHECK", "medium"),
     ],
     "E": [
-        ("Скаут", "scout · факты · file:line", "weak"),
+        ("Скаут", "pdca-scout · факты · file:line", "weak"),
         ("Эскалация", "решает · решение → орб", "strong"),
     ],
     "S": [
@@ -80,7 +80,7 @@ BLOCKS = {
 
 # optional side gather in the security column: facts outside the diff only,
 # consulted by the auditor — not a mandatory sequential first step (SKILL.md:929-931)
-SEC_OPT = ("Скаут (опц.)", "scout · только факты вне диффа (опц.)", "weak")
+SEC_OPT = ("Скаут (опц.)", "pdca-scout · только факты вне диффа (опц.)", "weak")
 
 # post-fan sequential steps (after the parallel streams)
 TAIL = {"D": [
@@ -93,19 +93,19 @@ TAIL = {"D": [
 
 # orchestrator inputs, per phase
 INPUTS = [
-    "PLAN ← «старт» · «реплан от check» · «реплан от DO»",
-    "DO ← «план готов» · «фикс дефекта от check (вкл. security)» · «фикс от escalate при r не исчерпан»",
+    "PLAN ← «старт» · «реплан от pdca-check» · «реплан от DO»",
+    "DO ← «план готов» · «фикс дефекта от pdca-check (вкл. security)» · «фикс от pdca-escalate при r не исчерпан»",
     "CHECK ← «потоки закрыты»",
     "CHECK · security ← «условно: auth / секреты / ввод / crypto» · «отчёт → CHECK»",
-    "ACT ← «check pass»",
+    "ACT ← «pdca-check pass»",
     "ЭСКАЛАЦИЯ ← «неоднозначность» · «повтор после 1 фикса / 3-й провал CHECK(r)»\n"
     "«arch/API/hard-security trade-off» · «приёмка рискованного диффа» · «низкая уверенность PLAN/DO»",
-    "STOP ← «нет выполнимого PLAN r+1» · «блокер не разрешён planner/escalate»\n"
+    "STOP ← «нет выполнимого PLAN r+1» · «блокер не разрешён pdca-planner/pdca-escalate»\n"
     "«очередь пуста / остаток blocked» · «лимит итераций (n/3)» · «стоп пользователя»",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "старт\nреплан от check\nреплан от DO", "D": "план готов\nфикс от check (с security)\nфикс от escalate (r активен)", "C": "потоки закрыты",
-            "SEC": "из CHECK · условно\nсбор (gather)\nотчёт → CHECK", "E": "повтор после 1 фикса\n3-й провал CHECK(r)\nжёсткий tradeoff", "S": "нет плана r+1", "A": "check pass"}
+DISPATCH = {"P": "старт\nреплан от pdca-check\nреплан от DO", "D": "план готов\nфикс от pdca-check (с security)\nфикс от pdca-escalate (r активен)", "C": "потоки закрыты",
+            "SEC": "из CHECK · условно\nсбор (gather)\nотчёт → CHECK", "E": "повтор после 1 фикса\n3-й провал CHECK(r)\nжёсткий tradeoff", "S": "нет плана r+1", "A": "pdca-check pass"}
 
 # per-phase state-graph node colors (shared by both themes)
 STC = {"START": None, "PLAN": "#2563eb", "DO": "#7c3aed", "CHECK": "#d97706",
@@ -262,7 +262,7 @@ def render(P, title):
                 s.append(f'<path d="M{cx(c)},{_prev} L{cx(c)},{by}" fill="none" stroke="{P["bus"]}" stroke-dasharray="5 4" marker-end="url(#arrow)"/>')
                 _prev, bottom, _row = by + BOX_H, by + BOX_H, _row + 1
         elif c == "SEC":
-            # mandatory stream: the audit; optional side gather: scout for facts
+            # mandatory stream: the audit; optional side gather: pdca-scout for facts
             # outside the diff only — dashed, no mandatory sequential first step.
             t, sub, tier = blocks[0]
             s.append(box(x, COL_Y, w, BOX_H, t, sub, tier))
@@ -298,9 +298,9 @@ def render(P, title):
             s.append(poly([(xc + 16, SPINE_Y), (xc + 16, ORB_B)], edge_id=f"return_{c.lower()}"))
 
     legend = [
-        ("#0d9488", "дешёвая ступень", "cheap", "оркестрация · scout · coder · CHECK gather"),
-        ("#4f46e5", "средняя ступень", "medium", "planner · check · security-auditor"),
-        ("#ea580c", "дорогая ступень", "strong", "escalate"),
+        ("#0d9488", "дешёвая ступень", "cheap", "оркестрация · pdca-scout · pdca-executor · CHECK gather"),
+        ("#4f46e5", "средняя ступень", "medium", "pdca-planner · pdca-check · pdca-security-auditor"),
+        ("#ea580c", "дорогая ступень", "strong", "pdca-escalate"),
     ]
     ly = LEG_Y
     _iw = (W - 2 * M) / 3
@@ -348,7 +348,7 @@ def render(P, title):
     s.append(f'<path d="M1168,{R1_TOP} C1168,{R1_TOP-180} 355,{R1_TOP-180} 355,{R1_TOP}" fill="none" stroke="#059669" stroke-dasharray="5 4" marker-end="url(#arrow)" data-edge-id="act_plan"/>')
     s.append(label(761, R1_TOP - 186, "следующий цикл · N+1", P["label"]))
     for _nid, _x, _t, _c, _d in [("sec_check", 837, "поток CHECK", "#be123c", True),
-                                 ("escalate", 1100, "ESCALATE", "#b91c1c", False),
+                                 ("pdca-escalate", 1100, "ESCALATE", "#b91c1c", False),
                                  ("stop", 1360, "STOP", "#b91c1c", False)]:
         _da = ' stroke-dasharray="5 4"' if _d else ''
         s.append(f'<rect x="{_x}" y="{R2_TOP}" width="{NW}" height="{NH}" rx="10" fill="{_c}" fill-opacity="0.08" stroke="{_c}" stroke-width="1.6"{_da} data-node-id="{_nid}"/>')
@@ -365,13 +365,13 @@ def render(P, title):
     # ONLY a hard security tradeoff escalates directly (no ordinary security fail bypass)
     s.append(poly([(955, _y2), (1100, _y2)], "#b91c1c", edge_id="security_escalate_tradeoff"))
     s.append(label(1048, _y2 - 7, "жёсткий tradeoff", P["label"]))
-    # escalate decides; cheap dispatcher routes: no actionable r+1 -> STOP
+    # pdca-escalate decides; cheap dispatcher routes: no actionable r+1 -> STOP
     s.append(poly([(1220, _y2), (1360, _y2)], "#b91c1c", edge_id="escalate_stop"))
     s.append(label(1310, _y2 - 7, "нет плана r+1", P["label"]))
-    # escalate decision -> DO while r not exhausted (current plan)
+    # pdca-escalate decision -> DO while r not exhausted (current plan)
     s.append(poly([(1160, R2_BOT), (1160, M4), (646, M4), (646, R1_BOT)], edge_id="escalate_do_nonexhausted"))
     s.append(label(850, M4 - 8, "решение · r не исчерпан → DO", P["label"]))
-    # escalate decision -> genuine PLAN r+1 only when exhausted; never a 4th DO
+    # pdca-escalate decision -> genuine PLAN r+1 only when exhausted; never a 4th DO
     _m4 = M4 + 14
     s.append(poly([(1200, R2_BOT), (1200, _m4), (375, _m4), (375, R1_BOT)], edge_id="escalate_plan_exhausted"))
     s.append(label(760, _m4 + 13, "исчерпан r → PLAN r+1", P["label"]))

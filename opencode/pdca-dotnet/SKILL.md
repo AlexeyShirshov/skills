@@ -1,6 +1,6 @@
 ---
 name: pdca-dotnet
-description: "PDCA cycle for .NET/C# tasks and features: PLAN → DO → CHECK → ACT with gates, parallel DO/CHECK streams, role routing (decisions — planner, hands — coder, escalation — escalate) and an ACT handoff. Invoke ONLY when the user explicitly asks to run work through the cycle — \"by the cycle\", \"via PDCA\", \"run PDCA\", \"use the pdca-dotnet skill\" — not for ordinary tasks."
+description: "PDCA cycle for .NET/C# tasks and features: PLAN → DO → CHECK → ACT with gates, parallel DO/CHECK streams, role routing (decisions — pdca-planner, hands — pdca-executor, escalation — escalate) and an ACT handoff. Invoke ONLY when the user explicitly asks to run work through the cycle — \"by the cycle\", \"via PDCA\", \"run PDCA\", \"use the pdca-dotnet skill\" — not for ordinary tasks."
 ---
 
 # PDCA cycle: orchestrator contract
@@ -14,29 +14,29 @@ another stack, treat them as a template and replace the tooling.
 
 **Models and providers live outside this skill.** The skill names only **roles**; the
 host binds them to concrete subagents and models (see §Host requirements below).
-The design presumption is economy: a cheap orchestrator, cheap `scout`/`coder`, medium-tier
-`planner`/`check`/`security-auditor`, an expensive (strong) `escalate` used sparingly; if the host gives one model for everything, the
+The design presumption is economy: a cheap orchestrator, cheap `pdca-scout`/`pdca-executor`, medium-tier
+`pdca-planner`/`pdca-check`/`pdca-security-auditor`, an expensive (strong) `pdca-escalate` used sparingly; if the host gives one model for everything, the
 cycle still works — just without the cost/quality split.
 
-These rules are addressed to you as the orchestrator. Subagents (`scout`, `coder`, `explore`,
-`general`, `dotnet-*`, `check`, `planner`, `escalate`) do NOT apply them: `coder`,
-on the contrary, must edit files and run commands; `planner` reads the summary and produces
-a plan; `check` reads the summary **and may open the cycle's evidence artifacts directly**
+These rules are addressed to you as the orchestrator. Subagents (`pdca-scout`, `pdca-executor`, `explore`,
+`general`, `dotnet-*`, `pdca-check`, `pdca-planner`, `pdca-escalate`) do NOT apply them: `pdca-executor`,
+on the contrary, must edit files and run commands; `pdca-planner` reads the summary and produces
+a plan; `pdca-check` reads the summary **and may open the cycle's evidence artifacts directly**
 (its scoped `read` of the status/evidence/manifest files — never product code) to reconcile
 the contract rows. Neither pulls product code into context.
 
 **Two paths, one contract.** In **normal mode you drive the cycle yourself, dispatching
 subagents:** PLAN Decide (including starting the cycle) and the CHECK → PLAN / DO → PLAN
 loop-back —
-`planner`, Triage — `check`, edits/commands — `coder`, escalation — `escalate`. In **autonomous
+`pdca-planner`, Triage — `pdca-check`, edits/commands — `pdca-executor`, escalation — `pdca-escalate`. In **autonomous
 mode you do not drive the cycle yourself:** dispatch the whole cycle to the cheap
 `pdca-orchestrator` subagent (a cycle brief in, an ≤8-line summary out) and relay it
 (§Autonomous mode). Either way **only a cheap-tier primary drives the cycle or dispatches
-`pdca-orchestrator`** (§Host requirements); **the PLAN decision always belongs to `planner`**.
+`pdca-orchestrator`** (§Host requirements); **the PLAN decision always belongs to `pdca-planner`**.
 
 **Project overlay.** A repository may have its own additions to the cycle — a file in
 `instructions` (e.g. `.opencode/<project>-pdca.md`), a project skill named `*-pdca`,
-or `.opencode/skills/<name>/SKILL.md`. If one exists — **have `scout` find it and report its rules
+or `.opencode/skills/<name>/SKILL.md`. If one exists — **have `pdca-scout` find it and report its rules
 before PLAN** (a project skill is loaded with `skill`, which is orchestration, not reading content)
 and follow it on top of this contract: it refines invariants, finding registries, report
 formats and lens prefixes, and takes priority over the generic advice. **The overlay does
@@ -62,28 +62,29 @@ medium/strong primary still neither drives the cycle nor dispatches `pdca-orches
 
 | Role | Agent | Required | Fallback if missing |
 |---|---|---|---|
-| GATHER (facts) | `scout` | read-only, cheap | built-in `explore` |
-| PLAN (decisions) | `planner` | read-only, no delegation | built-in `general` |
-| DO (hands) | `coder` | `edit`/`bash` allow | built-in `general` |
-| CHECK (verdict) | `check` | read-only (report + cycle evidence artifacts), no delegation | built-in `general` |
-| ESCALATE | `escalate` | read-only, facts via `scout` | `general` (+ warn the user) |
-| SECURITY | `security-auditor` | read-only, facts via `scout` | built-in `explore` |
+| GATHER (facts) | `pdca-scout` | read-only, cheap | built-in `explore` |
+| PLAN (decisions) | `pdca-planner` | read-only, no delegation | built-in `general` |
+| DO (hands) | `pdca-executor` | `edit`/`bash` allow | built-in `general` |
+| CHECK (verdict) | `pdca-check` | read-only (report + cycle evidence artifacts), no delegation | built-in `general` |
+| ESCALATE | `pdca-escalate` | read-only, facts via `pdca-scout` | `general` (+ warn the user) |
+| SECURITY | `pdca-security-auditor` | read-only, facts via `pdca-scout` | built-in `explore` |
 
 Ready-made definitions: this skill's `assets/agents/`. Model bindings come from the **host profile's
 `agent` block** (or a project `opencode.json` `agent.<name>.model`) — **never a `model:` field in the role
-markdown**. Each asset carries only a `# tier:` label (`coder`/`scout` = cheap; `planner`/`check`/
-`security-auditor` = medium; `escalate` = strong). By default a subagent inherits the invoking primary's
+markdown**. Each asset carries only a `# tier:` label (`pdca-executor`/`pdca-scout` = cheap; `pdca-planner`/`pdca-check`/
+`pdca-security-auditor` = medium; `pdca-escalate` = strong). By default a subagent inherits the invoking primary's
 model (works out of the box, but on one model); bind ids in the profile `agent` block for routing.
 
 **Setup (once):** (1) `cp assets/agents/*.md ~/.config/opencode/agents/` (or project `.opencode/agents/`);
-(2) restart opencode (agents load at startup); (3) allow the cheap orchestrator's
-`agent.<primary>.permission.task` for `scout`/`planner`/`check`/`coder`/`escalate`/`security-auditor`,
+(2) restart opencode (agents load at startup); (3) allow the primary's `subagent` permission (V2: `agents.<primary>.permissions`, `action: subagent`; V1: `agent.<primary>.permission.task`) for `pdca-scout`/`pdca-planner`/`pdca-check`/`pdca-executor`/`pdca-escalate`/`pdca-security-auditor`,
 `pdca-orchestrator` (autonomous delegation), and the `dotnet-*` gather lenses + `docfx-specialist` used by
-PLAN/CHECK. A cheap `pdca-orchestrator` that
-drives a child cycle needs the same allowlist (it may not widen the expensive roles' permissions).
+PLAN/CHECK; (4) set `experimental.subagent_depth` ≥ 2 so the RUNNER may delegate. A cheap
+`pdca-orchestrator` that
+drives a child cycle needs the same allowlist (it may not widen the expensive roles' permissions). The
+full checklist is `docs/install.md` in the skills repository.
 
 If agents are absent and the host **allows the built-ins**, run on them (`general` for
-`coder`/`planner`/`check`, `explore` for `security-auditor`) and tell the user routing is unavailable
+`pdca-executor`/`pdca-planner`/`pdca-check`, `explore` for `pdca-security-auditor`) and tell the user routing is unavailable
 (autonomous: `Notice:` in the log + final report). A host that denies `general`/`explore` (e.g. an
 expensive primary) must **never** bypass the deny: a required-but-unavailable role is a **resource blocker**
 (normal: report to the user; autonomous: `Notice:` + recorded summary), not a silent run without the role.
@@ -92,29 +93,29 @@ expensive primary) must **never** bypass the deny: a required-but-unavailable ro
 
 You drive the cycle, you do not execute it by hand. **You are a dispatcher, not a reader and not a
 decider:** you invoke the subagent Tasks and pass each one the others' reports. Decisions (PLAN
-Decide, return to PLAN) → `planner`; CHECK verdict → `check`; escalation → `escalate`; facts →
-`scout`; every file write and command → `coder`.
+Decide, return to PLAN) → `pdca-planner`; CHECK verdict → `pdca-check`; escalation → `pdca-escalate`; facts →
+`pdca-scout`; every file write and command → `pdca-executor`.
 
 **Cheap primary only (§Host requirements).** Only a cheap-tier primary takes this role; a medium/strong
 primary (e.g. `architect`) does not drive the cycle — outside PDCA it stays the decisions primary and
 hands implementation to the cycle. The cheap orchestrator never authors a plan, never reads files and
-never runs a command; it routes facts to `scout` and every edit/command to `coder` via a
+never runs a command; it routes facts to `pdca-scout` and every edit/command to `pdca-executor` via a
 subagent. Both the
-initial PLAN and any replan belong to `planner`.
+initial PLAN and any replan belong to `pdca-planner`.
 
-- **Execute an `escalate` decision by routing, never by re-deciding.** `escalate` returns a **decision**;
-  the orchestrator carries it out solely by dispatch: a genuinely revised remediation plan → `planner`
-  (which authors r+1), implementation under the current plan / a status STOP → `coder`. It never
+- **Execute an `pdca-escalate` decision by routing, never by re-deciding.** `pdca-escalate` returns a **decision**;
+  the orchestrator carries it out solely by dispatch: a genuinely revised remediation plan → `pdca-planner`
+  (which authors r+1), implementation under the current plan / a status STOP → `pdca-executor`. It never
   semantically re-selects (no substituting a different option) and never edits. The decision cannot
   waive the gates, the no-4th rule, scope or the security constraints (§Escalation).
-- **Do not edit files or run commands** — that is `coder`'s job, including the cycle status file
+- **Do not edit files or run commands** — that is `pdca-executor`'s job, including the cycle status file
   (§Cycle status file). You have the tools but do not use them in the cycle — that is the mode's point.
 - **Do not read anything yourself** — no code/diffs/logs/status/docs/MCP output. Facts come from
-  `scout` (`file:line`), command results from `coder` (exit code, numbers, log path), judgments from
-  `check`/`planner`/`escalate`. Only their compact reports enter your context, to forward.
+  `pdca-scout` (`file:line`), command results from `pdca-executor` (exit code, numbers, log path), judgments from
+  `pdca-check`/`pdca-planner`/`pdca-escalate`. Only their compact reports enter your context, to forward.
 - Your job: drive the phases, compose briefs (what to do + the reports the subagent needs), verify the
-  gate **items are present** in the reports (presence, not quality — that is `check`/`planner`), and
-  keep the status file (`coder`) authoritative (§Phase progress mirror).
+  gate **items are present** in the reports (presence, not quality — that is `pdca-check`/`pdca-planner`), and
+  keep the status file (`pdca-executor`) authoritative (§Phase progress mirror).
 
 ## State machine
 
@@ -123,18 +124,18 @@ approval, §Autonomous mode), plus a **DO → PLAN** return when DO surfaces a n
 
 Progress is recorded in one place:
 - **The cycle status file** `.pdca/status/<task>-<N>.md` (§Cycle status file) — **source of
-  truth** for plan and progress; on disk, survives compaction and a new session, updated by `coder`
+  truth** for plan and progress; on disk, survives compaction and a new session, updated by `pdca-executor`
   on every event. There is no separate todo or sidebar mirror.
 
 **Three counters, do not mix them:**
 - `<N>` — the task's cycle number, in the status-file name: grows **only in ACT**, when a further
   cycle of the same task is planned. Loop-backs never change `<N>`.
-- **Plan revision `r`** — starts at 1 and grows only when `planner` **actually issued a revised plan**
+- **Plan revision `r`** — starts at 1 and grows only when `pdca-planner` **actually issued a revised plan**
   (a new `P:` from CHECK → PLAN / DO → PLAN). A rejected candidate or a clarification with the plan
   unchanged is **not** a revision: no bump, no attempt reset. The outgoing failed attempt is recorded
   before the plan is replaced. No cap on revisions.
 - **`iteration n/3`** — execution attempts for the current revision `r`: `PLAN(r) → DO` starts at 1;
-  `CHECK → DO` increments. After the **third failed CHECK of the same revision** → `escalate` before a
+  `CHECK → DO` increments. After the **third failed CHECK of the same revision** → `pdca-escalate` before a
   fourth (there is no 4th). `DO → PLAN`/`CHECK → PLAN` do **not** consume the next revision's attempts;
   a new revision resets `n` to 1. The same-defect history is not erased by a replan (§Escalation).
   There is no global `n/3` on every loop-back.
@@ -148,7 +149,7 @@ creates divergence.
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan, escalation —
    the executor updates the status file in the same turn, before/with the first subagent dispatch of
    the next step; never batched.
-2. **Reconcile each turn.** Before dispatching, compare the last status recorded by `coder`
+2. **Reconcile each turn.** Before dispatching, compare the last status recorded by `pdca-executor`
    (from its report — do not read the file) with your narrative. Divergence → fix it in the same
    turn; the status file wins.
 3. **After compaction/resume** reconstruct the state from the status file (§Recovery), never from
@@ -159,36 +160,36 @@ violation); there is no "nothing changed" exception — if an event happened, it
 
 **DO → PLAN candidate.** DO never issues a verdict or STOP — it reports a **provisional candidate with
 evidence**; a **candidate analysis** that says "implementation complete" **never completes** `D`. While
-`planner` adjudicates, running streams must not keep rewriting the old-plan area.
+`pdca-planner` adjudicates, running streams must not keep rewriting the old-plan area.
 Classification: (a) **additive prerequisite** → add its own active unit; the original `D` stays active
 `blocked` on the dependency (not `superseded`, no mapping); (b) acceptable **assumption/risk** → record and
 continue (never weakens the criteria); (c) **outside-cycle blocker** → the orchestrator dispatches
-`escalate` on `planner`'s report; (d) **insufficient evidence** → targeted `scout` first, then on
-persistent low confidence the orchestrator dispatches `escalate` under trigger 5 even without
+`pdca-escalate` on `pdca-planner`'s report; (d) **insufficient evidence** → targeted `pdca-scout` first, then on
+persistent low confidence the orchestrator dispatches `pdca-escalate` under trigger 5 even without
 established externalness (§Escalation). Only a genuinely **new** item that makes the plan unimplementable
 — never drifting scope (a bad plan found by review is a CHECK → PLAN).
 
 **Transition gates:**
 
-1. **PLAN → DO** — only if `planner`'s answer contains: goal; acceptance criteria; concrete task list
+1. **PLAN → DO** — only if `pdca-planner`'s answer contains: goal; acceptance criteria; concrete task list
    (no `TBD`/"later"); risks; **test strategy** (unit vs integration, cases, coverage level; path-changing
    work also needs the **variant matrix**, every edge closed as test / guard / `deferred with a trigger` —
    a missing or half-closed matrix fails gate 1; name the shared contract if tests need one — §PLAN "Test
    strategy"); **docs plan** (§PLAN "Documentation"); **perf-measurement decision** with an argument (§PLAN
    "Performance measurement"); **reconnaissance decision** with an argument (§PLAN "Prototype /
    reconnaissance"); **unit execution mode** (§PLAN "Unit execution mode"); the design checklist passed;
-   **the plan written to the status file by `coder`** (last step of PLAN) **and, in normal
-   mode, the user's approval of the plan** — the orchestrator tells the user that the planner
+   **the plan written to the status file by `pdca-executor`** (last step of PLAN) **and, in normal
+   mode, the user's approval of the plan** — the orchestrator tells the user that the pdca-planner
    has produced the plan and written it to the status file, asks them to read it and approve
    it, and starts implementation only after that approval — except in autonomous mode, where
    no approval is required and DO starts right after PLAN. The orchestrator only checks
-   each item is **present** (§Orchestrator role) and returns an incomplete answer to `planner`. On DO start:
-   `coder` logs `DO started`, records the phase transition in the status file (`P:` closed, single
+   each item is **present** (§Orchestrator role) and returns an incomplete answer to `pdca-planner`. On DO start:
+   `pdca-executor` logs `DO started`, records the phase transition in the status file (`P:` closed, single
    `D:` in progress), then the parallel streams (§Parallel DO streams). Normal mode with no acceptance
-   criteria → ask the user, do not guess; autonomous → route through `planner`/`escalate` and STOP
+   criteria → ask the user, do not guess; autonomous → route through `pdca-planner`/`pdca-escalate` and STOP
    (§Autonomous mode).
 2. **DO → CHECK** — only when all `D:` tasks and all DO streams (code, tests, docs) are closed, the
-   build/tests have run (`coder`: exit code + log path), and every closed `D:` is in the status file. A
+   build/tests have run (`pdca-executor`: exit code + log path), and every closed `D:` is in the status file. A
    blocker report is **not `done`**: `done` counts only actually completed **accepted** work; unfinished
    work stays `blocked`/`pending` (never `completed`), a
    rejected candidate resumes the original `D`, and unresolved work prevents gate 2. Supersede vs additive
@@ -198,7 +199,7 @@ established externalness (§Escalation). Only a genuinely **new** item that make
    perf) plus security when triggered; worktree sub-tasks merged and re-verified (§CHECK → "Parallel CHECK
    streams", "Parallel sub-tasks in worktrees"). On entry: the verdict pointer and the phase
    transition (`C:` closed, `A:` in progress) are recorded in the status file. Otherwise loop back —
-   implementation defect → DO; wrong plan → PLAN via `planner` (it issues the new `P:`; `coder`
+   implementation defect → DO; wrong plan → PLAN via `pdca-planner` (it issues the new `P:`; `pdca-executor`
    rewrites the same status file and logs `Replanned: <reason>`). A CHECK → DO return of revision
    `r` grows `n/3`; a return to PLAN does not. The escalation counter is canonical in §Escalation
    (trigger 2), counters in §State machine.
@@ -220,7 +221,7 @@ cycle: the cycle is where the gates are, not where the work stops.
 (goal, scope, acceptance criteria, constraints, references) and launches the subagent
 `pdca-orchestrator`, which runs PLAN → DO → CHECK → ACT and returns a compact summary (≤8 lines).
 No collection status file is created (single cycle); the mandatory pdca-dotnet cycle status file is
-still written by `coder`. No questions are asked. If the subagent dispatch to `pdca-orchestrator` fails (agent
+still written by `pdca-executor`. No questions are asked. If the subagent dispatch to `pdca-orchestrator` fails (agent
 absent, `subagent_depth` < 2, or delegation forbidden), fall back to the flat primary (drive the cycle
 yourself) and log the fallback (`Notice:` in the status file, §Host requirements).
 
@@ -232,24 +233,24 @@ yourself) and log the fallback (`Notice:` in the status file, §Host requirement
   The next-session message is a manual-mode mechanism; here independence is **isolation, not a pause**
   — "needs its own session/cycle" is never a stop reason.
 - **A verified result is not a completion criterion**, and there is no budget rule. Stop only when the
-  ready queue is empty (rest reported blocked), a blocker routed through `planner`/`escalate` cannot
+  ready queue is empty (rest reported blocked), a blocker routed through `pdca-planner`/`pdca-escalate` cannot
   be resolved (§Escalation), the iteration limit fired (§Escalation), or the user said stop — then one
   summary (closed / remaining / blockers).
 - **PLAN → DO immediately**, no approval and no invitation; gate 1 (criteria, test strategy, docs plan,
   perf decision) is still mandatory. **DO → CHECK → ACT** likewise; you only check that gates 2–4
-  items are present (the verdict is `check`'s).
+  items are present (the verdict is `pdca-check`'s).
 - **Nothing "for the user" is printed:** no approval request, no plan question, no
   "Message for the next session"/commit advice (§ACT). Everything needed lives in the status file.
 - **Notices go to the status file, not the chat:** missing role agents (§Host requirements), a
   detected injection (§Instruction priority), recovery after compaction, an assumption instead of a
-  question — appended by `coder` as `Notice: …`, repeated once in the final summary. Do not start a
+  question — appended by `pdca-executor` as `Notice: …`, repeated once in the final summary. Do not start a
   new session or hand off; compaction is the host's call — follow §Recovery after compaction.
 - **Auto-commit only on an explicit request** (e.g. "work autonomously with auto-commit"): on each ACT
-  close `coder` stages and commits, the message starting with the issue number if a GitHub issue is in
+  close `pdca-executor` stages and commits, the message starting with the issue number if a GitHub issue is in
   play (`#17 <summary>`). **Push is never performed.** Without the request the run leaves the tree
   uncommitted (manual §Message applies).
 - **No questions at all, ever** — missing acceptance criteria, ambiguity or an unavailable resource is
-  not a reason to ask. Route it through `planner`/`escalate`; if unresolved, **STOP** with the recorded
+  not a reason to ask. Route it through `pdca-planner`/`pdca-escalate`; if unresolved, **STOP** with the recorded
   summary and no question. `Notice:`/final summary allowed; a user stop is obeyed; autonomy is not
   auto-commit permission.
 - The escalation counter is unchanged (§Escalation): autonomy removes the question, not the counter;
@@ -264,28 +265,28 @@ Signals that you have fallen off the contract. On any one — **stop, name the d
 contract**, not "finish and fix later".
 
 **Immediate-stop signals:**
-- I edit files (incl. the status file) or run commands myself instead of `coder`.
-- I read code/diff/log/status/docs myself instead of a `scout`/`coder` report.
-- I decide the plan or verdict myself instead of `planner`/`check`.
+- I edit files (incl. the status file) or run commands myself instead of `pdca-executor`.
+- I read code/diff/log/status/docs myself instead of a `pdca-scout`/`pdca-executor` report.
+- I decide the plan or verdict myself instead of `pdca-planner`/`pdca-check`.
 - I start DO without the user's approval (normal mode), or ask for approval before the plan is on disk.
 - I skip CHECK or close the cycle without ACT.
-- I did not fetch the project overlay (instructions/`*-pdca`/`AGENTS.md`, via `scout`/`skill`) before PLAN.
+- I did not fetch the project overlay (instructions/`*-pdca`/`AGENTS.md`, via `pdca-scout`/`skill`) before PLAN.
 - I silently skipped a mandatory PLAN decision: test strategy, docs plan, perf measurement,
   reconnaissance, unit mode.
-- An event happened but `coder` did not update the status file (§Cycle status file → "Progress log").
+- An event happened but `pdca-executor` did not update the status file (§Cycle status file → "Progress log").
 - I deleted a status file — it is finalized and kept, never deleted (§Status file → "Lifetime").
 - I pushed project facts, or >0–2 transferable lessons, into the memory MCP (§ACT step 1).
 - I let the status file lag my narrative, or left a finished phase open in it.
 - I loaded code/large files/logs/MCP output into my context instead of a pointer.
 - "Tests/docs later", "test strategy as I go" — in DO everything runs in parallel.
-- I made a next attempt instead of `escalate` (§Escalation).
+- I made a next attempt instead of `pdca-escalate` (§Escalation).
 - I declared a blocker without evidence (§State machine, DO → PLAN).
 - In autonomous mode I printed the plan-approval request or the next-session message, or stopped at a
   "clean checkpoint"/wait state ("independence = isolation, not a pause", §Autonomous mode).
 - I edited outside the plan's footprint (Over-Reach), or ran units in parallel with overlapping footprints.
 - I worked outside my own worktree / the unit's status location.
-- I closed a phase/cycle on a `coder` self-report without the evidence chain — fresh re-run + `scout`
-  diff + `check` verdict (§Evidence over assertion).
+- I closed a phase/cycle on a `pdca-executor` self-report without the evidence chain — fresh re-run + `pdca-scout`
+  diff + `pdca-check` verdict (§Evidence over assertion).
 - A DO report whose inner loop ran the **whole solution** or an **integration** run inside DO, or that
   lacks the exact commands + phase/kind + exit codes — **immediate STOP: reject the report**, it is
   not continued DO (§Delegation by phase → "DO brief: mandatory `test scope`", §Execution journal,
@@ -297,18 +298,18 @@ contract**, not "finish and fix later".
 - "User's in a hurry — start without a plan" → rework is slower; approving the plan does not cancel a good plan's speed-up.
 - "I remember the plan" → the plan lives in the status file; context decays (§Recovery after compaction).
 - "I'll do it myself, the subagent is slow" → delegation is the contract; self-work runs worse and burns context.
-- "`check` will approve anyway" → the verdict is its job; a self-verified verdict is Verifier Theater.
+- "`pdca-check` will approve anyway" → the verdict is its job; a self-verified verdict is Verifier Theater.
 - "Escalation is expensive" → a fourth blind attempt costs more.
 - "Finish tests/docs later" → the cycle closes only when everything is green.
 - "It's obvious, no need to measure" → measure, never assert; without it gate 1 fails.
 - "One tree is faster" → overlapping footprints are a race; isolation is chosen by risk.
 - "I'll fix this too while I'm at it" → outside the plan it is a new `P:` task.
-- "`coder` says done / build green" → a report ≠ a result; order the evidence chain.
-- "I'll glance at the file/diff myself" → reading is `scout`'s job; your context is for routing.
+- "`pdca-executor` says done / build green" → a report ≠ a result; order the evidence chain.
+- "I'll glance at the file/diff myself" → reading is `pdca-scout`'s job; your context is for routing.
 
 ### Cycle failure modes
-- **Infinite fix-loop** — same defect returned after a fix → `escalate` before the second fix.
-- **Verifier Theater** — CHECK "passed" with no numbers/`file:line`/baseline; `check` never saw raw candidates.
+- **Infinite fix-loop** — same defect returned after a fix → `pdca-escalate` before the second fix.
+- **Verifier Theater** — CHECK "passed" with no numbers/`file:line`/baseline; `pdca-check` never saw raw candidates.
 - **State Rot** — status/memory diverge; reconcile every turn, the status file is the truth.
 - **Over-Reach** — edits beyond the unit's footprint → outside the plan is a separate `P:` task.
 - **Token Burn** — cheap-subagent walls / `build` reading files itself → delegate, take a pointer.
@@ -326,18 +327,18 @@ mix up the cycle number or status path; you answer by impression rather than by 
 
 **Recovery order (do not skip):**
 1. **Stop** the current action.
-2. **Status file — via `scout`** (you do not read it): durable state — cycle `<N>`, revision `r`,
+2. **Status file — via `pdca-scout`** (you do not read it): durable state — cycle `<N>`, revision `r`,
    attempt `n/3`; goal and criteria; decisions (perf/recon/unit mode); `D:` tasks with states
    (including unfinished); defect history (keys, revisions/attempts, fix count, last escalation
    outcome); current phase/iteration and last log entries; Done/Verified. **Load `N`, `r`, `n`, the
    unfinished states and the defect history before any decision.**
-3. **Memory + overlay — via `scout`:** transferable lessons from the memory MCP (the status file and
+3. **Memory + overlay — via `pdca-scout`:** transferable lessons from the memory MCP (the status file and
    docs win over graph noise) and the project instructions/`AGENTS.md` pointers.
 4. **Rules** — re-read the gates and §Red flags (the contract, not project content).
-5. **Five questions** from the scout report: where am I (task/phase/`N`/`r`/`n`)? where to? goal and
+5. **Five questions** from the pdca-scout report: where am I (task/phase/`N`/`r`/`n`)? where to? goal and
    criteria? decisions made and why? what was done and how verified, and the defect history?
 6. **Reconstruct the state** from the status file (§Phase progress mirror rule 3).
-7. **Continue** from the current phase without re-opening PLAN/CHECK; `coder` appends `Recovered after
+7. **Continue** from the current phase without re-opening PLAN/CHECK; `pdca-executor` appends `Recovered after
    compaction`. One line to the user in normal mode; log-only in autonomous (§Autonomous mode).
 
 ## Evidence over assertion
@@ -346,14 +347,14 @@ mix up the cycle number or status path; you answer by impression rather than by 
 build is green" is not evidence; a fresh command output (exit code, numbers) and the fact of a diff
 are. **The orchestrator does not inspect evidence itself** (§Orchestrator role); it builds the chain:
 
-- **Re-run — `coder`:** name the proving command and have `coder` run it **again**; return exit code,
+- **Re-run — `pdca-executor`:** name the proving command and have `pdca-executor` run it **again**; return exit code,
   key numbers (passed/failed/skipped, warnings, coverage) and the log **path**, not the log.
-- **Diff facts — `scout`:** changed files and what changed (`git diff --stat`, `file:line`) — by a
+- **Diff facts — `pdca-scout`:** changed files and what changed (`git diff --stat`, `file:line`) — by a
   non-author.
-- **Judgment — `check`:** both reports go to `check` (gates 2/3); it decides whether they prove the
+- **Judgment — `pdca-check`:** both reports go to `pdca-check` (gates 2/3); it decides whether they prove the
   claim. `build` relays, does not judge.
 - **A report ≠ a result:** "the agent said success", "the build should pass" is not evidence.
-- **A regression test** is red↔green (failed without the fix, passes with it — both runs by `coder`,
+- **A regression test** is red↔green (failed without the fix, passes with it — both runs by `pdca-executor`,
   both exit codes reported); "passed once" proves nothing.
 - **Slide-marker words** — "should work", "probably", "looks correct", "it's obvious", "passed last
   time" — in a report or your own text: order the run.
@@ -379,33 +380,33 @@ to check, use "set/not set".
 
 ## Delegation by phase
 
-- **PLAN** — in two beats (see §PLAN): **gather** — `scout` (repository facts, `file:line`)
+- **PLAN** — in two beats (see §PLAN): **gather** — `pdca-scout` (repository facts, `file:line`)
   plus the `dotnet-*` lenses: `dotnet-architect`/
   `dotnet-code-review-agent` (design/perf), `dotnet-testing-specialist` (what and how to
-  test) and `scout` with the **skill** `dotnet-documentation-strategy` (which docs are affected) —
-  cheap; **decisions and decomposition** — the `planner` subagent, which `build`
+  test) and `pdca-scout` with the **skill** `dotnet-documentation-strategy` (which docs are affected) —
+  cheap; **decisions and decomposition** — the `pdca-planner` subagent, which `build`
   invokes as a subagent (both when starting the cycle and on the CHECK → PLAN / DO → PLAN return); do not load code into your
-  context. **The last step of PLAN** — `coder` writes `planner`'s plan into the status file
-  (`planner` has no file permissions), and only then is the user asked to approve the plan.
+  context. **The last step of PLAN** — `pdca-executor` writes `pdca-planner`'s plan into the status file
+  (`pdca-planner` has no file permissions), and only then is the user asked to approve the plan.
 - **DO** — code, tests and prose docs are written in parallel right after the plan (not "test then
-  code", not "docs later"); XML-doc comments follow the finished code. All through `coder`
+  code", not "docs later"); XML-doc comments follow the finished code. All through `pdca-executor`
   (`docfx-specialist` — DocFX structure); each closed `D:` is logged in the status file (§Cycle
   status file → "Progress log"). Units per the chosen mode (§PLAN → "Unit execution mode",
   §Parallel DO streams). Independent features are N separate cycles, not this one (§Autonomous mode).
-- **CHECK** — two beats (§CHECK): gather cheap (`scout`; `dotnet-code-review-agent` returns raw
+- **CHECK** — two beats (§CHECK): gather cheap (`pdca-scout`; `dotnet-code-review-agent` returns raw
   candidates without a verdict; `dotnet-testing-specialist` test lens; async/concurrency specialists
-  by trigger; deterministic commands via `coder`) → triage `check` (judges the candidates, aggregates
+  by trigger; deterministic commands via `pdca-executor`) → triage `pdca-check` (judges the candidates, aggregates
   verdict/ranking/loop-back); `build` relays, it does not judge. Streams run in parallel; add
-  `security-auditor` by trigger (auth/secrets/external input/crypto) — §CHECK → "Parallel CHECK
+  `pdca-security-auditor` by trigger (auth/secrets/external input/crypto) — §CHECK → "Parallel CHECK
   streams". Worktree sub-tasks also merge + re-verify the merged tree (§CHECK → "Parallel sub-tasks
-  in worktrees"). `escalate` handles a risky diff by trigger (§Escalation).
-- **ESCALATE** — `escalate`, **sparingly, by triggers** (§Escalation):
+  in worktrees"). `pdca-escalate` handles a risky diff by trigger (§Escalation).
+- **ESCALATE** — `pdca-escalate`, **sparingly, by triggers** (§Escalation):
   a separate subagent dispatch with a narrow question. It returns a **decision** (not code, not a menu) and does not
-  edit code; the cheap orchestrator executes it **by routing** — a revised plan → `planner`, a
-  fix/status STOP → `coder` — and never re-selects semantically. The tier is expensive — call it only
+  edit code; the cheap orchestrator executes it **by routing** — a revised plan → `pdca-planner`, a
+  fix/status STOP → `pdca-executor` — and never re-selects semantically. The tier is expensive — call it only
   where cheap subagents cannot give an answer.
-- **ACT** — the cheap gatherer (`scout`) collects the data, **transferable** lessons go to the memory MCP
-  (optional, §ACT step 1: 0–2, no duplication of durable artifacts); `coder` writes the stable rules,
+- **ACT** — the cheap gatherer (`pdca-scout`) collects the data, **transferable** lessons go to the memory MCP
+  (optional, §ACT step 1: 0–2, no duplication of durable artifacts); `pdca-executor` writes the stable rules,
   finalizes the cycle status file from the reports you pass it; then the message for the next
   session (§ACT).
 
@@ -417,17 +418,17 @@ ordering in DO — the only red→green requirement is the regression test of a 
 **XML-doc comments** are not part of this launch — they follow the finished code (step 4):
 
 1. **Status file.** The plan is already written there (the last step of PLAN, §PLAN → "Plan
-   approval"); on approval `coder` records `DO started` in its progress log.
+   approval"); on approval `pdca-executor` records `DO started` in its progress log.
 2. **Shared contract — only if the streams need it.** If the tests or docs rely
    on an abstraction/DTO/signature, **first** only the contract is fixed: signatures and
-   types **without implementation** (a single `coder` dispatch or a sketch in the status file). The
+   types **without implementation** (a single `pdca-executor` dispatch or a sketch in the status file). The
    streams need nothing beyond that from each other. No contract — the step is skipped.
 3. **Parallel launch.** In one turn, several Tasks in one message:
-   the **code stream** (`coder`), the **test stream** (`coder`; for new logic —
-   `dotnet-xunit`/`dotnet-tunit-test`) and the **prose-docs stream** (`coder`; README/guides/DocFX
+   the **code stream** (`pdca-executor`), the **test stream** (`pdca-executor`; for new logic —
+   `dotnet-xunit`/`dotnet-tunit-test`) and the **prose-docs stream** (`pdca-executor`; README/guides/DocFX
    pages; for docs-site structure — `docfx-specialist`) start together.
 4. **XML-doc — after the code (when required).** Once the code stream has finished writing the code,
-   `coder` adds the **XML-doc comments** (`///` on the new/changed public members) — **only when the
+   `pdca-executor` adds the **XML-doc comments** (`///` on the new/changed public members) — **only when the
    project settings mandate XML-doc (CS1591 enforced) or the user requested it** (§Documentation).
    They live in the code files, so they cannot run in parallel with the code stream.
 
@@ -446,11 +447,11 @@ Invariants:
 - Divergence of the streams (tests ↔ code, prose docs ↔ the actual contract/behavior) is a defect,
   and it is caught by **CHECK** (the test lens and the doc lens), not by DO.
 - The **status file is not written by the streams** (it would be the same file from different
-  streams): as each stream report arrives, a separate short `coder` dispatch logs it, one at a time.
+  streams): as each stream report arrives, a separate short `pdca-executor` dispatch logs it, one at a time.
 
 Why this way: all three sides are derived from the plan (step 2 removes the only possible
 link — the shared contract), so they are isolated and do not wait for each other; the idle time of the
-coder/tester/documenter disappears.
+pdca-executor/tester/documenter disappears.
 
 **Units (not streams).** If PLAN split the feature into several **independent units**
 (§PLAN → "Unit execution mode"), they are launched in parallel the same way — with several
@@ -460,7 +461,7 @@ unit is created when its worktree is set up at the start of DO, inside that work
 
 ### Coder editing discipline (applying fixes)
 
-When a stream **applies** fixes — the `coder` role, whether the fix came from the PLAN design
+When a stream **applies** fixes — the `pdca-executor` role, whether the fix came from the PLAN design
 review, from a design/type/pattern lens, or from a CHECK loop-back — it follows the specialist-editor
 contract (the discipline a dedicated design/performance engineer would apply when it edits):
 
@@ -480,7 +481,7 @@ contract (the discipline a dedicated design/performance engineer would apply whe
   and the report is rejected. **Integration runs happen only at the DO → CHECK boundary**, within
   the planned scope/count — not per edit. Widening to a shared contract/dependency is allowed
   **only** if the scope is amended **and validated BEFORE running**, and the reason is recorded.
-  `coder` runs `.pdca/scripts/validate_inner_loop.py` — `brief` before editing, and `journal`/`report`
+  `pdca-executor` runs `.pdca/scripts/validate_inner_loop.py` — `brief` before editing, and `journal`/`report`
   (reconciled with `--journal`) before CHECK — and CHECK consumes the evidence; a missing/invalid
   gate fails closed.
 - **Verify after every step, not only at the end.** A red build or failing test stops the stream and
@@ -497,7 +498,7 @@ contract (the discipline a dedicated design/performance engineer would apply whe
   that is the isolation mechanism the merge in CHECK relies on, not a delivery. Commits to the
   working branch — only on request (§Autonomous mode → auto-commit); push — never without a separate
   explicit request.
-- **No benchmark conclusions.** The coder may run a benchmark to sanity-check, but does not draw
+- **No benchmark conclusions.** The pdca-executor may run a benchmark to sanity-check, but does not draw
   conclusions from it; sub-noise deltas are noise. Interpretation goes to the perf lens/specialist.
 - **Hand off what needs numbers** to the perf specialist (via a subagent) instead of asserting it.
 
@@ -522,9 +523,9 @@ Details live in files; only a pointer enters the orchestrator's context.
 
 ### DO brief: mandatory `test scope`
 
-Every implementation brief to `coder` **MUST** carry a mandatory structured `test scope` (with a
-rationale); **without it the orchestrator must NOT dispatch the brief** — it returns to `planner`
-to complete the scope. `coder` runs `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before
+Every implementation brief to `pdca-executor` **MUST** carry a mandatory structured `test scope` (with a
+rationale); **without it the orchestrator must NOT dispatch the brief** — it returns to `pdca-planner`
+to complete the scope. `pdca-executor` runs `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before
 any edit**; a nonzero exit is **fail-closed** → return to the orchestrator (do not start editing).
 
 Required fields:
@@ -599,7 +600,7 @@ run that really executes integration is not "unit" because of a command name or 
 
 If the plan chose (or the user asked — §PLAN → "Unit execution mode")
 to perform **sub-tasks of one cycle** (one PLAN/contract) in parallel in separate
-worktrees, give each task to `coder` as a **separate dispatch** with this brief (substitute the
+worktrees, give each task to `pdca-executor` as a **separate dispatch** with this brief (substitute the
 task and paths):
 
 ```text
@@ -629,9 +630,9 @@ PLAN/CHECK/ACT) this template does not apply — that is N separate cycles, each
 worktree (in manual mode each gets its own session; in autonomous mode they run consecutively in this
 session — §Autonomous mode), outside this cycle.
 
-### Escalation (`escalate`)
+### Escalation (`pdca-escalate`)
 
-`escalate` is the **second tier for hard decisions**, but on a **expensive model**:
+`pdca-escalate` is the **second tier for hard decisions**, but on a **expensive model**:
 so you call it sparingly, when the decision is non-obvious or
 risky and the cheap subagents are not enough. A separate dispatch, a narrow question.
 Triggers (any one):
@@ -639,9 +640,9 @@ Triggers (any one):
 1. A requirement or acceptance criterion is ambiguous and guessing is unacceptable.
 2. The cycle is not passing **by the counter** — the single rule used everywhere in this skill,
    scoped to the current plan revision `r`:
-   - the **same defect** came back after one fix ⇒ `escalate` **before the second fix** — this
+   - the **same defect** came back after one fix ⇒ `pdca-escalate` **before the second fix** — this
      history persists across revisions, a replan does not erase it;
-   - **different** defects ⇒ `escalate` after the **third failed CHECK of the same revision `r`**
+   - **different** defects ⇒ `pdca-escalate` after the **third failed CHECK of the same revision `r`**
      (`iteration 3/3`); there
      is no 4th attempt. A real replan starts a new revision at `n=1`; a `DO → PLAN` / `CHECK → PLAN`
      return does not consume the next revision's attempts.
@@ -655,26 +656,26 @@ Triggers (any one):
    consequences (public API and compatibility, concurrency, data migrations, crypto design).
 4. The final acceptance of a risky diff before ACT.
 5. A design decision in PLAN (or a DO-candidate classification that stays low-confidence after a
-   **targeted `scout`** gather) where `planner` reports low confidence or no option is obvious —
+   **targeted `pdca-scout`** gather) where `pdca-planner` reports low confidence or no option is obvious —
    this applies **even without established externalness**: no proven outside-cycle blocker is
    required for the trigger.
 
 **A blocker surfaced in DO is not escalated directly**: it is a *provisional candidate* that goes to
-`planner` first (§State machine, `DO → PLAN`), and `planner` adjudicates it. `planner` has no delegation permission
-permission, so it does not call `escalate` itself: it reports the outside-cycle blocker (the user / a
-forcing architectural call) or a persistent low-confidence classification after the targeted `scout`
-gather (trigger 5) to the **orchestrator**, which dispatches `escalate` — proven externalness is **not**
+`pdca-planner` first (§State machine, `DO → PLAN`), and `pdca-planner` adjudicates it. `pdca-planner` has no delegation permission
+permission, so it does not call `pdca-escalate` itself: it reports the outside-cycle blocker (the user / a
+forcing architectural call) or a persistent low-confidence classification after the targeted `pdca-scout`
+gather (trigger 5) to the **orchestrator**, which dispatches `pdca-escalate` — proven externalness is **not**
 a prerequisite for that trigger.
 
-**After the escalation — the decision routes, the orchestrator does not re-decide.** `escalate` returns
+**After the escalation — the decision routes, the orchestrator does not re-decide.** `pdca-escalate` returns
 a **decision** (what to do, why, steps), not a menu and not code. The cheap orchestrator executes it
-**solely by routing**: a genuinely revised remediation plan → `planner` (which actually authors r+1);
-implementation under the current plan or a status STOP → `coder`. The primary never semantically
+**solely by routing**: a genuinely revised remediation plan → `pdca-planner` (which actually authors r+1);
+implementation under the current plan or a status STOP → `pdca-executor`. The primary never semantically
 re-selects and never rewrites the plan itself. The decision **cannot waive** the gates, the no-4th
 rule, scope or the security constraints. At a **non-exhausted** attempt the decision applies to the
-current plan (or to the revised plan if `planner` issued one); an **exhausted** revision `r` gets **no
-4th attempt even after `escalate`**: work can continue **only** through a **genuinely revised
-remediation plan** (`r+1`, issued by `planner`) whose tasks/dependencies/remediation actions actually
+current plan (or to the revised plan if `pdca-planner` issued one); an **exhausted** revision `r` gets **no
+4th attempt even after `pdca-escalate`**: work can continue **only** through a **genuinely revised
+remediation plan** (`r+1`, issued by `pdca-planner`) whose tasks/dependencies/remediation actions actually
 changed while the original acceptance criterion is preserved. A mere **rename/reword**, a **session
 reset** or a rejected candidate **cannot manufacture a new revision**. If escalation yields no
 actionable revised plan — **STOP** (normal mode: ask the user; autonomous mode: the recorded STOP with
@@ -686,19 +687,19 @@ call it: the tier is expensive.
 
 The escalation brief is compact: the question in one formulation; the acceptance criterion; what was already
 tried and why it did not work; exact `file:line`/commands; the boundaries (what must not
-be changed). **Facts come pre-gathered**: put a `scout` evidence pack (`file:line`, signatures,
-test names) into the brief — run `scout` (or reuse the CHECK gather reports) before escalating,
-because `escalate` no longer crawls the repository itself; it reasons over the pack and only
+be changed). **Facts come pre-gathered**: put a `pdca-scout` evidence pack (`file:line`, signatures,
+test names) into the brief — run `pdca-scout` (or reuse the CHECK gather reports) before escalating,
+because `pdca-escalate` no longer crawls the repository itself; it reasons over the pack and only
 re-checks specific lines. The answer — a **decision**: what to do, why, risks, exact steps. The
-orchestrator routes it; `escalate` never edits and `coder` performs the implementation.
+orchestrator routes it; `pdca-escalate` never edits and `pdca-executor` performs the implementation.
 
 ## PLAN: design checklist (generic)
 
 PLAN runs in two beats (like §CHECK), so as not to load code into the orchestrator's context:
-1. **Gather (cheap):** review the **area of change** (not the whole repo) via `scout` +
+1. **Gather (cheap):** review the **area of change** (not the whole repo) via `pdca-scout` +
    `dotnet-architect`/`dotnet-code-review-agent` — findings (`file:line`, counters, sealing ratio,
    anti-pattern hits), no code.
-2. **Decide:** `planner` (invoked by the primary as a subagent — start and CHECK → PLAN / DO → PLAN returns)
+2. **Decide:** `pdca-planner` (invoked by the primary as a subagent — start and CHECK → PLAN / DO → PLAN returns)
    reads **only the summary**, chooses fix-now vs deferred, decomposes, fixes the plan. Do not pull code
    into context — a missing datum goes to the gatherer.
 
@@ -725,7 +726,7 @@ Treat a weak statement (vague issue, half-written criteria, no edge list, habit-
 - **Derive/complete acceptance criteria** from the required observable behavior (each with a negative case),
   not the wording.
 - Keep a **"What the statement did not say"** list; every gap closes one of three ways: (a) evidence
-  (`file:line`), (b) an explicit **assumption/risk**, (c) a **blocker/`escalate`**. A silent guess is forbidden.
+  (`file:line`), (b) an explicit **assumption/risk**, (c) a **blocker/`pdca-escalate`**. A silent guess is forbidden.
 - Enumerate the **variant matrix** from the **execution path**, every row closed as test / guard /
   `deferred with a trigger`; surface what the input left unsaid (missing constructor/mapping, value vs
   reference types, `null`/uninitialized, explicit projection vs whole object, per-provider behavior).
@@ -734,7 +735,7 @@ Treat a weak statement (vague issue, half-written criteria, no edge list, habit-
 - **PLAN assigns priority; CHECK applies it.** The severity map ("what is P1 by construction") is fixed in
   PLAN — from (1) the statement's explicit invariants, (2) the overlay's class-priority table, else (3) PLAN
   authors the row set from the execution path and sibling's edge list (the only option in autonomous).
-  Freeze the priority matrix before DO. `check` may not downgrade a requirement/class row and must answer
+  Freeze the priority matrix before DO. `pdca-check` may not downgrade a requirement/class row and must answer
   every row with a finding or "checked clean, `file:line`".
 - **Prefer the existing approach:** before designing new, look for an applicable approach in neighboring
   classes/methods/features and reuse it; originality only when it does not fit, with an explicit reason.
@@ -764,7 +765,7 @@ consumer is a PLAN finding like duplication. Perf measurement and reconnaissance
 affect the solution choice.
 
 **Alternatives:** for a non-obvious/trade-off choice, present **2–3 options** (approach / pros / cons, cost and
-risk) and a recommendation ("I take A, because …"); a single option only if truly obvious, else `escalate`
+risk) and a recommendation ("I take A, because …"); a single option only if truly obvious, else `pdca-escalate`
 (§Escalation).
 
 **Chesterton's Fence:** do not change/delete something until you understand why it is there (history/`git
@@ -773,8 +774,8 @@ blame`, consumers); "looks superfluous" is not a reason.
 ### Unit execution mode (mandatory decision)
 
 PLAN splits the feature into **units** (`D:` tasks/streams) and **explicitly decides** their execution mode
-(recorded in plan + status file). `planner` decides **by footprint** (which files/contracts each unit touches);
-`build`/`coder` execute.
+(recorded in plan + status file). `pdca-planner` decides **by footprint** (which files/contracts each unit touches);
+`build`/`pdca-executor` execute.
 - **Sequential** (default, if dependencies) — in order, **one** tree.
 - **Parallel in one tree** — independent units (footprints don't overlap), no build isolation needed.
 - **Parallel in separate worktrees** — only when isolation is needed (independent build per branch,
@@ -798,7 +799,7 @@ status file. A silent skip or "not needed" without an argument fails gate 1.
 
 **Project invariants take priority over generic advice** (§Project checklists). Plan output (into the plan):
 findings by severity (🔴/🟡/ℹ️), `file:line`, a one-line fix + the applicable invariant; split **fix now** vs
-**deferred with a trigger**. The edits are applied by `coder` in DO, not by PLAN.
+**deferred with a trigger**. The edits are applied by `pdca-executor` in DO, not by PLAN.
 
 **Scope does not leave the current milestone.** If the project tracks milestones: a task that cannot finish this
 cycle may be **split**, but every slice stays in the **same milestone** — moving the leftover to the next
@@ -809,8 +810,8 @@ Documenting a limitation does not replace the task.
 
 PLAN **explicitly** decides whether an unknown **blocks the choice of solution** (driver/API behavior, memory,
 seam shape). A silent skip or "decide as we go" fails gate 1; **asserting without measuring is forbidden**.
-`planner` collects nothing (`read:false`, `edit/write/task:deny`): the experiment runs on cheap models —
-`coder` (commands, harness, numbers) and `scout` (facts, versions, docs) — `build` only dispatches, `planner`
+`pdca-planner` collects nothing (`read:false`, `edit/write/task:deny`): the experiment runs on cheap models —
+`pdca-executor` (commands, harness, numbers) and `pdca-scout` (facts, versions, docs) — `build` only dispatches, `pdca-planner`
 judges (the same "measure cheaply → judge on medium").
 - **Regression / red-arm reconnaissance.** If the plan's decisive evidence is a red↔green proof, the decisive
   probe must be shown to **run and fail (red)** from the declared source before the plan is frozen; a deferred
@@ -828,15 +829,15 @@ judges (the same "measure cheaply → judge on medium").
 Hygiene (both): PoC lives **outside `src/`** behind an env gate; CHECK verifies it did not leak into the product
 diff. Result = reproducible command + numbers/observation + exact dependency version (§Subagent report format).
 Utilization: **delete** it or turn it into a test/benchmark — "kept just in case" is not allowed. The PoC changed
-the answer → return to PLAN (`planner` re-plans) — a DO → PLAN or CHECK → PLAN loop-back. A PoC may precede the
+the answer → return to PLAN (`pdca-planner` re-plans) — a DO → PLAN or CHECK → PLAN loop-back. A PoC may precede the
 plan but must not be the plan: for a shipping change gate 1 is not cancelled.
 
 ### Plan approval (PLAN → DO)
 
 **The plan goes to disk before the user approves it, in both modes.** Last step of PLAN: the primary passes
-`planner`'s plan to `coder`, which writes the **status file** (`.pdca/status/<task>-<N>.md`) — goal,
+`pdca-planner`'s plan to `pdca-executor`, which writes the **status file** (`.pdca/status/<task>-<N>.md`) — goal,
 acceptance criteria, test strategy with the variant matrix, docs plan, perf/recon/unit-mode decisions, DO
-task list, risks — and the log entry `PLAN ready — awaiting user approval` (`planner` never writes files). A compaction
+task list, risks — and the log entry `PLAN ready — awaiting user approval` (`pdca-planner` never writes files). A compaction
 while awaiting approval loses nothing.
 
 **Autonomous mode: no pause** — DO starts immediately. Normal mode ends with a **pause**: show the plan
@@ -844,14 +845,14 @@ while awaiting approval loses nothing.
 status-file path, and ask the user to read the implementation plan and approve it (substitute the gist for `<…>`):
 
 > The plan is ready: <1–2 lines of the gist>. Plan file: `.pdca/status/<task>-<N>.md`.
-> The planner has produced the plan and written it to the status file — please read it and
+> The pdca-planner has produced the plan and written it to the status file — please read it and
 > **approve it**. Implementation starts only after your approval.
 
 The user's approval is the **only start signal** (no keyword is required — any explicit approval of the
-plan counts); on it `coder` logs
+plan counts); on it `pdca-executor` logs
 `plan approved — DO started` and the **parallel**
 streams launch (§Parallel DO streams). Without it nothing is created/edited **except the status file** —
-wait, clarify, or rewrite the plan (via `planner`, same file by `coder`). A question, a change request or a
+wait, clarify, or rewrite the plan (via `pdca-planner`, same file by `pdca-executor`). A question, a change request or a
 non-committal reply is not an approval — ask for approval again when ready. From here the status file is the **progress log**.
 
 **Collection caller handoff.** When this cycle is a single task's own PLAN invoked by
@@ -892,7 +893,7 @@ rejected/uncommitted artifact, or the probe does not execute against the declare
 oracle**, never carry it as an in-cycle prerequisite or a `ready` placeholder.
 
 **Coverage comes from the project, mandatory.** Find the project's coverage config/threshold (gather via
-`scout`/`dotnet-testing-specialist`): `Directory.Build.props`/`Directory.Packages.props`, `.runsettings`,
+`pdca-scout`/`dotnet-testing-specialist`): `Directory.Build.props`/`Directory.Packages.props`, `.runsettings`,
 `coverlet.runsettings`, `dotnet test --collect:"XPlat Code Coverage"`, the CI workflow, a baseline artifact.
 **The project threshold is the lower bound** — do not lower it; new code comes with tests. No config → record
 the baseline explicitly; do not invent a threshold.
@@ -903,8 +904,8 @@ assembly/type) — surviving mutants on new code are killed or explicitly justif
 the untested branches; never imply coverage you did not measure.
 
 Gather (`dotnet-testing-specialist`): existing tests of the area (`file:line`), gaps, regression risk, config
-and current coverage. Decision (case list, unit/integration, name, what it checks) by `planner`, written by
-`coder`. Skills: `dotnet-testing-strategy`, `crap-analysis`, `dotnet-test-quality`, `dotnet-xunit` (+
+and current coverage. Decision (case list, unit/integration, name, what it checks) by `pdca-planner`, written by
+`pdca-executor`. Skills: `dotnet-testing-strategy`, `crap-analysis`, `dotnet-test-quality`, `dotnet-xunit` (+
 `dotnet-tunit-test` if present). Output: case list + split + current/target coverage. CHECK verifies against it.
 
 Anti-patterns the CHECK test lens rejects (PLAN must not plan them): tests that survive a wrong implementation
@@ -925,7 +926,7 @@ policy deviation (§Execution journal and the unit/integration policy).
 ### Test run safety (memory + streaming) — every phase
 
 Any test invocation (`dotnet test`/`dotnet run` on a test project) in DO or CHECK; put these in the
-`coder`/`check` brief; CHECK rejects a violating report:
+`pdca-executor`/`pdca-check` brief; CHECK rejects a violating report:
 - **Cap the test-host heap** so a runaway recursion fails fast instead of OOM-killing the machine:
   `DOTNET_GCHeapHardLimit=0x80000000 DOTNET_gcServer=0` (2 GiB — raise only when justified) and wrap in a
   wall-clock `timeout 600 …`. Exit **137**/"Out of memory" ⇒ the test is unbounded: stop, record the test name
@@ -940,15 +941,15 @@ Any test invocation (`dotnet test`/`dotnet run` on a test project) in DO or CHEC
 ### Documentation (owners by phase)
 
 Documentation is part of done. **Prose docs and XML-doc are separate artifacts with different timing.**
-Prose (README/guides/DocFX) — derived from the plan, written in parallel: **PLAN** gathers via `scout` + skill
+Prose (README/guides/DocFX) — derived from the plan, written in parallel: **PLAN** gathers via `pdca-scout` + skill
 `dotnet-documentation-strategy` (which docs and format); "no contract/behavior change" → record "we do not touch
-the docs". **DO** — the third parallel stream, from the plan/contract, not from the code; `coder` (+
+the docs". **DO** — the third parallel stream, from the plan/contract, not from the code; `pdca-executor` (+
 `docfx-specialist`). **CHECK** — doc lens: created and matching the implementation.
 XML-doc (`///`) — from the **finished code**; mandatory only if the project enables it (`GenerateDocumentationFile`
-/ CS1591 via `TreatWarningsAsErrors` or `<NoWarn>`): **PLAN** — `scout` reports the setting (required ⇒
-mandatory, else only on user request); **DO** — written after the code stream (`coder`); **CHECK** — generated
+/ CS1591 via `TreatWarningsAsErrors` or `<NoWarn>`): **PLAN** — `pdca-scout` reports the setting (required ⇒
+mandatory, else only on user request); **DO** — written after the code stream (`pdca-executor`); **CHECK** — generated
 on every new/changed public member and matching signatures when mandatory, else only if requested.
-**ACT** — the final stable-rules **AGENTS.md** (`coder`); docs are finished in DO/CHECK, not edited in ACT.
+**ACT** — the final stable-rules **AGENTS.md** (`pdca-executor`); docs are finished in DO/CHECK, not edited in ACT.
 Rule: a public contract/behavior change without updated prose docs does not close the cycle; missing CS1591
 blocks closure only when the project mandates XML-doc. On-demand skills: `dotnet-xml-docs`, `dotnet-github-docs`,
 `dotnet-mermaid-diagrams`.
@@ -1074,7 +1075,7 @@ changed files a reviewer needs into this task's `rv<k>` evidence dir (default
 `.pdca/<task>/rv<k>/`; the exact filenames/layout are the plan's). Staging is a **copy,
 not a move** — the originals are preserved.
 
-- A separate, cheap **read-only source-side gather (`scout`)** performs the transport and the
+- A separate, cheap **read-only source-side gather (`pdca-scout`)** performs the transport and the
   technical source check **before** medium CHECK: per staged file it records the original path, the
   staged copy path, the content digest, the **source identity** of the verified revision/working
   tree, and the **content equality** of copy vs source. The receipt carries the gather's **actual
@@ -1108,31 +1109,31 @@ contract → "Mechanical evidence pipeline").
 
 Check proceeds in two beats, so as **not to load code into the orchestrator's context**:
 
-1. **Gather (cheap + commands).** Mechanics via `coder` (no LLM): build (0 warnings — gate), suppressions
+1. **Gather (cheap + commands).** Mechanics via `pdca-executor` (no LLM): build (0 warnings — gate), suppressions
    scan (`#pragma warning disable`, `[SuppressMessage]`, `<NoWarn>`, `Skip=`, empty `catch`, `Task.Delay`),
    enumerate public types, XML-doc coverage (CS1591) — metrics/tables, not code. Semantics via
    `dotnet-code-review-agent` (diff sliced by files/chunks → **raw candidates** `file:line`+rule ID/counter,
-   **no verdict/severity**). Tests via `coder` (run, coverage against the **project threshold**, CRAP) +
+   **no verdict/severity**). Tests via `pdca-executor` (run, coverage against the **project threshold**, CRAP) +
    `dotnet-testing-specialist` (does the suite match the **PLAN test strategy**; missing cases / coverage
    drop — `file:line`). Docs via `dotnet-docs-generator` (+ on-demand `dotnet-api-docs`): affected docs,
    XML-doc completeness, API-reference mismatches, outdated examples — `file:line`. Perf, when PLAN says
-   "needed": `dotnet-benchmark-designer` + `coder` commands (suite/case, runs, baseline) → **raw numbers, no
+   "needed": `dotnet-benchmark-designer` + `pdca-executor` commands (suite/case, runs, baseline) → **raw numbers, no
    verdict**; async hot paths + `dotnet-async-performance-specialist`; `dotnet-performance-analyst` only with
    ready artifacts; "not needed" → the `file:line` one-time/not-per-row facts.
-2. **Triage (the `check` subagent).** Reads the **aggregated report** and may open the cycle's
+2. **Triage (the `pdca-check` subagent).** Reads the **aggregated report** and may open the cycle's
    evidence artifacts directly (its scoped `read`: status/evidence/manifest files, never product
    code) to reconcile each contract row's `path`; judges the code audit (real
    defect? severity? fix now vs accepted) and issues the verdict (pass/fail, ranking, loop-back). Do not pull
    the product code/diff into context; a missing datum goes to the gatherer. `build` executes the loop-back: `D:`
-   via `coder`, the `P:` via `planner` — no manual agent switching.
+   via `pdca-executor`, the `P:` via `pdca-planner` — no manual agent switching.
 
 **Keep CHECK within one approved PLAN.** `build` holds the active task, the approved PLAN and the `task_id`
-from `check`:
-- the first CHECK of a PLAN calls `check` and saves `task_id`;
+from `pdca-check`:
+- the first CHECK of a PLAN calls `pdca-check` and saves `task_id`;
 - on a loop-back to DO for an implementation defect, the next CHECK of the **same task and unchanged PLAN**
   resumes the saved `task_id` and passes the **full, current** aggregated report (not a delta — earlier
   reports are history, not evidence);
-- reset `task_id` (new `check` session) after CHECK → PLAN / DO → PLAN, after ACT, before the next task,
+- reset `task_id` (new `pdca-check` session) after CHECK → PLAN / DO → PLAN, after ACT, before the next task,
   and whenever it is lost. **This is independent of the counters:** it never resets `r`, `n` or the defect
   history (they live in the status file). A lost ID is not a passed gate; a resumed session waives no lens
   or triggered security verdict. Never recover an ID by slug alone — confirm same PLAN + same session.
@@ -1143,27 +1144,27 @@ from `check`:
 
 Four unconditional streams + one conditional (security) + specialized subagents by trigger. All
 independent: launch **in parallel** (one turn, several Tasks), not in sequence:
-- **Code audit (two-phase)** — `dotnet-code-review-agent` (raw candidates, no verdict) + `coder` commands
-  (build 0 warnings, suppression/slop, smell, public-API/CS1591) = items 3–6, 9–10; judgment in `check`
+- **Code audit (two-phase)** — `dotnet-code-review-agent` (raw candidates, no verdict) + `pdca-executor` commands
+  (build 0 warnings, suppression/slop, smell, public-API/CS1591) = items 3–6, 9–10; judgment in `pdca-check`
   beat 2 = items 7–8. Specialized async/concurrency subagents by trigger are part of the gather.
-- **Test lens** — `dotnet-testing-specialist` + `coder` (run, coverage, CRAP) — item 11. It also
+- **Test lens** — `dotnet-testing-specialist` + `pdca-executor` (run, coverage, CRAP) — item 11. It also
   gathers the `.pdca/scripts/validate_inner_loop.py report <evidence.json>` exit code; a missing/invalid
   gate fails the lens **closed** (never a warning).
 - **Doc lens** — `dotnet-docs-generator` (+ `dotnet-api-docs`) — item 12.
-- **Perf lens (two-phase)** — when "needed": measurement (`dotnet-benchmark-designer` + `coder`;
+- **Perf lens (two-phase)** — when "needed": measurement (`dotnet-benchmark-designer` + `pdca-executor`;
   `dotnet-performance-analyst` only with artifacts) → **raw numbers + baseline, no verdict**; async hot
-  paths + `dotnet-async-performance-specialist`; "not needed" → `file:line` facts; judgment in `check` — item 13.
-- **Security audit\*** (conditional **gather**) — `security-auditor` if the diff touches
+  paths + `dotnet-async-performance-specialist`; "not needed" → `file:line` facts; judgment in `pdca-check` — item 13.
+- **Security audit\*** (conditional **gather**) — `pdca-security-auditor` if the diff touches
   auth/secrets/external input/crypto; same parallel turn, medium tier, by trigger. It is a gather
   stream: its report **returns into the aggregated report** (report-return: the security result goes
-  back to `check`) and is judged by `check` in beat 2. It issues **no independent verdict** and never
+  back to `pdca-check`) and is judged by `pdca-check` in beat 2. It issues **no independent verdict** and never
   routes a defect around the aggregate triage. The brief carries the diff/area (it may take
-  `git diff` itself; read-only `bash`) and it audits without `scout`; `scout` only for facts outside the diff
-  (other occurrences, callers, `appsettings*`/`.gitignore`) via a narrow question — like `escalate` it does
+  `git diff` itself; read-only `bash`) and it audits without `pdca-scout`; `pdca-scout` only for facts outside the diff
+  (other occurrences, callers, `appsettings*`/`.gitignore`) via a narrow question — like `pdca-escalate` it does
   not surf (`grep`/`glob`/web denied).
 
 **Specialized subagents by trigger** (cheap, read-only; same parallel turn; output joins the aggregated
-report, verdict still `check`): `dotnet-async-performance-specialist` (async paths — `ValueTask` vs `Task`,
+report, verdict still `pdca-check`): `dotnet-async-performance-specialist` (async paths — `ValueTask` vs `Task`,
 `ConfigureAwait`, `async void`, sync-over-async, state-machine allocs, `Channel`/`IO.Pipelines`, ThreadPool
 starvation); `dotnet-csharp-concurrency-specialist` (races, deadlocks, `lock`/`SemaphoreSlim`/`Interlocked`,
 lock order); `dotnet-performance-analyst` **only with data** (`dotnet-trace`/heap dumps/benchmark
@@ -1171,8 +1172,8 @@ comparisons). Each is an additional **gather**, not a new gate.
 
 Each stream relies only on the plan/diff and does not wait for another. Results converge in the aggregated
 report; gate 3 passes only with **all green** (four unconditional + security if launched) — "part of them"
-is not a pass, and the final verdict for **every** stream is `check`'s. Any stream failure becomes a `D:`
-task for `coder` (or a PLAN return via `planner`, if the plan is wrong) and does not cancel the others.
+is not a pass, and the final verdict for **every** stream is `pdca-check`'s. Any stream failure becomes a `D:`
+task for `pdca-executor` (or a PLAN return via `pdca-planner`, if the plan is wrong) and does not cancel the others.
 **Any failed CHECK stream — including a triggered security failure — counts as a failed CHECK of the
 current revision** for the escalation counter (§Escalation); ordinary security findings use the shared
 attempt/defect-history counters, and only a **hard security trade-off** escalates immediately.
@@ -1181,7 +1182,7 @@ Skills (via `skill`): `dotnet-csharp-code-smells`, `slopwatch`, `dotnet-api-surf
 `dotnet-test-quality`. On-demand: `dotnet-library-api-compat`, `dotnet-editorconfig`, `dotnet-add-analyzers`,
 `dotnet-api-docs`, `dotnet-csharp-nullable-reference-types`, `dotnet-testing-strategy`, `crap-analysis`,
 `dotnet-integration-testing`, `testcontainers`, `snapshot-testing`, `dotnet-xunit`. Project registries: maintain
-on demand — `coder` edits them (only the needed finding/section; do not re-open fixed ones or re-list accepted
+on demand — `pdca-executor` edits them (only the needed finding/section; do not re-open fixed ones or re-list accepted
 deviations).
 
 **Inlined specialists may not drop the port.** An overlay that inlines a specialist's checklist into CHECK must
@@ -1199,14 +1200,14 @@ gather, 7–8 judgment.
    with its CA rule and fix.
 6. Public-API scan: enumerate public types/members; BCL-conflict/convention rules (`api-design`); XML-doc
    coverage (CS1591); surface-lock status.
-7. **Judgment (`check`):** classify raw candidates with the project taxonomy (`P0/P1/P2` API, `🔴/🟡/ℹ️` smells
+7. **Judgment (`pdca-check`):** classify raw candidates with the project taxonomy (`P0/P1/P2` API, `🔴/🟡/ℹ️` smells
    default) — real defect vs noise; do not invent a scale.
-8. **Per-finding (`check`; facts from gather):** exact number, `file:line`, CA/analyzer ID or naming rule, a
+8. **Per-finding (`pdca-check`; facts from gather):** exact number, `file:line`, CA/analyzer ID or naming rule, a
    one-line fix; split **fix now** vs **accepted/deviation with justification**.
-9. Registry records (if any) by `coder` in `Was`/`Now`/`Check`; do not rewrite unrelated sections. **Author ≠
+9. Registry records (if any) by `pdca-executor` in `Was`/`Now`/`Check`; do not rewrite unrelated sections. **Author ≠
    certifier:** an independent read-only stream re-derives each registry/acceptance claim from the cited
    `file:line`; a mismatch or a code-basisless self-assessed `deferred`/`acceptable` is a finding.
-10. Hot-path measurement favors the perf specialist; the code fix is `coder`.
+10. Hot-path measurement favors the perf specialist; the code fix is `pdca-executor`.
 11. **Test lens** (parallel). New behavior ⇒ a new test from the PLAN test strategy; run green; **coverage not
     below the project threshold** (or baseline if none), area coverage not dropped; no new 🔴 CRAP hotspots.
     **Every variant-matrix row is closed** (test / guard / `deferred with a trigger`); CHECK augments the matrix
@@ -1231,9 +1232,9 @@ gather, 7–8 judgment.
     notes) **created** and **matching the implementation** (content, not presence; `dotnet-docs-generator`);
     and XML-doc comments **only when mandated** (CS1591) or user-requested — generated on every new/changed
     public member and matching signatures/behavior (`dotnet-api-docs` on-demand). A gap/mismatch → `D:` task
-    for `docfx-specialist`/`coder`.
+    for `docfx-specialist`/`pdca-executor`.
 13. **Perf lens** (two-phase, parallel). Gather: measurement done with numbers+baseline, or `file:line`
-    one-time facts. Judgment (`check`): against the PLAN perf decision — regression acceptable? plan fulfilled?
+    one-time facts. Judgment (`pdca-check`): against the PLAN perf decision — regression acceptable? plan fulfilled?
     argument convincing? Work in a per-row loop with no measurement → `D:` task (measure) or PLAN return; no
     silent close.
 
@@ -1244,7 +1245,7 @@ with `ArgumentNullException.ThrowIfNull(x)`. Constraints: overloads differing on
 duplicate signature (**CS0111**); with `TreatWarningsAsErrors=true`, `null` in a required parameter is **CS8625**
 (the gate).
 
-Boundaries: code and registry edits by `coder` (Do); renames/analyzer policy in Do; do not re-open fixed
+Boundaries: code and registry edits by `pdca-executor` (Do); renames/analyzer policy in Do; do not re-open fixed
 findings; out of scope: profiling, security. Check output: project language, `P0/P1/P2` or `Finding N` with
 `Was`/`Now`/`Check`, exact numbers, up front the build baseline + suppression ratio.
 
@@ -1260,7 +1261,7 @@ in parallel in **separate worktrees**, CHECK is supplemented with two mandatory 
 (do not skip them). The build/tests of **each unit on its branch** are gathered in DO (gather);
 here the already **merged** tree is re-verified:
 
-14. **Merge.** `coder` merges the branches/patches of all tasks into the **common tree** — in
+14. **Merge.** `pdca-executor` merges the branches/patches of all tasks into the **common tree** — in
     order, resolving conflicts from the subagent reports (`file:line`); do not delete the task
     branches.
 15. **Verify the merged tree.** Rebuild and run the tests (unit + integration)
@@ -1323,8 +1324,8 @@ boundary on *audit over-reach*, not a weakening of real requirements — see
 
 When CHECK returned a defect and DO takes on the fix — **the cause first, then the edit**:
 **no fix without investigating the cause**; fixing a symptom is not a solution. This applies both to
-bug fixes inside DO and to CHECK → DO returns. The steps below are performed by `coder` (reproduce,
-run, the regression test, the fix) and `scout` (tracing facts, `file:line`); `build` dispatches and
+bug fixes inside DO and to CHECK → DO returns. The steps below are performed by `pdca-executor` (reproduce,
+run, the regression test, the fix) and `pdca-scout` (tracing facts, `file:line`); `build` dispatches and
 relays, it does not read stacks or code itself. This investigation is **allowed** in DO — it is not
 the "re-research" banned by §PLAN → DO transition.
 
@@ -1358,16 +1359,16 @@ Order:
    steps 2–3 — **do not duplicate** what docs/AGENTS.md/tests/registries/issues already record.
    Search the graph first and **update/extend the existing entity** (mark superseded observations)
    instead of adding a near-duplicate. Nothing transferable — **skip**.
-2. **AGENTS.md/tests** updated (`coder`); project registries — per the project rules.
+2. **AGENTS.md/tests** updated (`pdca-executor`); project registries — per the project rules.
    (Product docs are the **DO** stream and are verified by the **CHECK** doc lens — ACT does not edit them.)
 3. **Stable rules** (what must always apply) — into the project
-   PDCA overlay/AGENTS.md (`coder`). **Do not write the cycle state there**: instructions are loaded
+   PDCA overlay/AGENTS.md (`pdca-executor`). **Do not write the cycle state there**: instructions are loaded
    into every session.
-4. **Cycle status file — finalized by `coder`** (§Status file): `build` passes it the reports
-   (the `check` verdict, `coder`'s run results, `scout`'s diff facts) and `coder` fills in
+4. **Cycle status file — finalized by `pdca-executor`** (§Status file): `build` passes it the reports
+   (the `pdca-check` verdict, `pdca-executor`'s run results, `pdca-scout`'s diff facts) and `pdca-executor` fills in
    Done/Verified, Next plan, Changed files. The next session's handoff in manual mode, the next
    PLAN's input in autonomous mode (§Autonomous mode).
-5. **Status-file lifetime** (§Status file → "Lifetime"). By the **`Next plan`** recorded in step 4, `coder`
+5. **Status-file lifetime** (§Status file → "Lifetime"). By the **`Next plan`** recorded in step 4, `pdca-executor`
    **finalizes and keeps** the status file in every case — it is never deleted. If a further cycle of this
    task is planned — the next cycle `<N>+1` starts from it (manual mode — the next session; autonomous —
    the next PLAN in this session, §Autonomous mode). If the flow is **complete** (no further cycle of this
@@ -1387,7 +1388,7 @@ both: `<task>` (kebab slug, e.g. `retry-policy`) and `<N>` (cycle number **withi
 only in ACT — loop-backs change `r`/`n`, not `<N>`; §State machine). Examples: `retry-policy-3.md`,
 `bulk-import-1.md`.
 
-**Every write is by `coder`** — `planner`, `check` and the primary have no file permissions; the primary
+**Every write is by `pdca-executor`** — `pdca-planner`, `pdca-check` and the primary have no file permissions; the primary
 composes content from reports and passes it in the brief.
 Lifecycle (finalization in ACT — see "Lifetime"):
 1. **Creation, last step of PLAN before the start signal:** the plan — goal, acceptance criteria, test
@@ -1404,11 +1405,11 @@ Lifecycle (finalization in ACT — see "Lifetime"):
 <UTC time> | <phase> | revision r | iteration n/3 | <event> | <evidence pointer>
 ```
 Must log: `PLAN ready — awaiting user approval`; `plan approved — DO started`; each `D:` unit/stream state change;
-each `D:` closed (exit code + log path); DO → CHECK; each CHECK stream report; the `check` verdict; each
+each `D:` closed (exit code + log path); DO → CHECK; each CHECK stream report; the `pdca-check` verdict; each
 CHECK failure/fix/loop-back with its defect key and applied fix count (pointers, not logs); loop-back to
 DO / `Replanned` (with the outgoing failed attempt); an additive-prerequisite addition or a
 `superseded→replacement` mapping; escalation and its outcome; `Recovered after compaction`; `Notice: …`
-(autonomous); ACT closed. Written **one event at a time** by a short `coder` dispatch (or as the last step of
+(autonomous); ACT closed. Written **one event at a time** by a short `pdca-executor` dispatch (or as the last step of
 one) — never by parallel streams. The current state must match the latest log line.
 
 **Unit states** (per `D:` unit/DO stream): exactly one of `pending` | `running` | `blocked` | `done` |
@@ -1428,7 +1429,7 @@ In parallel-worktree mode a status file is created **per unit** when its worktre
 cycle-level log stay in the main status file.
 
 **Lifetime — a durable handoff and record, never deleted.** Kept after ACT in every case; durable output
-also lives in docs/AGENTS.md, memory MCP and registries. In ACT, after `Next plan`, `coder` finalizes it
+also lives in docs/AGENTS.md, memory MCP and registries. In ACT, after `Next plan`, `pdca-executor` finalizes it
 in place (Done/Verified, Next plan, Changed files):
 - a further cycle of **this** task is planned → kept as the next session's handoff;
 - the flow is **complete** (next goal is a separate task) → kept as the closed record; `Next plan` reads
@@ -1517,7 +1518,7 @@ first message in the new session):
 Cycle <N> of the task "<task>" is closed.
 Status: .pdca/status/<task>-<N>.md
 Registries: <comma-separated paths, if any>.
-Have scout report the status and the needed registries/baseline on-demand; do not pull the previous session's history.
+Have pdca-scout report the status and the needed registries/baseline on-demand; do not pull the previous session's history.
 Next goal: <one line>.
 Continue PDCA from PLAN.
 ```
@@ -1541,22 +1542,22 @@ The `Status:` line always names the kept status file, including a closed flow
 DO starts only after the user approves the plan in the normal mode — the user's approval after reading the
 implementation plan; in autonomous mode (§Autonomous mode)
 right after PLAN. The plan is already on disk (last step of PLAN), so on approval perform ONLY what is
-in it: **do not repeat PLAN's research**; a missing detail goes to `planner`, not a reopened design.
+in it: **do not repeat PLAN's research**; a missing detail goes to `pdca-planner`, not a reopened design.
 Allowed in DO: root-cause investigation (§Debugging) and the plan's own spikes (§PLAN →
 "Prototype / reconnaissance").
 
 Starting a cycle and the CHECK → PLAN / DO → PLAN returns need no manual agent switching: the cheap
-orchestrator forwards the request and gathered evidence to `planner`, which formulates the `P:`
-task/plan and `coder` writes it. Both the initial PLAN and every replan belong to `planner`, for the
+orchestrator forwards the request and gathered evidence to `pdca-planner`, which formulates the `P:`
+task/plan and `pdca-executor` writes it. Both the initial PLAN and every replan belong to `pdca-planner`, for the
 cheap orchestrator (§Orchestrator role).
 
 ## Economics
 
-Roles bind to tiers by the host, not the skill (§Host requirements): `planner` and the `check`
-verdict — medium; orchestration (`build`), the hands (`coder`/`dotnet-*`), the CHECK gather — cheap;
-`escalate` — strong, by trigger only; `security-auditor` — medium, by trigger. A hard security
-trade-off goes on to `escalate`. The code audit and the
-perf lens are two-phase (cheap gather → judgment in the same `check`), so no separate expensive call.
+Roles bind to tiers by the host, not the skill (§Host requirements): `pdca-planner` and the `pdca-check`
+verdict — medium; orchestration (`build`), the hands (`pdca-executor`/`dotnet-*`), the CHECK gather — cheap;
+`pdca-escalate` — strong, by trigger only; `pdca-security-auditor` — medium, by trigger. A hard security
+trade-off goes on to `pdca-escalate`. The code audit and the
+perf lens are two-phase (cheap gather → judgment in the same `pdca-check`), so no separate expensive call.
 
 One `build` step = orchestration: writing a file, running a command or reading content yourself
 already violates the contract. Only a pointer/summary enters the orchestrator's context; heavy things

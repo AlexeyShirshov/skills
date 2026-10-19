@@ -26,7 +26,7 @@ HAND_FILES = (
     "pdca-coder-hand-dark.svg",
     "pdca-coder-hand-dark.html",
 )
-LENS_LABEL = "scout + доменные линзы"
+LENS_LABEL = "pdca-scout + доменные линзы"
 DOCS_LABEL = "README · документация"
 LIGHT_TITLE = "pdca-coder — ручная раскладка"
 DARK_TITLE = "pdca-coder — ручная раскладка (тёмная тема)"
