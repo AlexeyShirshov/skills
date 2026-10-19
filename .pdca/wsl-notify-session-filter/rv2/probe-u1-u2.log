@@ -1,0 +1,22 @@
+PROBE option-substring
+PROBE case-and-literal
+PROBE empty-option-overrides-env
+PROBE env-fallback-v1-no-options
+PROBE invalid-option-overrides-env
+PROBE malformed-env
+PROBE permission-not-suppressed
+PROBE missing-title
+2026-10-19T09:25:17.141Z 8bc0e862 loaded path=v1 powershell=/tmp/opencode/fake-ps
+2026-10-19T09:25:17.143Z 8bc0e862 skip-excluded complete session=s1 match="Background"
+2026-10-19T09:25:17.143Z 8bc0e862 skip-excluded error session=s1 match="Background"
+2026-10-19T09:25:17.143Z 8bc0e862 toast done:s2
+2026-10-19T09:25:17.146Z 8bc0e862 toast done:s3
+2026-10-19T09:25:17.148Z 8bc0e862 toast done:s4
+2026-10-19T09:25:17.149Z 8bc0e862 toast done:s5
+2026-10-19T09:25:17.151Z 8bc0e862 toast done:s6
+2026-10-19T09:25:17.152Z 8bc0e862 skip-excluded complete session=s7 match="has,comma"
+2026-10-19T09:25:17.152Z 8bc0e862 toast done:s8
+2026-10-19T09:25:17.154Z 8bc0e862 toast done:s9
+2026-10-19T09:25:17.155Z 8bc0e862 toast done:s10
+2026-10-19T09:25:17.157Z 8bc0e862 delayed permission:p1 after=500ms
+2026-10-19T09:25:17.157Z 8bc0e862 toast done:s12

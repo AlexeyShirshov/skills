@@ -1,0 +1,132 @@
+startup line
+  ok   registration writes a loaded line
+permission
+  ok   waiting permission produces one toast
+  ok   toast asks for input
+  ok   permission answered inside the grace window stays silent
+  ok   re-emitted permission toasts once
+  ok   WSL_NOTIFY_GRACE_MS widens/narrows the window
+  ok   a large WSL_NOTIFY_GRACE_MS suppresses the toast
+completion
+  ok   finished session toasts once
+  ok   toast says the session finished
+  ok   toast carries the session title
+  ok   a known session needs no server read
+  ok   a session read that never settles does not stop the toast
+  ok   the plugin asked the server about the unknown session
+  ok   a title learned from the server is used
+  ok   a pre-existing subagent is silent once primed
+  ok   succeeded plus legacy idle coalesces into one toast
+  ok   a second turn toasts again
+  ok   subagent completion stays silent by default
+  ok   subagent completion toasts when enabled
+  ok   subagent toast is labelled
+  ok   an unknown session is still announced
+short turns
+  ok   a turn shorter than the default 500ms stays silent
+  ok   a turn longer than minTurnMs toasts
+  ok   a completion without a start mark toasts anyway
+  ok   WSL_NOTIFY_MIN_TURN_MS sets the threshold
+failure
+  ok   failed session toasts once
+  ok   toast carries the error message
+question
+  ok   form toasts once
+  ok   toast carries the form title
+  ok   toast carries the question
+1.18.x (V1 context)
+  ok   V1 idle toasts once
+  ok   V1 toast carries the title from properties.info
+  ok   V1 subagent finish stays silent
+  ok   V1 session.error toasts once
+  ok   V1 error toast carries the message
+  ok   setup without an event stream does not throw
+  ok   setup without an event stream returns no cleanup
+  ok   a second turn in the same process toasts too
+  ok   a re-emitted user message does not re-arm the completion
+  ok   idle re-emitted without a new turn stays quiet
+  ok   V1 turn inside minTurnMs stays silent
+1.18.x server() limits
+  ok   an ask waits out the grace window on the V1 path
+  ok   WSL_NOTIFY_GRACE_MS=0 makes the V1 ask immediate
+  ok   a short turn is filtered on the V1 path too
+AC-1 excluded titles: complete and error events
+  ok   AC-1 a matching title suppresses session.execution.succeeded
+  ok   AC-1 a matching title suppresses session.idle
+  ok   AC-1 a matching title suppresses session.execution.failed
+  ok   AC-1 a matching title suppresses session.error
+  ok   AC-1 a non-matching title still notifies session.execution.succeeded
+  ok   AC-1 a non-matching title still notifies session.idle
+  ok   AC-1 a non-matching title still notifies session.execution.failed
+  ok   AC-1 a non-matching title still notifies session.error
+  ok   AC-1 a later list element matches (OR)
+  ok   AC-1 a substring inside a longer title matches
+  ok   AC-1 matching is case-sensitive
+  ok   AC-1 regex-looking text matches literally
+  ok   AC-1 regex-looking text does not overmatch
+AC-2 title source, non-completion events, dedupe
+  ok   AC-2 a missing title is not suppressed by the fallback
+  ok   AC-2 the fallback title is still rendered
+  ok   AC-2 a match only in the session id does not count
+  ok   AC-2 a match only in the error message does not count
+  ok   AC-2 a matching title does not suppress permission.asked
+  ok   AC-2 a matching title does not suppress question.asked
+  ok   AC-2 a matching title does not suppress form.created
+  ok   AC-2 a skipped event does not consume the dedupe key
+  ok   AC-2 a sent duplicate is still deduped
+AC-3 environment filter
+  ok   AC-3 env filters V2 completions
+  ok   AC-3 env filters V2 errors
+  ok   AC-3 env filters V1, including a title with a comma
+  ok   AC-3 a non-matching env list still notifies on V1
+  ok   AC-3 an env change is observed on a later event
+  ok   AC-3 an unset env leaves normal behaviour
+  ok   AC-3 an empty env leaves normal behaviour
+AC-4 option and environment precedence
+  ok   AC-4 a conflicting option wins over the env on V2
+  ok   AC-4 a matching option still suppresses on V2
+  ok   AC-4 an explicit empty option overrides the env
+  ok   AC-4 an undefined option falls back to the env
+  ok   AC-4 a null option falls back to the env
+  ok   AC-4 an invalid option ("x") overrides the env and fails open
+  ok   AC-4 an invalid option (42) overrides the env and fails open
+  ok   AC-4 an invalid option ({}) overrides the env and fails open
+  ok   AC-4 a conflicting option wins over the env on V1
+  ok   AC-4 a matching V1 option suppresses
+  ok   AC-4 an explicit empty V1 option overrides the env
+  ok   AC-4 undefined V1 options fall back to the env
+  ok   AC-4 null V1 options fall back to the env
+  ok   AC-4 an invalid V1 option overrides the env and fails open
+AC-5 invalid configuration fails open
+  ok   AC-5 a string option does not throw and suppresses nothing
+  ok   AC-5 a number option does not throw and suppresses nothing
+  ok   AC-5 an object option does not throw and suppresses nothing
+  ok   AC-5 an empty string option does not throw and suppresses nothing
+  ok   AC-5 an array holding only empty strings option does not throw and suppresses nothing
+  ok   AC-5 an array of non-strings option does not throw and suppresses nothing
+  ok   AC-5 a mixed option array keeps its valid entries
+  ok   AC-5 malformed JSON in the env does not throw and suppresses nothing
+  ok   AC-5 a JSON object in the env does not throw and suppresses nothing
+  ok   AC-5 a JSON string in the env does not throw and suppresses nothing
+  ok   AC-5 a JSON number in the env does not throw and suppresses nothing
+  ok   AC-5 an empty-string array in the env does not throw and suppresses nothing
+  ok   AC-5 whitespace only in the env does not throw and suppresses nothing
+  ok   AC-5 a mixed env array keeps its valid entries
+AC-6 V1 forwarded options
+  ok   AC-6 tuple options reach the V1 filter and suppress
+  ok   AC-6 server() with no arguments keeps prior behaviour
+  ok   AC-6 explicit undefined options keep prior behaviour
+  ok   AC-6 server(input, options) accepts a tuple call
+invocation
+  ok   the toast script is passed after -Command
+  ok   -EncodedCommand is never used
+  ok   the script travels unencoded
+  ok   the toast still goes out
+PASS AC-1 — 13 assertions
+PASS AC-2 — 9 assertions
+PASS AC-3 — 7 assertions
+PASS AC-4 — 14 assertions
+PASS AC-5 — 14 assertions
+PASS AC-6 — 4 assertions
+
+all checks passed

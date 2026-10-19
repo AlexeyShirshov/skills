@@ -1,0 +1,59 @@
+startup line
+  ok   registration writes a loaded line
+permission
+  ok   waiting permission produces one toast
+  ok   toast asks for input
+  ok   permission answered inside the grace window stays silent
+  ok   re-emitted permission toasts once
+  ok   WSL_NOTIFY_GRACE_MS widens/narrows the window
+  ok   a large WSL_NOTIFY_GRACE_MS suppresses the toast
+completion
+  ok   finished session toasts once
+  ok   toast says the session finished
+  ok   toast carries the session title
+  ok   a known session needs no server read
+  ok   a session read that never settles does not stop the toast
+  ok   the plugin asked the server about the unknown session
+  ok   a title learned from the server is used
+  ok   a pre-existing subagent is silent once primed
+  ok   succeeded plus legacy idle coalesces into one toast
+  ok   a second turn toasts again
+  ok   subagent completion stays silent by default
+  ok   subagent completion toasts when enabled
+  ok   subagent toast is labelled
+  ok   an unknown session is still announced
+short turns
+  ok   a turn shorter than the default 500ms stays silent
+  ok   a turn longer than minTurnMs toasts
+  ok   a completion without a start mark toasts anyway
+  ok   WSL_NOTIFY_MIN_TURN_MS sets the threshold
+failure
+  ok   failed session toasts once
+  ok   toast carries the error message
+question
+  ok   form toasts once
+  ok   toast carries the form title
+  ok   toast carries the question
+1.18.x (V1 context)
+  ok   V1 idle toasts once
+  ok   V1 toast carries the title from properties.info
+  ok   V1 subagent finish stays silent
+  ok   V1 session.error toasts once
+  ok   V1 error toast carries the message
+  ok   setup without an event stream does not throw
+  ok   setup without an event stream returns no cleanup
+  ok   a second turn in the same process toasts too
+  ok   a re-emitted user message does not re-arm the completion
+  ok   idle re-emitted without a new turn stays quiet
+  ok   V1 turn inside minTurnMs stays silent
+1.18.x server() limits
+  ok   an ask waits out the grace window on the V1 path
+  ok   WSL_NOTIFY_GRACE_MS=0 makes the V1 ask immediate
+  ok   a short turn is filtered on the V1 path too
+invocation
+  ok   the toast script is passed after -Command
+  ok   -EncodedCommand is never used
+  ok   the script travels unencoded
+  ok   the toast still goes out
+
+all checks passed

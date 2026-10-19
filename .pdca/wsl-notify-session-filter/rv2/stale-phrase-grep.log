@@ -1,0 +1,2 @@
+$ grep -n -E "no options channel|Options do not reach|This path has no options" opencode/plugins/wsl-notify/index.js opencode/plugins/wsl-notify/test/smoke.mjs opencode/plugins/wsl-notify/README.md
+exit=1 -> none found
