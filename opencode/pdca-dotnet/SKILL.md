@@ -525,26 +525,34 @@ Details live in files; only a pointer enters the orchestrator's context.
 
 Every implementation brief to `pdca-executor` **MUST** carry a mandatory structured `test scope` (with a
 rationale); **without it the orchestrator must NOT dispatch the brief** — it returns to `pdca-planner`
-to complete the scope. `pdca-executor` runs `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before
+to complete the scope. `pdca-executor` runs `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **before
 any edit**; a nonzero exit is **fail-closed** → return to the orchestrator (do not start editing).
 
-Required fields:
+Required fields — the **brief is a wrapper**: the unit id at the top level, the scope nested under
+`scope`. (A bare scope object is rejected with `missing required key: unit`.)
 
 ```json
 {
-  "projects": ["<affected test project path>"],
-  "selectors": ["<exact, non-broad filtered selector>"],
-  "files": ["<changed file path>"],
-  "rebuild": "affected | none",
-  "boundary": "<the single DO → CHECK comprehensive sweep point>",
-  "rationale": "<why this subset covers the changed behavior>",
-  "integration_projects": ["<test project that really runs integration tests>"],
-  "integration_boundary_runs": 1
+  "unit": "<DO unit id, e.g. D1>",
+  "scope": {
+    "projects": ["<affected test project path>.csproj"],
+    "selectors": ["FullyQualifiedName~<TestClass>.<Test>"],
+    "files": ["<changed file path>.cs"],
+    "rebuild": "affected",
+    "boundary": "<the single DO → CHECK comprehensive sweep point>",
+    "rationale": "<why this subset covers the changed behavior>",
+    "integration_projects": ["<test project that really runs integration tests>"],
+    "integration_boundary_runs": 1
+  }
 }
 ```
 
+- `unit` — the **string id of the DO unit** (`D1`, `T2`, …), not a container: projects/selectors/
+  files live inside `scope`.
 - `projects` — the affected test project(s); `selectors` — nonempty, never a whole-project/solution
   or all-selecting filter.
+- `files` — the planned changed files; the key is **mandatory**, the list **may be empty**
+  (`"files": []`). With `rebuild: "affected"` it must contain at least one `.cs`/`.fs`/`.vb` file.
 - `rebuild` — `affected` on a compiled-input change; `none` for a docs-only change (no fictitious
   rebuild). A docs-only scope (no `.cs`/`.fs`/`.vb` file) must **not** claim an `affected` rebuild;
   a fictitious rebuild fails the gate.
