@@ -613,7 +613,7 @@ task and paths):
 
 ```text
 Task: <what to do>.
-Test scope: <scope.json> — mandatory; validate with
+Test scope: <brief.json> (the `unit`+`scope` envelope) — mandatory; validate with
   .pdca/scripts/validate_inner_loop.py brief before any edit (fail-closed).
 Work ONLY in worktree <ABS_WT>.
 - In bash always: cd <ABS_WT> && <command>

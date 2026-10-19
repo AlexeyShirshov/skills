@@ -705,9 +705,9 @@ differences are in the lenses, the thresholds and the additional gates.
   affected build/type) kills the surviving mutants or explicitly justifies them.
 - **A mandatory `test scope`.** Every implementation brief **must** carry a structured `test scope`
   (projects, selectors, files, the rebuild policy, the boundary point, the integration projects and
-  the planned integration boundary runs, the rationale). Without it the brief is not sent — it goes
-  back to the pdca-planner. Fields: `projects`, `selectors`, `files`, `rebuild` (`affected` | `none`),
-  `boundary`, `rationale`, `integration_projects`, `integration_boundary_runs`. A selector must not
+  the planned integration boundary runs, the rationale). The brief is an **envelope**: `unit` (the
+  DO unit id) at the top level, the fields nested under `scope`; a bare scope object is rejected.
+  Without a valid scope the brief is not sent — it goes back to the pdca-planner. A selector must not
   select the whole solution; `rebuild: none` is correct for a docs-only change; an invented
   `affected` rebuild for docs-only fails the gate.
 - **Unit runs are unlimited; the integration cap counts actual runs.** The presence or absence of
@@ -717,7 +717,7 @@ differences are in the lenses, the thresholds and the additional gates.
   deviation, and a mixed solution run that really executes integration is integration, not unit,
   whatever the command name says.
 - **The `validate_inner_loop.py` validator.** The executor runs
-  `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before any editing** and
+  `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **before any editing** and
   `report <evidence.json>` **before CHECK** — reconciled with `--journal <journal.json>` when the raw
   execution journal exists. `journal` validates the raw start/finish capture and `project` rebuilds
   the report from it mechanically, so a projection that drops a started execution is rejected
@@ -1161,7 +1161,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - the orchestrator role (dispatcher) → `opencode/pdca/SKILL.md:89-116`; `opencode/pdca-coder/SKILL.md:92-117`
 - `pdca-check` may open the evidence artifacts (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1120-1123`
+  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1129-1132`
 
 **The state machine, the counters, the progress mirror**
 - the state machine → `opencode/pdca/SKILL.md:118-141`; `opencode/pdca-coder/SKILL.md:119-141`
@@ -1173,7 +1173,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
 - gates 1–5 → `opencode/pdca/SKILL.md:178-220`
 - the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:222-279`
 - re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md:239-241`;
-  `opencode/pdca-coder/SKILL.md:696-700`; `opencode/pdca-dotnet/SKILL.md:748-752`
+  `opencode/pdca-coder/SKILL.md:696-700`; `opencode/pdca-dotnet/SKILL.md:757-761`
 - the normal/autonomous modes → `opencode/pdca/SKILL.md:326-367`
 - the collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
   `opencode/pdca-coder/SKILL.md:804-811`
@@ -1189,7 +1189,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
 **Limitations, security, red flags**
 - generic constraints → `opencode/pdca/SKILL.md:523-546`
 - instruction priority / injection → `opencode/pdca-coder/SKILL.md:359-375`;
-  `opencode/pdca-dotnet/SKILL.md:360-376`
+  `opencode/pdca-dotnet/SKILL.md:361-377`
 - red flags / failure modes → `opencode/pdca/SKILL.md:548-603`
 
 **pdca-coder: engineering streams**
@@ -1201,7 +1201,7 @@ mirrored from canonical `opencode-config` commit `063dffa`); where they disagree
 - ACT → `:1137-1168`; the economics → `:1313-1323`
 
 **pdca-dotnet: .NET gates**
-- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:521-557`
+- the mandatory `test scope` → `opencode/pdca-dotnet/SKILL.md:524-568`
 - the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1084-1122,1484-1513`
 - the binding/applicability disposition → `:1058-1082,1325-1336`
 - the versioned evidence contract + manifest + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; the mechanical pipeline (`generate`/`lint`) → `:1035-1056`

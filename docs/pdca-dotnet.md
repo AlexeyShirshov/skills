@@ -62,10 +62,13 @@ the verdict still belongs to `pdca-check`.
 
 ### 4.1. A mandatory `test scope` and a validator that fails closed
 
-Every implementation brief **must** carry a structured `test scope`: `projects`, `selectors`,
-`files`, `rebuild` (`affected` | `none`), `boundary`, `rationale` — and, for the run policy,
-`integration_projects` and `integration_boundary_runs`. Without it the orchestrator **does not
-send** the brief — it goes back to `pdca-planner` to be completed. `selectors` must be precise; a wide
+Every implementation brief **must** carry a structured `test scope`: the brief is an **envelope** —
+`unit` (the DO unit id, a string) at the top level, and the fields nested under `scope`:
+`projects`, `selectors`, `files` (mandatory key, may be an empty list), `rebuild` (`affected` |
+`none`), `boundary`, `rationale` — and, for the run policy, `integration_projects` and
+`integration_boundary_runs`. A bare scope object at the top level is rejected
+(`missing required key: unit`). Without a valid scope the orchestrator **does not send** the brief —
+it goes back to `pdca-planner` to be completed. `selectors` must be precise; a wide
 selector ("the whole solution") is rejected. `rebuild: "affected"` is correct for a compilable
 change, while a docs-only change must go with `rebuild: "none"` (an invented rebuild fails the
 gate). `boundary` is the single comprehensive point at the DO → CHECK boundary.
@@ -79,7 +82,7 @@ DO → CHECK boundary, within the scope and the count PLAN fixed in advance; an 
 DO is a visible policy deviation (recorded in the ledger, not masked by a phase or a rename), and a
 mixed solution run that really executes integration is not "unit" because of a command name.
 
-The executor runs `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **before any editing** and
+The executor runs `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **before any editing** and
 `report <evidence.json>` **before CHECK** — reconciled with `--journal <journal.json>` when the raw
 execution journal exists. The validator executes nothing — it only parses the recorded argument
 arrays and JSON. Exit codes: `0` — valid, `2` — a violation (`FAIL: …`), `1` — a usage error,
@@ -396,27 +399,27 @@ The article's normative claims were reconciled with the repository's current fil
 | The .NET variant is the same contract, the tools are replaceable | `opencode/pdca-dotnet/SKILL.md:11-13` |
 | The variant per task (`.NET/C#` → `pdca-dotnet`) and the identity of the `pdca-coder`/`pdca-dotnet` base | `opencode/pdca-collection/SKILL.md:16-21,412-414` |
 | The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
-| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `opencode/pdca-dotnet/SKILL.md:15-19,62-69,71-75,84-88`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
-| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `opencode/pdca-dotnet/SKILL.md:21-26,1120-1123`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
-| `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `opencode/pdca-dotnet/SKILL.md:69,1154-1161` |
+| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `opencode/pdca-dotnet/SKILL.md:15-19,62-69,71-75,85-89`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
+| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `opencode/pdca-dotnet/SKILL.md:21-26,1129-1132`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `opencode/pdca-dotnet/SKILL.md:69,1163-1170` |
 | The economics in practice (cost/tokens by phase and tier, no model names) | `opencode/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
-| The mandatory `test scope` (fields, wide selectors, docs-only/`rebuild`, the boundary) | `opencode/pdca-dotnet/SKILL.md:521-557` |
+| The mandatory `test scope` (the `unit`+`scope` envelope, fields, wide selectors, docs-only/`rebuild`, the boundary) | `opencode/pdca-dotnet/SKILL.md:524-568` |
 | The validator modes (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`), the `--journal` reconciliation, the `0`/`2`/`1` codes, "executes nothing" | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
 | The scope/execution rules: wide selectors, an invented rebuild, `selected_count ≥ 1` for a finished run, shell wrappers, the kind/phase policy (integration inside DO, the planned boundary budget, a mislabelled `unit`), scope expansion, freshness, final green; structural violations before the freshness/boundary rules | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
-| The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `opencode/pdca-dotnet/SKILL.md:978-983,991-1016`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
-| The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `opencode/pdca-dotnet/SKILL.md:1017-1038`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `opencode/pdca-dotnet/SKILL.md:953-976,986-989,1060-1064` |
-| The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `opencode/pdca-dotnet/SKILL.md:1215-1227` |
-| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `opencode/pdca-dotnet/SKILL.md:1273-1319` |
-| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `opencode/pdca-dotnet/SKILL.md:748-752`; `opencode/pdca-collection/SKILL.md:66-70` |
-| Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `opencode/pdca-dotnet/SKILL.md:490-491,892-901,923-936,1109,1145,1194,1208-1214,1265` |
-| The `dotnet-*` lenses of PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md:378-383,696-701,1109-1118,1163-1168` |
-| The ban on a 4th attempt, escalation by counter, decision routing | `opencode/pdca-dotnet/SKILL.md:134-137,633-634,638-645,667-679` |
-| ACT: two artifacts, the order of steps, the status file always kept; the status file path, the durable state (`N`, `r`, `n`) and the defect history | `opencode/pdca-dotnet/SKILL.md:1344-1379,1383-1386,1400-1410,1428-1449` |
-| The execution policy and the journal: unit unlimited, integration boundary-only, the planned boundary count, the explicit states, the projection | `opencode/pdca-dotnet/SKILL.md:558-595`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
-| The reviewer evidence pack: staged full bodies, the source-side receipt (digest/source identity/content equality), Roslyn on one snapshot, drift ⇒ invalidation | `opencode/pdca-dotnet/SKILL.md:1066-1104` |
-| The binding/applicability disposition: append-only, `diagnostic_nonbinding`, the non-loophole boundary | `opencode/pdca-dotnet/SKILL.md:1040-1064,1307-1318` |
-| The ACT cleanup receipt: the gate, the deletion scope, `cleanup`/`archived`, the immutable manifest | `opencode/pdca-dotnet/SKILL.md:1466-1495`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
+| The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `opencode/pdca-dotnet/SKILL.md:987-992,1000-1025`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
+| The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `opencode/pdca-dotnet/SKILL.md:1026-1047`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
+| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `opencode/pdca-dotnet/SKILL.md:962-985,995-998,1069-1073` |
+| The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `opencode/pdca-dotnet/SKILL.md:1224-1236` |
+| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `opencode/pdca-dotnet/SKILL.md:1282-1328` |
+| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `opencode/pdca-dotnet/SKILL.md:757-761`; `opencode/pdca-collection/SKILL.md:66-70` |
+| Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `opencode/pdca-dotnet/SKILL.md:491-492,901-910,932-945,1118,1154,1203,1217-1223,1274` |
+| The `dotnet-*` lenses of PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md:379-384,705-710,1118-1127,1172-1177` |
+| The ban on a 4th attempt, escalation by counter, decision routing | `opencode/pdca-dotnet/SKILL.md:135-138,642-643,647-654,676-688` |
+| ACT: two artifacts, the order of steps, the status file always kept; the status file path, the durable state (`N`, `r`, `n`) and the defect history | `opencode/pdca-dotnet/SKILL.md:1353-1388,1392-1395,1409-1419,1437-1458` |
+| The execution policy and the journal: unit unlimited, integration boundary-only, the planned boundary count, the explicit states, the projection | `opencode/pdca-dotnet/SKILL.md:559-604`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
+| The reviewer evidence pack: staged full bodies, the source-side receipt (digest/source identity/content equality), Roslyn on one snapshot, drift ⇒ invalidation | `opencode/pdca-dotnet/SKILL.md:1075-1113` |
+| The binding/applicability disposition: append-only, `diagnostic_nonbinding`, the non-loophole boundary | `opencode/pdca-dotnet/SKILL.md:1049-1073,1316-1327` |
+| The ACT cleanup receipt: the gate, the deletion scope, `cleanup`/`archived`, the immutable manifest | `opencode/pdca-dotnet/SKILL.md:1475-1504`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
 | The teaching scenario: the numbers are fictional; the skill's static matrix does not prove behaviour | `opencode/pdca-dotnet/tests/scenarios.md:3-5` |
 
 The host artifacts (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,

@@ -66,11 +66,13 @@
 
 ### 4.1. Обязательный `test scope` и валидатор, который падает закрыто
 
-Каждый бриф на реализацию **обязан** нести структурированный `test scope`:
-`projects`, `selectors`, `files`, `rebuild` (`affected` | `none`), `boundary`,
-`rationale` — и, для политики прогонов, `integration_projects` и
-`integration_boundary_runs`. Без него оркестратор **не отправляет** бриф — он
-возвращается `pdca-planner`-у на доукомплектование. `selectors` должны быть точными;
+Каждый бриф на реализацию **обязан** нести структурированный `test scope`: бриф — это
+**конверт** — `unit` (id юнита DO, строка) на верхнем уровне, а поля вложены в `scope`:
+`projects`, `selectors`, `files` (ключ обязателен, список может быть пустым), `rebuild`
+(`affected` | `none`), `boundary`, `rationale` — и, для политики прогонов,
+`integration_projects` и `integration_boundary_runs`. Голый scope-объект на верхнем уровне
+отвергается (`missing required key: unit`). Без валидного scope оркестратор **не отправляет**
+бриф — он возвращается `pdca-planner`-у на доукомплектование. `selectors` должны быть точными;
 широкий селектор («всё решение») отвергается. `rebuild: "affected"` корректен для
 компилируемого изменения, а для docs-only изменение обязано идти с
 `rebuild: "none"` (выдуманный пересбор валит гейт). `boundary` — единственная
@@ -86,7 +88,7 @@
 политики (записанное в ledger, не маскируемое фазой или переименованием), а смешанный
 solution-прогон, реально исполняющий интеграцию, — не «unit» из-за имени команды.
 
-Исполнитель запускает `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **до любого
+Исполнитель запускает `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **до любого
 редактирования** и `report <evidence.json>` **до CHECK** — сверяясь с
 `--journal <journal.json>`, когда есть сырой журнал исполнения. Валидатор ничего не исполняет — он
 только разбирает записанные массивы аргументов и JSON. Коды выхода: `0` — валидно,
@@ -422,27 +424,27 @@ Changed files) и готовое **сообщение для следующей 
 | .NET-вариант — тот же контракт, инструменты заменяемы | `opencode/pdca-dotnet/SKILL.md:11-13` |
 | Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `opencode/pdca-collection/SKILL.md:16-21,412-414` |
 | Явный триггер и разведение скиллов; «правка без цикла — напрямую» | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
-| Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `opencode/pdca-dotnet/SKILL.md:15-19,62-69,71-75,84-88`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
-| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `opencode/pdca-dotnet/SKILL.md:21-26,1120-1123`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
-| `pdca-security-auditor` — conditional gather, отчёт возвращается в агрегат `pdca-check` | `opencode/pdca-dotnet/SKILL.md:69,1154-1161` |
+| Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `opencode/pdca-dotnet/SKILL.md:15-19,62-69,71-75,85-89`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
+| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `opencode/pdca-dotnet/SKILL.md:21-26,1129-1132`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| `pdca-security-auditor` — conditional gather, отчёт возвращается в агрегат `pdca-check` | `opencode/pdca-dotnet/SKILL.md:69,1163-1170` |
 | Экономика по факту (стоимость/токены по фазам и тирам, без имён моделей) | `opencode/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
-| Обязательный `test scope` (поля, широкие селекторы, docs-only/`rebuild`, граница) | `opencode/pdca-dotnet/SKILL.md:521-557` |
+| Обязательный `test scope` (конверт `unit`+`scope`, поля, широкие селекторы, docs-only/`rebuild`, граница) | `opencode/pdca-dotnet/SKILL.md:524-568` |
 | Валидатор: режимы `brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`, сверка `--journal`, коды `0`/`2`/`1`, «ничего не исполняет» | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
 | Правила scope/executions: широкие селекторы, выдуманный rebuild, `selected_count ≥ 1` для finished-прогона, shell-обёртки, политика kind/phase (интеграция внутри DO, плановый граничный бюджет, `unit`-мислейбл), расширение scope, свежесть, финальный зелёный; структурные нарушения — раньше правил свежести/границы | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
-| Замороженный манифест: путь, заморозка на DO → CHECK, append-only, поля, агрегация по ссылкам; схема и покрытие строк в валидаторе | `opencode/pdca-dotnet/SKILL.md:978-983,991-1016`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
-| Механический конвейер доказательств: `generate`/`lint`, замороженное синтетическое дерево, атомарная публикация, двустороннее покрытие `required_rows` ↔ `rows[]` в lint | `opencode/pdca-dotnet/SKILL.md:1017-1038`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `opencode/pdca-dotnet/SKILL.md:953-976,986-989,1060-1064` |
-| Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `opencode/pdca-dotnet/SKILL.md:1215-1227` |
-| CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `opencode/pdca-dotnet/SKILL.md:1273-1319` |
-| Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `opencode/pdca-dotnet/SKILL.md:748-752`; `opencode/pdca-collection/SKILL.md:66-70` |
-| Гейты качества: ноль предупреждений; покрытие/ветки/мутации/CRAP; безопасность прогонов тестов | `opencode/pdca-dotnet/SKILL.md:490-491,892-901,923-936,1109,1145,1194,1208-1214,1265` |
-| `dotnet-*`-линзы PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md:378-383,696-701,1109-1118,1163-1168` |
-| Запрет 4-й попытки, эскалация по счётчику, роутинг решения | `opencode/pdca-dotnet/SKILL.md:134-137,633-634,638-645,667-679` |
-| ACT: два артефакта, порядок шагов, статус-файл сохраняется всегда; путь статус-файла, durable-состояние (`N`, `r`, `n`) и история дефектов | `opencode/pdca-dotnet/SKILL.md:1344-1379,1383-1386,1400-1410,1428-1449` |
-| Политика прогонов и журнал: unit без лимита, интеграция только на границе, плановое число граничных прогонов, явные состояния, проекция | `opencode/pdca-dotnet/SKILL.md:558-595`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
-| Reviewer evidence pack: staged-полные тела, source-side receipt (digest/source identity/равенство содержимого), Roslyn на одном snapshot, drift ⇒ инвалидация | `opencode/pdca-dotnet/SKILL.md:1066-1104` |
-| Binding/applicability disposition: append-only, `diagnostic_nonbinding`, граница «не лазейка» | `opencode/pdca-dotnet/SKILL.md:1040-1064,1307-1318` |
-| ACT cleanup receipt: гейт, область удаления, `cleanup`/`archived`, неизменяемый манифест | `opencode/pdca-dotnet/SKILL.md:1466-1495`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
+| Замороженный манифест: путь, заморозка на DO → CHECK, append-only, поля, агрегация по ссылкам; схема и покрытие строк в валидаторе | `opencode/pdca-dotnet/SKILL.md:987-992,1000-1025`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
+| Механический конвейер доказательств: `generate`/`lint`, замороженное синтетическое дерево, атомарная публикация, двустороннее покрытие `required_rows` ↔ `rows[]` в lint | `opencode/pdca-dotnet/SKILL.md:1026-1047`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
+| Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `opencode/pdca-dotnet/SKILL.md:962-985,995-998,1069-1073` |
+| Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `opencode/pdca-dotnet/SKILL.md:1224-1236` |
+| CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `opencode/pdca-dotnet/SKILL.md:1282-1328` |
+| Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `opencode/pdca-dotnet/SKILL.md:757-761`; `opencode/pdca-collection/SKILL.md:66-70` |
+| Гейты качества: ноль предупреждений; покрытие/ветки/мутации/CRAP; безопасность прогонов тестов | `opencode/pdca-dotnet/SKILL.md:491-492,901-910,932-945,1118,1154,1203,1217-1223,1274` |
+| `dotnet-*`-линзы PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md:379-384,705-710,1118-1127,1172-1177` |
+| Запрет 4-й попытки, эскалация по счётчику, роутинг решения | `opencode/pdca-dotnet/SKILL.md:135-138,642-643,647-654,676-688` |
+| ACT: два артефакта, порядок шагов, статус-файл сохраняется всегда; путь статус-файла, durable-состояние (`N`, `r`, `n`) и история дефектов | `opencode/pdca-dotnet/SKILL.md:1353-1388,1392-1395,1409-1419,1437-1458` |
+| Политика прогонов и журнал: unit без лимита, интеграция только на границе, плановое число граничных прогонов, явные состояния, проекция | `opencode/pdca-dotnet/SKILL.md:559-604`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
+| Reviewer evidence pack: staged-полные тела, source-side receipt (digest/source identity/равенство содержимого), Roslyn на одном snapshot, drift ⇒ инвалидация | `opencode/pdca-dotnet/SKILL.md:1075-1113` |
+| Binding/applicability disposition: append-only, `diagnostic_nonbinding`, граница «не лазейка» | `opencode/pdca-dotnet/SKILL.md:1049-1073,1316-1327` |
+| ACT cleanup receipt: гейт, область удаления, `cleanup`/`archived`, неизменяемый манифест | `opencode/pdca-dotnet/SKILL.md:1475-1504`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
 | Учебный сценарий: числа вымышлены; статическая матрица скилла поведение не доказывает | `opencode/pdca-dotnet/tests/scenarios.md:3-5` |
 
 Хостовые артефакты (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,

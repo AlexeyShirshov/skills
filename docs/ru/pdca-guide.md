@@ -771,8 +771,10 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `pd
 - **Обязательный `test scope`.** Каждый бриф на реализацию **обязан** нести
   структурированный `test scope` (проекты, селекторы, файлы, политика пересборки, точка
   границы, интеграционные проекты и плановое число граничных интеграционных прогонов,
-  обоснование). Без него бриф не отправляется — он возвращается pdca-planner'у. Поля:
-  `projects`, `selectors`, `files`, `rebuild` (`affected` | `none`), `boundary`,
+  обоснование). Бриф — это **конверт**: `unit` (id юнита DO) на верхнем уровне, поля вложены
+  в `scope`; голый scope-объект отвергается. Без валидного scope бриф не отправляется — он
+  возвращается pdca-planner'у. Поля `scope`: `projects`, `selectors`, `files` (ключ
+  обязателен, список может быть пустым), `rebuild` (`affected` | `none`), `boundary`,
   `rationale`, `integration_projects`, `integration_boundary_runs`. Селектор не должен
   выбирать решение целиком; `rebuild: none` — корректный для docs-only изменения;
   выдуманный `affected`-ребейлд для docs-only валит гейт.
@@ -783,7 +785,7 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `pd
   DO — записанное отклонение политики, а смешанный solution-прогон, реально исполняющий
   интеграцию, — это интеграция, а не unit, независимо от имени команды.
 - **Валидатор `validate_inner_loop.py`.** Исполнитель запускает
-  `.pdca/scripts/validate_inner_loop.py brief <scope.json>` **до любого редактирования** и
+  `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **до любого редактирования** и
   `report <evidence.json>` **до CHECK** — сверяясь с `--journal <journal.json>`, когда есть
   сырой журнал исполнения. `journal` валидирует сырой захват start/finish, а `project`
   механически пересобирает из него отчёт, поэтому проекция, потерявшая начавшийся прогон,
@@ -1256,7 +1258,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
   `opencode/pdca-coder/SKILL.md:73-77`; `opencode/pdca-dotnet/SKILL.md:71-75`
 - orchestrator role (диспетчер) → `opencode/pdca/SKILL.md:89-116`; `opencode/pdca-coder/SKILL.md:92-117`
 - `pdca-check` вправе открыть артефакты доказательств (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1120-1123`
+  `opencode/pdca-coder/SKILL.md:957-962`; `opencode/pdca-dotnet/SKILL.md:1129-1132`
 
 **Машина состояний, счётчики, зеркало прогресса**
 - state machine → `opencode/pdca/SKILL.md:118-141`; `opencode/pdca-coder/SKILL.md:119-141`
@@ -1268,7 +1270,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - гейты 1–5 → `opencode/pdca/SKILL.md:178-220`
 - фазовые контракты (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md:222-279`
 - повторный заход (re-entry) после терминального `incomplete`/STOP → `opencode/pdca/SKILL.md:239-241`;
-  `opencode/pdca-coder/SKILL.md:696-700`; `opencode/pdca-dotnet/SKILL.md:748-752`
+  `opencode/pdca-coder/SKILL.md:696-700`; `opencode/pdca-dotnet/SKILL.md:757-761`
 - режимы normal/autonomous → `opencode/pdca/SKILL.md:326-367`
 - collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md:343-350`;
   `opencode/pdca-coder/SKILL.md:804-811`
@@ -1284,7 +1286,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 **Ограничения, безопасность, red flags**
 - generic constraints → `opencode/pdca/SKILL.md:523-546`
 - instruction priority / injection → `opencode/pdca-coder/SKILL.md:359-375`;
-  `opencode/pdca-dotnet/SKILL.md:360-376`
+  `opencode/pdca-dotnet/SKILL.md:361-377`
 - red flags / failure modes → `opencode/pdca/SKILL.md:548-603`
 
 **pdca-coder: инженерные потоки**
@@ -1296,7 +1298,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - ACT → `:1137-1168`; economics → `:1313-1323`
 
 **pdca-dotnet: .NET-гейты**
-- обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md:521-557`
+- обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md:524-568`
 - политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1084-1122,1484-1513`
 - binding/applicability disposition → `:1058-1082,1325-1336`
 - versioned evidence contract + манифест + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
