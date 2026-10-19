@@ -36,6 +36,10 @@ const DEFAULTS = {
   // Subagent completions are noise by default: the parent session reports the
   // turn that spawned them.
   subagentComplete: false,
+  // Sessions whose titles contain one of these literal substrings keep their
+  // finished and failed turns off the desktop. `WSL_NOTIFY_EXCLUDE_SESSION_TITLES`
+  // carries the same list as a JSON array.
+  excludeSessionTitles: [],
   sound: {
     permission: "Notification.IM",
     question: "Notification.Default",
@@ -375,6 +379,29 @@ function numberFromEnv(name) {
   return Number.isFinite(value) ? value : undefined
 }
 
+// `WSL_NOTIFY_EXCLUDE_SESSION_TITLES` holds a JSON array: a comma-separated list
+// cannot represent a title that contains a comma. A malformed value fails open —
+// no filter — rather than silencing notifications.
+function listFromEnv(name) {
+  const raw = process.env[name]
+  if (raw === undefined || raw === "") return undefined
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+}
+
+// The option wins over the environment, and `[]` is a deliberate "no filter", so
+// it overrides the environment too; so does an invalid non-null option. Only
+// non-empty strings take part in matching, literally: case and whitespace are
+// significant and no pattern is interpreted.
+function excludedTitles(options) {
+  const configured = options?.excludeSessionTitles ?? listFromEnv("WSL_NOTIFY_EXCLUDE_SESSION_TITLES")
+  if (!Array.isArray(configured)) return []
+  return configured.filter((entry) => typeof entry === "string" && entry.length > 0)
+}
+
 function limits(options) {
   // Option wins, then the environment: a locally discovered plugin file has no
   // options, so the environment is the only knob there.
@@ -387,6 +414,7 @@ function limits(options) {
     graceMs: Number.isFinite(grace) ? Math.max(0, grace) : DEFAULTS.graceMs,
     minTurnMs: Number.isFinite(minTurn) ? Math.max(0, minTurn) : DEFAULTS.minTurnMs,
     subagentComplete: options?.subagentComplete === true,
+    excludeSessionTitles: excludedTitles(options),
     sound: { ...DEFAULTS.sound, ...(options?.sound ?? {}) },
   }
 }
@@ -555,9 +583,9 @@ function toast(info, options) {
   child.on("error", (error) => console.error(`[wsl-notify] "${executable}" failed: ${error.message}`))
 }
 
-// 1.18.x has no options channel: its `setup` context carries no event stream and
-// no options reach the `server()` hooks, so both timing knobs keep the same
-// defaults as everywhere else and `WSL_NOTIFY_*` is the override.
+// Both timing knobs come from the same options as everywhere else. A 1.18.x host
+// that supplies no options — a bare specifier or local auto-discovery — keeps the
+// defaults, and `WSL_NOTIFY_*` is the override.
 function schedule(key, info, options) {
   const delayMs = Number.isFinite(info.delayMs) ? info.delayMs : 0
   if (delayMs <= 0) {
@@ -589,6 +617,21 @@ async function handle(event, options, prime) {
   if (classified.kind === "complete" && isSubagent(classified.sessionID) && !limits(options).subagentComplete) {
     debug(`skip-subagent ${event?.type} session=${classified.sessionID}`)
     return
+  }
+
+  // A session whose title matches the filter keeps its finished and failed turns
+  // off the desktop. Only the real cached title counts: the `"opencode"` display
+  // fallback, the session id and the error text would filter far too much.
+  if (classified.kind === "complete" || classified.kind === "error") {
+    const title = sessionTitle(classified.sessionID)
+    const match =
+      title === undefined
+        ? undefined
+        : limits(options).excludeSessionTitles.find((entry) => title.includes(entry))
+    if (match !== undefined) {
+      debug(`skip-excluded ${classified.kind} session=${classified.sessionID} match=${JSON.stringify(match)}`)
+      return
+    }
   }
 
   // How long the turn ran. `undefined` when no start event was seen (the plugin
@@ -629,10 +672,9 @@ export default {
 
     // 1.18.x calls `setup` too, but its context carries no event stream (keys:
     // options, agent, aisdk, catalog, command, integration, plugin, reference,
-    // skill — no `event`, `client` or `$`), and its package loader never calls
-    // `server()`. There is nothing to subscribe to, so leave quietly: the legacy
-    // `server()` hooks are the only event path a 1.18.x plugin can use, and that
-    // path is reached by loading this file from the plugins directory.
+    // skill — no `event`, `client` or `$`). There is nothing to subscribe to, so
+    // leave quietly: the `server()` hooks are the only event path on that
+    // generation.
     if (typeof ctx?.event?.subscribe !== "function") {
       debug("setup: no event stream in this context (1.18.x); the server() hooks serve events")
       return
@@ -662,13 +704,17 @@ export default {
   },
 
   // V1: the server calls this and uses the returned hooks. V1 loads the plugin
-  // once per process, and its `session.idle` is the completion event.
-  async server() {
+  // once per process, and its `session.idle` is the completion event. Options
+  // arrive as the second argument when the config names them in the tuple form;
+  // a bare specifier or local auto-discovery supplies none, and `WSL_NOTIFY_*`
+  // is the override there.
+  async server(input, options = {}) {
+    const resolved = options ?? {}
     noteLoaded("v1")
     return {
       event: async ({ event }) => {
         try {
-          await handle(event, {})
+          await handle(event, resolved)
         } catch (error) {
           console.error(`[wsl-notify] handler failed: ${error?.message ?? error}`)
         }

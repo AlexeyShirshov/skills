@@ -42,6 +42,15 @@ OpenCode 1.18.x, in `opencode.json(c)`:
 }
 ```
 
+To pass options on 1.18.x, use the tuple form — the host forwards its second
+element to `server(input, options)`:
+
+```json
+{
+  "plugin": [["wsl-notify", { "excludeSessionTitles": ["Background"] }]]
+}
+```
+
 or from the CLI: `opencode plugin wsl-notify` — the command installs the package
 and adds it to the config. 1.18.x resolves a package's `./server` subpath export
 (or its `main`); this package declares both, and that is what makes the npm route
@@ -51,8 +60,9 @@ work there. The same file still loads from `<config>/plugins/wsl-notify.js`.
 stream) — it drives everything through the `server()` hooks, which is what this
 package returns: `session.idle` is the completion event, `session.error` a
 failure, titles and `parentID` come from the session nested under
-`properties.info`. Options do not reach that path, so use the `WSL_NOTIFY_*`
-variables below.
+`properties.info`. Options reach that path through the tuple form above; a plain
+specifier or a locally discovered file supplies none, so the `WSL_NOTIFY_*`
+variables below are the override there.
 
 A turn begins there with a **new user message**: 1.18.x has no
 `session.execution.started`, and it re-emits the same message later with its
@@ -61,8 +71,8 @@ the `minTurnMs` window is measured from that prompt. Without this a long-lived
 process (the TUI keeps one server for the whole session) would toast only the very
 first finished turn, every later completion being deduplicated away.
 
-This path has no options channel, so both timing knobs keep the same defaults as
-everywhere else (`graceMs` 500, `minTurnMs` 500) — `WSL_NOTIFY_GRACE_MS` and
+Without tuple options both timing knobs keep the same defaults as everywhere else
+(`graceMs` 500, `minTurnMs` 500) — `WSL_NOTIFY_GRACE_MS` and
 `WSL_NOTIFY_MIN_TURN_MS` are the override.
 
 Or, on V2, drop `index.js` into `<config>/plugins/wsl-notify.js` and let OpenCode
@@ -82,7 +92,9 @@ registry — the plugin has no dependencies, so nothing else is fetched.
 
 ## Options
 
-Passed through the configured plugin form and read from `ctx.options` (V2):
+Passed through the configured plugin form: `ctx.options` on V2, the tuple's
+second element on V1 (a plain specifier or a locally discovered file supplies
+none). Where an option has an environment counterpart it is the fallback:
 
 ```jsonc
 {
@@ -93,6 +105,7 @@ Passed through the configured plugin form and read from `ctx.options` (V2):
         "graceMs": 500,
         "minTurnMs": 500,
         "subagentComplete": false,
+        "excludeSessionTitles": ["Background"],
         "sound": {
           "permission": "Notification.IM",
           "question": "Notification.Default",
@@ -111,12 +124,17 @@ Passed through the configured plugin form and read from `ctx.options` (V2):
 | `graceMs` | `500` | How long to hold a permission toast, waiting for it to be answered. `0` notifies immediately. |
 | `minTurnMs` | `500` | Skip the completion toast for a turn that ran shorter than this. `0` notifies for every finished turn. |
 | `subagentComplete` | `false` | Also toast when a subagent session finishes. |
+| `excludeSessionTitles` | `[]` | Case-sensitive literal substrings of the session title; a completion or error toast for a session whose title contains one is skipped. |
 | `sound.permission` | `Notification.IM` | `ms-winsoundevent` name for the permission toast. |
 | `sound.question` | `Notification.Default` | Sound for a question. |
 | `sound.complete` | `Notification.Default` | Sound for a finished session. |
 | `sound.error` | `Notification.Reminder` | Sound for a failed session. |
 | `maxTitle` | `60` | Title truncation length. |
 | `maxMessage` | `240` | Message truncation length. |
+
+`excludeSessionTitles` takes plain substrings, not patterns: no regex, glob or
+trimming, and several entries are OR-ed. Empty strings are ignored. See
+[Excluded sessions](#excluded-sessions) for what is matched and what is skipped.
 
 ### Environment variables
 
@@ -125,8 +143,19 @@ Passed through the configured plugin form and read from `ctx.options` (V2):
 | `WSL_NOTIFY_POWERSHELL` | Same as the `powershell` option; wins over discovery. |
 | `WSL_NOTIFY_GRACE_MS` | Same as the `graceMs` option, for setups where the plugin is discovered locally and cannot take options. |
 | `WSL_NOTIFY_MIN_TURN_MS` | Same as the `minTurnMs` option, for locally discovered setups. |
+| `WSL_NOTIFY_EXCLUDE_SESSION_TITLES` | Same as the `excludeSessionTitles` option, as a JSON array (see below). |
 | `WSL_NOTIFY_DEBUG=1` | Write every decision (`toast`/`skip`) to the debug log. |
 | `WSL_NOTIFY_DEBUG_LOG` | Debug log path, default `$TMPDIR/wsl-notify.log`. |
+
+The exclusion list is a JSON array, not a comma-separated list, so a title that
+contains a comma stays one entry:
+
+```sh
+export WSL_NOTIFY_EXCLUDE_SESSION_TITLES='["Background","Research, notes"]'
+```
+
+Malformed JSON, or JSON that is not an array, means no filter: it never throws
+and never silences a toast.
 
 Registering the plugin already writes one line there, with or without
 `WSL_NOTIFY_DEBUG`:
@@ -141,7 +170,11 @@ usually the host was not restarted after installing it, or the config entry land
 in a scope the host does not read (`opencode plugin` without `-g` writes the
 current directory's `.opencode/opencode.json`).
 
-Options win over the environment.
+Options win over the environment — including `excludeSessionTitles`: a non-null
+option is used as-is (`[]` is a deliberate "no filter" and overrides the
+variable), `undefined` or `null` falls back to the environment, and an unset or
+malformed value means no filter. Invalid configuration never throws and never
+suppresses a toast.
 
 ## Events
 
@@ -227,6 +260,54 @@ Details that matter:
   the check, so the paired event cannot slip past the window.
 - Set `minTurnMs` to `0` to be told about every finished turn, or a larger value
   (for example `10000`) to hear only about work you could walk away from.
+
+## Excluded sessions
+
+`excludeSessionTitles` keeps chosen sessions off the desktop: when a turn in a
+session whose title matches finishes (`Session finished`) or fails (`Error: …`),
+the toast is skipped.
+
+```jsonc
+{
+  "plugin": [["wsl-notify", { "excludeSessionTitles": ["Background", "Research, notes"] }]]
+}
+```
+
+```jsonc
+{
+  "plugins": [
+    { "package": "wsl-notify", "options": { "excludeSessionTitles": ["Background", "Research, notes"] } }
+  ]
+}
+```
+
+```sh
+export WSL_NOTIFY_EXCLUDE_SESSION_TITLES='["Background","Research, notes"]'
+```
+
+The option — in either the V1 tuple or the V2 `options` form — and the variable
+match any title containing `Background` or `Research, notes`, with that exact
+case. The variable is the fallback when no option is supplied: the 1.18.x plain
+specifier, a locally discovered file, or an option left `undefined`.
+
+Details that matter:
+
+- Only completion and error toasts are filtered. Permission, question and form
+  toasts are requests addressed to you and keep their own rules.
+- The match is a literal, case-sensitive substring, and several entries are
+  OR-ed. Nothing is trimmed and no regex or glob is interpreted: `*` is just an
+  asterisk, `[""]` matches nothing.
+- Only the real cached title counts. A session whose title is not known yet is
+  announced rather than dropped — a missing title says nothing about the
+  session — and the `opencode` display fallback, the session id, the parent id
+  and the error text are never matched.
+- A rename applies to the next event: `session.updated`/`session.renamed`
+  replaces the cached title.
+- A skipped event does not claim the completion key, so a later event for the
+  same session can still be announced.
+- The other limits still apply. A title that does not match, or no filter at
+  all, does not promise a toast: a short turn or a subagent completion is silent
+  on its own.
 
 ## Updating
 
@@ -314,14 +395,15 @@ alone — which is why the session object nested under `properties.info` is read
 npm test        # drives setup() with synthetic events and a fake powershell
 ```
 
-The smoke test asserts on the toasts the plugin would raise (45 checks): one
+The smoke test asserts on the toasts the plugin would raise (109 checks): one
 toast per waiting permission, silence for a permission answered inside the grace
 window, coalesced completion events, silence for a turn inside `minTurnMs`,
-subagent suppression, error text, and the 1.18.x shapes (`properties.info`, a
-`setup` that must not fail without an event stream, two turns inside one
-long-lived process toasting twice, the re-emitted user message not re-arming
-the completion, the V1 limits (same defaults, env override), and the startup line
-registration writes).
+subagent suppression, the exclusion filter (option and JSON environment,
+precedence, only complete/error, V1 tuple forwarding), error text, and the
+1.18.x shapes (`properties.info`, a `setup` that must not fail without an event
+stream, two turns inside one long-lived process toasting twice, the re-emitted
+user message not re-arming the completion, the V1 limits (same defaults, env
+override), and the startup line registration writes).
 
 ## License
 
