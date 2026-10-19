@@ -20,10 +20,12 @@ overkill.
 ## 2. Launching: "по pdca-dotnet"
 
 This skill's trigger is **explicit**: the phrase "по pdca-dotnet" (that phrase is what selects the
-.NET variant; "по циклу"/"через PDCA" lead into the general `pdca-coder` — that is how the skills
-are separated in the repository's `README.md`). The variant for a task is chosen by the driver: the
-logic "`.NET/C#` → `pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`" is described in
-`opencode/pdca-collection/SKILL.md`, while `pdca-orchestrator` itself ships as
+.NET variant). The generic phrases "по циклу"/"через PDCA" go to `pdca-entry`, which routes .NET/C#
+work here; naming another contract explicitly bypasses the umbrella. The variant for a task is
+chosen by the dispatching skill (`pdca-entry`, or the collection/campaign per task/step) and
+passed to the driver as `selected_variant`; the driver never classifies. The logic "`.NET/C#` →
+`pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`" is described in
+`opencode/pdca-entry/SKILL.md`, while `pdca-orchestrator` itself ships as
 `assets/agents/pdca-orchestrator.md` in every skill of the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
 edit without the cycle is performed directly.
 

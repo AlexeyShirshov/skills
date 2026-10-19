@@ -1,6 +1,9 @@
 ---
 name: pdca-collection
-description: Runs a batch of tasks as a PDCA collection — clusters tasks into parallel groups (worktree per group), executes tasks sequentially inside a group (branch chain + auto-commit); a definitively incomplete task stops its whole group (remaining tasks marked incomplete, never executed) while other groups continue, and only groups that are done are merged with `git merge --no-ff` (never incomplete). Use when a list of independent tasks/milestone must be executed as parallel PDCA lanes, when the user says "список задач", "milestone", "милстоун", "параллельные группы", "pdca-collection".
+description: Runs a batch of tasks as a PDCA collection — clusters tasks into parallel groups (worktree per group), executes tasks sequentially inside a group (branch chain + auto-commit); a definitively incomplete task stops its whole group (remaining tasks marked incomplete, never executed) while other groups continue, and only groups that are done are merged with `git merge --no-ff` (never incomplete). Invoke ONLY when the user explicitly names `pdca-collection`.
+metadata:
+  opencode/autoinvoke: false
+disable-model-invocation: true
 ---
 
 # Skill: pdca-collection
@@ -13,10 +16,11 @@ description: Runs a batch of tasks as a PDCA collection — clusters tasks into 
 Загружай этот скилл; база (state machine, гейты, роли) не дублируется и не
 переопределяется. Коллекция = список задач, разбитый на группы.
 
-**Вариант цикла выбирается на задачу.** Каждую задачу (и каждую корректирующую
-задачу) исполняет `pdca-orchestrator`, который выбирает вариант по задаче:
-`.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе → `pdca` (по умолчанию
-`pdca`). База коллекции — стандартный CHECK кодового контракта
+**Вариант цикла выбирается на задачу — здесь, в контракте коллекции.** Каждую задачу (и
+каждую корректирующую задачу) исполняет `pdca-orchestrator`, но вариант определяет
+коллекция: `.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе → `pdca` (по
+умолчанию), и передаёт его драйверу как `selected_variant`. Драйвер не классифицирует
+задачу и не выбирает вариант сам. База коллекции — стандартный CHECK кодового контракта
 (`config/skills/pdca-coder/SKILL.md`; для .NET — идентичная база
 `config/skills/pdca-dotnet/SKILL.md`).
 
@@ -397,8 +401,8 @@ current-branch
 
 | Параметр | Дефолт |
 |---|---|
-| Локация скилла | глобальная `~/.config/opencode/skills/pdca-collection/` |
-| Локация агента | глобальная `~/.config/opencode/agents/pdca-orchestrator.md` |
+| Локация скилла | по правилам хоста (см. `docs/install.md`) |
+| Локация агента | по правилам хоста (см. `docs/install.md`) |
 | Потолок параллелизма | `min(#групп, cap)`, `cap` = 4 (настраивается) |
 | Worktree-каталог | `<repo>-worktrees/<collection-id>/<group>` (не создаётся при одной группе) |
 | Merge | при `>=2` группах ждать **все** лейны терминальными, затем `git merge --no-ff` **только `done`-групп** последовательно (при одной группе не нужен); `incomplete` не мержится |
@@ -406,9 +410,9 @@ current-branch
 | Автокоммит/merge-право | даёт проектный overlay или явный запрос пользователя; сам скилл права не даёт; без него — patch-fallback, push никогда |
 
 Роли поставляются с семейством (`assets/agents/*.md` варианта цикла), а драйвер
-`pdca-orchestrator` лежит в `assets/agents/` этого скилла; ему нужны `experimental.subagent_depth` ≥ 2
-и `subagent`-права у дешёвого primary (иначе — плоский primary-fallback). Полный чек-лист установки —
-`docs/install.md` в репозитории скиллов.
+`pdca-orchestrator` лежит в `assets/agents/` этого скилла; ему нужны разрешённая вложенная
+делегация и права на диспетчеризацию у дешёвого primary (иначе — плоский primary-fallback).
+Полный чек-лист установки — `docs/install.md` в репозитории скиллов.
 
 ## Связь с базовым PDCA
 

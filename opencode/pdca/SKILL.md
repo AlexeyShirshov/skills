@@ -1,6 +1,9 @@
 ---
 name: pdca
 description: "Domain-neutral PDCA cycle for decomposing and executing a task with a verifiable result: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. Invoke only when the user explicitly names the `pdca` skill — not for ordinary tasks."
+metadata:
+  opencode/autoinvoke: false
+disable-model-invocation: true
 ---
 
 # PDCA cycle: domain-neutral orchestrator contract
@@ -31,7 +34,8 @@ a verdict.
 subagents** — PLAN and the CHECK → PLAN / DO → PLAN loop-back → `pdca-planner`; execution →
 `pdca-executor`; verdict → `pdca-check`; escalation → `pdca-escalate`; facts → `pdca-scout`. In
 **autonomous mode you do not drive the cycle yourself:** dispatch the whole cycle to the cheap
-`pdca-orchestrator` subagent (a cycle brief in, a compact summary out) and relay it
+`pdca-orchestrator` subagent with `selected_variant: pdca` (a cycle brief in, a compact
+summary out) and relay it
 (§Autonomous mode). Either way **only a cheap-tier primary drives the cycle or dispatches
 `pdca-orchestrator`** (§Host requirements); **the PLAN decision always belongs to `pdca-planner`**.
 
@@ -70,20 +74,17 @@ field in the role markdown**. Each asset carries only a `# tier:` label
 `pdca-escalate` = strong; `pdca-orchestrator` = cheap). By default a subagent inherits the
 invoking primary's model; bind ids in the profile `agent` block for routing.
 
-**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents directory (the four `pdca-*`
-role agents, `pdca-scout` and the RUNNER `pdca-orchestrator`); (2) restart
-the host (agents load at startup); (3) allow the primary to dispatch `pdca-scout`/`pdca-planner`/
-`pdca-check`/`pdca-executor`/`pdca-escalate`, and `pdca-orchestrator` for autonomous delegation
-(V2: `agents.<primary>.permissions`, `action: subagent`; V1: `agent.<primary>.permission.task`); (4) set
-`experimental.subagent_depth` ≥ 2 so the RUNNER may delegate. A cheap `pdca-orchestrator`
-that drives a child cycle needs the same allowlist and may **not** widen the expensive roles'
-permissions. The full checklist, including verification and troubleshooting, is
-`docs/install.md` in the skills repository.
+**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents/subagent directory (the
+`pdca-*` role agents, `pdca-scout` and the runner `pdca-orchestrator`); (2) restart the host (role
+agents load at startup); (3) allow the primary to dispatch `pdca-scout`/`pdca-planner`/`pdca-check`/
+`pdca-executor`/`pdca-escalate`, and `pdca-orchestrator` for autonomous delegation; (4) allow nested
+delegation so the runner may delegate. A cheap `pdca-orchestrator` that drives a child cycle needs
+the same allowlist and may **not** widen the expensive roles' permissions. Host-specific installation steps are in `docs/install.md` in the skills repository.
 
 A required-but-unavailable role is a **resource blocker** (normal: report to the user;
 autonomous: `Notice:` in the status log + recorded summary), not a silent run without the
 role. A host that denies the fallback must **never** bypass the deny. If `pdca-orchestrator` is
-unavailable (agent absent, `subagent_depth` < 2, or delegation forbidden) in autonomous mode,
+unavailable (agent absent, nested delegation forbidden or too shallow) in autonomous mode,
 fall back to the flat cheap primary (drive the cycle yourself) and log the fallback
 (`Notice:` + durable reason); in normal mode, report to the user.
 
@@ -372,7 +373,7 @@ The mode stays until the user explicitly removes it; otherwise normal mode.
 
 Everything this skill writes lives under **one** project-local root, `.pdca/`, in the project root
 (`git rev-parse --show-toplevel`). The folder name is **fixed**: the same layout holds wherever the
-skill itself is installed — a global skills directory, a project `.opencode/skills` copy, or a
+skill itself is installed — a global skills directory, a project-level skills directory copy, or a
 checkout — so it never collides with the project's own `scripts/` or its other output directories.
 
 ```text

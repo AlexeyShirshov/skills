@@ -82,9 +82,9 @@ def parse_frontmatter(block: str) -> dict:
     return keys
 
 
-# The runner is host-facing routing glue: it must name the .NET variant and the
-# .NET lenses it may dispatch. Exempt it from the stack-token guard; the
-# exemption is pinned to exactly this file in the test below.
+# The runner is a dispatcher: its permission block allowlists the .NET lens
+# agents it may dispatch. Exempt it from the stack-token guard; the exemption is
+# pinned to exactly this file in the test below.
 RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
 SCAN_EXEMPT = frozenset((RUNNER_ASSET,))
 
@@ -150,7 +150,7 @@ class ContractConsistencyTest(unittest.TestCase):
     # --- frontmatter ------------------------------------------------------
 
     def test_frontmatter_has_exactly_name_and_description(self):
-        self.assertEqual({"name", "description"}, set(self.fm))
+        self.assertEqual({"name", "description", "metadata", "disable-model-invocation"}, set(self.fm))
         self.assertEqual("pdca-coder", self.fm["name"])
         self.assertNotIn("model", self.fm)
 
@@ -222,7 +222,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("pdca-orchestrator", self.autonomous)
         self.assertIn("subagent dispatch", self.autonomous)
         self.assertIn("fall back to the flat primary", self.autonomous)
-        self.assertIn("subagent_depth", self.autonomous)
+        self.assertIn("nested delegation", self.autonomous)
         self.assertIn("Notice:", self.autonomous)
 
     # --- escalation: triggers, scoping, no-4th, route-don't-re-decide -----

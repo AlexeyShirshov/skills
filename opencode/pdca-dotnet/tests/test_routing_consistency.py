@@ -298,8 +298,9 @@ class RolePermissionTest(unittest.TestCase):
         desc = norm(frontmatter(ORCHESTRATOR).get("description", "")).lower()
         self.assertTrue(desc, "pdca-orchestrator description missing")
         self.assertIn("single autonomous", desc)
-        self.assertIn("pdca-dotnet", desc)
+        self.assertIn("selected_variant", desc)
         self.assertIn("task", desc)
+        self.assertNotIn("picks the cycle variant", desc)
         self.assertNotIn("do not use for single tasks", desc)
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)

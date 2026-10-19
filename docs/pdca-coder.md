@@ -27,11 +27,12 @@ verification. The value of the skill is not that it guarantees the right result 
 admission condition, not a promise of quality), but that it does not let you close work without
 verification, lose state, or pass off identical retries as progress.
 
-## Launching: phrase triggers
+## Launching: through the umbrella or by name
 
-`pdca-coder` is launched by a **phrase**, not by a separate command: "по циклу", "через PDCA", "по
-pdca". The phrase "по pdca-dotnet" selects a related but separate skill with .NET specifics and
-.NET gates — that is not `pdca-coder`.
+The phrases "по циклу", "через PDCA", "по pdca" go to the family entry point `pdca-entry`, which
+routes a code task here; naming `pdca-coder` explicitly bypasses the umbrella. The phrase
+"по pdca-dotnet" selects a related but separate skill with .NET specifics and .NET gates — that is
+not `pdca-coder`.
 
 There are two modes. In **normal** mode the cycle is interactive. First the plan is written into the
 status file on disk (the source of truth on the cycle), then the orchestrator states that the plan

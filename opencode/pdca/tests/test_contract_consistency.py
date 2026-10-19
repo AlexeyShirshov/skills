@@ -197,7 +197,7 @@ class ContractConsistencyTest(unittest.TestCase):
     # --- frontmatter ------------------------------------------------------
 
     def test_frontmatter_has_exactly_name_and_description(self):
-        self.assertEqual({"name", "description"}, set(self.fm))
+        self.assertEqual({"name", "description", "metadata", "disable-model-invocation"}, set(self.fm))
 
     def test_name_is_pdca(self):
         self.assertEqual("pdca", self.fm.get("name"))

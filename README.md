@@ -17,21 +17,24 @@ Skills live under [`opencode/`](opencode/).
 
 | Skill | Description |
 | --- | --- |
+| [`pdca-entry`](opencode/pdca-entry) | Single entry point (umbrella) for the family: classifies a task and routes it to exactly one contract — collection, incremental, .NET, coder or the neutral cycle. |
 | [`pdca`](opencode/pdca) | Domain-neutral PDCA cycle: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. |
 | [`pdca-coder`](opencode/pdca-coder) | Stack-agnostic PDCA executor for software-engineering tasks (code, tests, docs, refactoring, config). Picks the build/test/lint toolchain per language. |
 | [`pdca-collection`](opencode/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups). |
 | [`pdca-dotnet`](opencode/pdca-dotnet) | PDCA cycle for .NET/C# tasks: parallel DO/CHECK streams, role routing, ACT handoff. |
 | [`pdca-incremental`](opencode/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds. |
 
-All five share the same cycle contract: a cheap orchestrator drives roles (planner, coder,
+The five contracts share the same cycle: a cheap orchestrator drives roles (planner, coder,
 check, scout, escalate), every CHECK is evidence-based, and a required approval that cannot
-be obtained is a STOP rather than an open question.
+be obtained is a STOP rather than an open question. `pdca-entry` sits above them: it does not
+run a cycle, it only classifies the task and hands it to exactly one contract.
 
 ## Install
 
 Install a single skill with the [skills](https://skills.sh) CLI — one command per skill:
 
 ```sh
+npx skills add AlexeyShirshov/skills@pdca-entry
 npx skills add AlexeyShirshov/skills@pdca
 npx skills add AlexeyShirshov/skills@pdca-coder
 npx skills add AlexeyShirshov/skills@pdca-dotnet
@@ -53,7 +56,8 @@ nested delegation (`experimental.subagent_depth`) and `subagent` permissions. Ev
 `pdca-`prefixed (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`,
 `pdca-security-auditor`, `pdca-orchestrator`), so it cannot collide with an existing
 `planner`/`coder`/`scout`. The full checklist — with a verification step and a troubleshooting table —
-is in [`docs/install.md`](docs/install.md) ([`docs/ru/install.md`](docs/ru/install.md)).
+is in [`docs/install.md`](docs/install.md) ([`docs/ru/install.md`](docs/ru/install.md)); an agent
+can perform the whole checklist from [`docs/install-prompt.md`](docs/install-prompt.md).
 
 ### From a checkout
 
@@ -77,11 +81,17 @@ Skills are discovered by the `name` field in their frontmatter.
 
 ## Usage
 
+Only `pdca-entry` is advertised to the model for automatic selection. The five contracts set
+`metadata.opencode/autoinvoke: false`: they stay registered but load only when the user names them
+explicitly (`skill pdca-dotnet`, `@pdca-dotnet`) or when the entry hands off.
+
 Invoke a skill by name, e.g. in an opencode session:
 
+- `pdca-entry` — "by the cycle" / "via PDCA" / "по циклу": the umbrella that routes the task to
+  one contract below (an explicitly named contract bypasses it).
 - `pdca` — only when explicitly named (domain-neutral cycle).
-- `pdca-coder` — "by the cycle" / "via PDCA" for code tasks.
-- `pdca-dotnet` — for .NET/C# work.
+- `pdca-coder` — explicitly, for code tasks of any stack.
+- `pdca-dotnet` — explicitly, for .NET/C# work.
 - `pdca-collection` — for a list of independent tasks / a milestone.
 - `pdca-incremental` — for a goal without a committed whole-volume plan (per-task plans may already exist), moved forward in steps; includes per-step `repair` and an optional integrated `verify`.
 

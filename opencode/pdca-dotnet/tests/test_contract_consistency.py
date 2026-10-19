@@ -671,9 +671,9 @@ class TwoPathContractTest(unittest.TestCase):
         self.assertIn("subagent dispatch", self.autonomous)
 
     def test_flat_primary_fallback_when_orchestrator_unavailable(self):
-        # Agent absent / subagent_depth < 2 / delegation forbidden -> flat primary.
+        # Agent absent / nested delegation forbidden or too shallow -> flat primary.
         self.assertIn("fall back to the flat primary", self.autonomous)
-        self.assertIn("subagent_depth", self.autonomous)
+        self.assertIn("nested delegation", self.autonomous)
         self.assertIn("subagent dispatch to pdca-orchestrator fails", self.autonomous)
         self.assertIn("delegation forbidden", self.autonomous)
 
@@ -1123,7 +1123,7 @@ class FinalFixGuardTest(unittest.TestCase):
         # `build` is only the default cheap-orchestrator shorthand, not a claim
         # that any primary (incl. medium/strong) drives the cycle.
         self.assertIn("build is the shorthand throughout", self.skill)
-        self.assertIn("opencode default build", self.skill)
+        self.assertIn("the host's primary", self.skill)
         self.assertNotIn("any primary", self.skill)
         self.assertIn("effective host-profile tier is cheap", self.skill)
 

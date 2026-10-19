@@ -1,10 +1,11 @@
 # Setting up the host for the PDCA skill family
 
 Installing a skill copies instructions only. A PDCA skill **names roles** — it creates no agents and
-sets no models — so the cycle only runs after the host (OpenCode) provides those agents, lets the
-cheap primary dispatch them, and allows nested delegation. This page is the missing install
-checklist: skills → agents → orchestrator → delegation depth → permissions → model bindings →
-restart → verification.
+sets no models — so the cycle only runs after the host provides those agents, lets the cheap primary
+dispatch them, and allows nested delegation. This page is the missing install checklist:
+skills → agents → orchestrator → delegation depth → permissions → model bindings → restart →
+verification. It is host-agnostic; the commands shown as the reference adapter are OpenCode V2, with
+the mapping for Claude Code, Codex and custom hosts (`dsh`, …) given inline.
 
 Without it the cycle does not fail loudly. It either degrades to the flat primary (a recorded
 `Notice:`), or hits a resource blocker on the first dispatch.
@@ -16,6 +17,7 @@ The roles are **subagent names**. Every skill in the family is explicit about it
 
 | Skill | Roles it dispatches | Role assets shipped |
 |---|---|---|
+| `pdca-entry` | none itself — it classifies and hands off to one contract below (the contract dispatches its roles) | `assets/agents/pdca-orchestrator.md` |
 | `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/agents/*.md` (6 files) |
 | `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/agents/*.md` (7 files) |
 | `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/agents/*.md` (7 files) |
@@ -25,6 +27,10 @@ The roles are **subagent names**. Every skill in the family is explicit about it
 Every shipped agent id carries the `pdca-` prefix and is **the same across the variants**, so a
 skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
 
+Agents carry only **identity, tier, permissions and an output contract**; decision knowledge
+(routes, gates, checklists) lives in the skill and is loaded with it. The driver in particular
+never classifies a task — it loads the contract named in `selected_variant`.
+
 The runner **`pdca-orchestrator` ships in every skill's `assets/agents/`** (the same file, so any
 install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
 profile's effective tier, not from the agent's name. A medium or strong primary (for example `architect`) **does not** drive
@@ -32,22 +38,55 @@ the cycle; switch to the cheap primary (`build` by default) before asking for a 
 
 ## 2. Install the skills
 
+Only `SKILL.md` and `assets/` travel; map the skills root to your host:
+
+| Host | Skills root |
+|---|---|
+| OpenCode | `~/.config/opencode/skills/` (user), `.opencode/skills/` (project) |
+| Claude Code | `~/.claude/skills/` (user), `.claude/skills/` (project) |
+| Codex | `~/.codex/skills/` (or `$CODEX_HOME/skills`), project `.agents/skills/` |
+| custom (`dsh`, …) | the host's own skills root; same layout `<root>/<id>/SKILL.md` |
+
+The commands below are the OpenCode reference adapter — for another host, replace the destination
+root.
+
 ```sh
 npx skills add AlexeyShirshov/skills@pdca-dotnet -g -y
 ```
 
-One command per skill (`pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`,
+One command per skill (`pdca-entry`, `pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`,
 `pdca-incremental`); `-g` installs for all projects, without it the CLI targets the current one.
+`pdca-entry` is the umbrella; the variant contracts stay installable on their own for an explicit
+invocation. Only the entry is advertised to the model: every other skill carries
+`metadata.opencode/autoinvoke: false`, so it loads only by explicit ID (`@pdca-dotnet`) or when the
+entry hands off. This is the deliberate split — the model cannot pick a contract by phrase.
 From a checkout (paths are relative to the repository root):
 
 ```sh
 cp -r opencode/pdca* ~/.config/opencode/skills/
 ```
 
+For the PDCA family the global skills root is enough — OpenCode discovers
+`~/.config/opencode/skills`. The `skills-keep.txt` + `curate-skills.mjs` pack is only for skills kept
+in a custom `skills` source; if the family lives there, add the six ids to that list and rebuild it.
+
 Nothing else in the skill directory needs installing. The runtime workspace `.pdca/` is created by
 the cycle itself in the project it runs in.
 
 ## 3. Install the role agents
+
+Agents are **host subagent definitions**. The shipped `assets/agents/*.md` carry OpenCode frontmatter
+(`mode: subagent`, `permission:`) over a portable role prompt; another host keeps the body and
+translates the frontmatter:
+
+| Host | Agents root | Frontmatter |
+|---|---|---|
+| OpenCode | `~/.config/opencode/agents/`, `.opencode/agents/` | as shipped |
+| Claude Code | `~/.claude/agents/`, `.claude/agents/` | `name`, `description`, `tools`; express permissions via the tool allowlist, drop `mode`/`permission` |
+| Codex | the host's subagent/workflow directory | keep the body, adapt the frontmatter |
+| custom (`dsh`, …) | the host's agent root | keep the body, adapt the frontmatter |
+
+If the host has no subagents, the cycle runs in the flat-primary fallback defined by the skill.
 
 OpenCode discovers agents at `~/.config/opencode/agents/<name>.md` (global) and
 `.opencode/agents/<name>.md` (project). The path gives the agent ID (a nested path becomes part of
@@ -76,9 +115,9 @@ truth:
 
 - **one family** — copy that skill's `assets/agents/*.md`;
 - **shared host set** — keep the role files in your host config repository and mirror them into the
-  skill assets mechanically (a small sync script that rewrites the asset frontmatter from the host
-  agents and fails in CI when they drift). This is what keeps a `.NET` host from silently losing the
-  `pdca-coder` bodies, and vice versa.
+  skill assets mechanically. The pack ships no mirroring script: if you keep one, put it in your
+  config repository and make it fail in CI on drift. This is what keeps a `.NET` host from silently
+  losing the `pdca-coder` bodies, and vice versa.
 
 Either way the role files carry only a `# tier:` label and permissions. **Never put a `model:` into
 a role markdown** — model ids are bound by the host profile (§8).
@@ -87,7 +126,8 @@ a role markdown** — model ids are bound by the host profile (§8).
 
 The runner is the cheap **dispatcher** that drives one child cycle, one collection group or one
 incremental step. It ships in every skill's `assets/agents/`, so step 3 copies it with the rest — do
-not write your own, and do not keep an older host copy under the same id.
+not write your own, and do not keep an older host copy under the same id. The `mode:`/`permission:`
+frontmatter is the OpenCode adapter; other hosts reuse the body.
 
 What it must be (the asset already encodes this — check it after installation):
 
@@ -96,7 +136,7 @@ What it must be (the asset already encodes this — check it after installation)
 - a `subagent` allowlist for `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`/
   `pdca-scout`/`pdca-security-auditor` (+ the `dotnet-*` lenses and `docfx-specialist` where used),
   with `*` denied;
-- `skill` allowed (it loads the selected variant).
+- `skill` allowed (it loads the contract named in `selected_variant`).
 
 A host that already ships its own runner may keep it only if it grants the same allowlist; otherwise
 the shipped copy should win, because a dispatcher without the `pdca-*` allowlist cannot start a
@@ -105,8 +145,10 @@ keeps working.
 
 ## 6. Allow nested delegation
 
-The runner drives a child cycle, so a subagent must be able to launch subagents. In V2 the depth
-lives **only** under `experimental`:
+The runner drives a child cycle, so a subagent must be able to launch subagents. The skill only needs
+the **capability**; the host decides how it is spelled — OpenCode V2 keeps the depth **only** under
+`experimental`, Claude Code and Codex use their own subagent settings. Without it the documented
+flat-primary fallback applies. The OpenCode reference:
 
 ```jsonc
 {
@@ -176,7 +218,16 @@ family** than PLAN: an independent verdict is the point of the role.
 
 ## 9. Restart and verify
 
-Agents load at startup:
+Agents load at startup; the check differs per host:
+
+| Host | Restart | Verify |
+|---|---|---|
+| OpenCode | `opencode service restart` | `opencode debug agents`, `opencode debug config` |
+| Claude Code | start a new session | `/agents` lists the subagents |
+| Codex | start a new session | the host's agent/workflow listing |
+| custom (`dsh`, …) | per host | the host's equivalent of the two checks below |
+
+OpenCode reference:
 
 ```sh
 opencode service restart
@@ -209,11 +260,19 @@ Then check, in this order:
 
 ## 11. What the setup does not do
 
-- It does not install the runner — §5 is manual by design.
+- It does not choose or bind models; without tier bindings every role inherits the primary's model
+  (§8).
 - It does not grant commit or merge rights. `pdca-collection` needs an explicit project overlay or
   your request for `git merge --no-ff`; without it the group runs without commits and is marked
   `incomplete`. Push is never granted.
 - It does not widen permissions for autonomous mode. Autonomy removes questions, not the gates.
+
+## 12. Let an agent install it
+
+The checklist is packaged as a copy-paste prompt: [`install-prompt.md`](install-prompt.md). Fill its
+`Inputs` block — including `HOST=opencode|claude|codex|dsh|custom` — send it to a cheap primary (e.g.
+`build`), and the agent performs the steps idempotently, with backups, a restart and the verification
+of §9.
 
 The skill files remain the normative source: `opencode/<skill>/SKILL.md`, section
 `## Host requirements (roles → agents)`.

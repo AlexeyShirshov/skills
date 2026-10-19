@@ -380,16 +380,18 @@ class AdditiveIntegrationTest(unittest.TestCase):
             with self.subTest(skill=name):
                 self.assertNotIn(name, lines)
 
-    def test_agents_md_has_explicit_pdca_and_keeps_old_triggers(self):
+    def test_agents_md_points_to_the_entry_without_a_phrase_table(self):
         text = read(AGENTS_MD)
+        self.assertIn("pdca-entry", text)
         self.assertIn("skill pdca", text)
-        self.assertIn("pdca-coder", text)
-        self.assertIn("pdca-dotnet", text)
+        self.assertNotIn("Trigger phrases «по циклу»", text)
+        self.assertNotIn("«по циклу» / «через PDCA» → `pdca-coder`", text)
+        self.assertNotIn("picks the cycle variant", text)
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class OrchestratorVariantSelectionTest(unittest.TestCase):
-    """The shared cheap driver `pdca-orchestrator` picks the cycle variant per task."""
+    """The shared cheap driver obeys the contract named by the dispatching skill."""
 
     UNIVERSAL_ROLES = ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate")
 
@@ -414,7 +416,7 @@ class SkillFrontmatterTest(unittest.TestCase):
 
 
 RUNNER_ASSET = ASSET_AGENTS / "pdca-orchestrator.md"
-FAMILY_SKILLS = ("pdca", "pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental")
+FAMILY_SKILLS = ("pdca-entry", "pdca", "pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental")
 # Repo root: <repo>/opencode/pdca/tests/<this file>.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 

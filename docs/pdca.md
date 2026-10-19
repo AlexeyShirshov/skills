@@ -33,13 +33,14 @@ the neighbouring variants are described in the neighbouring articles. If the cyc
 collection task's PLAN, it stops at the **PLAN → DO** boundary and returns control to the
 collection parent as a `plan_handoff` — same task, same `N`/`r`/`n`, DO does not start.
 
-## How to launch it: explicitly and by name only
+## How to launch it: explicitly, or through the umbrella
 
-`pdca` has **no phrase trigger of its own**. It is invoked explicitly by name — with a command like
-`skill pdca`; this is how it differs from `pdca-coder` (the phrases "by the cycle", "via PDCA", "по
-pdca") and `pdca-dotnet` (the phrase "по pdca-dotnet"). The domain-neutral `pdca` is the family's
-"reference": it stays with whoever named it deliberately, and it does not redefine other skills'
-triggers.
+`pdca` has **no phrase trigger of its own**. The phrases "by the cycle", "via PDCA", "по циклу"
+belong to the family entry point `pdca-entry`, which classifies the task and routes it — to
+`pdca-dotnet`, `pdca-coder`, `pdca-collection`, `pdca-incremental`, or here (the neutral default for
+a non-code task with a verifiable result). Calling `skill pdca` explicitly bypasses the umbrella.
+The domain-neutral `pdca` is the family's "reference": it stays with whoever named it deliberately,
+and it does not redefine other skills' triggers.
 
 ## Who does what work
 
@@ -225,9 +226,9 @@ after an escalation as well.
   inside PLAN, not an exemption from criteria and verification.
 - **Only a cheap primary drives the cycle.** A medium/strong primary (for example, `architect`)
   does not dispatch the cycle; outside the cycle it remains the decision maker.
-- **There is no phrase trigger.** `pdca` is not caught by "by the cycle" — that is `pdca-coder`'s
-  job. The domain-neutral variant is invoked explicitly by name, otherwise the contract does not
-  apply.
+- **There is no phrase trigger.** `pdca` is not caught by "by the cycle" — that is
+  `pdca-entry`'s job (which may route the task here). The domain-neutral variant is invoked
+  explicitly by name, otherwise the contract does not apply.
 - **An unavailable role is not a reason to work without it.** A missing mandatory agent is a
   resource blocker: in normal mode it is reported, in autonomous mode a `Notice:` and the reason
   are written.

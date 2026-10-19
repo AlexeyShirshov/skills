@@ -1,6 +1,9 @@
 ---
 name: pdca-dotnet
-description: "PDCA cycle for .NET/C# tasks and features: PLAN → DO → CHECK → ACT with gates, parallel DO/CHECK streams, role routing (decisions — pdca-planner, hands — pdca-executor, escalation — escalate) and an ACT handoff. Invoke ONLY when the user explicitly asks to run work through the cycle — \"by the cycle\", \"via PDCA\", \"run PDCA\", \"use the pdca-dotnet skill\" — not for ordinary tasks."
+description: "PDCA cycle for .NET/C# tasks and features: PLAN → DO → CHECK → ACT with gates, parallel DO/CHECK streams, role routing (decisions — pdca-planner, hands — pdca-executor, escalation — escalate) and an ACT handoff. Invoke ONLY when the user explicitly names `pdca-dotnet`; it covers .NET/C# work — not ordinary tasks and not another stack."
+metadata:
+  opencode/autoinvoke: false
+disable-model-invocation: true
 ---
 
 # PDCA cycle: orchestrator contract
@@ -30,27 +33,27 @@ subagents:** PLAN Decide (including starting the cycle) and the CHECK → PLAN /
 loop-back —
 `pdca-planner`, Triage — `pdca-check`, edits/commands — `pdca-executor`, escalation — `pdca-escalate`. In **autonomous
 mode you do not drive the cycle yourself:** dispatch the whole cycle to the cheap
-`pdca-orchestrator` subagent (a cycle brief in, an ≤8-line summary out) and relay it
+`pdca-orchestrator` subagent with `selected_variant: pdca-dotnet` (a cycle brief in, an
+≤8-line summary out) and relay it
 (§Autonomous mode). Either way **only a cheap-tier primary drives the cycle or dispatches
 `pdca-orchestrator`** (§Host requirements); **the PLAN decision always belongs to `pdca-planner`**.
 
-**Project overlay.** A repository may have its own additions to the cycle — a file in
-`instructions` (e.g. `.opencode/<project>-pdca.md`), a project skill named `*-pdca`,
-or `.opencode/skills/<name>/SKILL.md`. If one exists — **have `pdca-scout` find it and report its rules
-before PLAN** (a project skill is loaded with `skill`, which is orchestration, not reading content)
-and follow it on top of this contract: it refines invariants, finding registries, report
-formats and lens prefixes, and takes priority over the generic advice. **The overlay does
-not override the state machine or the gates (plan approval, "all green", loop-back, autonomous
-mode).**
-Where to look: `instructions` from the project `opencode.json`, skills from `.opencode/skills/`
-(visible in `<available_skills>`), the repository's `AGENTS.md`.
+**Project overlay.** A repository may have its own additions to the cycle — a project instruction
+file, a project skill named `*-pdca`, or a project-level skills directory
+(`<skills>/<name>/SKILL.md`). If one exists — **have `pdca-scout` find it and report its rules
+before PLAN** (loading a project skill is orchestration, not reading content) and follow it on top
+of this contract: it refines invariants, finding registries, report formats and lens prefixes, and
+takes priority over the generic advice. **The overlay does not override the state machine or the
+gates (plan approval, "all green", loop-back, autonomous mode).**
+Where to look: the host's project instructions, the host's project skills directory, the
+repository's `AGENTS.md`.
 
 ## Host requirements (roles → agents)
 
 The cycle roles are **subagent names**; the skill creates no agents and sets no models — the host
 provides them, else subagent dispatch fails and the cycle degrades to built-ins.
 **PDCA orchestration is cheap-only:** the orchestrator is the **cheap-tier primary**
-(opencode default `build`); `build` is the shorthand throughout. A primary may drive the cycle **only when its effective host-profile tier is
+(the host's primary; `build` is the shorthand throughout). A primary may drive the cycle **only when its effective host-profile tier is
 cheap** — the call is made by effective tier, **not** by agent name. A medium/strong primary (e.g.
 `architect`) does **not** orchestrate PDCA; outside the cycle it remains a decision primary. No
 `model:` id is ever written into a role, the skill or the docs — the host profile binds ids.
@@ -70,18 +73,18 @@ medium/strong primary still neither drives the cycle nor dispatches `pdca-orches
 | SECURITY | `pdca-security-auditor` | read-only, facts via `pdca-scout` | built-in `explore` |
 
 Ready-made definitions: this skill's `assets/agents/`. Model bindings come from the **host profile's
-`agent` block** (or a project `opencode.json` `agent.<name>.model`) — **never a `model:` field in the role
-markdown**. Each asset carries only a `# tier:` label (`pdca-executor`/`pdca-scout` = cheap; `pdca-planner`/`pdca-check`/
+`agent` block** (or the project's host config `agent.<name>.model`) — **never a `model:` field in
+the role markdown**. Each asset carries only a `# tier:` label (`pdca-executor`/`pdca-scout` = cheap; `pdca-planner`/`pdca-check`/
 `pdca-security-auditor` = medium; `pdca-escalate` = strong). By default a subagent inherits the invoking primary's
 model (works out of the box, but on one model); bind ids in the profile `agent` block for routing.
 
-**Setup (once):** (1) `cp assets/agents/*.md ~/.config/opencode/agents/` (or project `.opencode/agents/`);
-(2) restart opencode (agents load at startup); (3) allow the primary's `subagent` permission (V2: `agents.<primary>.permissions`, `action: subagent`; V1: `agent.<primary>.permission.task`) for `pdca-scout`/`pdca-planner`/`pdca-check`/`pdca-executor`/`pdca-escalate`/`pdca-security-auditor`,
-`pdca-orchestrator` (autonomous delegation), and the `dotnet-*` gather lenses + `docfx-specialist` used by
-PLAN/CHECK; (4) set `experimental.subagent_depth` ≥ 2 so the RUNNER may delegate. A cheap
-`pdca-orchestrator` that
-drives a child cycle needs the same allowlist (it may not widen the expensive roles' permissions). The
-full checklist is `docs/install.md` in the skills repository.
+**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents/subagent directory;
+(2) restart the host (role agents load at startup); (3) allow the primary to dispatch
+`pdca-scout`/`pdca-planner`/`pdca-check`/`pdca-executor`/`pdca-escalate`/`pdca-security-auditor`,
+`pdca-orchestrator` (autonomous delegation), and the `dotnet-*` gather lenses + `docfx-specialist`
+used by PLAN/CHECK; (4) allow nested delegation so the runner may launch subagents. A cheap
+`pdca-orchestrator` that drives a child cycle needs the same allowlist (it may not widen the
+expensive roles' permissions). Host-specific installation steps are in `docs/install.md` in the skills repository.
 
 If agents are absent and the host **allows the built-ins**, run on them (`general` for
 `pdca-executor`/`pdca-planner`/`pdca-check`, `explore` for `pdca-security-auditor`) and tell the user routing is unavailable
@@ -222,7 +225,7 @@ cycle: the cycle is where the gates are, not where the work stops.
 `pdca-orchestrator`, which runs PLAN → DO → CHECK → ACT and returns a compact summary (≤8 lines).
 No collection status file is created (single cycle); the mandatory pdca-dotnet cycle status file is
 still written by `pdca-executor`. No questions are asked. If the subagent dispatch to `pdca-orchestrator` fails (agent
-absent, `subagent_depth` < 2, or delegation forbidden), fall back to the flat primary (drive the cycle
+absent, nested delegation forbidden or too shallow), fall back to the flat primary (drive the cycle
 yourself) and log the fallback (`Notice:` in the status file, §Host requirements).
 
 - **Phase transitions** happen in the same turn the gate passes (PLAN → DO → CHECK → ACT), with no
@@ -318,7 +321,7 @@ contract**, not "finish and fix later".
 
 ## Recovery after compaction and drift
 
-opencode may compact mid-cycle: the rules survive, "where I am / what was done / why" does not. **The
+the host may compact mid-cycle: the rules survive, "where I am / what was done / why" does not. **The
 status file is the source of truth for plan and progress — not the context retelling, not memory.**
 
 **Detectors** (any one — recover, do not continue from memory): a long session / auto-compaction; you
@@ -940,7 +943,7 @@ Any test invocation (`dotnet test`/`dotnet run` on a test project) in DO or CHEC
   wall-clock `timeout 600 …`. Exit **137**/"Out of memory" ⇒ the test is unbounded: stop, record the test name
   and SQL, do not re-run without the cap.
 - **Serialize heavyweight suites:** never two test projects in parallel (e.g. `core` + `sqlite`), and never
-  beside the editor/agent stack (opencode workers, VS Code, LSPs); run the affected project alone. A
+  beside the editor/agent stack (agent workers, VS Code, LSPs); run the affected project alone. A
   DB/provider suite runs at the stream boundary, not per edit.
 - **Stream the log, never `| tail`:** a long run piped through `| tail` buffers to EOF and looks hung. Use
   `… 2>&1 | tee <log>` (`stdbuf -oL` for live progress) or `| tail -f`; keep `rc=${PIPESTATUS[0]}`. Always
@@ -1539,7 +1542,7 @@ The `Status:` line always names the kept status file, including a closed flow
 ## Project checklists (priority)
 
 - If the project defines its own Plan/Check checklists (local instructions wired
-  into its `opencode.json`, or local subagents), **they take priority** over the generic ones above:
+  into its project host config, or local subagents), **they take priority** over the generic ones above:
   take the project invariants, registries, toolchain and thresholds from there.
 - A project subagent **without an explicit model inherits the parent's model** (the orchestrator's
   model). Either pin a model for it in the agent config/profile, or embed its instructions into

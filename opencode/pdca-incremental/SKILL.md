@@ -1,6 +1,9 @@
 ---
 name: pdca-incremental
-description: "Drives a long-running goal as a chain of small PDCA increments when there is no committed plan for the whole volume (per-task plans may already be grilled) and each next step is chosen after the previous accepted measurement (coverage, perf, cleanup, hardening campaigns, or a queue of pre-planned sequential tasks). Keeps one campaign status mirror, a fixed increment floor, exactly one credited measurement per step, explicit stop conditions and two non-increment step kinds — repair and verify; every increment is a full cycle delegated to pdca-orchestrator. Use when the user says «инкрементами», «маленькими шагами», «нет плана на весь объём», «каждый следующий шаг из предыдущего», «двигаемся к цели», or names pdca-incremental."
+description: "Drives a long-running goal as a chain of small PDCA increments when there is no committed plan for the whole volume (per-task plans may already be grilled) and each next step is chosen after the previous accepted measurement (coverage, perf, cleanup, hardening campaigns, or a queue of pre-planned sequential tasks). Keeps one campaign status mirror, a fixed increment floor, exactly one credited measurement per step, explicit stop conditions and two non-increment step kinds — repair and verify; every increment is a full cycle delegated to pdca-orchestrator. Invoke ONLY when the user explicitly names `pdca-incremental`."
+metadata:
+  opencode/autoinvoke: false
+disable-model-invocation: true
 ---
 # Skill: pdca-incremental
 
@@ -31,8 +34,10 @@ description: "Drives a long-running goal as a chain of small PDCA increments whe
   `verify` (интегральный гейт без прироста).
 
 Один шаг = один полный цикл: PLAN → DO → CHECK → ACT. Шаг исполняет
-`pdca-orchestrator`, который выбирает вариант по задаче: `.NET/C#` → `pdca-dotnet`,
-другой код → `pdca-coder`, иначе → `pdca`. Кампания вариант не подменяет.
+`pdca-orchestrator`, но вариант шага определяет кампания: `.NET/C#` → `pdca-dotnet`,
+другой код → `pdca-coder`, иначе → `pdca`, и передаёт его драйверу как
+`selected_variant`. Драйвер не классифицирует задачу и не выбирает вариант сам.
+Кампания вариант не подменяет.
 
 ## Роли, тиры и полномочия
 
@@ -74,7 +79,8 @@ description: "Drives a long-running goal as a chain of small PDCA increments whe
 
 **Setup.** Агентов-ролей берут из семейства (`assets/agents/*.md` варианта цикла — `pdca` /
 `pdca-coder` / `pdca-dotnet`), драйвер `pdca-orchestrator` лежит в `assets/agents/` этого скилла;
-ему нужны `experimental.subagent_depth` ≥ 2 и `subagent`-права у дешёвого primary. Полный чек-лист — `docs/install.md` в репозитории скиллов.
+ему нужны разрешённая вложенная делегация и права на диспетчеризацию у дешёвого primary.
+Полный чек-лист — `docs/install.md` в репозитории скиллов.
 
 ## Когда выбирать
 
@@ -363,7 +369,7 @@ evidence и принятое число. DECIDE — это ACT кампании:
 статус-файл кампании, запускает следующий шаг и пересказывает результат. Между шагами
 паузы на апрув нет — цикл кампании продолжается, пока не сработает условие остановки.
 
-Если `pdca-orchestrator` недоступен (нет агента, `subagent_depth` < 2, хост запрещает
+Если `pdca-orchestrator` недоступен (нет агента, вложенная делегация запрещена или
 вложенную делегацию) — flat-primary ведёт шаг сам по базовому контракту, помечает это
 строкой `Notice:` и записывает причину; запрет хоста не обходится.
 

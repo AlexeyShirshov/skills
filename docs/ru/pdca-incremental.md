@@ -166,8 +166,9 @@ flat-primary fallback помечается `Notice:`.
   (ranked-список целей), `pdca-planner` собирает шесть блоков: goal, current state, hard
   constraints, scope, acceptance, targets. Discovery сам по себе — не план шага: решение
   принимает pdca-planner. Разделение нужно не для фаз, а для полномочий и артефактов.
-- **STEP N** исполняет `pdca-orchestrator`, который выбирает вариант по задаче
-  (`.NET` → `pdca-dotnet`, код → `pdca-coder`, иначе `pdca`). Кампания не вмешивается в
+- **STEP N** исполняет `pdca-orchestrator`, но вариант шага выбирает кампания
+  (`.NET` → `pdca-dotnet`, код → `pdca-coder`, иначе `pdca`) и передаёт его как
+  `selected_variant`; драйвер не классифицирует задачу. Кампания не вмешивается в
   гейты шага и не принимает число за CHECK.
 - **ACCEPT** — `pdca-check` выносит вердикт и зачётное число; primary дописывает строку в
   таблицу и переносит состояние.

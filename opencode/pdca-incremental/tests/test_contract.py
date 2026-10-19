@@ -46,10 +46,9 @@ class FrontmatterTests(unittest.TestCase):
     def test_name_matches_directory(self) -> None:
         self.assertIn(f"name: {SKILL_DIR.name}\n", self.head)
 
-    def test_description_carries_triggers_and_scope(self) -> None:
+    def test_description_requires_explicit_naming(self) -> None:
         description = " ".join(self.head.split("description:", 1)[1].split())
-        for token in ("инкрементами", "маленькими шагами", "нет плана на весь объём"):
-            self.assertIn(token, description)
+        self.assertIn("explicitly names", description)
         self.assertIn("pdca-orchestrator", description)
 
 

@@ -7,8 +7,9 @@ survives long work, context compaction and failure. The document is meant as a b
 public-facing articles, so it explains the logic in plain language rather than retelling the
 contracts verbatim.
 
-**The record source is the skill files in this repository:** `opencode/pdca/SKILL.md`,
-`opencode/pdca-coder/…`, `opencode/pdca-dotnet/…`, `opencode/pdca-collection/…`.
+**The record source is the skill files in this repository:** `opencode/pdca-entry/…`,
+`opencode/pdca/SKILL.md`, `opencode/pdca-coder/…`, `opencode/pdca-dotnet/…`,
+`opencode/pdca-collection/…`, `opencode/pdca-incremental/…`.
 The installed copies in `~/.config/opencode/skills/*` do not extend the norm.
 Some references point at **host artifacts of the `opencode-config` repository
 (`config/agents/*`, `config/AGENTS.md`, `config/profiles/*.jsonc`) — they are not part of this
@@ -24,7 +25,7 @@ do not make a plan correct and do not cancel the possibility that the result tur
 
 - §§1–4 — the intuitive model: why the cycle, who is who in it, what one pass looks like.
 - §§5–9 — the mechanics: gates, counters, returns to PLAN, modes, memory and evidence.
-- §§10–11 — the four skills and the task collection: how they differ and what they add.
+- §§10–11 — the family contracts: the umbrella, the cycle variants, the task collection and the incremental campaign — how they differ and what they add.
 - §§12–14 — teaching stories, limitations and security, glossary, the source map and article ideas.
 
 ---
@@ -79,10 +80,16 @@ The family consists of exactly **four skills**; `pdca-orchestrator` is not a fif
 
 | Skill | What for | How it is invoked | File (repo) |
 |---|---|---|---|
-| `pdca` | A domain-neutral contract for a task with a verifiable result | **Explicitly by name**: `skill pdca` (it has no phrase trigger of its own) | `opencode/pdca/SKILL.md` |
-| `pdca-coder` | Software-engineering tasks of any stack: code, tests, documentation, refactoring, configuration | The phrases "по циклу", "через PDCA", "по pdca" | `opencode/pdca-coder/SKILL.md` |
-| `pdca-dotnet` | The same, but with .NET/C# specifics and .NET gates | The explicit phrase "по pdca-dotnet" | `opencode/pdca-dotnet/SKILL.md` |
-| `pdca-collection` | A batch of independent tasks split into parallel group lanes | "список задач", "milestone", "милстоун", "параллельные группы", "pdca-collection" | `opencode/pdca-collection/SKILL.md` |
+| `pdca-entry` | Single entry point (umbrella): classifies a task and hands it to one contract below | "по циклу", "через PDCA", "by the cycle", "via PDCA", `pdca-entry` | `opencode/pdca-entry/SKILL.md` |
+| `pdca` | A domain-neutral contract for a task with a verifiable result | **Explicitly by name**: `skill pdca` / `@pdca` | `opencode/pdca/SKILL.md` |
+| `pdca-coder` | Software-engineering tasks of any stack: code, tests, documentation, refactoring, configuration | Explicit ID (`@pdca-coder`), or the entry routes other code here | `opencode/pdca-coder/SKILL.md` |
+| `pdca-dotnet` | The same, but with .NET/C# specifics and .NET gates | Explicit ID (`@pdca-dotnet`), or the entry routes .NET/C# work here | `opencode/pdca-dotnet/SKILL.md` |
+| `pdca-collection` | A batch of independent tasks split into parallel group lanes | Explicit ID (`@pdca-collection`), or the entry routes a known list here | `opencode/pdca-collection/SKILL.md` |
+
+`pdca-entry` is the **only skill advertised to the model**; the five contracts set
+`metadata.opencode/autoinvoke: false` and are loaded by an explicit ID or by the entry's handoff.
+The entry sets no contract of its own: it classifies the task and hands it to exactly one contract,
+then steps aside.
 
 The key separation is **the skill sets the contract, the agent sets the execution**. `pdca`,
 `pdca-coder` and `pdca-dotnet` are three variants of one and the same cycle, differing in their
@@ -90,15 +97,19 @@ level of concreteness: domain-neutral, engineering and .NET-specialized. `pdca-c
 level **above** the cycle: it does not redefine the base contract's state machine but adds a layer
 of grouping and parallel launching.
 
-**Who chooses the variant.** There are two paths.
+**Who chooses the variant.** There are three paths.
 
-- **A direct invocation.** The user names the skill they need (by phrase or by name) — and from
-  then on the cycle follows that contract.
-- **An internal choice by `pdca-orchestrator`.** In an autonomous single cycle and in a collection,
-  the driver determines the variant from the task: `.NET/C#` → `pdca-dotnet`, other code →
-  `pdca-coder`, otherwise → `pdca` (that is the default). If the type is unclear or mixed, `pdca`
-  is taken. The roles, lenses (verification perspectives — sets of rules, for which an agent or an
-  explicit generic path is selected) and counters then come from the contract of the chosen skill.
+- **The umbrella.** A request phrased "по циклу"/"через PDCA" without naming a contract goes to
+  `pdca-entry`, which applies its routing table (collection → incremental → .NET → other code →
+  neutral) and hands off.
+- **A direct invocation.** The user names the skill they need by name — and from then on the cycle
+  follows that contract; this bypasses the umbrella.
+- **The dispatching skill.** In an autonomous single cycle the contract names itself in the
+  handoff (`selected_variant: pdca` / `pdca-coder` / `pdca-dotnet`); in a collection or a campaign,
+  that skill chooses the variant per task/step and passes it the same way. The driver only loads
+  the named contract — it never classifies the task and never falls back to a default. The roles,
+  lenses (verification perspectives — sets of rules, for which an agent or an explicit generic
+  path is selected) and counters then come from the contract of the chosen skill.
 
 `pdca-orchestrator` has two inputs. The first is **one `pdca-collection` group**: it loads the
 `pdca-collection` skill and the chosen cycle variant and drives one group in its own isolated
@@ -791,9 +802,9 @@ the barrier, and only then the clustering (DAG/groups) and the launching of lane
 **does not edit files or run commands itself** — the infrastructure (worktrees, branches),
 `git merge --no-ff` and the mandatory checks are done by `pdca-executor` on its command; the orchestrator
 keeps the tracking, the gates and the merge decision. Each task (and each corrective task) is
-executed by `pdca-orchestrator`, which chooses the variant per task: `.NET/C#` → `pdca-dotnet`,
-other code → `pdca-coder`, otherwise → `pdca`. The collection's base is the code contract's standard
-CHECK.
+executed by `pdca-orchestrator`, but the collection chooses the variant per task (`.NET/C#` →
+`pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`) and passes it as `selected_variant`.
+The collection's base is the code contract's standard CHECK.
 
 **Permission for auto-commits.** A standard multi-group run presupposes an **explicitly permitted
 auto-commit** for `collection/**` branches and for `merge --no-ff` (otherwise a task branch gets no
