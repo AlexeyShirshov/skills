@@ -113,6 +113,13 @@ class RoutingRuleTest(unittest.TestCase):
         self.assertRegex(routing_section(), r"names a contract explicitly")
         self.assertRegex(routing_section(), r"verbatim")
 
+    def test_a_batch_without_parallelism_stays_collection(self):
+        section = routing_section()
+        self.assertIn("parallelism is optional", section)
+        self.assertIn("degrades to a single sequential group", section)
+        self.assertIn("One shared goal/metric", section)
+        self.assertIn("Do not choose incremental merely because a batch is serialized", section)
+
     def test_size_alone_is_not_a_signal(self):
         self.assertIn("Size alone is not a signal", routing_section())
         self.assertIn("pdca-incremental", routing_section())

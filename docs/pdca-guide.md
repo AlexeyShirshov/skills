@@ -473,7 +473,7 @@ In autonomous mode:
   with a recorded summary and no question.
 - **Autonomy does not cancel approvals** required by the environment or the user, and **does not
   expand permissions**. An unavailable approval is a STOP, not a silent pass.
-- **An auto-commit only on explicit request** (in the engineering variants). Without a request the
+- **An auto-commit only on explicit request** (in the engineering variants and in an incremental campaign). Without a request the
   tree stays uncommitted; `push` is never done.
 
 The mode holds until the user explicitly lifts it; otherwise normal applies.
@@ -793,10 +793,17 @@ differences are in the lenses, the thresholds and the additional gates.
 
 ## 11. A batch of tasks (`pdca-collection`)
 
-`pdca-collection` is a stack-neutral **level above the PDCA cycle**: a list of tasks split into
-groups. It does not duplicate or redefine the base state machine and gates but adds clustering,
-isolation and completion. Planning goes **from the tasks**: first each task's own genuine PLAN, then
-the barrier, and only then the clustering (DAG/groups) and the launching of lanes.
+`pdca-collection` is a stack-neutral **level above the PDCA cycle**: a list of **independent**
+tasks split into groups. It does not duplicate or redefine the base state machine and gates but
+adds clustering, isolation and completion. Planning goes **from the tasks**: first each task's own
+genuine PLAN, then the barrier, and only then the clustering (DAG/groups) and the launching of
+lanes.
+
+**Collection or campaign?** The selector is the goal structure, not the size of the list or the
+availability of parallelism: several independent goals → collection (parallel when ≥2 disjoint
+footprints exist, otherwise one sequential group); one shared goal/metric → `pdca-incremental`
+(step = task), even when the list is known up front. A known list alone is not a campaign, and a
+serialized batch is not a reason to switch contracts.
 
 **The role and the choice of variant.** The collection is driven by a primary orchestrator; it
 **does not edit files or run commands itself** — the infrastructure (worktrees, branches),

@@ -99,6 +99,26 @@ class RolesTests(unittest.TestCase):
         self.assertIn("нет ни одного model id", self.roles)
 
 
+class AutoCommitPolicyTest(unittest.TestCase):
+    """Auto-commit is an explicit, step-scoped policy — never a right of the skill."""
+
+    def setUp(self) -> None:
+        self.text = _plain(SKILL.read_text(encoding="utf-8"))
+
+    def test_policy_is_recorded_in_the_status(self) -> None:
+        self.assertIn("Commit policy: none | auto", self.text)
+
+    def test_only_an_accepted_step_is_committed(self) -> None:
+        self.assertIn("Коммит — только принятого шага", self.text)
+        self.assertIn("git add <paths>", self.text)
+        self.assertIn("push — никогда", self.text)
+
+    def test_brief_carries_the_commit_policy(self) -> None:
+        brief = _section(self.text, "### 2. Brief шага", "### 3. Исполнение шага")
+        self.assertIn("Commit policy", brief)
+        self.assertIn("только принятый шаг", brief)
+
+
 class InvariantTests(unittest.TestCase):
     def setUp(self) -> None:
         self.invariants = _section(

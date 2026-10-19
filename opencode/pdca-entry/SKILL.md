@@ -1,6 +1,6 @@
 ---
 name: pdca-entry
-description: "Single entry point (umbrella) for the PDCA skill family: classifies a task and hands it to exactly one contract — pdca-collection for a known list with parallel footprints («список задач», «milestone»), pdca-incremental for a long-running campaign without a whole-volume plan («инкрементами», «маленькими шагами», «двигаемся к цели»), pdca-dotnet for .NET/C#, pdca-coder for other code, pdca otherwise. Invoke when the user asks to run a task \"by the cycle\", \"via PDCA\", \"по циклу\", \"через PDCA\", \"запусти PDCA\", or names pdca-entry; the other contracts are loaded only by explicit ID. Not for ordinary tasks."
+description: "Single entry point (umbrella) for the PDCA skill family: classifies a task and hands it to exactly one contract — pdca-collection for a batch of independent tasks («список задач», «milestone»; parallel when footprints allow), pdca-incremental for a long-running campaign without a whole-volume plan («инкрементами», «маленькими шагами», «двигаемся к цели»), pdca-dotnet for .NET/C#, pdca-coder for other code, pdca otherwise. Invoke when the user asks to run a task \"by the cycle\", \"via PDCA\", \"по циклу\", \"через PDCA\", \"запусти PDCA\", or names pdca-entry; the other contracts are loaded only by explicit ID. Not for ordinary tasks."
 ---
 
 # PDCA entry: the family umbrella
@@ -14,8 +14,8 @@ verdict and do not keep a status file — the chosen contract owns all of that.
 | # | Signal | Contract |
 |---|---|---|
 | 0 | the user names a contract explicitly (`pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`, `pdca-incremental`) | that contract, verbatim — no re-classification |
-| 1 | a known list of tasks / a milestone with **≥2 disjoint footprints** | `pdca-collection` |
-| 2 | a **campaign**: one verifiable goal, no whole-volume plan, the next step is chosen after the previous accepted measurement | `pdca-incremental` |
+| 1 | a known list / milestone of **independent tasks with their own goals** (a batch) — parallelism is optional | `pdca-collection` |
+| 2 | **one** verifiable goal (even over a known list): no whole-volume plan, the next step follows the previous accepted measurement, or all tasks serve one shared metric/footprint | `pdca-incremental` |
 | 3 | .NET / C# work | `pdca-dotnet` |
 | 4 | software work in another stack | `pdca-coder` |
 | 5 | anything else with a verifiable result | `pdca` |
@@ -23,8 +23,14 @@ verdict and do not keep a status file — the chosen contract owns all of that.
 Precedence is deliberate: a .NET campaign is still a campaign (row 2) — its per-step cycle
 picks `pdca-dotnet` inside `pdca-incremental`.
 
-**Size alone is not a signal.** A large but plannable task is one cycle; a list with a single
-footprint or one shared metric is a campaign, not a collection. The campaign criteria are
+**A known list alone is not a campaign, and a batch does not require parallelism.** Several
+independent goals → `pdca-collection`: it runs in parallel when ≥2 disjoint footprints exist and
+degrades to a single sequential group when they do not (one measurement host, a host lock,
+`cap = 1`). One shared goal/metric — even across a known list — → `pdca-incremental` (step = task).
+Do not choose incremental merely because a batch is serialized, and do not choose collection for a
+single goal just because its work is listed.
+
+**Size alone is not a signal.** A large but plannable task is one cycle. The campaign criteria are
 canonical in `pdca-incremental` §«Когда выбирать»: the goal is checkable, the path is unknown,
 the steps are information-dependent, and a whole-volume plan would be a stub.
 
