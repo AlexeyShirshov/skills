@@ -72,10 +72,11 @@ any MCP and subagent dispatch are disabled for you.
 8. **Mandatory evidence completeness gate:** apply the global `pdca-dotnet` skill's
    “CHECK completeness gate — mandatory evidence contract”. Reconcile every applicable required
    row with actual evidence for the current `rv`; verify artifacts and observable N/A predicates.
-   **Separate binding rows from audit noise:** for a retained, self-imposed extra *audit* row append
-   an **append-only** disposition to the same manifest (stable row ID, classification
+   **Separate binding rows from audit noise:** for a retained, self-imposed extra *audit* row return
+   an explicit **append instruction** for the same canonical manifest (stable row ID, classification
    `diagnostic_nonbinding`, and the concrete reason/basis in the agreed scope or the priority global
-   rule); the row's original status/text is never rewritten or removed. It stays `open` yet is
+   rule); `pdca-executor` writes it and CHECK reconciles the durable result; **CHECK never writes**. The row's original
+   status/text is never rewritten or removed. It stays `open` yet is
    excluded from the set of binding acceptance blockers — report binding unmet rows and audit notes
    **separately**. Re-gather missing evidence inside CHECK within the pinned budget and existing
    permissions: missing reporting alone is neither product FAIL nor a DO iteration. A verified

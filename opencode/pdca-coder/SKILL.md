@@ -53,7 +53,8 @@ repository's `AGENTS.md`.
 ## Host requirements (roles → agents)
 
 The cycle roles are **subagent names**; the skill creates no agents and sets no models — the host
-provides them, else subagent dispatch fails and the cycle degrades to built-ins.
+provides them. A missing **required** role is a **resource blocker** (§table), not a degradation
+to built-ins.
 **PDCA orchestration is cheap-only:** the orchestrator is the **cheap-tier primary**
 (the host's primary; `build` is the shorthand throughout). A primary may drive the cycle **only when its effective host-profile tier is
 cheap** — the call is made by effective tier, **not** by agent name. A medium/strong primary (e.g.
@@ -67,12 +68,13 @@ medium/strong primary still neither drives the cycle nor dispatches `pdca-orches
 
 | Role | Agent | Required | Fallback if missing |
 |---|---|---|---|
-| GATHER (facts) | `pdca-scout` | read-only, cheap | built-in `explore` |
-| PLAN (decisions) | `pdca-planner` | read-only, no delegation | built-in `general` |
-| DO (hands) | `pdca-executor` | `edit`/`bash` allow | built-in `general` |
-| CHECK (verdict) | `pdca-check` | read-only, no delegation | built-in `general` |
-| ESCALATE | `pdca-escalate` | read-only, facts via `pdca-scout` | `general` (+ warn the user) |
-| SECURITY | `pdca-security-auditor` | read-only, facts via `pdca-scout` | built-in `explore` |
+| GATHER (facts) | `pdca-scout` | read-only, cheap | resource blocker |
+| PLAN (decisions) | `pdca-planner` | read-only, no delegation | resource blocker |
+| DO (hands) | `pdca-executor` | `edit`/`bash` allow | resource blocker |
+| CHECK (verdict) | `pdca-check` | read-only, no delegation | resource blocker |
+| ESCALATE | `pdca-escalate` | read-only, facts via `pdca-scout` | resource blocker |
+| SECURITY | `pdca-security-auditor` | read-only, facts via `pdca-scout` (required when triggered) | resource blocker |
+| RUNNER | `pdca-orchestrator` | cheap dispatcher, subagent allowlist (shared) | flat cheap primary + `Notice:` |
 
 Ready-made definitions: this skill's `assets/agents/`. Model bindings come from the **host profile's
 `agent` block** (or the project's host config `agent.<name>.model`) — **never a `model:` field in
@@ -88,11 +90,14 @@ model (works out of the box, but on one model); bind ids in the profile `agent` 
 subagents. A cheap `pdca-orchestrator` that drives a child cycle needs the same allowlist (it may not
 widen the expensive roles' permissions). Host-specific installation steps are in `docs/install.md` in the skills repository.
 
-If agents are absent and the host **allows the built-ins**, run on them (`general` for
-`pdca-executor`/`pdca-planner`/`pdca-check`, `explore` for `pdca-security-auditor`) and tell the user routing is unavailable
-(autonomous: `Notice:` in the log + final report). A host that denies `general`/`explore` (e.g. an
-expensive primary) must **never** bypass the deny: a required-but-unavailable role is a **resource blocker**
-(normal: report to the user; autonomous: `Notice:` + recorded summary), not a silent run without the role.
+A **required** role that is absent or forbidden is a **resource blocker**, not a reason to
+substitute a built-in `general`/`explore`, a different agent or a silent run without the role
+(normal: report to the user; autonomous: `Notice:` + recorded summary). A host that denies a role
+must **never** be bypassed. The **only** allowed fallback is the driver: if `pdca-orchestrator` is
+unavailable (agent absent, nested delegation forbidden or too shallow) in autonomous mode, the
+flat cheap primary drives the cycle itself and logs a `Notice:` with the durable reason; in normal
+mode it reports to the user. Optional specialist lenses selected by PLAN follow §PLAN step 4
+(explicit generic-role path), which is not a substitute for a required role.
 
 ## Orchestrator role
 
@@ -210,10 +215,13 @@ established externalness (§Escalation). Only a genuinely **new** item that make
    rewrites the same status file and logs `Replanned: <reason>`). A CHECK → DO return of revision `r`
    grows `n/3`; a return to PLAN does not. The escalation counter is canonical in §Escalation
    (trigger 2), counters in §State machine.
-4. **ACT → EXIT** — only if AGENTS.md/registries/tests are updated and verified, the status file is
-   finalized and kept (§Status file "Lifetime"), and in normal mode the
-   next-session message is printed (§ACT; not in autonomous). The executor records the phase closure
-   in the status file. You cannot close the cycle without ACT.
+4. **ACT → EXIT** — only if the accepted result is finalized, no product/test/checked artifact
+   changed after the accepted CHECK snapshot (ACT is bookkeeping/finalization only; a needed
+   change belongs to DO and the final CHECK, otherwise the verdict is invalid and the cycle loops
+   back; any AGENTS.md/registry update is bookkeeping-only), the status file is finalized and kept
+   (§Status file "Lifetime"), and in normal mode the
+   next-session message is printed (§ACT; not in autonomous). The executor records the phase
+   closure in the status file. You cannot close the cycle without ACT.
 
 **You cannot skip CHECK. You cannot close the cycle without ACT.**
 
@@ -812,7 +820,12 @@ non-committal reply is not an approval — ask for approval again when ready. Fr
 PLAN → DO boundary: the cycle finishes PLAN, persists the status file, and yields control
 back to the collection parent with a `plan_handoff` — same task identity, same `N`/`r`/`n`,
 same `selected_variant` — instead of starting DO. The parent later resumes **the same
-cycle** from DO after an applicability check. This is a caller-driven handoff, not a
+cycle** from DO after an applicability check through the roles (`pdca-scout` facts,
+`pdca-planner` decision) — never an unconditional second PLAN; a genuine incompatibility follows
+the base revision rules and needs a **fresh approval**, which the stale approval never authorizes;
+approval resume does not unconditionally replan or add a step. In normal mode the resume also
+validates the durable pending-approval ref (stable task/`cycle_id`, same `N`/`r`/criteria) before
+DO. This is a caller-driven handoff, not a
 standalone-autonomous pause and not a user approval: standalone normal mode still starts only after the
 user approves the plan, and standalone autonomous still starts DO immediately.
 
@@ -903,10 +916,17 @@ documentation/format skills; only available/permitted ones are named.
 One object reconciles CHECK with DO: a single machine-readable **evidence manifest**. DO writes it
 at the path PLAN pins in the status file; CHECK reads it first. It is **frozen at the DO→CHECK
 boundary** and bound to the frozen result identity (plan revision `r` + the frozen input/artefact
-identity, e.g. commit/tree or output hash). During CHECK it is **append-only**: a re-gather adds
-evidence or an `open` reason to existing entries; entries are never rewritten and no second
-manifest is started. A new plan revision starts a new manifest version; the superseded one is kept.
-Each entry maps one **required criterion ID** to its evidence **by reference, not by copy**:
+identity, e.g. commit/tree or output hash) **and to an immutable evidence generation** keyed by
+`task/N/r/n` + that identity. The generation is an evidence-snapshot identity, **not** the
+criterion revision `rv`; it distinguishes attempts, not criteria. During CHECK the **same
+generation** is append-only: a re-gather adds evidence or an `open` reason to existing entries;
+entries are never rewritten and no second manifest is started. **CHECK never writes**: it returns
+the disposition decision and the exact append instruction; `pdca-executor` writes it into the same
+canonical manifest, and CHECK reconciles the durable result. A new plan revision starts a new
+manifest generation; the superseded one is kept. A **CHECK → DO** return under an **unchanged
+plan** also starts a **new immutable generation** for the new attempt/snapshot, retaining the prior
+one — without a fake replan or reset of `r`/`n`. Each entry maps one **required criterion ID** to
+its evidence **by reference, not by copy**:
 - `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria
   / unit criteria) of the pinned plan;
 - `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
@@ -919,10 +939,11 @@ BINDING/APPLICABLE `required` entry is `open`.** If the project ships a manifest
 
 **Binding/applicability disposition (append-only).** The frozen manifest is never rewritten and no
 row is ever deleted: a pre-existing, self-imposed extra *audit* row stays in place with its
-original `status`/text and is never quietly turned into `met`. CHECK appends an explicit
-applicability disposition to that row inside the same canonical manifest — a stable row ID, the
-classification `diagnostic_nonbinding`, and the concrete reason/basis in the agreed scope or the
-priority global rule (the plan fixes the exact field names; no second competing manifest). A raw
+original `status`/text and is never quietly turned into `met`. CHECK returns an explicit
+applicability disposition instruction; `pdca-executor` appends it inside the same canonical
+manifest — a stable row ID, the classification `diagnostic_nonbinding`, and the concrete
+reason/basis in the agreed scope or the priority global rule (the plan fixes the exact field names;
+no second competing manifest). CHECK then reconciles the durable row. A raw
 row may thus stay `open` while it is **excluded from the set of binding acceptance blockers**: the
 final receipt shows binding unmet criteria and audit notes separately, so a PASS on the genuine
 gates does not contradict a retained historical audit `open`.
@@ -940,10 +961,16 @@ completeness (a whole transitive reference graph, retrospective hashes, executio
 
 **Default evidence dir (defined by the skill, not by overlays or agent settings):**
 `.pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
-revision `rv`; the frozen manifest, its logs and per-row artifacts live here. The `.pdca/` root
-is fixed (§Skill workspace in the base `pdca` contract) — the plan chooses `<task>` and `rv`, an
-overlay never relocates the root. The check role's scoped `read` grants it generically, so the
-concrete path is defined only here.
+revision `rv`; this is the evidence **root**. Each attempt's frozen manifest, logs and per-row
+artifacts live in a **fresh child**, `.pdca/<task>/rv<k>/attempts/c<N>-r<r>-n<n>/` (e.g. `c1-r1-n1`,
+`c1-r1-n2`; `c<N>` is the cycle, so the next cycle never reuses the previous child at the same
+`rv`/`r`/`n`). The status file records the attempt identity `task/N/r/n`, the frozen snapshot hash and
+the authoritative `manifest.json` path **before DO→CHECK**; a CHECK→DO return under the same
+contract starts the next `n` in a new child, the same CHECK uses its child append-only, and prior
+manifests are retained. `rv` changes only with the criteria/contract, not with an implementation fix
+under the same criteria. The `.pdca/` root is fixed (§Skill workspace in the base `pdca` contract) —
+the plan chooses `<task>` and `rv`, an overlay never relocates the root. The check role's scoped
+`read` grants it generically, so the concrete path is defined only here.
 
 ## CHECK: audit checklist (generic)
 
@@ -1137,11 +1164,15 @@ Order:
    steps 2–3 — **do not duplicate** what docs/AGENTS.md/tests/registries/issues already record.
    Search the graph first and **update/extend the existing entity** (mark superseded observations)
    instead of adding a near-duplicate. Nothing transferable — **skip**.
-2. **AGENTS.md/tests** updated (`pdca-executor`); project registries — per the project rules.
-   (Product docs are the **DO** stream and are verified by the **CHECK** doc lens — ACT does not edit them.)
+2. **AGENTS.md/registries — bookkeeping only** (`pdca-executor`); project registries — per the
+   project rules. ACT does **not** add or edit tests, product code or any checked artifact: such
+   work belongs to DO and is verified by the final CHECK. A stable-instruction edit that can
+   affect the checked result is made **before** the final CHECK; otherwise the accepted verdict
+   is invalid and the cycle loops back. (Product docs are the **DO** stream and are verified by
+   the **CHECK** doc lens — ACT does not edit them.)
 3. **Stable rules** (what must always apply) — into the project
-   PDCA overlay/AGENTS.md (`pdca-executor`). **Do not write the cycle state there**: instructions are loaded
-   into every session.
+   PDCA overlay/AGENTS.md (`pdca-executor`), under the same bookkeeping-only rule. **Do not write
+   the cycle state there**: instructions are loaded into every session.
 4. **Cycle status file — finalized by `pdca-executor`** (§Status file): `build` passes it the reports
    (the `pdca-check` verdict, `pdca-executor`'s run results, `pdca-scout`'s diff facts) and `pdca-executor` fills in
    Done/Verified, Next plan, Changed files. The next session's handoff in manual mode, the next

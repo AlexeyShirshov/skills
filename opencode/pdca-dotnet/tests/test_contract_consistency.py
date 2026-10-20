@@ -750,10 +750,10 @@ class ApprovalGateAndFallbackGuardTest(unittest.TestCase):
         self.assertIn("Notice:", self.autonomous)
 
     def test_no_silent_run_without_a_required_role(self):
-        # An unavailable required role is a resource blocker, never a silent run
-        # without the role; dropping that clause turns this test red.
+        # An unavailable required role is a resource blocker: no substitute and no
+        # silent execution without the role. Dropping that clause turns this test red.
         self.assertIn("resource blocker", self.host)
-        self.assertIn("not a silent run without the role", self.host)
+        self.assertIn("never execute silently without the role", self.host)
         self.assertIn("must never bypass the deny", self.host)
         self.assertIn("Notice:", self.host)
         self.assertNotRegex(self.host, r"(?i)run silently without")

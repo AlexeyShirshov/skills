@@ -72,8 +72,8 @@ class DefinitionTests(unittest.TestCase):
         when = _section(self.text, "## Когда выбирать", "## Инварианты кампании")
         self.assertIn("известный список задач", when)
         self.assertIn("ALL-barrier", when)
-        self.assertIn("не выбирает коллекцию", when)
-        self.assertIn("≥2", when)
+        self.assertIn("независимыми целями", when)
+        self.assertIn("свойство расписания", when)
 
 
 class RolesTests(unittest.TestCase):
@@ -142,7 +142,7 @@ class InvariantTests(unittest.TestCase):
         self.assertIn("свежая карта разрыва", self.invariants)
 
     def test_frozen_goal_recipe_and_no_parallel_steps(self) -> None:
-        self.assertIn("Менять их по ходу — значит менять цель", self.invariants)
+        self.assertIn("Смена цели, рецепта, порога или флора", self.invariants)
         self.assertIn("Один шаг за раз", self.invariants)
 
 

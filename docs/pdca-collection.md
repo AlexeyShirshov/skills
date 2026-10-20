@@ -23,10 +23,12 @@ with a verifiable result will do.
 
 **When to pick `pdca-collection`:**
 
-- you have a **batch of tasks** or a milestone that must be taken through PDCA;
+- you have a **batch of tasks with independent goals** or a milestone that must be taken through
+  PDCA (a group may serialise tasks; parallelism is a schedule property, not an entry condition);
 - the tasks are **independent** or fall into small related chains;
-- their **footprint** (which files and modules they touch) mostly does not intersect;
-- you want a **parallel** run rather than a long sequence.
+- their **footprint** (which files and modules they touch) mostly does not intersect — a shared
+  footprint means fewer lanes, not a different contract;
+- you want per-task acceptance and (optionally) a **parallel** run rather than one long chain.
 
 **When not to pick it:** if there is exactly one task and no independent items, that is an ordinary
 PDCA cycle (`pdca-coder`, `pdca-dotnet` or the universal `pdca`). An empty input is not a case for
@@ -49,10 +51,12 @@ plans, `pdca-executor` does, `pdca-check` renders the verdict, `pdca-escalate` e
 for the universal `pdca` the same roles are called `pdca-planner`, `pdca-executor`, `pdca-check` and
 `pdca-escalate`, and facts are still gathered by `pdca-scout`. The only addition is the **wrapper agent
 `pdca-orchestrator`** (the cheap tier), which runs **one** group: it drives that group as a single
-parallel stream of work. It conducts each task's own PLAN already in phase P (the `COLLECTION TASK
-PLAN` input) and stops at the PLAN→DO boundary, handing control to the collection
+parallel stream of work. It conducts each `cycle` task's own PLAN already in phase P (the
+`COLLECTION TASK PLAN` input) and stops at the PLAN→DO boundary, handing control to the collection
 (`plan_handoff`); in the lane **the same** cycle continues from DO — by default there is no second
-PLAN.
+PLAN. For a `campaign` unit the same input runs the **preparation** route (planner/scout/executor
+produce the immutable preparation document) and returns a `preparation_handoff`; no unit-level
+variant, baseline or future step plan is demanded there.
 
 The wrapper has hard constraints, and this matters: `pdca-orchestrator` **does not make
 decisions**. It does not decide that a task is infeasible, not ready or independent, does not choose
@@ -62,8 +66,10 @@ phase), not to the user. It also **does not edit files or run commands**: the in
 of the collection's **primary orchestrator** — that is who keeps the tracking, watches the gates and
 makes the merge decision.
 
-Separately, the **cycle variant is chosen per task**: `.NET/C#` → `pdca-dotnet`, other code →
-`pdca-coder`, otherwise → the universal `pdca` (`pdca` by default). The base of `pdca-coder` and
+Separately, the **cycle variant is chosen per `cycle` unit**: `.NET/C#` → `pdca-dotnet`, other code →
+`pdca-coder`, otherwise → the universal `pdca` (`pdca` by default). A `campaign` unit has no
+unit-level `selected_variant`: its `pdca-planner` selects the concrete step variant by the
+campaign's stack rule and persists it before the step. The base of `pdca-coder` and
 `pdca-dotnet` is identical, so the collection really is stack-neutral. The top-level primary
 orchestrator (the main session driving the whole collection) also does not edit files or run
 commands.
@@ -72,13 +78,31 @@ commands.
 
 ### P — the tasks' own PLANs, the barrier, clustering
 
-The order is strict: **first the real PLAN of every task, then the ALL-barrier, and only then the
-DAG and the groups.** `pdca-orchestrator` conducts the task's own PLAN phase (of its variant) in the
-**COLLECTION TASK PLAN** input: `pdca-scout` gathers facts, `pdca-planner` makes decisions, `pdca-executor` persists
-the status. The task stops at the PLAN→DO boundary and hands control to the collection (a
-`plan_handoff`); no code is written at this step. Until the own PLAN of **all** tasks is ready
-(`plan_state=ready`), the DAG is not built and an early DO is forbidden; a task without a
-meaningful plan remains a gap and does not pass the barrier.
+The order is strict: **first the real PLAN of every `cycle` task (or the preparation document of
+every `campaign` unit), then the ALL-barrier, and only then the DAG and the groups.**
+`pdca-orchestrator` conducts the route matching the unit's `execution_kind` in the
+**COLLECTION TASK PLAN** input: for `cycle`, `pdca-scout` gathers facts, `pdca-planner` makes
+decisions, `pdca-executor` persists the status, and the task stops at the PLAN→DO boundary with a
+`plan_handoff`; for `campaign`, the same roles produce the immutable preparation document,
+`preparation_state=ready` and the single `preparation_ref`, returning a `preparation_handoff`.
+No code is written at this step. Until the own PLAN of **all** `cycle` tasks is ready
+(`plan_state=ready`) and every `campaign` unit is `preparation_state=ready`, the DAG is not built
+and an early DO is forbidden; a task without a meaningful plan remains a gap and does not pass the
+barrier. A campaign unit does not need a unit-level `selected_variant`, baseline, runtime status,
+future step plans or a step count at the barrier.
+
+Planning is not serialized: `COLLECTION TASK PLAN` may be dispatched for every unit without a
+ready plan at once, up to `plan_cap` (4 by default); the barrier constrains the **start** of the
+DAG and the lanes, not the order of the PLANs. The writes of the collection status file are
+serialized — the primary/`pdca-planner` sets the semantics of the rows and `pdca-executor` performs
+the physical write — only the rows go in one at a time, not the planning itself.
+
+A parallel PLAN does not fix the schedule: the groups and the order are decided only after the
+barrier, so a sequential chain of tasks inside one group is a normal outcome. Code overlap is
+resolved there too: a footprint reservation is a claim for clustering, not a lock — a PLAN
+*declares* the write footprint and its uncertainty without blocking other plans. Intersecting
+footprints do not prevent parallel planning — they forbid parallel **lanes**: such units land in
+one group and run sequentially, and the footprints of the groups do not intersect after clustering.
 
 Separately, the contract closes the **re-entry** case: after a terminal `incomplete`/STOP the
 previous terminal cause is a **mandatory input** to the task's own PLAN, and `pdca-planner` either proves
@@ -206,8 +230,13 @@ not carried through.
 - **The skill itself does not grant the right to commit/merge.** Permission for auto-commits on
   `collection/**` branches and for `merge --no-ff` is given by the **project overlay** (for example,
   a project rule) or by an **explicit user request**; the skill does not extend global `AGENTS.md`.
-  Without permission there are no commits or merges: the group proceeds without them, unfinished
-  results are saved as a patch, and the group is marked `incomplete`.
+  For **`>=2` groups** a known incompatibility (an explicit no-commit request, commits/merge
+  unavailable or forbidden) is a **preflight blocker before worktrees/lanes are allocated** — a
+  group that knowingly cannot make the mandatory tips is not executed. Missing permission is not
+  authorization. A **single group** may work in the current tree without commits if that is
+  permitted; it needs no git integration. If permission is revoked mid-lane, the run takes a safe
+  stop, preserving refs and commits and saving the uncommitted task/group changes as a patch;
+  `incomplete` follows only an explicit terminal outcome, and no further branch-chain work is done.
 - **Push — never.** That is not part of the collection in any mode.
 - **Merge conflict → abort → escalate.** There is no automatic "resolution" of a conflict; an
   escalation only returns a decision, and `pdca-executor` executes again.
@@ -227,11 +256,14 @@ not carried through.
 - **Fallback.** The flat primary kicks in when `pdca-orchestrator` is unavailable: the agent is
   absent, `subagent_depth` < 2, or the host forbids a subagent to delegate (no nested
   delegation). Then there is no one to orchestrate, and the primary takes the groups on itself: it
-  drives one task per group itself and starts the next when the previous finishes, and in phase P it
-  likewise conducts each task's `COLLECTION TASK PLAN` itself (through its variant's
-  `pdca-planner`/`pdca-executor`/`pdca-scout`), respecting the ALL-barrier, and continues the saved PLAN in the lane
-  from DO. In autonomous mode the fallback is marked with a `Notice:` line and the recorded reason,
-  in normal mode with a message to the user; a host prohibition is not bypassed.
+  drives **one current task per group**, starting the next when the previous finishes. Independent
+  groups keep the allowed parallelism — up to `cap` groups at once when the host permits it; if the
+  host provides no concurrency, the same fallback runs the groups sequentially (`cap` is an upper
+  bound, not a guarantee). Fallback substitutes the driver only, never a required role. In phase P
+  it likewise conducts each unit's `COLLECTION TASK PLAN` itself — the own PLAN of a `cycle` or the
+  preparation route of a `campaign` — respecting the ALL-barrier, and continues the saved PLAN in
+  the lane from DO. In autonomous mode the fallback is marked with a `Notice:` line and the recorded
+  reason, in normal mode with a message to the user; a host prohibition is not bypassed.
 
 ## 7. Composition: a batch may contain campaigns
 
@@ -261,10 +293,13 @@ evidence by the frame's recipe and the campaign runtime status `Status: running`
 `preparation_ref` and writing `campaign_ref`. It is not a step, is not credited and does not change
 the product; the preparation records before the barrier are allowed, while a substantive bootstrap
 and a change-producing DO are not. The runtime stores `preparation_ref` as a **reference**, not as a
-copy of the frame. Renegotiating the goal, the target/floor criteria, the rules for deriving them,
-the threshold, the success criteria or the stop rules is not "a clarification": it goes through
-`pdca-planner` and the active approval, then creates a **new immutable revision** of the preparation
-document, updates `preparation_ref` and keeps the previous revision
+copy of the frame. A **preparation revision** is admissible only for the method, schedule, surface
+bounds or other frame parts **compatible with unchanged goal/recipe/threshold/floor and already
+given approvals**; it goes through `pdca-planner` and the active approval, creates a new immutable
+revision, updates `preparation_ref` and keeps the previous one. Changing the **goal, measurement
+recipe, threshold or floor** is not a revision: it is a **new campaign with a new baseline** and a
+new frame/unit, even when the collection id stays. Silent weakening and backfill of accepted
+criteria are forbidden; old immutable revisions are never rewritten
 (`opencode/pdca-incremental/SKILL.md §Статус-файл кампании`).
 
 **Readiness is not completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
@@ -306,12 +341,24 @@ started lanes and the already accepted results into account, with no automatic
 
 **The driver is the same cheap runner.** In a collection the campaign is led by the existing
 `pdca-orchestrator` in `mode=collection-lane`: it receives the unit's `execution_kind`, the loaded
-campaign contract and the dispatch rule, and leads the campaign state machine and the current step's
-cycle **inline** in one lane session. There is no campaign agent and no new `Task` level; a campaign
-is always sequential — one step at a time, one lane, no internal parallelism. In normal mode every
-actual step passes a full PLAN of its variant and is approved under the active contract; the brief
-neither replaces the PLAN nor constitutes approval
-(`opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane)`).
+campaign contract, the `preparation_ref`/`campaign_ref` and the **dispatch selection rule supplied
+by the caller** (the campaign's stack rule; the runner does not choose it), and leads the campaign
+state machine and the current step's cycle **inline** in one lane session. There is no campaign
+agent and no new `Task` level; a campaign is always sequential — one step at a time, one lane, no
+internal parallelism. The concrete step variant is selected by `pdca-planner` per the stack rule and
+persisted in the durable step record before the step, not before bootstrap.
+
+In normal mode every actual step passes a full PLAN of its variant. The driver may plan, but it
+**never obtains or assumes approval** and never starts the gated DO without the matching recorded
+approval: `pdca-executor` persists a durable pending approval ref bound to the stable
+task/`cycle_id`, the exact `N`/`r`/criteria set (`N` is not globally unique), the driver returns a
+checkpoint to the primary, the primary asks the user, and the executor records the approval against
+the same ref. Resume validates the match and first checks applicability through the roles: an
+applicable plan continues the **same** step; a stale plan gets a genuine planner revision and a
+**fresh approval**, which the stale approval never authorizes. Approval resume does not
+unconditionally replan or add a step; the unit is `disposition=paused` / `in-progress` while
+waiting, not `done`/`incomplete`, and compaction is safe
+(`opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane) · §Approval protocol (normal mode)`).
 
 **Completion and commits stay on the collection's level.** The campaign's acceptance (`met`) and the
 collection's common verification are different events: a campaign's success does not replace the
@@ -325,11 +372,13 @@ is a preflight blocker before the lanes are allocated
 host's observable capability is checked: the mandatory roles and contracts, nested delegation for the
 driver, `pdca-orchestrator` itself and the `escalate → scout` edge — with no dummy substantive work
 and no invented host number. Exactly one fallback exists: if the lane driver is unavailable, the flat
-cheap primary drives the work itself, one lane at a time, marking this with a `Notice:` line and a
-durable reason, still dispatching the roles and not acquiring their rights. An unavailable
-**mandatory role** is a resource stop of the run; an unavailable **cycle contract** fails closed
-without substituting a "similar" variant; a late discovery is a safe pause before the dependent
-action, not a weakened gate (`opencode/pdca-collection/SKILL.md §Fallback`).
+cheap primary drives the work itself, one current task per group; independent groups keep the
+allowed parallelism up to `cap` when the host permits, otherwise the fallback serializes them,
+marking this with a `Notice:` line and a durable reason, still dispatching the roles and not
+acquiring their rights. An unavailable **mandatory role** is a resource stop of the run; an
+unavailable **cycle contract** fails closed without substituting a "similar" variant; a late
+discovery is a safe pause before the dependent action, not a weakened gate
+(`opencode/pdca-collection/SKILL.md §Fallback`).
 
 ## 8. Where to go next
 
@@ -361,7 +410,7 @@ precedence.
 | --- | --- |
 | The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md §Роль` |
 | Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md §Роль` |
-| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
+| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
 | P: the status file as the only progress mirror (per-group and per-task tables), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
 | D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md §D — инфраструктура, трекинг, merge` |
 | C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md §C — верификация (стандартный CHECK)` |
@@ -370,7 +419,7 @@ precedence.
 | A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md §Неактуальный PLAN и пересмотр расписания` |
 | The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md §Git-модель` |
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md §Сбой (failure semantics) · §Статус коллекции` |
-| Parameters: cap = 4, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Отчёт · §Параметры` |
+| Parameters: `cap = 4` for lanes, `plan_cap = 4` for the PLAN phase, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Отчёт · §Параметры` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md §Связь с базовым PDCA · §Fallback` |
 | Composition: the two execution forms (`execution_kind` ≠ `selected_variant`), the recursion ban, the form decided by the collection PLAN | `opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения` |
 | The barrier by unit kind, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация · §A.1 Маршрутизация исходов кампании`; `opencode/pdca-incremental/SKILL.md §Статус-файл кампании` |

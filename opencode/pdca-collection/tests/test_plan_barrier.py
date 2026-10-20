@@ -102,6 +102,112 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         self.assertIn("ALL-barrier", p, "§P lacks the 'ALL-barrier' token")
         self.assertIn("барьер", p, "§P lacks the Russian 'барьер' concept")
 
+    def test_p_section_allows_parallel_plans(self):
+        # The barrier constrains the START of DAG/lanes, not the order of PLANs.
+        p = self._p_section()
+        self.assertIn(
+            "параллельно",
+            p,
+            "§P must state that the units' own PLANs run in parallel",
+        )
+        self.assertIn(
+            "plan_cap",
+            p,
+            "§P must name the PLAN concurrency ceiling 'plan_cap'",
+        )
+        self.assertIn(
+            "а не про их последовательность",
+            p,
+            "§P must state that the barrier is about readiness, not PLAN order",
+        )
+        self.assertIn(
+            "одним блоком",
+            p,
+            "§P must say the PLAN dispatches go out in one batch, not one by one",
+        )
+
+    def test_parallel_planning_does_not_fix_the_schedule(self):
+        # Parallel PLANs must not be read as parallel lanes: code overlap is
+        # resolved by clustering, and a sequential chain in one group is normal.
+        p = self._p_section()
+        self.assertIn(
+            "не фиксирует расписание",
+            p,
+            "§P must state that a parallel PLAN does not fix the schedule",
+        )
+        self.assertIn(
+            "пересекающ",
+            p.lower(),
+            "§P must state that intersecting footprints are resolved by clustering",
+        )
+        self.assertIn(
+            "одну группу",
+            p,
+            "§P must state that overlapping units land in one group",
+        )
+        self.assertIn(
+            "заявляет",
+            p,
+            "§P must state that a PLAN declares the footprint instead of reserving it",
+        )
+
+    def test_footprint_reservation_is_a_claim_not_a_lock(self):
+        # The reservation must stay a real reservation (used by clustering), while
+        # parallel planning must not be blocked by it.
+        p = self._p_section()
+        self.assertIn(
+            "резервац",
+            p.lower(),
+            "§P must keep the footprint reservation concept",
+        )
+        self.assertIn(
+            "не блокировк",
+            p.lower(),
+            "§P must say the reservation is a claim, not a lock",
+        )
+        self.assertNotIn(
+            "ничего не бронирует",
+            p.lower(),
+            "§P must not deny the reservation: clustering relies on it",
+        )
+
+    def test_status_writes_are_serialized_not_single_owner(self):
+        # One writer at a time, but the physical write belongs to pdca-executor
+        # (§Статус), not to the primary directly.
+        p = self._p_section()
+        self.assertIn("сериализуется", p, "§P must say the status writes are serialized")
+        self.assertIn(
+            "pdca-executor",
+            p,
+            "§P must name pdca-executor as the physical writer of the status file",
+        )
+        self.assertIn("§Статус", p, "§P must defer the write ownership to §Статус")
+        self.assertNotIn(
+            "пишет один владелец",
+            p,
+            "§P must not claim the primary is the only writer",
+        )
+
+    def test_parameters_declare_plan_concurrency(self):
+        params = _plain(_section(self.skill, "## Параметры", "## Связь с базовым PDCA"))
+        self.assertTrue(params, "SKILL.md §Параметры section not found")
+        self.assertIn(
+            "Потолок параллелизма PLAN",
+            params,
+            "§Параметры must declare a separate PLAN concurrency cap",
+        )
+        self.assertIn("plan_cap", params, "§Параметры must name 'plan_cap'")
+        self.assertIn(
+            "лейнов",
+            params,
+            "§Параметры must keep the lane cap distinct from the PLAN cap",
+        )
+        self.assertIn(
+            "хоста",
+            params,
+            "§Параметры must bound plan_cap by the host's real parallelism",
+        )
+
     def test_plan_state_values_declared(self):
         skill = _plain(self.skill)
         windows = [

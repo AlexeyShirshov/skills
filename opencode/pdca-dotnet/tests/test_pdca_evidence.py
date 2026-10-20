@@ -426,6 +426,91 @@ class ScopeTests(FixtureCase):
         self.assertEqual(self.read_bytes(self.fx["manifest"]), before)
 
 
+class AttemptSnapshotTests(FixtureCase):
+    """Operational recipe: same contract, new attempt => fresh child output, prior retained."""
+
+    def _attempt(self, name):
+        return os.path.join(self.fx["output"], "attempts", name)
+
+    def _generate_cli(self, output):
+        return harness.run_cli(
+            ["generate", "--repo", ".", "--contract", self.fx["contract"],
+             "--output", output],
+            self.fx["repo"],
+        )
+
+    def _lint_cli(self, manifest):
+        return harness.run_cli(
+            ["lint", "--repo", ".", "--manifest", manifest],
+            self.fx["repo"],
+        )
+
+    def test_same_contract_new_attempt_uses_fresh_child_and_preserves_prior(self):
+        first = self._attempt("c1-r1-n1")
+        second = self._attempt("c1-r1-n2")
+
+        rc, _out, err = self._generate_cli(first)
+        self.assertEqual(rc, 0, err)
+        first_manifest = os.path.join(first, "manifest.json")
+        with open(first_manifest, "r", encoding="utf-8") as stream:
+            first_doc = json.load(stream)
+        self.assertEqual(first_doc["contract_rv"], 2)
+        self.assertEqual(self._lint_cli(first_manifest)[0], 0)
+
+        first_digest = harness.publication_digest({"output": first})
+        first_bytes = self.read_bytes(first_manifest)
+
+        # The product changes under the same contract revision.
+        with open(os.path.join(self.fx["repo"], "tool.py"), "w", encoding="utf-8") as stream:
+            stream.write("x = 3\n")
+
+        # Re-using the old child must hit the helper's stale preflight refusal.
+        rc, _out, err = self._generate_cli(first)
+        self.assertEqual(rc, 2)
+        self.assertIn("preflight: existing evidence is stale", err)
+        self.assertEqual(self.read_bytes(first_manifest), first_bytes)
+        self.assertEqual(harness.publication_digest({"output": first}), first_digest)
+
+        # A fresh child generates and lints; the prior snapshot stays intact.
+        rc, _out, err = self._generate_cli(second)
+        self.assertEqual(rc, 0, err)
+        second_manifest = os.path.join(second, "manifest.json")
+        with open(second_manifest, "r", encoding="utf-8") as stream:
+            second_doc = json.load(stream)
+        self.assertEqual(second_doc["contract_rv"], 2)
+        self.assertNotEqual(first_doc["tree"], second_doc["tree"])
+        self.assertEqual(self._lint_cli(second_manifest)[0], 0)
+        self.assertEqual(self.read_bytes(first_manifest), first_bytes)
+        self.assertEqual(harness.publication_digest({"output": first}), first_digest)
+
+    def test_next_cycle_same_rv_uses_distinct_child_and_preserves_prior(self):
+        cycle_one = self._attempt("c1-r1-n1")
+        cycle_two = self._attempt("c2-r1-n1")
+
+        rc, _out, err = self._generate_cli(cycle_one)
+        self.assertEqual(rc, 0, err)
+        first_manifest = os.path.join(cycle_one, "manifest.json")
+        with open(first_manifest, "r", encoding="utf-8") as stream:
+            first_doc = json.load(stream)
+        first_bytes = self.read_bytes(first_manifest)
+        first_digest = harness.publication_digest({"output": cycle_one})
+
+        # Same task, same rv/r/n, next cycle N+1: a distinct child, not a collision.
+        rc, _out, err = self._generate_cli(cycle_two)
+        self.assertEqual(rc, 0, err)
+        second_manifest = os.path.join(cycle_two, "manifest.json")
+        with open(second_manifest, "r", encoding="utf-8") as stream:
+            second_doc = json.load(stream)
+        self.assertNotEqual(cycle_one, cycle_two)
+        self.assertTrue(os.path.isfile(second_manifest))
+        self.assertEqual(first_doc["contract_rv"], second_doc["contract_rv"])
+        self.assertEqual(first_doc["tree"], second_doc["tree"])
+        self.assertEqual(self._lint_cli(first_manifest)[0], 0)
+        self.assertEqual(self._lint_cli(second_manifest)[0], 0)
+        self.assertEqual(self.read_bytes(first_manifest), first_bytes)
+        self.assertEqual(harness.publication_digest({"output": cycle_one}), first_digest)
+
+
 class PublicationTests(FixtureCase):
     def test_injected_failure_rolls_back(self):
         os.environ[pdca.FAIL_BEFORE_PUBLISH_ENV] = "1"

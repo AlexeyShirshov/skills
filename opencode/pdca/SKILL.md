@@ -210,7 +210,9 @@ bad plan found by review is a CHECK → PLAN).
    `n/3`; a return to PLAN does not. The escalation counter is canonical in §Escalation
    (trigger 2), counters in §State machine.
 4. **ACT → EXIT** — only if the accepted result is finalized, the status file is finalized
-   and kept (§Durable status → "Lifetime"), and in normal mode the next-session message is
+   and kept (§Durable status → "Lifetime"), no product/test/checked artifact changed after the
+   accepted CHECK snapshot (ACT is bookkeeping only; a needed change loops back), and in normal
+   mode the next-session message is
    printed (§ACT; not in autonomous). The executor records the phase closure in the status
    file. You cannot close the
    cycle without ACT.
@@ -269,7 +271,12 @@ severity, evidence pointers, and correction routing (**implementation defect →
 
 **ACT** finalizes only a result **accepted by the current CHECK** — it is not a new fork:
 record conclusions, limitations, the actual status and the handoff; finalize the status file.
-Cycle completion is possible only through CHECK with an accepted (`met`) result plus ACT,
+ACT performs **bookkeeping and finalization only**: it does not change product, tests or any
+checked artifact. Work found during finalization is either done in DO and re-checked by the final
+CHECK, or invalidates the accepted snapshot and loops back (implementation defect → DO, wrong plan
+→ PLAN); it is never slipped in under ACT. A stable-instruction edit that affects the checked
+result must happen **before** the final CHECK — otherwise the verdict is invalid and the loop-back
+applies. Cycle completion is possible only through CHECK with an accepted (`met`) result plus ACT,
 never on the executor's assertion. `rework`/`replan` are not part of ACT — they are
 **loop-backs before ACT** (implementation defect → DO, wrong plan → PLAN, §CHECK).
 
@@ -285,10 +292,19 @@ recorded.
 One object reconciles CHECK with DO: a single machine-readable **evidence manifest**. DO writes it
 at the path PLAN pins in the status file; CHECK reads it first. It is **frozen at the DO→CHECK
 boundary** and bound to the frozen result identity (plan revision `r` + the frozen input/artefact
-identity, e.g. commit/tree or output hash). During CHECK it is **append-only**: a re-gather adds
+identity, e.g. commit/tree or output hash) **and to an immutable evidence generation** keyed by
+`task/N/r/n` + that frozen identity. The generation is an evidence-snapshot identity, **not** the
+criterion revision `rv`: `rv` belongs to criteria/plan, the generation distinguishes successive
+attempts. During CHECK the **same generation** is append-only: a re-gather adds
 evidence or an `open` reason to existing entries; entries are never rewritten and no second
-manifest is started. A new plan revision starts a new manifest version; the superseded one is kept.
-Each entry maps one **required criterion ID** to its evidence **by reference, not by copy**:
+manifest is started. **CHECK never writes**: it returns the disposition decision and the exact
+append instruction; `pdca-executor` writes it into the same canonical manifest, and CHECK
+reconciles the durable result.
+A new plan revision starts a new manifest generation; the superseded one is kept. A **CHECK → DO**
+return under an **unchanged plan** also starts a **new immutable generation** for the new
+attempt/snapshot — the prior generation is retained — even though `r`/`n` follow the base counters
+(no fake replan or reset is introduced for the sake of a new file). Each entry maps one **required
+criterion ID** to its evidence **by reference, not by copy**:
 - `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria
   / unit criteria) of the pinned plan;
 - `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
@@ -301,10 +317,11 @@ BINDING/APPLICABLE `required` entry is `open`.** If the project ships a manifest
 
 **Binding/applicability disposition (append-only).** The frozen manifest is never rewritten and no
 row is ever deleted: a pre-existing, self-imposed extra *audit* row stays in place with its
-original `status`/text and is never quietly turned into `met`. CHECK appends an explicit
-applicability disposition to that row inside the same canonical manifest — a stable row ID, the
-classification `diagnostic_nonbinding`, and the concrete reason/basis in the agreed scope or the
-priority global rule (the plan fixes the exact field names; no second competing manifest). A raw
+original `status`/text and is never quietly turned into `met`. CHECK returns an explicit
+applicability disposition instruction for that row; `pdca-executor` appends it inside the same
+canonical manifest — a stable row ID, the classification `diagnostic_nonbinding`, and the concrete
+reason/basis in the agreed scope or the priority global rule (the plan fixes the exact field names;
+no second competing manifest). CHECK then reconciles the durable row. A raw
 row may thus stay `open` while it is **excluded from the set of binding acceptance blockers**: the
 final receipt shows binding unmet criteria and audit notes separately, so a PASS on the genuine
 gates does not contradict a retained historical audit `open`.
@@ -321,7 +338,15 @@ completeness (a whole transitive reference graph, retrospective hashes, executio
 **diagnostic notes**, and its absence never forces `incomplete`/STOP or a new round.
 
 **Default evidence dir:** **`.pdca/<task>/rv<k>/`** — `<task>` = kebab-slug, `<k>` = plan/criterion
-revision `rv`; the frozen manifest, its logs and per-row artifacts live here; the `.pdca/` root is
+revision `rv`; this is the evidence **root**. The frozen manifest, its logs and per-row artifacts of
+an attempt live in a **fresh child** of that root, `.pdca/<task>/rv<k>/attempts/c<N>-r<r>-n<n>/`
+(examples: `c1-r1-n1`, `c1-r1-n2`; `c<N>` is the cycle, so the next cycle never reuses the
+previous child at the same `rv`/`r`/`n`). The status file records the attempt identity `task/N/r/n` plus the
+frozen snapshot hash **and pins the authoritative `manifest.json` path inside that child before the
+DO→CHECK boundary**. A CHECK→DO return under the same contract is the next `n` in a **new** child;
+the same CHECK keeps using its own child append-only, and prior manifests are retained, never
+overwritten. `rv` changes only with the criteria/contract (including a plan revision that adds a
+required criterion), not with an implementation fix under the same criteria. The `.pdca/` root is
 fixed (§Skill workspace), the plan chooses `<task>` and `rv` (the status dir is `.pdca/status/`,
 §Durable status). The check role's scoped `read` grants `.pdca/**` generically, so the concrete path
 is defined only here.
@@ -337,6 +362,19 @@ plan counts). A question, a change request or a non-committal reply is not an ap
 does not start; without approval nothing is created/edited **except the status file** — wait,
 clarify, or rewrite the plan (via `pdca-planner`, same file by `pdca-executor`).
 
+**Durable approval protocol (caller-driven cycles).** When the cycle is run by a driver on behalf
+of a parent/primary, the driver may plan but **never obtains or assumes the approval**.
+`pdca-executor` persists a durable **pending approval ref** binding the stable task/`cycle_id`,
+the exact cycle `N`, plan revision `r` and the acceptance-criteria set (`N` is not globally unique
+on its own); the driver returns a checkpoint to the parent, the primary asks the user, and
+`pdca-executor` records the approval against the **same** ref. Resume validates the match and
+first checks applicability through the roles: an applicable plan continues the **same**
+cycle/step; a stale plan gets a genuine `pdca-planner` revision and a **fresh approval**, which the
+stale approval never authorizes. Approval resume neither unconditionally replans nor starts a new
+step, and compaction is safe because the ref and record are durable. A mismatched or missing
+approval is a blocker, not a pass. Autonomous mode still respects approvals required by the
+environment or the user.
+
 **Autonomous mode** is the same contract with no pauses and no questions. The cheap primary
 delegates the single cycle to the cheap `pdca-orchestrator` via a subagent; it drives PLAN → DO
 → CHECK → ACT and returns a compact summary. If `pdca-orchestrator` is unavailable, the cheap
@@ -348,7 +386,11 @@ collection driver (its `COLLECTION TASK PLAN` entry), the collection caller owns
 PLAN → DO boundary: the cycle finishes PLAN, persists the status file, and yields control
 back to the collection parent with a `plan_handoff` — same task identity, same `N`/`r`/`n` —
 instead of starting DO. The parent later resumes **the same cycle** from DO after an
-applicability check. This is a caller-driven handoff, not a standalone-autonomous pause and
+applicability check through the roles (`pdca-scout` facts, `pdca-planner` decision) — never an
+unconditional second PLAN; a genuine incompatibility follows the base revision rules and needs a
+**fresh approval**, which the stale approval never authorizes; approval resume does not
+unconditionally replan or add a step. This is a
+caller-driven handoff, not a standalone-autonomous pause and
 not a user approval: standalone normal mode still starts only after the user approves the
 plan, and standalone autonomous still starts DO immediately.
 
@@ -615,8 +657,11 @@ Order:
    (optional; a no-op is normal). Only what is reusable beyond this workspace and has no
    natural home in the durable artefacts. A *conclusion*, not a narrative; do not duplicate
    what the status file or project rules already record.
-2. **Stable project rules** (if the project has them) — updated by `pdca-executor`. **Do not
-   write the cycle state there**: standing instructions are loaded into every session.
+2. **Stable project rules** (if the project has them) — updated by `pdca-executor`, but **only**
+   when the edit is pure bookkeeping that cannot affect the checked result. An instruction change
+   that could affect the verification belongs **before** the final CHECK (as DO work); otherwise
+   the accepted verdict is invalid and the cycle loops back. **Do not write the cycle state
+   there**: standing instructions are loaded into every session.
 3. **Cycle status file — finalized by `pdca-executor`:** the orchestrator passes it the reports
    (the `pdca-check` verdict, the `pdca-executor` run results, the `pdca-scout` facts) and
    `pdca-executor` fills in Done/Verified, Next plan and Changed artefacts.

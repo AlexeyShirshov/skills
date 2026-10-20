@@ -72,11 +72,12 @@ as well: `pdca-scout` has bash only via an allowlist of read-only commands, `pdc
 `pdca-check` has default-deny (except a scoped read of the cycle's artifacts), and `pdca-escalate` and
 `pdca-security-auditor` have `doom_loop: ask`.
 
-If the host has no ready-made roles, the contract **explicitly describes the fallback to built-in
-agents**: `pdca-scout` → `explore`, `pdca-planner`/`pdca-check`/`pdca-executor` → `general`, `pdca-escalate` → `general` (with
-a warning to the user), `pdca-security-auditor` → `explore`. A host that has **forbidden** the built-in
-`general`/`explore` must not be bypassed — an unavailable mandatory role is a resource blocker, not
-a reason to work silently without it.
+Required roles are not substituted. An absent or forbidden required role is a **resource blocker**,
+not a reason to fall back to built-in `general`/`explore` or to work silently without it. A host that
+has **forbidden** a role must not be bypassed. The only permitted fallback is the driver: if
+`pdca-orchestrator` is unavailable, the flat cheap primary drives the cycle and records a `Notice:`.
+Optional specialist lenses may use an explicit generic-role path, which is not a substitute for a
+required role.
 
 ## How `pdca-coder` differs from "just a cycle"
 
@@ -114,8 +115,9 @@ tier renders the verdict. The gathered evidence converges into a single machine-
 manifest**: DO writes it at the path fixed in the plan and freezes it at the DO→CHECK boundary; in
 CHECK the manifest is only appended to, and `pass` is forbidden while even one mandatory item is
 open **and binding**. A self-imposed extra *audit* row that follows from no agreed goal is not
-rewritten or dropped: CHECK appends an explicit disposition to it in the same manifest (a stable row
-ID plus the `diagnostic_nonbinding` classification and a reason), so the row may stay `open` while
+rewritten or dropped: CHECK returns an explicit append instruction for it in the same manifest; the
+executor writes it and CHECK reconciles the result (a stable row ID plus the
+`diagnostic_nonbinding` classification and a reason), so the row may stay `open` while
 it is excluded from the binding blockers, with binding unmet rows and audit notes reported
 separately. `pdca-check` reads the aggregated report and may open the cycle's artifacts directly — a scoped
 read of the status, the evidence and the manifest, but never the product's code. Four streams are

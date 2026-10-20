@@ -228,7 +228,11 @@ criterion gets `unverified`, not `met`. The outcome is a verdict, a criteria mat
 severity and the routing of fixes: an implementation defect → DO, a wrong plan → PLAN.
 
 **ACT.** ACT completes only a result **accepted by the current CHECK**. It records conclusions,
-constraints, the actual status and the handover, and finalizes the status file. The cycle cannot be
+constraints, the actual status and the handover, and finalizes the status file. It is
+**bookkeeping/finalization only**: ACT does not change product, tests or any checked artifact. Work
+found during finalization is done in DO and re-verified by the final CHECK, or the accepted snapshot
+is invalidated and the cycle loops back; a stable-instruction edit that can affect the checked result
+is made **before** the final CHECK. The cycle cannot be
 closed without ACT; ACT is impossible without an accepted (`met`) CHECK. `rework`/`replan` are not
 part of ACT but returns **before** ACT.
 
@@ -326,12 +330,13 @@ escalation counter.
 
 | What | Content |
 |---|---|
-| **Entry condition** | The accepted result is finalized; the status file is finalized and kept; in normal mode a message for the next session is printed |
+| **Entry condition** | The accepted result is finalized; no product/test/checked artifact changed after the accepted CHECK snapshot; the status file is finalized and kept; in normal mode a message for the next session is printed |
 | **Evidence** | The finalized status file (Done/Verified, Next plan, Changed artefacts); the message in normal mode |
 | **Responsible** | The executor finalizes and records the closure in the status file; the orchestrator closes the phase |
 | **Permitted next step** | EXIT (or a new cycle `N+1` of the same task) |
 
-In `pdca-coder`/`pdca-dotnet` this is joined by: AGENTS.md/registries/tests updated and verified.
+In `pdca-coder`/`pdca-dotnet` this is joined by the bookkeeping-only AGENTS.md/registries update —
+never tests or product code; a needed checked change loops back.
 Without ACT the cycle does not close.
 
 ### Gate 5. The STOP finalization
@@ -467,6 +472,16 @@ the approval has to
 be asked for again once the plan is ready. Without approval **nothing is created or edited
 except the status file**: waiting, clarifying or rewriting the plan (through the pdca-planner; the same
 file, written by the executor) is allowed.
+
+**Durable approval for caller-driven cycles.** A driver may run planning but never obtains the
+approval itself: the executor persists a durable **pending approval ref** binding the stable
+task/`cycle_id`, `N`, `r` and the criteria set (`N` is not globally unique), the driver returns a
+checkpoint to the primary, the primary asks the user, and the executor records the approval against
+the same ref. Resume validates the match and first checks applicability: the same cycle/step
+continues when the plan applies; a stale plan gets a genuine planner revision and a **fresh
+approval**, which the stale approval never authorizes. Approval resume does not unconditionally
+replan or add a step; an awaiting unit is paused/in-progress, not done/incomplete. Compaction is
+safe because both the ref and the record are durable.
 
 **Autonomous mode** is the same contract without pauses or questions. The cheap primary delegates
 the single cycle to the cheap `pdca-orchestrator` agent; that agent runs
@@ -658,11 +673,12 @@ configuration. It is stack-agnostic: PLAN chooses the toolchain and the lenses f
 task, and the project overlay supplies the concrete commands, thresholds and formats. What is added
 to the base:
 
-- **A fallback to built-in agents.** If there are no ready-made roles while the host permits the
-  built-ins, the cycle runs on them: `pdca-scout` → `explore`, `pdca-planner`/`pdca-check`/`pdca-executor` → `general`,
-  `pdca-escalate` → `general` (+ a warning), `pdca-security-auditor` → `explore`. A host that has forbidden
-  `general`/`explore` must **not** be bypassed: an unavailable role is a resource blocker. Unlike
-  `pdca`, the fallback to built-ins is explicitly described here.
+- **Required roles are never substituted.** An absent or forbidden required role is a **resource
+  blocker** (`pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, and
+  `pdca-security-auditor` when triggered); a host that denies `general`/`explore` or any role must
+  **not** be bypassed. The **only** fallback is the driver: if `pdca-orchestrator` is unavailable, the
+  flat cheap primary drives the cycle and records a `Notice:`; optional specialist lenses may use an
+  explicit generic-role path, which is not a substitute for a required role.
 - **The choice of toolchain and lenses** — a mandatory PLAN step: determine the type of result; find
   the toolchain declared in the project (build/tests/lint) through `pdca-scout`; choose the correctness
   lenses; bind each lens to an available agent/skill or an explicit generic path; freeze the choice
@@ -774,7 +790,11 @@ differences are in the lenses, the thresholds and the additional gates.
 - **The evidence contract and the directory.** PLAN fixes in the status file a versioned contract of
   rows (row ID, the required check, the expected evidence, the command/exit code, the artifacts and
   their paths, the owner, the applicability predicate, the revision `rv`) and the manifest path; the
-  default directory is `.pdca/<task>/rv<k>/`. The manifest is frozen at the DO → CHECK
+  evidence **root** is `.pdca/<task>/rv<k>/`, and each attempt's manifest lives in a **fresh
+  child** `<root>/attempts/c<N>-r<r>-n<n>/`, whose path is pinned in the status file before DO → CHECK
+  (`c<N>` is the cycle, so the next cycle gets a distinct child even at the same `rv`/`r`/`n`).
+  A CHECK → DO return under the same contract is the next `n` in a new child; prior manifests are
+  retained, `rv` changes only with the criteria/contract. The manifest is frozen at the DO → CHECK
   boundary and append-only afterwards; **a PASS is forbidden while a mandatory row is `open` and
   binding**. A self-imposed extra *audit* row that follows from no agreed goal is not rewritten or
   deleted: CHECK appends a `diagnostic_nonbinding` disposition (stable row ID + reason) in the same
@@ -815,10 +835,11 @@ genuine PLAN, then the barrier, and only then the clustering (DAG/groups) and th
 lanes.
 
 **Collection or campaign?** The selector is the goal structure, not the size of the list or the
-availability of parallelism: several independent goals → collection (parallel when ≥2 disjoint
-footprints exist, otherwise one sequential group); one shared goal/metric → `pdca-incremental`
-(step = task), even when the list is known up front. A known list alone is not a campaign, and a
-serialized batch is not a reason to switch contracts.
+availability of parallelism: several tasks with **independent goals** → collection, even when there
+is one shared footprint or only a single lane (parallelism is a schedule property, not an entry
+condition); **one shared goal/metric** whose path is unknown and information-dependent →
+`pdca-incremental` (step = task), even when the list is known up front. A known list alone is not a
+campaign, and a serialized batch is not a reason to switch contracts.
 
 **Composition.** A batch may contain units of two forms: a single cycle and an incremental campaign
 (`execution_kind`). A campaign inside a batch stays sequential and is led inline by the same
@@ -831,16 +852,24 @@ collection (see [`pdca-collection.md`](pdca-collection.md) §7).
 **does not edit files or run commands itself** — the infrastructure (worktrees, branches),
 `git merge --no-ff` and the mandatory checks are done by `pdca-executor` on its command; the orchestrator
 keeps the tracking, the gates and the merge decision. Each task (and each corrective task) is
-executed by `pdca-orchestrator`, but the collection chooses the variant per task (`.NET/C#` →
-`pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`) and passes it as `selected_variant`.
+executed by `pdca-orchestrator`, but the collection chooses the variant per **`cycle`** task
+(`.NET/C#` → `pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`) and passes it as
+`selected_variant`. A `campaign` unit has no unit-level variant: its `pdca-planner` selects the
+concrete step variant by the campaign's stack rule and persists it before the step.
 The collection's base is the code contract's standard CHECK.
 
 **Permission for auto-commits.** A standard multi-group run presupposes an **explicitly permitted
 auto-commit** for `collection/**` branches and for `merge --no-ff` (otherwise a task branch gets no
 committed tip for the next one to branch off). That permission is given by the project overlay or by
 an explicit user request; **the skill itself grants no such right and does not extend global
-AGENTS.md**. Without permission there are no commits or merges: the group proceeds without them,
-unfinished results are saved as a patch, and the group is marked `incomplete`. `push` — **never**.
+AGENTS.md**. For **`>=2` groups**, a known incompatibility (an explicit no-commit request,
+commits/merge unavailable or forbidden) is a **preflight blocker before worktrees/lanes are
+allocated** — a group that knowingly cannot make the mandatory tips is not executed; missing
+permission is not authorization. A **single group** may work in the current tree without commits if
+permitted and needs no git integration. If permission is revoked mid-lane, the run takes a safe
+stop, preserving refs/commits and saving the uncommitted task/group changes as a patch; `incomplete`
+follows only an explicit terminal outcome and no further branch-chain work is done. `push` —
+**never**.
 
 ### P — the tasks' own PLANs, the barrier, clustering
 
@@ -848,15 +877,26 @@ The user provides a list of tasks in any form. The order is strict: **first each
 PLAN, then the ALL-barrier, and only then the DAG and the groups.** A preliminary gathering of task
 descriptions is not itself a PLAN and does not replace it.
 
-Each task is conducted by `pdca-orchestrator` in the **COLLECTION TASK PLAN** input: `pdca-scout`
-gathers facts, `pdca-planner` makes decisions, `pdca-executor` persists the status. The task goes through its
+Each **`cycle`** task is conducted by `pdca-orchestrator` in the **COLLECTION TASK PLAN** input:
+`pdca-scout` gathers facts, `pdca-planner` makes decisions, `pdca-executor` persists the status. The
+task goes through its
 **own PLAN** and stops at the PLAN→DO boundary, handing control to the collection parent (a
-`plan_handoff` with the same `N`/`r`/`n`); no code is written at this step. A **re-entry** after a
+`plan_handoff` with the same `N`/`r`/`n`); no code is written at this step. A **`campaign`** unit
+takes the **preparation** route instead: the same roles produce the immutable preparation document,
+`preparation_state=ready` and the single `preparation_ref`, returning a `preparation_handoff`; it
+needs no unit-level variant, baseline, runtime status, future step plans or step count at the
+barrier. A **re-entry** after a
 terminal `incomplete`/STOP is a mandatory input of the own PLAN: the previous terminal cause does
 not allow the failed criterion to be re-run unchanged — `pdca-planner` either proves that the evidence is
-now obtainable or redefines the oracle. Until the own PLAN of **all** tasks is ready and persistent
-(`plan_state=ready`), the DAG and the groups are not built; a task for which a meaningful plan is
+now obtainable or redefines the oracle. Until the own PLAN of **all** `cycle` tasks is ready and
+persistent (`plan_state=ready`) and every `campaign` unit is `preparation_state=ready`, the DAG and
+the groups are not built; a task for which a meaningful plan is
 impossible remains a gap and does not pass the barrier.
+
+Planning is not serialized: the units' own PLANs may be dispatched in one batch, up to `plan_cap`
+(4 by default). That bound applies to the PLAN phase, not to the schedule: the groups and their
+order are decided only after the barrier, and intersecting footprints are resolved there too —
+they forbid parallel **lanes**, not parallel planning.
 
 After the ALL-barrier, `pdca-planner` validates the contradictions and uncertainty from the handoff
 metadata (the planned footprint, requirements on predecessors' results, assumptions), then builds
@@ -1003,9 +1043,11 @@ completed task's tip; the group and task branches are **siblings**, not nested (
 ref that is a prefix of another). With one group no isolation is needed.
 
 **Fallback.** If the host forbids a subagent to delegate (no nested delegation),
-`pdca-orchestrator` cannot orchestrate: then a flat primary drives, in flight, one task of each
-group itself (dispatches to pdca-executor/pdca-check) and starts the next one as each finishes; the groups progress
-in parallel without orchestrator agents.
+`pdca-orchestrator` cannot orchestrate: then the **single** flat-primary fallback drives one current
+task per group and starts the next one as each finishes. Independent groups keep the allowed
+parallelism — up to `cap` groups at once when the host permits it; if the host gives no concurrency,
+the same fallback runs them sequentially (`cap` is an upper bound, not a guarantee). Fallback
+substitutes the driver only, never a required role.
 
 ## 12. Teaching stories
 
@@ -1168,7 +1210,8 @@ identical retries will not be passed off as progress.
 | **`merged` / `incomplete` / `skipped`** | The status of an integrated `done` group; a stopped group; the note "not selected for integration" |
 | **`tip`** | The last commit of a group's branch |
 | **Footprint** | The set of files/modules touched |
-| **`cap`** | The collection's parallelism ceiling (4 by default) |
+| **`cap`** | The lane parallelism ceiling (4 by default); see `plan_cap` |
+| **`plan_cap`** | The PLAN-phase parallelism ceiling (4 by default); it changes the phase's cost, not the schedule |
 | **Tier** | A cost/quality label (cheap/medium/strong); not an authority |
 | **`# tier:` instead of `model:`** | A role agent carries only a tier label and a permission block; the model id is bound by the host profile and is not written into the role |
 | **Variant matrix** | The matrix of execution variants: every row is closed as test/guard/deferred |

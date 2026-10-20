@@ -164,8 +164,13 @@ status file and handed to the skill's tracked helper, run as `.pdca/scripts/pdca
 (standard library only).
 `generate --repo <root> --contract <contract.json> --output <evidence-dir>` resolves a frozen
 synthetic tree from `base_ref` + `footprint`, writes one immutable receipt per required row and
-replaces `manifest.json` last and atomically; a preflight lint refuses to regenerate over stale
-evidence and a held lock refuses a concurrent writer. `lint --repo <root> --manifest
+replaces `manifest.json` last and atomically. The evidence root stays `.pdca/<task>/rv<k>/`; each
+attempt passes a **fresh child** `<root>/attempts/c<N>-r<r>-n<n>/` as `<evidence-dir>` and the status
+file pins that child's manifest before DO → CHECK (`c<N>` is the cycle, so the next cycle gets a
+distinct child even at the same `rv`/`r`/`n`). A preflight lint refuses to regenerate over a
+stale snapshot, so a changed attempt must use a fresh child (the old manifest is retained); an
+implementation fix under the same required rows/criteria keeps `contract_rv`. A held lock refuses a
+concurrent writer. `lint --repo <root> --manifest
 <manifest.json>` recomputes the same tree and fails on any disagreement, on a path outside the
 repository, on duplicate row IDs and on a one-sided `required_rows` ↔ `rows[]` coverage. The tool
 never invents an execution and never turns `open` into `met`; codes are `0` (valid), `2`
@@ -173,8 +178,9 @@ never invents an execution and never turns `open` into `met`; codes are `0` (val
 
 **Binding/applicability disposition.** The frozen manifest is never rewritten and no row is ever
 deleted — a pre-existing, self-imposed extra *audit* row keeps its original status and text and is
-never quietly turned into `met`. Instead CHECK appends an explicit applicability disposition to that
-row inside the same manifest: a stable row ID, the classification `diagnostic_nonbinding`, and the
+never quietly turned into `met`. Instead CHECK returns an explicit append instruction for that row
+in the same manifest; the executor writes it and CHECK reconciles the durable result. The append
+carries a stable row ID, the classification `diagnostic_nonbinding`, and the
 concrete reason/basis in the agreed scope or in the priority global rule. The row may therefore stay
 `open` while it is excluded from the set of **binding acceptance blockers**, and the final receipt
 shows binding unmet rows and audit notes separately. This is not a loophole: it covers only
@@ -269,8 +275,10 @@ gather's actual finding, not the author's declaration. A single `HEAD` is insuff
 working tree has uncommitted edits, so the source identity names the state that was actually
 reviewed. Roslyn resolution runs in that same gather, on the same frozen snapshot, and the pack
 carries the result with the same source identity; CHECK never runs Roslyn against an inaccessible
-whole solution. Any drift of the task-relevant footprint between the frozen capture and CHECK
-**invalidates** the verdict, and the current revision gets a new `rv`/receipt/check. CHECK itself
+whole solution. Any **unexpected** drift of the task-relevant footprint between the frozen capture
+and CHECK **invalidates** the verdict; the next snapshot is a new attempt (fresh child, new `n`),
+and `rv` changes only when a CHECK → PLAN actually revises the required rows/criteria — not for a
+planned CHECK → DO attempt or an implementation fix under the same criteria. CHECK itself
 reconciles each changed registry claim against the supplied confirmation and records a **row-level**
 result, without loading every staged file into context and without widened read rights. A missing
 body, a staged-vs-source mismatch, an incomplete justification or the absence of an independent

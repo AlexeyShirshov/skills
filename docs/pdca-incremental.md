@@ -31,10 +31,10 @@ execute them in a pre-declared order.
 ### 1.1 Decomposition: upfront or along the way
 
 `pdca-collection` is not a synonym for decomposition. A collection assumes that the decomposition
-**has already been made**: the list of tasks is known, their footprints do not intersect, and every
-task can be planned before the first DO. An incremental campaign does not cancel decomposition — it
-moves its moment: the goal is split into steps **along the way**, and the next step is chosen from the
-result of the previous measurement.
+**has already been made**: the list of tasks with independent goals is known, and every task can be
+planned before the first DO. An incremental campaign does not cancel decomposition — it moves its
+moment: the goal is split into steps **along the way**, and the next step is chosen from the result
+of the previous measurement.
 
 These are two planning modes, not "with a collection and without one":
 
@@ -42,10 +42,10 @@ These are two planning modes, not "with a collection and without one":
 | --- | --- | --- |
 | decomposition | input: the list is known before the start | output: a step is chosen after a measurement |
 | plan | all tasks at once, ALL-barrier | the current step only |
-| unit | a task with an independent footprint | an increment: goal + floor + measurement |
+| unit | a task with its own goal/acceptance | an increment: goal + floor + measurement |
 | next step | from the plan | from the result of the previous measurement |
 | failure | group-stop, the rest are not executed | `repair` of one step, the campaign continues |
-| parallelism | yes, with ≥2 non-intersecting footprints | no, sequential by nature |
+| parallelism | an execution mode (one lane is a normal degradation), not an entry condition | no, sequential by nature |
 
 This is not movement at random: every step has a goal, a floor and a credited measurement, and the next
 step does not start without the accepted number of the previous one.
@@ -64,27 +64,28 @@ with a **measurement recipe**, and at least one of the following holds:
 - the path to the goal is unknown and opens up through measurement;
 - the steps are information-dependent: the goal of step N+1 only makes sense after the result of step N;
 - the work is long: one cycle will not cover the volume, while parallel lanes would duplicate goals;
-- there is a queue of pre-planned tasks, but their order and composition depend on the previous
-  measurement (a shared footprint or a shared metric): each task becomes a step, not an item of a fixed
+- there is a queue of pre-planned tasks serving **one shared goal/metric**, and their order and
+  composition depend on the previous measurement: each task becomes a step, not an item of a fixed
   DAG.
 
 | situation | what to use |
 | --- | --- |
 | the plan for the whole volume is known and it is one task | one cycle: [`pdca-dotnet.md`](pdca-dotnet.md), [`pdca-coder.md`](pdca-coder.md), [`pdca.md`](pdca.md) |
-| a list of tasks is known **and there are ≥2 non-intersecting footprints** | [`pdca-collection.md`](pdca-collection.md): groups, worktrees, merge |
-| the list is known, but the footprint is one / the tasks form a chain / one shared metric | this campaign (a step = a task); if the goals differ — base cycles |
+| a list of tasks with **independent goals** is known | [`pdca-collection.md`](pdca-collection.md) — even with one shared footprint or a single lane; parallelism is a schedule property, not an entry condition |
+| the list is known, but all tasks serve **one shared goal/metric** and the path is information-dependent | this campaign (a step = a task) |
+| the list has independent goals but no per-item acceptance (one common stream) | one campaign/cycle on the shared goal, not a collection |
 | there is a goal, there is no plan, the step is determined by measurement | **`pdca-incremental`** |
 | the goal is not verifiable | design/`brainstorming` first, not a campaign |
 
 The key feature that separates it from a collection is **not the number of goals and not whether the
-list is known**, but proven parallelism. A collection is chosen only when there are ≥2 non-intersecting
-footprints. If the footprint is one, the tasks form a chain or the goal is one shared measured metric,
-a known list goes through incremental: a step = a task, the task's plan may be ready in advance, but
-no common DAG is fixed. A known list by itself does not select a collection.
+list is known**, but the **kind of goal and the path**: independent per-task goals are a batch even
+when it runs in one lane or shares a footprint; one shared goal whose path is unknown and
+information-dependent is a campaign. A known list by itself does not select a collection, and a
+shared footprint does not by itself select a campaign.
 
 Composition does not change that rule: a collection may contain campaign units (§3.2), but a campaign
 inside a batch does not make a sequential chain parallel and does not waive the barrier — the choice
-between a collection and a campaign is still decided by proven parallelism.
+between a collection and a campaign is still decided by the goal structure, not by proven parallelism.
 
 ## 3. The campaign contract
 
@@ -93,14 +94,17 @@ loop-back come from the base. It adds invariants; the eight key ones follow. The
 consequences (one lane, commit policy, pause as a checkpoint) are covered in §3.2.
 
 1. **The goal and the measurement recipe are fixed at the start** — the predicate, the unit, the
-   denominator, the exclusion filters and the threshold are recorded verbatim. Changing them along the
-   way is a change of goal, that is, a new campaign with a new baseline.
+   denominator, the exclusion filters, the threshold and the floor are recorded verbatim. Changing
+   the **goal, recipe, threshold or floor** along the way is not a refinement: it is a **new campaign
+   with a new baseline**; old revisions and accepted numbers are retained and are never backfilled.
 2. **One increment unit for the whole campaign** — "one accepted gain", not a file, a test or a day.
    Inside a step the work is split into clusters, but the step is accepted as a whole.
 3. **Increment floor** — the minimum gain that is worth paying for a full cycle. The step target =
    accepted baseline + floor; the floor is a lower bound, not a ceiling.
-4. **Baseline chain** — the input of step N+1 is only the accepted number of step N. No accepted
-   number — no next step.
+4. **Baseline chain** — the input of step N+1 is only the last **accepted** number. No accepted
+   number — no next step. A `repair` advances the baseline from the last accepted baseline once; the
+   original increment stays `not accepted` and its delta is never credited, while `verify` does not
+   move the baseline.
 5. **One credited measurement per step** — a red result is not re-taken "for luck"; a replacement is
    admissible only on objective invalidity and is archived.
 6. **Goals are opened, not planned in advance** — first a fresh gap map, then selection by expected
@@ -122,10 +126,20 @@ after an unaccepted step, `parent = N`) and `verify` (an integral gate without a
 
 | status | meaning |
 | --- | --- |
-| `met` | the predicate is true on the accepted measurement; the only success |
+| `met` | the predicate is true on the **accepted** measurement **and** all due mandatory `verify` (final and periodic) passed on the current accepted snapshot; the only success |
 | `unreachable` | the remainder is proven with numbers for every cluster and redistributed |
 | `blocked` | an external blocker: a ticket, the environment, access |
 | `stopped` | budget, a limit or a user stop; the remainder is preserved for continuation |
+
+`met` needs both halves: an accepted goal measurement and every mandatory `verify` that is due at
+that point, on the same accepted snapshot. A partial check, or a final `verify` promised for later,
+does not give `met`. If the **baseline already satisfies the goal**, no fictitious increment is
+created. If a mandatory `verify` is declared, it runs on that snapshot; `met` follows only after the
+goal is accepted by an independent `pdca-check` against the goal criteria **and** all due
+gates/`verify` pass. Without a mandatory `verify`, the same independent `pdca-check` accepts the
+baseline against the goal criteria (never a DO/orchestrator self-accept), and only then is `met`
+recorded. A red `verify` follows the ordinary `repair`/`blocked` route; `unreachable` requires a
+`pdca-planner` proof of impossibility in numbers, never an automatic step from a red `verify`.
 
 ### 3.1 Roles, tiers and authority
 
@@ -318,8 +332,12 @@ cycle and creates no row in the status. `repair` opens when `increment` is alrea
 (internal `incomplete`/STOP; revisions/attempts exhausted or a different approach needed) and creates a
 new row `kind = repair`, `parent = N`:
 
-- the target, recipe and threshold are the same; a change of goal is a new campaign;
-- the old step stays `not accepted`, the red measurement is preserved;
+- the target, recipe, threshold and floor are the same; a change of goal/recipe/threshold/floor
+  is a new campaign with a new baseline;
+- the old `increment` stays `not accepted`, the red measurement is preserved, and its delta is
+  never credited twice;
+- an accepted `repair` advances the baseline from the **last accepted baseline once** (the repair's
+  accepted delta is added there, not to the unaccepted increment); `verify` does not move it;
 - one repair per failed step; a repeated failure is `pdca-escalate` or `unreachable`;
 - a recurrence of the same defect after one fix is `pdca-escalate` before a second fix.
 
@@ -339,8 +357,8 @@ campaign, the blast radius is one step.
 That is also the answer to ten grilled tasks **with one campaign goal** (coverage, performance,
 cleanup): each becomes an `increment` step with its own plan, a failure of one opens `repair` only for
 it, and at the end a `verify` over the integral tree runs if needed. There is no common ALL-barrier and
-no group-stop here. If ten tasks have ten different goals, that is not one campaign but ten base cycles
-(or a collection, if there are ≥2 non-intersecting footprints).
+no group-stop here. If ten tasks have ten independent goals, that is not one campaign but a collection
+(even with one lane or a shared footprint) or ten base cycles.
 
 ## 5. A real case: the coverage campaign in nextorm (October 2026)
 
@@ -520,10 +538,12 @@ speedup (T244), `0 B/query` allocations (T245), `WARM_TIME_TOLERANCE = 1.20` (T2
 | git | a worktree per group, `merge --no-ff` | one directory; auto-commit of an accepted step only with explicit permission, push never |
 | measurement | its own per lane, common after the merge | one common one on a frozen tree |
 
-What separates them is not "one goal" and not whether the list is known, but **proven parallelism**:
+What separates them is not "one goal" and not whether the list is known, but the **goal structure and
+the path**:
 
-- a collection's input is a known list of tasks, and a run requires **≥2 non-intersecting footprints**;
-  the ALL-barrier requires a real PLAN of **every** task before the first DO;
+- a collection's input is a known list of tasks with **independent goals** (one lane or a shared
+  footprint is a normal schedule, not a disqualifier); the ALL-barrier requires a real PLAN of
+  **every** task before the first DO;
 - here the list was not known: the goals of the next step were chosen from a fresh map of uncovered
   branches of the previous accepted run — specific files and lines. A plan ten steps ahead would have
   been a placeholder plan, and a fixed DAG does not allow redistributing clusters when a step falls
@@ -539,9 +559,9 @@ exactly the work that the next cycle's PLAN does in a chain of cycles. That is w
 incremental was chosen rather than a degenerate single-group collection.
 
 If the list had been known in advance ("close ten named coverage clusters"), it would still not have
-made a collection mandatory: a known list is a queue of candidates, not proof of parallelism. With one
-footprint ten tasks go as incremental steps (a step = a task) with the same campaign status file; a
-collection is needed only when there are ≥2 non-intersecting footprints and auto-commit is permitted.
+made a collection mandatory: a known list is a queue of candidates. With one footprint ten tasks go
+as incremental steps (a step = a task) with the same campaign status file when they share one goal; a
+collection is for independent goals with auto-commit permitted (for `>=2` groups).
 For a research chain "measured → rebuilt the map → chose goals" incremental is cheaper; the price is
 that the state lives in one campaign status file rather than in the statuses of ten separate cycles. The
 multi-group mode (`collection/1.0.9-b-5/group-*` in this same repository) is for the case where the tasks
@@ -577,8 +597,8 @@ Case sources (the `nextorm` repository, not part of this repository): `.pdca/sta
 - **One step at a time is slower in wall-clock terms.** That is the price of comparability: parallel
   increments start from one gap map and duplicate goals.
 - **A campaign does not replace the cycle or the collection.** Inside a step the full base contract
-  applies. A collection remains for ≥2 non-intersecting footprints; a known but sequential list is not a
-  reason to choose a collection.
+  applies. A collection remains for tasks with independent goals; a known but sequential list serving
+  one shared goal is not a reason to choose a collection.
 - **Red does not become green.** A measurement may be replaced only on objective invalidity; "re-taken
   because the number is ugly" is falsification.
 - **A stop is not success.** `blocked` and `stopped` preserve the remainder and the continuation point;
@@ -598,7 +618,8 @@ Case sources (the `nextorm` repository, not part of this repository): `.pdca/sta
   campaign diagram — `opencode/pdca-incremental/assets/diagram/`.
 - The cycle base — [`pdca.md`](pdca.md); the engineering variants —
   [`pdca-coder.md`](pdca-coder.md) and [`pdca-dotnet.md`](pdca-dotnet.md).
-- Batch work with ≥2 non-intersecting footprints — [`pdca-collection.md`](pdca-collection.md).
+- Batch work with independent goals — [`pdca-collection.md`](pdca-collection.md) (parallelism is a
+  schedule property, not an entry condition).
 - An overview of the family — [`pdca-guide.md`](pdca-guide.md).
 
 ## Sources

@@ -15,7 +15,7 @@ verdict and do not keep a status file — the chosen contract owns all of that.
 |---|---|---|
 | 0 | the user names a contract explicitly (`pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`, `pdca-incremental`) | that contract, verbatim — no re-classification |
 | 1 | a known list / milestone of **independent tasks with their own goals** (a batch) — parallelism is optional | `pdca-collection` |
-| 2 | **one** verifiable goal (even over a known list): no whole-volume plan, the next step follows the previous accepted measurement, or all tasks serve one shared metric/footprint | `pdca-incremental` |
+| 2 | **one** verifiable goal with **no whole-volume plan**, where the next step follows the previous accepted measurement (even over a known list) | `pdca-incremental` |
 | 3 | .NET / C# work | `pdca-dotnet` |
 | 4 | software work in another stack | `pdca-coder` |
 | 5 | anything else with a verifiable result | `pdca` |
@@ -26,9 +26,10 @@ picks `pdca-dotnet` inside `pdca-incremental`.
 **A known list alone is not a campaign, and a batch does not require parallelism.** Several
 independent goals → `pdca-collection`: it runs in parallel when ≥2 disjoint footprints exist and
 degrades to a single sequential group when they do not (one measurement host, a host lock,
-`cap = 1`). One shared goal/metric — even across a known list — → `pdca-incremental` (step = task).
-Do not choose incremental merely because a batch is serialized, and do not choose collection for a
-single goal just because its work is listed.
+`cap = 1`). One shared goal/metric whose whole-volume plan is unknown — even across a known list —
+→ `pdca-incremental` (step = task). A single shared goal whose whole plan is already known is one
+cycle (rows 3–5), not a campaign. Do not choose incremental merely because a batch is serialized,
+because all tasks share one footprint, or because a single goal's work is listed.
 
 **Size alone is not a signal.** A large but plannable task is one cycle. The campaign criteria are
 canonical in `pdca-incremental` §«Когда выбирать»: the goal is checkable, the path is unknown,
