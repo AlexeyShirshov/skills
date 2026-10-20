@@ -52,6 +52,35 @@ class RunnerAssetTest(unittest.TestCase):
         raw = read(ASSET)
         self.assertRegex(raw, r'(?ms)^\s*task:\n\s+"?\*"?:\s*deny$')
 
+    def test_runner_declares_execution_kind_and_the_lane_mode(self):
+        # AC01/AC11: one canonical runner serves both execution kinds; the mode is
+        # an explicit field, never a second agent layer.
+        raw = read(ASSET)
+        for token in ("execution_kind", "collection-lane", "step orchestrator"):
+            with self.subTest(token=token):
+                self.assertIn(token, raw, f"asset lacks the mode token {token!r}")
+        self.assertIn("dispatch", raw)
+        self.assertTrue(
+            "fail closed" in raw or "fail-closed" in raw,
+            "asset must fail closed (or fail-closed) on an unknown execution kind",
+        )
+
+    def test_runner_adds_no_agent_layers_and_keeps_the_family_roles(self):
+        raw = read(ASSET)
+        self.assertIn(
+            "execution_kind",
+            raw,
+            "the mode field and the no-extra-layer rule are one boundary (AC01)",
+        )
+        for layer in ("campaign-agent", "cycle-agent"):
+            with self.subTest(layer=layer):
+                self.assertNotIn(layer, raw, f"asset must not add the layer {layer!r}")
+        self.assertNotRegex(raw, r"(?m)^\s*model\s*:")
+        for role in ("pdca-planner", "pdca-executor", "pdca-check",
+                     "pdca-escalate", "pdca-scout"):
+            with self.subTest(role=role):
+                self.assertIn(role, raw)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -85,6 +85,27 @@ class DriverIsThinTest(unittest.TestCase):
         self.assertIn("do not pick a variant yourself", text)
 
 
+class RunnerTwoModesTest(unittest.TestCase):
+    """The same dispatcher runs in exactly two modes; no new layer is introduced."""
+
+    def test_runner_names_both_execution_modes(self):
+        text = norm(read(ORCHESTRATOR)).lower()
+        for phrase in ("execution_kind", "selected_variant", "collection-lane",
+                       "dispatch", "fail closed"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, text)
+        for mode in ("step orchestrator", "collection-lane"):
+            with self.subTest(mode=mode):
+                self.assertIn(mode, text)
+
+    def test_runner_does_not_add_layers_or_a_model(self):
+        text = norm(read(ORCHESTRATOR)).lower()
+        for phrase in ("campaign-agent", "cycle-agent"):
+            with self.subTest(phrase=phrase):
+                self.assertNotIn(phrase, text)
+        self.assertNotRegex(read(ORCHESTRATOR), r"(?m)^\s*model\s*:")
+
+
 class EntryOwnsRoutingTest(unittest.TestCase):
     def test_entry_routing_table_precedence(self):
         text = read(ENTRY)

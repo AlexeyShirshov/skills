@@ -233,7 +233,105 @@ not carried through.
   from DO. In autonomous mode the fallback is marked with a `Notice:` line and the recorded reason,
   in normal mode with a message to the user; a host prohibition is not bypassed.
 
-## 7. Where to go next
+## 7. Composition: a batch may contain campaigns
+
+A batch is not obliged to consist of single cycles. The collection works with **units**, and a
+unit's form of execution is `execution_kind` with exactly two values: `cycle` — one full
+PLAN → DO → CHECK → ACT of its variant, with `plan_state` and `selected_variant`; and `campaign` —
+an incremental campaign with its own goal, frame, runtime status and steps, with **no** unit-level
+`selected_variant` and no "campaign domain". `execution_kind` and `selected_variant` are different
+fields: the collection PLAN (`pdca-planner`) decides the form, the runner only reads the ready value
+(`opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения`). A step of a campaign is
+only a cycle of the family: neither "a campaign in a campaign" nor "a collection inside a campaign"
+(nor a collection inside a collection) is expressible.
+
+**The barrier asks each unit for what that unit has.** A `cycle` unit presents the real PLAN of that
+cycle (`plan_state=ready`). A `campaign` unit presents an approved separate immutable/revisioned
+**preparation document** — `.pdca/<collection-id>/units/<unit-id>/preparation.md` — with the nine
+frame items, `preparation_state=ready` and a **single authoritative** `preparation_ref` of the form
+`<path>@r<k>` in the unit record. `campaign_ref`, the pointer to the campaign runtime status, may be
+absent before the baseline bootstrap and is mandatory after it; it is not a pointer to the frame and
+does not replace `preparation_ref`. The barrier needs no baseline evidence, no `running` runtime
+status, no future step plans, no future step variants and no number of steps; before the barrier no
+lane is allocated for either kind
+(`opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация`).
+
+**Baseline bootstrap happens after the barrier.** A dedicated `pdca-executor` creates the baseline
+evidence by the frame's recipe and the campaign runtime status `Status: running`, mentioning
+`preparation_ref` and writing `campaign_ref`. It is not a step, is not credited and does not change
+the product; the preparation records before the barrier are allowed, while a substantive bootstrap
+and a change-producing DO are not. The runtime stores `preparation_ref` as a **reference**, not as a
+copy of the frame. Renegotiating the goal, the target/floor criteria, the rules for deriving them,
+the threshold, the success criteria or the stop rules is not "a clarification": it goes through
+`pdca-planner` and the active approval, then creates a **new immutable revision** of the preparation
+document, updates `preparation_ref` and keeps the previous revision
+(`opencode/pdca-incremental/SKILL.md §Статус-файл кампании`).
+
+**Readiness is not completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
+`started`: the unit stays `pending` and never becomes `done` because the frame is ready. Only an
+accepted `met` with an explicit `disposition=finalized` gives `done`
+(`opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании`).
+
+**Pause is not final.** `blocked`, `stopped` and `unreachable` with an admissible next target within
+an unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays `in-progress`,
+and a resume is explicit. A final `incomplete` — and the existing group-stop it triggers, where the
+remaining `pending` units of the group are marked `incomplete` and are not executed — requires an
+explicit final unsuccessful disposition and is not derived from a pause. There is no endless
+automatic retry; pause and resume do not reset `N`/`r`/`n`; a paused lane does not advance its
+group's dependent chain, while the other groups continue; the success criteria are never changed
+silently (`opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании`).
+
+**Disposition, and the derived lane pause.**
+`disposition` (`active` | `paused` | `finalized`) is a per-unit field, not a task or group status.
+The lane pause is **derived** from the current unit's `disposition=paused` and is not stored as a
+separate authoritative lane field; no new status value is introduced, and `blocked` stays a state of
+the common verification (`opencode/pdca-collection/SKILL.md §Пауза лейна`).
+
+**Three separate state spaces.** Unit readiness (`plan_state` / `preparation_state`), the campaign
+runtime status (`Status`) and the per-unit `disposition` are different things, each with its own file
+and its own identifiers: the collection status, the preparation document, the campaign runtime status
+and the step's own cycle status. The semantics of a record belong to the primary/`pdca-planner`; the
+physical write is done by `pdca-executor` on an explicit dispatch
+(`opencode/pdca-collection/SKILL.md §Статус коллекции`).
+
+**The surface belongs to the collection.** The planned footprint is a **conservative reservation of
+the allowed surface for the whole task**, not a forecast of the exact edits and not the union of the
+first steps; a wide reservation is admissible and means less parallelism, not a wrong plan. The
+campaign frame contains the surface as a subset, and a step cannot leave the campaign's surface.
+Expanding the reservation or the surface after the barrier is a stop/reapproval: an explicit
+renegotiation by the collection's `pdca-planner` (in normal mode — the user), taking the already
+started lanes and the already accepted results into account, with no automatic
+`recluster`/`remerge`/`reset`/`revert`
+(`opencode/pdca-collection/SKILL.md §Резервация поверхности и её расширение`).
+
+**The driver is the same cheap runner.** In a collection the campaign is led by the existing
+`pdca-orchestrator` in `mode=collection-lane`: it receives the unit's `execution_kind`, the loaded
+campaign contract and the dispatch rule, and leads the campaign state machine and the current step's
+cycle **inline** in one lane session. There is no campaign agent and no new `Task` level; a campaign
+is always sequential — one step at a time, one lane, no internal parallelism. In normal mode every
+actual step passes a full PLAN of its variant and is approved under the active contract; the brief
+neither replaces the PLAN nor constitutes approval
+(`opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane)`).
+
+**Completion and commits stay on the collection's level.** The campaign's acceptance (`met`) and the
+collection's common verification are different events: a campaign's success does not replace the
+common CHECK on the integrated tree. The external commit/branch lifecycle of a unit belongs to the
+collection; `Commit policy: none` means no intermediate step commits and does not forbid the outer
+completion commit, and an explicit no-commit restriction that conflicts with the mandatory git model
+is a preflight blocker before the lanes are allocated
+(`opencode/pdca-collection/SKILL.md §Git-модель`).
+
+**Preflight and fallback.** Before lanes are allocated and before a campaign starts in its lane, the
+host's observable capability is checked: the mandatory roles and contracts, nested delegation for the
+driver, `pdca-orchestrator` itself and the `escalate → scout` edge — with no dummy substantive work
+and no invented host number. Exactly one fallback exists: if the lane driver is unavailable, the flat
+cheap primary drives the work itself, one lane at a time, marking this with a `Notice:` line and a
+durable reason, still dispatching the roles and not acquiring their rights. An unavailable
+**mandatory role** is a resource stop of the run; an unavailable **cycle contract** fails closed
+without substituting a "similar" variant; a late discovery is a safe pause before the dependent
+action, not a weakened gate (`opencode/pdca-collection/SKILL.md §Fallback`).
+
+## 8. Where to go next
 
 - The full text of the skill, its role (the wrapper agent `pdca-orchestrator`, the `COLLECTION TASK
   PLAN` input, the group lane), the P/D/C/A phases, the status, the git model and the failure
@@ -245,7 +343,8 @@ not carried through.
   identical base [`opencode/pdca-dotnet/SKILL.md`](../opencode/pdca-dotnet/SKILL.md)).
   The family's neighbouring articles: [`pdca.md`](pdca.md) — the domain-neutral core,
   [`pdca-coder.md`](pdca-coder.md) and [`pdca-dotnet.md`](pdca-dotnet.md) — the engineering
-  variants.
+  variants, and [`pdca-incremental.md`](pdca-incremental.md) — the campaign that can become a unit
+  of a batch.
 - The contract checks — [`opencode/pdca-collection/tests/`](../opencode/pdca-collection/tests/):
   tests of the skill's text and the diagram rendering, plus a scenario matrix **marked as
   static** (not proof of behaviour); the diagram — `assets/diagram/` (generator
@@ -273,6 +372,13 @@ precedence.
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md §Сбой (failure semantics) · §Статус коллекции` |
 | Parameters: cap = 4, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Отчёт · §Параметры` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md §Связь с базовым PDCA · §Fallback` |
+| Composition: the two execution forms (`execution_kind` ≠ `selected_variant`), the recursion ban, the form decided by the collection PLAN | `opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения` |
+| The barrier by unit kind, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация · §A.1 Маршрутизация исходов кампании`; `opencode/pdca-incremental/SKILL.md §Статус-файл кампании` |
+| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-unit `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании · §Пауза лейна · §Статус коллекции` |
+| The collection-lane driver (the same `pdca-orchestrator`, the campaign inline, one lane) and the step's PLAN/approval | `opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane)` |
+| Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `opencode/pdca-collection/SKILL.md §Резервация поверхности и её расширение` |
+| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `opencode/pdca-collection/SKILL.md §Git-модель` |
+| Preflight and the single fallback (`Notice:` + durable reason, resource stop, fail closed) | `opencode/pdca-collection/SKILL.md §Fallback` |
 | The role tiers (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
 | The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents) · §Orchestrator role · §State machine · §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §Frozen evidence manifest · §CHECK: audit checklist (generic)` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents) · §Orchestrator role · §State machine · §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §Reviewer evidence pack (independent CHECK over full bodies)`); `opencode/pdca/SKILL.md §Host requirements (roles → agents), :22-36` |
 | The contract texts are checked by tests, and the scenario matrix is marked as static (not proof of behaviour); the host artifacts (the `pdca-orchestrator` prompt runner, the profiles, `AGENTS.md`) are outside this repository | `opencode/pdca-collection/tests/test_plan_barrier.py` (including `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

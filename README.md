@@ -20,9 +20,9 @@ Skills live under [`opencode/`](opencode/).
 | [`pdca-entry`](opencode/pdca-entry) | Single entry point (umbrella) for the family: classifies a task and routes it to exactly one contract — collection, incremental, .NET, coder or the neutral cycle. |
 | [`pdca`](opencode/pdca) | Domain-neutral PDCA cycle: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. |
 | [`pdca-coder`](opencode/pdca-coder) | Stack-agnostic PDCA executor for software-engineering tasks (code, tests, docs, refactoring, config). Picks the build/test/lint toolchain per language. |
-| [`pdca-collection`](opencode/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups). |
+| [`pdca-collection`](opencode/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups); a batch may contain single-cycle units and sequential incremental-campaign units. |
 | [`pdca-dotnet`](opencode/pdca-dotnet) | PDCA cycle for .NET/C# tasks: parallel DO/CHECK streams, role routing, ACT handoff. |
-| [`pdca-incremental`](opencode/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds. |
+| [`pdca-incremental`](opencode/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds; a campaign can also be a unit of a collection batch and then stays sequential. |
 
 The five contracts share the same cycle: a cheap orchestrator drives roles (planner, coder,
 check, scout, escalate), every CHECK is evidence-based, and a required approval that cannot
@@ -92,8 +92,10 @@ Invoke a skill by name, e.g. in an opencode session:
 - `pdca` — only when explicitly named (domain-neutral cycle).
 - `pdca-coder` — explicitly, for code tasks of any stack.
 - `pdca-dotnet` — explicitly, for .NET/C# work.
-- `pdca-collection` — for a list of independent tasks / a milestone.
-- `pdca-incremental` — for a goal without a committed whole-volume plan (per-task plans may already exist), moved forward in steps; includes per-step `repair` and an optional integrated `verify`.
+- `pdca-collection` — for a list of independent tasks / a milestone; a collection batch may contain
+  cycle units and campaign units, and a campaign unit stays sequential (one lane, one step at a
+  time).
+- `pdca-incremental` — for a goal without a committed whole-volume plan (per-task plans may already exist), moved forward in steps; includes per-step `repair` and an optional integrated `verify`. A campaign can also run as a unit of a collection batch.
 
 ## Tests
 

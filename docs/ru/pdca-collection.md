@@ -240,7 +240,102 @@ CHECK — перезапускаются все обязательные гей�
   `Notice:` и записанной причиной, в обычном — сообщением пользователю; запрет хоста не
   обходится.
 
-## 7. Куда дальше
+## 7. Композиция: в пакете может быть кампания
+
+Пакет не обязан состоять только из одиночных циклов. Коллекция работает с **единицами**, и форма
+исполнения единицы — `execution_kind` ровно с двумя значениями: `cycle` — один полный
+PLAN → DO → CHECK → ACT своего варианта, с `plan_state` и `selected_variant`; и `campaign` —
+incremental-кампания со своей целью, каркасом, runtime-статусом и шагами, **без** собственного
+`selected_variant` на уровне единицы и без «домена кампании». `execution_kind` и
+`selected_variant` — разные поля: форму решает PLAN коллекции (`pdca-planner`), раннер только
+читает готовое значение (`opencode/pdca-collection/SKILL.md` §Единицы коллекции и форма
+исполнения). Шаг кампании — только цикл семейства: ни «кампании в кампании», ни «коллекции внутри
+кампании» (и коллекции внутри коллекции) не выражается.
+
+**Барьер спрашивает с единицы то, что у неё есть.** Единица `cycle` предъявляет настоящий PLAN
+этого цикла (`plan_state=ready`). Единица `campaign` предъявляет утверждённый отдельный
+immutable/revisioned **preparation document** — `.pdca/<collection-id>/units/<unit-id>/preparation.md` —
+с девятью пунктами каркаса, `preparation_state=ready` и **единственным authoritative**
+`preparation_ref` вида `<path>@r<k>` в записи единицы. `campaign_ref` — указатель на runtime-статус
+кампании: до baseline bootstrap он может отсутствовать и обязателен после; это не указатель на
+каркас и не замена `preparation_ref`. Барьеру не нужны ни baseline evidence, ни runtime-статус
+`running`, ни планы будущих шагов, ни варианты будущих шагов, ни число шагов; до барьера не
+аллоцируется ни один лейн — ни для одного из видов
+(`opencode/pdca-collection/SKILL.md` §P — собственные PLAN задач, барьер, кластеризация).
+
+**Baseline bootstrap идёт после барьера.** Выделенный `pdca-executor` создаёт baseline evidence по
+рецепту каркаса и runtime-статус кампании `Status: running`, указывая `preparation_ref` и записывая
+`campaign_ref`. Это не шаг, не зачитывается и продукт не меняет; подготовительные записи до
+барьера разрешены, а substantive bootstrap и change-producing DO — нет. Runtime хранит
+`preparation_ref` как **ссылку**, а не копию каркаса. Пересогласование цели, критериев target/floor,
+правил их вывода, порога, критериев успеха или правил остановки — не «уточнение»: это
+`pdca-planner` и действующий апрув, затем **новая immutable ревизия** preparation document,
+обновление `preparation_ref` и сохранение прежней ревизии
+(`opencode/pdca-incremental/SKILL.md` §Статус-файл кампании).
+
+**Готовность — не завершение.** `preparation_state=ready` без runtime — это `barrier-ready`, а не
+`started`: единица остаётся `pending` и никогда не становится `done` от готовности каркаса. `done`
+даёт только принятый `met` с явным `disposition=finalized`
+(`opencode/pdca-collection/SKILL.md` §A.1 Маршрутизация исходов кампании).
+
+**Пауза — не финал.** `blocked`, `stopped` и `unreachable` с допустимым следующим target в
+неизменной цели и границах — это checkpoint: `disposition=paused`, единица остаётся `in-progress`,
+а resume явный. Финальный `incomplete` — и запускаемый им существующий group-stop, когда
+оставшиеся `pending`-единицы группы помечаются `incomplete` и не исполняются, — требует явного
+финального неуспешного disposition и из паузы не выводится. Бесконечной автоматической докачки
+нет; пауза и resume не сбрасывают `N`/`r`/`n`; лейн на паузе не продвигает зависимую цепочку своей
+группы, остальные группы продолжают; критерии успеха молча не меняются
+(`opencode/pdca-collection/SKILL.md` §A.1 Маршрутизация исходов кампании).
+
+**Disposition и производная пауза лейна.** `disposition` (`active` | `paused` | `finalized`) —
+per-unit поле, а не статус задачи или группы. Пауза лейна **производна** от `disposition=paused`
+текущей единицы и не хранится отдельным authoritative полем лейна; новых значений статуса не
+вводится, а `blocked` остаётся состоянием общей верификации
+(`opencode/pdca-collection/SKILL.md` §Пауза лейна).
+
+**Три раздельных пространства состояний.** Готовность единицы (`plan_state` /
+`preparation_state`), runtime-статус кампании (`Status`) и per-unit `disposition` — разные вещи, у
+каждой свой файл и свои идентификаторы: статус коллекции, preparation document, runtime-статус
+кампании и статус собственного цикла шага. Семантику записи определяют primary/`pdca-planner`;
+физическую запись выполняет `pdca-executor` по явному диспетчу
+(`opencode/pdca-collection/SKILL.md` §Статус коллекции).
+
+**Поверхность принадлежит коллекции.** Плановый footprint — **консервативная резервация
+разрешённой поверхности на всю задачу**, а не прогноз точных правок и не union первых шагов;
+широкая резервация допустима и означает меньше параллелизма, а не неверный план. Каркас кампании
+содержит поверхность как подмножество, и шаг не может выйти за поверхность кампании. Расширение
+резервации или поверхности после барьера — stop/reapprove: явное пересогласование у
+коллекционного `pdca-planner` (в normal mode — у пользователя) с учётом уже запущенных лейнов и
+уже принятых результатов, без автоматического `recluster`/`remerge`/`reset`/`revert`
+(`opencode/pdca-collection/SKILL.md` §Резервация поверхности и её расширение).
+
+**Драйвер — тот же дешёвый раннер.** В коллекции кампанию ведёт существующий
+`pdca-orchestrator` в `mode=collection-lane`: он получает `execution_kind` единицы, загруженный
+контракт кампании и правило диспетчеризации, и ведёт state machine кампании и текущий цикл шага
+**inline** в одной сессии лейна. Отдельного агента кампании и нового уровня `Task` нет; кампания
+всегда однопоточна — один шаг за раз, один лейн, без внутреннего параллелизма. В normal mode
+каждый фактический шаг проходит полноценный PLAN своего варианта и утверждается по действующему
+active contract; бриф PLAN не подменяет и апрувом не является
+(`opencode/pdca-collection/SKILL.md` §Драйвер лейна и кампания (mode=collection-lane)).
+
+**Завершение и коммиты остаются на уровне коллекции.** Приёмка кампании (`met`) и общая
+верификация коллекции — разные события: успех кампании не заменяет общий CHECK на интегрированном
+дереве. Внешний commit/branch lifecycle единицы принадлежит коллекции; `Commit policy: none`
+означает отсутствие промежуточных step-коммитов и не запрещает outer completion commit, а явное
+no-commit ограничение, конфликтующее с обязательной git-моделью, — preflight блокер до аллокации
+лейнов (`opencode/pdca-collection/SKILL.md` §Git-модель).
+
+**Preflight и fallback.** До аллокации лейнов и до старта кампании в лейне проверяется наблюдаемая
+способность хоста: обязательные роли и контракты, вложенная делегация драйверу, сам
+`pdca-orchestrator` и ребро `escalate → scout` — без dummy substantive work и без выдуманного
+числа host-настройки. Fallback ровно один: если драйвер лейна недоступен, плоский дешёвый primary
+ведёт работу сам, по одному лейну, помечая это строкой `Notice:` с durable-ссылкой на причину,
+по-прежнему диспетчеризует роли и не получает их прав. Недоступная **обязательная роль** —
+resource stop прогона; недоступный **контракт цикла** — fail closed без подстановки «похожего»
+варианта; позднее обнаружение — безопасная пауза до зависимого действия, а не ослабление гейта
+(`opencode/pdca-collection/SKILL.md` §Fallback).
+
+## 8. Куда дальше
 
 - Полный текст скилла, его роль (агент-обёртка `pdca-orchestrator`, вход `COLLECTION TASK PLAN`,
   лейн группы), фазы P/D/C/A, статус, git-модель и семантика сбоя —
@@ -251,7 +346,8 @@ CHECK — перезапускаются все обязательные гей�
 - База цикла: [`opencode/pdca-coder/SKILL.md`](../../opencode/pdca-coder/SKILL.md) (для .NET —
   идентичная база [`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md)).
   Соседние статьи семейства: [`pdca.md`](pdca.md) — доменно-нейтральное ядро,
-  [`pdca-coder.md`](pdca-coder.md) и [`pdca-dotnet.md`](pdca-dotnet.md) — инженерные варианты.
+  [`pdca-coder.md`](pdca-coder.md) и [`pdca-dotnet.md`](pdca-dotnet.md) — инженерные варианты,
+  [`pdca-incremental.md`](pdca-incremental.md) — кампания, которая может стать единицей пакета.
 - Проверки контракта — [`opencode/pdca-collection/tests/`](../../opencode/pdca-collection/tests/):
   тесты текста скилла и рендера диаграммы плюс сценарная матрица, **помеченная как
   статическая** (не доказательство поведения); диаграмма — `assets/diagram/` (генератор
@@ -279,6 +375,13 @@ CHECK — перезапускаются все обязательные гей�
 | Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `opencode/pdca-collection/SKILL.md §Сбой (failure semantics) · §Статус коллекции` |
 | Параметры: cap = 4, worktree-каталог, merge-право | `opencode/pdca-collection/SKILL.md §Отчёт · §Параметры` |
 | Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md §Связь с базовым PDCA · §Fallback` |
+| Композиция: две формы исполнения (`execution_kind` ≠ `selected_variant`), запрет рекурсии, форму решает PLAN коллекции | `opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения` |
+| Барьер по видам единиц, отдельный immutable/revisioned preparation document, `preparation_state`, единственный `preparation_ref`, `campaign_ref` optional до и обязателен после bootstrap, три операции, готовность ≠ завершение, пересогласование как новая ревизия | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация · §A.1 Маршрутизация исходов кампании`; `opencode/pdca-incremental/SKILL.md §Статус-файл кампании` |
+| `met` — единственный успех, пауза vs финал, явный финальный неуспешный disposition и group-stop, per-unit `disposition` и производная пауза лейна, раздельные пространства готовности/runtime/disposition | `opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании · §Пауза лейна · §Статус коллекции` |
+| Драйвер лейна (тот же `pdca-orchestrator`, кампания inline, один лейн) и PLAN/апрув шага | `opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane)` |
+| Владение поверхностью и консервативная резервация на всю задачу; расширение как stop/reapproval | `opencode/pdca-collection/SKILL.md §Резервация поверхности и её расширение` |
+| Коммиты: коллекция владеет внешним lifecycle, `Commit policy: none` и preflight блокер | `opencode/pdca-collection/SKILL.md §Git-модель` |
+| Preflight и единственный fallback (`Notice:` + durable reason, resource stop, fail closed) | `opencode/pdca-collection/SKILL.md §Fallback` |
 | Тиры ролей (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
 | База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей универсального варианта (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents) · §Orchestrator role · §State machine · §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §Frozen evidence manifest · §CHECK: audit checklist (generic)` (для .NET — идентичная база `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents) · §Orchestrator role · §State machine · §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §Reviewer evidence pack (independent CHECK over full bodies)`); `opencode/pdca/SKILL.md §Host requirements (roles → agents), :22-36` |
 | Тексты контракта проверяются тестами, а сценарная матрица помечена как статическая (не доказательство поведения); хостовые артефакты (промпт-раннер `pdca-orchestrator`, профили, `AGENTS.md`) — вне этого репозитория | `opencode/pdca-collection/tests/test_plan_barrier.py` (в т.ч. `:33-38`), `tests/test_verification_recovery.py`, `tests/scenarios.md` |

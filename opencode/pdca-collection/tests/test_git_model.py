@@ -24,6 +24,7 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SIM = SKILL_DIR / "tests/git-model-sim.sh"
+SKILL = SKILL_DIR / "SKILL.md"
 
 BASH = shutil.which("bash")
 GIT = shutil.which("git")
@@ -67,3 +68,80 @@ class GitModelSimTest(unittest.TestCase):
         # Every case prints its own OK line; the final marker proves the whole
         # script ran to completion instead of exiting early after one case.
         self.assertIn("OK: git model verified", proc.stdout, output)
+
+
+def _statements(text: str) -> list[str]:
+    """Paragraphs, further split at bullet/table-row boundaries (one statement each)."""
+    out: list[str] = []
+    for block in re.split(r"\n\s*\n", text):
+        if not block.strip():
+            continue
+        out.extend(
+            part for part in re.split(r"\n(?=\s*(?:[-*|]|\d+\.)\s)", block) if part.strip()
+        )
+    return out
+
+
+def _outer_commit_prohibitions(text: str) -> list[str]:
+    """Statements that read `Commit policy: none` as a ban on the outer commit.
+
+    Only a *non-negated* ``запрещ...`` counts: ``не запрещает`` is the wording the
+    contract is expected to use (the policy does not forbid the collection's own
+    outer commit). ``не разреш...`` is always a prohibition.
+    """
+    hits: list[str] = []
+    for statement in _statements(text):
+        if not re.search(r"(?i)Commit policy:\s*`?none", statement):
+            continue
+        if not re.search(r"(?i)commit", statement):
+            continue
+        for ban in re.finditer(r"(?i)(запрещ\w*|не\s+разреш\w*)", statement):
+            before = statement[max(0, ban.start() - 12):ban.start()].lower()
+            if re.search(r"(?<!\w)не\s*$", before):
+                continue  # "не запрещает" — the allowed wording
+            hits.append(statement)
+            break
+    return hits
+
+
+class GitModelContractTextTest(unittest.TestCase):
+    """SKILL.md §Git-модель: `Commit policy: none` is not a ban on the outer commit."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.raw = SKILL.read_text(encoding="utf-8")
+        cls.plain = " ".join(cls.raw.replace("**", "").replace("`", "").split())
+
+    def test_commit_policy_none_is_declared(self):
+        self.assertIn(
+            "Commit policy: none",
+            self.raw,
+            "SKILL.md lacks the explicit `Commit policy: none` marker",
+        )
+        windows = [
+            self.plain[max(0, m.start() - 300): m.end() + 300]
+            for m in re.finditer(r"Commit policy: none", self.plain)
+        ]
+        self.assertTrue(
+            any(re.search(r"(?i)commit", w) and "внешн" in w for w in windows),
+            "SKILL.md must scope `Commit policy: none` to external work "
+            f"(stem 'внешн' near 'commit'): {windows!r}",
+        )
+
+    def test_commit_policy_none_does_not_forbid_the_outer_commit(self):
+        self.assertIn(
+            "preflight",
+            self.plain,
+            "SKILL.md lacks the git `preflight` step (paired with the "
+            "commit-policy scope)",
+        )
+        self.assertTrue(
+            "блокер" in self.plain or "blocker" in self.plain,
+            "SKILL.md must name a `блокер`/`blocker` instead of an outer-commit ban",
+        )
+        self.assertEqual(
+            [],
+            _outer_commit_prohibitions(self.raw),
+            "`Commit policy: none` must not be presented as forbidding the "
+            "collection's outer commit",
+        )

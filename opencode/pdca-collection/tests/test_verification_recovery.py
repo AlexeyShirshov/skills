@@ -2510,6 +2510,65 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         self.assertNotIn("skipped", scen_enum.group(0))
         self.assertNotIn("merge-disposition", scenarios)
 
+    # --- pause of a lane is derived: no new status, no runtime mirror -----
+
+    def test_lane_pause_is_derived_and_adds_no_new_status(self):
+        skill = self._plain(self.skill)
+        # `paused` co-exists with the existing group enum value `in-progress`:
+        # it is derived, not a replacement for the group enum.
+        self.assertIn("in-progress", skill)
+        self.assertIn("paused", skill, "SKILL.md lacks the derived `paused` state")
+        windows = [
+            skill[max(0, m.start() - 300): m.end() + 300]
+            for m in re.finditer("paused", skill)
+        ]
+        self.assertTrue(
+            any("in-progress" in w for w in windows),
+            "`paused` must be stated next to `in-progress` (it is derived, not a "
+            "replacement for the group enum)",
+        )
+        # the pause is derived from the lane, and adds no new statuses
+        self.assertIn("производн", skill,
+                      "SKILL.md must say the pause is derived (stem 'производн')")
+        self.assertIn("новых статусов", skill,
+                      "SKILL.md must say no new statuses are introduced")
+        # negative: `blocked` is never (re)defined as a task/group status; a
+        # negated mention ("статуса `blocked` ... нет") is the required wording,
+        # not a definition.
+        for line in self.skill.splitlines():
+            m = re.search(r"(?i)статус[а-я]*\s+`?`?blocked`?`?", line)
+            if not m:
+                continue
+            tail = line[m.end(): m.end() + 60].lower()
+            with self.subTest(line=line.strip()[:80]):
+                self.assertTrue(
+                    re.search(r"нет|не\s+является|не\s+существует|запрещ|отсутству", tail),
+                    "a status definition of `blocked` appeared for tasks/groups: "
+                    f"{line!r}",
+                )
+
+    def test_failure_recovery_writes_a_checkpoint_and_resumes(self):
+        skill = self._plain(self.skill)
+        for token in ("checkpoint", "resume", "incomplete", "group-stop", "met"):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, skill,
+                    f"SKILL.md lacks the recovery token {token!r}",
+                )
+
+    def test_final_disposition_is_explicit_and_only_accepted_met_is_done(self):
+        skill = self._plain(self.skill)
+        self.assertIn("checkpoint", skill,
+                      "SKILL.md lacks the recovery checkpoint (paired with the "
+                      "explicit final disposition)")
+        self.assertIn("явн", skill,
+                      "SKILL.md must require an explicit final disposition "
+                      "(stem 'явн')")
+        self.assertIn("только принятый", skill,
+                      "SKILL.md must state that only an accepted `met` closes "
+                      "work ('только принятый')")
+        self.assertIn("met", skill)
+
 
 # ---------------------------------------------------------------------------
 # Measured text-fit regression (best-effort, tools-dependent).

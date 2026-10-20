@@ -2,7 +2,7 @@
 
 This is a human-readable guide to the `pdca*` skill family and the `pdca-orchestrator` driver
 agent: why they exist, how the cycle is built, where its transitions and gates are (gates are the
-conditions under which the next step is allowed), how the four skills differ, and how all of it
+conditions under which the next step is allowed), how the five skills differ, and how all of it
 survives long work, context compaction and failure. The document is meant as a base for
 public-facing articles, so it explains the logic in plain language rather than retelling the
 contracts verbatim.
@@ -75,7 +75,7 @@ loop of identical fixes begin.
 
 ## 2. The family map
 
-The family consists of exactly **four skills**; `pdca-orchestrator` is not a fifth skill but a
+The family consists of exactly **five skills**; `pdca-orchestrator` is not a sixth skill but a
 **driver agent** (a wrapper role) that drives the cycle using one of the chosen skills.
 
 | Skill | What for | How it is invoked | File (repo) |
@@ -85,6 +85,7 @@ The family consists of exactly **four skills**; `pdca-orchestrator` is not a fif
 | `pdca-coder` | Software-engineering tasks of any stack: code, tests, documentation, refactoring, configuration | Explicit ID (`@pdca-coder`), or the entry routes other code here | `opencode/pdca-coder/SKILL.md` |
 | `pdca-dotnet` | The same, but with .NET/C# specifics and .NET gates | Explicit ID (`@pdca-dotnet`), or the entry routes .NET/C# work here | `opencode/pdca-dotnet/SKILL.md` |
 | `pdca-collection` | A batch of independent tasks split into parallel group lanes | Explicit ID (`@pdca-collection`), or the entry routes a known list here | `opencode/pdca-collection/SKILL.md` |
+| `pdca-incremental` | One goal without a mandatory whole-volume plan (per-task plans may be ready): a chain of steps, each next one from the previous accepted measurement | "инкрементами", "маленькими шагами", "нет плана на весь объём", "каждый следующий шаг из предыдущего", `pdca-incremental` | `opencode/pdca-incremental/SKILL.md` |
 
 `pdca-entry` is the **only skill advertised to the model**; the five contracts set
 `metadata.opencode/autoinvoke: false` and are loaded by an explicit ID or by the entry's handoff.
@@ -95,7 +96,21 @@ The key separation is **the skill sets the contract, the agent sets the executio
 `pdca-coder` and `pdca-dotnet` are three variants of one and the same cycle, differing in their
 level of concreteness: domain-neutral, engineering and .NET-specialized. `pdca-collection` is a
 level **above** the cycle: it does not redefine the base contract's state machine but adds a layer
-of grouping and parallel launching.
+of grouping and parallel launching. `pdca-incremental` is the second level above it: the same base,
+but instead of a fixed batch — a chain of steps where the next one is chosen from the accepted
+measurement. The list of tasks may be known in advance, but it is a queue of candidates, not a
+common DAG; a step is a task (see [`pdca-incremental.md`](pdca-incremental.md)).
+
+**Neighbour and composition.** These are neighbours, not alternatives. A collection batch may
+contain units of both execution forms: a single cycle (`execution_kind=cycle`) and an incremental
+campaign (`execution_kind=campaign`). A campaign inside a batch stays sequential — one step at a
+time, one lane, no internal parallelism. The entry's routing priorities are unchanged (collection →
+incremental → .NET → other code → neutral), no sixth contract is added, and there is no re-routing
+after a contract starts: loop-backs (DO → PLAN, CHECK → DO) belong to the chosen contract.
+`execution_kind` is not `selected_variant`: a unit's form of execution is not a cycle variant, and a
+variant is not a form of execution
+(`opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения`;
+`opencode/pdca-entry/SKILL.md §Composition: form of execution vs. cycle variant`).
 
 **Who chooses the variant.** There are three paths.
 
@@ -804,6 +819,13 @@ availability of parallelism: several independent goals → collection (parallel 
 footprints exist, otherwise one sequential group); one shared goal/metric → `pdca-incremental`
 (step = task), even when the list is known up front. A known list alone is not a campaign, and a
 serialized batch is not a reason to switch contracts.
+
+**Composition.** A batch may contain units of two forms: a single cycle and an incremental campaign
+(`execution_kind`). A campaign inside a batch stays sequential and is led inline by the same
+`pdca-orchestrator` in its lane; the barrier asks it for a separate preparation document, the
+baseline bootstrap runs after the barrier, readiness is not completion, pause is not final, and only
+an accepted `met` gives `done`. The external commit/branch lifecycle of the unit belongs to the
+collection (see [`pdca-collection.md`](pdca-collection.md) §7).
 
 **The role and the choice of variant.** The collection is driven by a primary orchestrator; it
 **does not edit files or run commands itself** — the infrastructure (worktrees, branches),

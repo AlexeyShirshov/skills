@@ -28,6 +28,10 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def norm(text: str) -> str:
+    return " ".join(text.split())
+
+
 def frontmatter(path: Path) -> dict[str, str]:
     text = read(path)
     end = text.find("\n---", 3)
@@ -129,6 +133,75 @@ class RoutingRuleTest(unittest.TestCase):
         self.assertIn("not a sixth cycle contract", text)
         for phrase in ("pdca-collection", "pdca-incremental", "top-level"):
             self.assertIn(phrase, text)
+
+
+def sentences(text: str) -> list[str]:
+    return [s for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+
+
+class CompositionTest(unittest.TestCase):
+    """Collection units may be cycles or campaigns; the form is not the variant."""
+
+    def test_priority_rows_are_unchanged(self):
+        rows: list[tuple[str, str]] = []
+        for line in routing_section().splitlines():
+            match = re.match(r"^\|\s*([0-5])\s*\|([^|]*)\|[^|]*\|\s*$", line)
+            if match:
+                rows.append((match.group(1), match.group(2)))
+        self.assertEqual(["0", "1", "2", "3", "4", "5"], [num for num, _ in rows],
+                         "the routing table gained or lost a priority row")
+        expected = [
+            ("0", "names a contract explicitly"),
+            ("1", "known list"),
+            ("2", "verifiable goal"),
+            ("3", ".NET / C#"),
+            ("4", "another stack"),
+        ]
+        positions: list[int] = []
+        for number, label in expected:
+            with self.subTest(row=number):
+                hits = [i for i, (num, signal) in enumerate(rows)
+                        if num == number and label.lower() in signal.lower()]
+                self.assertTrue(hits, "routing row %s no longer says %r" % (number, label))
+                positions.append(hits[0])
+        self.assertEqual(sorted(positions), positions, "routing priority order drifted")
+
+    def test_execution_kind_is_not_selected_variant(self):
+        text = norm(read(SKILL))
+        for token in ("execution_kind", "selected_variant"):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        self.assertRegex(
+            text.lower(),
+            r"different fields|not the same field|not interchangeable|"
+            r"different things|разные поля|не одно и то же",
+            "the entry must say execution_kind and selected_variant are different fields",
+        )
+
+    def test_a_batch_may_contain_campaign_units(self):
+        hits = [
+            s for s in sentences(norm(read(SKILL)))
+            if re.search(r"\bbatch\b|\bcollections?\b", s, re.I)
+            and re.search(r"\bcampaigns?\b", s, re.I)
+            and re.search(r"contain|include|units?\b|содерж|включ", s, re.I)
+        ]
+        self.assertTrue(hits, "the entry must say a collection/batch may contain campaign units")
+
+    def test_medium_primary_hands_off_to_the_cheap_primary(self):
+        hits = [
+            s for s in sentences(norm(read(SKILL)))
+            if re.search(r"handoff|hands? off", s, re.I)
+            and re.search(r"cheap primary", s, re.I)
+            and re.search(r"medium|strong", s, re.I)
+        ]
+        self.assertTrue(
+            hits,
+            "the entry must state an explicit handoff from a medium/strong primary "
+            "to the cheap primary",
+        )
+
+    def test_no_rerouting_after_the_contract_starts(self):
+        self.assertIn("re-rout", norm(read(SKILL)).lower())
 
 
 class HandoffTest(unittest.TestCase):

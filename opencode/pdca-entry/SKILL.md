@@ -34,6 +34,21 @@ single goal just because its work is listed.
 canonical in `pdca-incremental` §«Когда выбирать»: the goal is checkable, the path is unknown,
 the steps are information-dependent, and a whole-volume plan would be a stub.
 
+### Composition: form of execution vs. cycle variant
+
+A batch (a collection) may contain units of two kinds: `execution_kind=cycle` (one full cycle of
+its variant) and `execution_kind=campaign` (an incremental campaign with its own frame and steps).
+The collection owns the batch in both cases; the PLAN of the collection decides each unit's form of
+execution.
+
+`execution_kind` and `selected_variant` are different fields: `execution_kind` says how a unit is
+executed, while `selected_variant` names only a cycle contract (`pdca`, `pdca-coder`, `pdca-dotnet`)
+and is never a campaign or a form of execution. A campaign has no unit-level variant: the variant
+belongs to each concrete step and is chosen by the campaign by the existing selection rules.
+
+A medium/strong primary does not drive or dispatch the cycle: it makes an explicit handoff to the
+cheap primary, preserving refs. There is no re-routing after the contract starts.
+
 ## Handoff
 
 - **Normal mode (plan approval):** load the chosen contract through the host's skill mechanism (by

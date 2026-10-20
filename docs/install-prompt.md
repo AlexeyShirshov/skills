@@ -98,7 +98,12 @@ PROFILE=<профиль или пусто>
    - Проверь: ни в одном агенте нет выдуманного `model:`; у runner есть allowlist pdca-*.
 
 3. Делегация и права (формат хоста)
-   - opencode V2: `experimental.subagent_depth` >= 2 (top-level `subagent_depth` V2 игнорирует);
+   - opencode V2: `experimental.subagent_depth` в секции `experimental` (top-level `subagent_depth`
+     V2 игнорирует). Графу нужны рёбра `primary → driver`, `driver → role`, `escalate → scout` —
+     три ребра; счётчик считает рёбра вложенности сессий ниже primary (по умолчанию 1), и
+     настроенное значение не доказывает, что установленная сборка проходит цепочку: зафиксируй
+     версию сборки хоста и проверь фактическую цепочку в smoke-прогоне (шаг 6). Числа
+     `subagent_depth`/`cap` не выдумывай;
      `permissions` — action `subagent`, allow для pdca-scout, pdca-planner, pdca-executor,
      pdca-check, pdca-escalate, pdca-security-auditor, pdca-orchestrator; `skill` allow.
    - opencode V1: top-level `"subagent_depth": 3` (ключа `experimental.subagent_depth` в V1 нет);
@@ -129,7 +134,8 @@ PROFILE=<профиль или пусто>
 
 6. Перезапуск и проверка
    - opencode V2: `opencode service restart`, затем `opencode debug agents` (все роли и runner
-     видны) и `opencode debug config` (subagent_depth >= 2).
+     видны) и `opencode debug config` (`experimental.subagent_depth` виден в секции `experimental`;
+     само значение — не проверка цепочки).
    - opencode V1: перезапусти TUI/приложение (команды `service` в V1 нет); проверь
      `opencode agent list` (все роли и runner видны) и что `pdca-entry` виден в списке скиллов.
      `debug agents`/`debug config` — V2-only, в V1 их не требуй.
@@ -139,6 +145,22 @@ PROFILE=<профиль или пусто>
      явному id/имени.
    - Smoke: вызови pdca-entry на тривиальной задаче; убедись, что он назвал маршрут и передал
      выбранный контракт (в autonomous — как selected_variant).
+   - Preflight: проверь разрешимость обязательных ролей (без dummy substantive work — никаких
+     пробных правок, пробных задач и фиктивных шагов), доступность вложенной делегации драйверу,
+     `pdca-orchestrator` как субагента, ребро `escalate → scout` и загружаемость контракта шага.
+     Установленный `pdca-orchestrator` сверь с каноническим ассетом
+     `$SKILLS_REPO/opencode/pdca/assets/agents/` и проверь действующие права: наблюдавшийся случай —
+     установленная копия без делегирования `pdca-scout`, что молча ломает `escalate → scout`.
+     Ключа, элемента схемы или константы параллельного cap на стороне хоста в проверенном исходнике
+     V2 нет — это не значит «без ограничений», значения `cap` не выдумывай.
+   - Семантика отказов: обязательная роль недоступна → resource stop (другая роль её не исполняет);
+     контракт цикла недоступен → fail closed; обнаружено поздно → безопасная пауза до зависимого
+     действия; fallback ровно один — дешёвый primary ведёт inline, `Notice:` с durable-причиной.
+   - Если установку проверяет medium/strong primary, он цикл не запускает и не диспетчеризует:
+     нужен явный handoff дешёвому primary с сохранением ссылок (задача, статус-файл, `.pdca/`).
+   - Проверка на чистом хосте — открытый prerequisite, записанный в install-документах
+     (`docs/install.md` §11, `Verification status: unverified`): не выдавай успешные тесты
+     репозитория за проверку установки.
 
 7. Отчёт
    В шапке укажи `opencode_major` (detected/pinned) и применённую ветку адаптера.

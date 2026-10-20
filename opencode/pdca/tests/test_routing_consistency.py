@@ -88,6 +88,10 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def norm(text: str) -> str:
+    return " ".join(text.split())
+
+
 def _parse_block(block: str) -> dict:
     """Tiny indentation parser for the flat/nested frontmatter subset used here."""
     root: dict = {}
@@ -419,6 +423,39 @@ RUNNER_ASSET = ASSET_AGENTS / "pdca-orchestrator.md"
 FAMILY_SKILLS = ("pdca-entry", "pdca", "pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental")
 # Repo root: <repo>/opencode/pdca/tests/<this file>.
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+class RunnerMetadataBoundaryTest(unittest.TestCase):
+    """The runner learns state from tool outputs and reads durable files only in scope."""
+
+    @staticmethod
+    def _body() -> str:
+        return norm(read(RUNNER_ASSET)).lower()
+
+    def test_runner_receives_metadata_from_tool_outputs(self):
+        self.assertRegex(self._body(), r"\btool outputs?\b")
+
+    def test_runner_reads_durable_state_only_in_scope(self):
+        text = self._body()
+        self.assertTrue(
+            "scoped" in text or "host-permitted" in text,
+            "runner must bound durable reads to a scoped/host-permitted boundary",
+        )
+        self.assertIn("read", text)
+
+    def test_runner_does_not_search_the_workspace_or_shell_out(self):
+        negations = re.compile(r"\b(?:never|not|no|cannot|don't)\b|не\b")
+        for line in read(RUNNER_ASSET).splitlines():
+            low = line.lower()
+            flagged = [p for p in ("workspace discovery",) if p in low]
+            if re.search(r"\b(?:rg|grep)\b", low):
+                flagged.append("rg/grep")
+            for phrase in flagged:
+                with self.subTest(phrase=phrase, line=line):
+                    self.assertRegex(
+                        low, negations,
+                        "runner must not instruct a workspace search or a shell grep: %r" % line,
+                    )
 
 
 class RunnerAssetTest(unittest.TestCase):

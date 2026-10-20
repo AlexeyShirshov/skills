@@ -26,6 +26,7 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
+RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
@@ -184,6 +185,52 @@ def make_db(path: Path) -> None:
         con.commit()
     finally:
         con.close()
+
+
+class RunnerAssetBoundaryTest(unittest.TestCase):
+    """The canonical runner asset keeps the dispatcher-only permissions of every copy."""
+
+    ALLOWLIST = {
+        "pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
+        "pdca-scout", "pdca-security-auditor", "docfx-specialist", "dotnet-*",
+    }
+
+    def permission(self) -> dict:
+        perm = frontmatter(RUNNER_ASSET).get("permission")
+        self.assertIsInstance(perm, dict, "%s: no `permission:` map" % RUNNER_ASSET)
+        return perm
+
+    def test_runner_asset_denies_edit_write_and_bash(self):
+        perm = self.permission()
+        for action in ("edit", "write", "bash"):
+            with self.subTest(action=action):
+                self.assertEqual("deny", perm.get(action))
+
+    def test_runner_asset_task_is_default_deny_with_the_role_allowlist(self):
+        task = self.permission().get("task")
+        self.assertIsInstance(task, dict, "runner: no `task` map")
+        self.assertEqual("deny", task.get("*"), "runner must deny `task` by default")
+        allowed = {name for name, effect in task.items() if effect == "allow"}
+        self.assertEqual(self.ALLOWLIST, allowed, "runner role allowlist drifted")
+
+    def test_runner_asset_grants_itself_no_read_write_or_bash_allow(self):
+        perm = self.permission()
+        for action in ("read", "edit", "write", "bash"):
+            with self.subTest(action=action):
+                self.assertNotEqual("allow", perm.get(action),
+                                    "runner must not grant itself `%s`" % action)
+
+    def test_skill_loading_fallback_belongs_to_an_authorized_role(self):
+        paragraphs = [
+            p for p in re.split(r"\n\s*\n", read(RUNNER_ASSET))
+            if any(k in p.lower() for k in ("fallback", "cannot load", "skill-loading"))
+        ]
+        self.assertTrue(paragraphs, "runner must describe the skill-loading fallback")
+        for paragraph in paragraphs:
+            with self.subTest(paragraph=" ".join(paragraph.split())[:60]):
+                low = paragraph.lower()
+                self.assertTrue("authorized role" in low or "pdca-scout" in low,
+                                "fallback must be assigned to an authorized role")
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)

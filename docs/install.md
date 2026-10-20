@@ -34,8 +34,10 @@ never classifies a task — it loads the contract named in `selected_variant`.
 
 The runner **`pdca-orchestrator` ships in every skill's `assets/agents/`** (the same file, so any
 install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
-profile's effective tier, not from the agent's name. A medium or strong primary (for example `architect`) **does not** drive
-the cycle; switch to the cheap primary (`build` by default) before asking for a cycle.
+profile's effective tier, not from the agent's name. A medium or strong primary (for example
+`architect`) **does not** launch or dispatch the cycle and does not run it flat itself: it hands off
+explicitly to the cheap primary (`build` by default), preserving the task, the status file and the
+`.pdca/` references, and that handoff is the only supported path into a cycle.
 
 ## 2. Install the skills
 
@@ -169,6 +171,15 @@ OpenCode V1:
 }
 ```
 
+What the graph needs is not an abstract depth but the **edges a call must traverse**:
+`primary → driver`, `driver → role`, and `escalate → scout` — three edges. On V2,
+`experimental.subagent_depth` counts session-nesting edges below the primary (default `1`), and a
+spawn is allowed only while the calling session's depth is below the configured limit. The number is
+a budget for that counting rule, not a capability certificate: a configured value on its own does
+**not** prove that the installed build supports the chain. Record the installed build's version and
+rely on the smoke run (§9), not on the number. The value shown above is an example of a configured
+setting, not a validated budget.
+
 The forms are not interchangeable: V2 accepts a top-level `subagent_depth` but **ignores** it
 (warning `omitted unsupported legacy setting`), and V1 ignores `experimental.subagent_depth`. In both
 cases the depth falls back to a single level — the runner can no longer delegate and every autonomous
@@ -282,28 +293,89 @@ Then check, in this order:
 
 1. **Agents are visible.** `opencode debug agents` must list every role the skill dispatches, plus
    `pdca-orchestrator`.
-2. **Depth is applied.** `opencode debug config` must show `experimental.subagent_depth` ≥ 2. A
-   warning about an ignored `subagent_depth` means it sits at the top level.
+2. **Delegation is configured.** `opencode debug config` must show the depth inside `experimental`
+   (a warning about an ignored `subagent_depth` means it sits at the top level). Record the configured
+   value, the installed host build version and the date — the value alone is not the check, the smoke
+   run below is.
 3. **Permissions resolve.** The same `debug agents` output shows the merged rule list per agent; the
    `subagent`/`edit`/`shell` rules must be present and in the right order (last match wins).
 4. **Smoke run.** Start a trivial cycle on a throwaway task. Success criteria: the primary dispatches
    the `pdca-planner` (not itself), `pdca-executor` writes the status file under `.pdca/`, and CHECK is done by
-   `pdca-check`, not by the author. If you see `Notice:` in the status file, the cycle fell back — read
+   `pdca-check`, not by the author. The run must also produce a real delegation chain that reaches
+   `escalate → scout` on a task that triggers escalation. If you see `Notice:` in the status file, the cycle fell back — read
    the recorded reason instead of treating the run as normal.
 
-## 10. Troubleshooting
+## 10. Preflight and fallback
+
+Every collection lane and every campaign checks capability **before** it allocates work. The check is
+about observable capability, not about a number in the config:
+
+- are the mandatory roles resolvable — allowed by policy, loadable as agents, present in the host's
+  agent list? Verify by resolution, never by dummy substantive work: no probe edits, probe tasks or
+  fake steps.
+- is nested delegation actually usable by the runner, and is `pdca-orchestrator` available as a
+  subagent?
+- is the `escalate → scout` edge reachable on every path where escalation may be needed?
+- is the step's cycle contract loadable and not forbidden?
+
+No numbers are invented here. `experimental.subagent_depth` is a configuration fact, not proof of the
+chain (§6). No host-side parallel-cap key, schema entry or constant was found in the inspected V2
+source; that absence is **not** evidence of unlimited concurrency, and `cap` values are not invented
+either.
+
+The installed runner may **drift** from the canonical asset in `opencode/pdca/assets/agents/`. Refresh
+it from the asset and verify its effective permissions before relying on it: an installed
+`pdca-orchestrator` that does not allow delegation to `pdca-scout` is the concrete observed example,
+and it silently breaks `escalate → scout`. This is part of the checklist in §5, not something the
+repository's tests can see, and it needs no change to the rest of the host configuration.
+
+Failure semantics:
+
+| Condition | Behaviour |
+|---|---|
+| driver unavailable (no agent, no nested delegation, preflight failed) | exactly one fallback: the cheap primary runs inline and writes `Notice:` with a durable reason (normal mode also tells you) |
+| mandatory role unavailable | resource stop: no other agent takes over; the run stops and records what was already accepted |
+| cycle contract unavailable | fail closed: no substitute variant, no "similar" cycle, no generic execution |
+| discovered late (after start) | safe pause before the dependent action; the gate is never weakened |
+
+## 11. Verification status: unverified
+
+**Status: OPEN — prerequisite documented, not established.**
+
+Cold-host installation is **not verified** in this repository. Not verified:
+
+- installation on a clean host;
+- execution of `primary → driver → roles`, including a real delegation reaching `escalate → scout`;
+- the installed host build version and the effective permissions of the installed agents;
+- the collection-lane mode and its observed fallback behaviour.
+
+Green repository tests do not verify a clean-host installation: they check contracts, assets and
+documentation, not a host. A green suite says nothing about whether your host can run the chain.
+
+**Closing trigger.** The operator performs an authorized clean-host run and records:
+
+- the actual host build/version and the execution date;
+- availability of all six required roles;
+- the collection-lane mode and the observed fallback behaviour;
+- a real delegation chain reaching `escalate → scout`;
+- execution results and the supporting logs.
+
+A separate follow-up cycle records that evidence on this page. Only that follow-up cycle may change
+this status from OPEN; completing a step here, or a green repository run, does not.
+
+## 12. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | A role is "not found" on dispatch | agent file missing, or installed into a directory the host does not discover | put it in `~/.config/opencode/agents/` (or `.opencode/agents/`), restart, re-check with `debug agents` |
-| Cycle falls back to the flat primary | no `pdca-orchestrator`, or `subagent_depth` < 2, or the host forbids delegation | §5 and §6 |
+| Cycle falls back to the flat primary | no `pdca-orchestrator`, no usable nested delegation (legacy key ignored, limit too low), or the host forbids delegation | §5 and §6 |
 | `Notice:` about a missing role | the skill's role name differs from the installed agent name (e.g. `pdca-planner` vs `pdca-planner`) | install the matching family, or alias the agent |
 | A role behaves like its V1 twin | the asset uses the legacy `permission:` map | V2 translates it (`permission` → `permissions`, `task` → `subagent`, `bash` → `shell`, `write`/`patch` → `edit`); the merged rules are visible in `debug agents` — prefer `permissions:` in new agents |
 | A rule has no effect | the asset names an action outside the V2 Core list | `todowrite`, `doom_loop` and `list` are not V2 Core permission actions (plugins may define their own). They pass through the config but match no built-in tool. Harmless, but do not rely on them |
 | Expensive model used for gathering | no tier binding in the profile | §8 |
 | `.pdca/` reads are asked for approval | the host denies `.pdca/**` to the check/executor | allow `read`/`edit` on `.pdca/**` for those agents |
 
-## 11. What the setup does not do
+## 13. What the setup does not do
 
 - It does not choose or bind models; without tier bindings every role inherits the primary's model
   (§8).
@@ -312,7 +384,7 @@ Then check, in this order:
   `incomplete`. Push is never granted.
 - It does not widen permissions for autonomous mode. Autonomy removes questions, not the gates.
 
-## 12. Let an agent install it
+## 14. Let an agent install it
 
 The checklist is packaged as a copy-paste prompt: [`install-prompt.md`](install-prompt.md). Fill its
 `Inputs` block — including `HOST=opencode|claude|codex|dsh|custom` — send it to a cheap primary (e.g.

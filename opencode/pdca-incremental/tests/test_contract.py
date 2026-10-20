@@ -16,6 +16,7 @@ Run:
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -240,6 +241,115 @@ class AutonomyTests(unittest.TestCase):
     def test_flat_primary_fallback_is_recorded(self) -> None:
         autonomy = _section(self.text, "## Автономный режим", "## Связь с семейством")
         self.assertIn("Notice:", autonomy)
+
+
+def _windows(text: str, token: str, radius: int) -> list[str]:
+    """Every window of ``radius`` characters on both sides of ``token``."""
+    return [
+        text[max(0, m.start() - radius): m.end() + radius]
+        for m in re.finditer(re.escape(token), text)
+    ]
+
+
+class CompositionContractTest(unittest.TestCase):
+    """A campaign is a composition of units, not a copy of its lane (AC02/04/06/15)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.raw = SKILL.read_text(encoding="utf-8")
+        cls.text = _plain(cls.raw)
+
+    def test_execution_kind_is_a_field_and_preparation_is_given_not_copied(self) -> None:
+        for token in ("execution_kind", "preparation_ref"):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, self.text,
+                    f"pdca-incremental lacks the composition field {token!r}",
+                )
+        self.assertTrue(
+            "collection-lane" in self.text or "collection lane" in self.text,
+            "pdca-incremental must name the collection lane it can be driven as",
+        )
+        self.assertIn(
+            "не копир", self.text,
+            "the contract must say the preparation is not copied (stem 'не копир')",
+        )
+
+    def test_disposition_and_pause_are_declared_states(self) -> None:
+        for token in ("disposition", "paused"):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token, self.text,
+                    f"pdca-incremental lacks the unit state {token!r}",
+                )
+        readiness = _windows(self.text, "готовност", 200)
+        self.assertTrue(readiness, "no 'готовност' (readiness) statement")
+        self.assertTrue(
+            any(re.search(r"(?<!\w)не(?!\w)", w) for w in readiness),
+            "readiness must be stated as not being completion ('не' near "
+            f"'готовност'): {readiness!r}",
+        )
+        pause = _windows(self.text, "пауза", 200)
+        self.assertTrue(pause, "no 'пауза' (pause) statement")
+        self.assertTrue(
+            any("не финал" in w for w in pause),
+            "a pause must be stated as not final ('не финал' near 'пауза'): "
+            f"{pause!r}",
+        )
+
+    def test_one_lane_and_no_campaign_in_campaign(self) -> None:
+        self.assertIn("один лейн", self.text,
+                      "pdca-incremental must state it runs as one lane")
+        self.assertIn("рекурси", self.text,
+                      "pdca-incremental must ban recursion (stem 'рекурси')")
+        for line in self.raw.splitlines():
+            if not re.search(
+                r"(?i)(campaign|кампани).{0,40}(внутри|in).{0,40}(campaign|кампани)",
+                line,
+            ):
+                continue
+            with self.subTest(line=line.strip()[:80]):
+                self.assertRegex(
+                    line,
+                    r"(?i)не|запрещ|forbidden",
+                    "campaign-in-campaign must be forbidden on the same line: "
+                    f"{line!r}",
+                )
+
+    def test_commit_policy_none_keeps_the_outer_commit(self) -> None:
+        self.assertIn(
+            "Commit policy: none", self.raw,
+            "the contract lacks the explicit `Commit policy: none` marker",
+        )
+        windows = [
+            self.text[max(0, m.start() - 300): m.end() + 300]
+            for m in re.finditer(r"Commit policy: none", self.text)
+        ]
+        self.assertTrue(
+            any(re.search(r"(?i)commit", w) and "внешн" in w for w in windows),
+            "`Commit policy: none` must be scoped to external work (stem "
+            f"'внешн' near 'commit'): {windows!r}",
+        )
+
+    def test_readiness_is_concrete_per_step(self) -> None:
+        self.assertIn(
+            "конкретн", self.text,
+            "each step must carry a concrete readiness statement (stem 'конкретн')",
+        )
+
+    def test_required_sections_and_step_row_survive(self) -> None:
+        for heading in ("## Роль", "## Роли, тиры и полномочия", "## Автономный режим"):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, self.raw, f"section lost: {heading}")
+        step_rows = [ln for ln in self.raw.splitlines() if re.match(r"\|\s*STEP N\s*\|", ln)]
+        self.assertTrue(step_rows, "the `STEP N` table row is gone")
+        for row in step_rows:
+            with self.subTest(row=row[:60]):
+                self.assertIn("pdca-orchestrator", row)
+        self.assertIn(
+            "execution_kind", self.text,
+            "the composition field must live in the preserved section structure",
+        )
 
 
 if __name__ == "__main__":
