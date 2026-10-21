@@ -352,5 +352,58 @@ class CompositionContractTest(unittest.TestCase):
         )
 
 
+class SelectionCriteriaTests(unittest.TestCase):
+    """§Когда выбирать carries the canonical discriminator the entry delegates to."""
+
+    def setUp(self) -> None:
+        plain = _plain(SKILL.read_text(encoding="utf-8"))
+        self.section = _section(plain, "## Когда выбирать", "## Инварианты кампании")
+
+    def test_campaign_criteria_are_enumerated(self) -> None:
+        for token in (
+            "Цель проверяема",
+            "путь неизвестен",
+            "информационно зависимы",
+            "планом-заглушкой",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token,
+                    self.section,
+                    f"§Когда выбирать lost a campaign criterion: {token!r}",
+                )
+
+    def test_discriminator_against_a_known_plan_and_independent_goals(self) -> None:
+        self.assertRegex(
+            self.section,
+            r"план на весь объём известен.{0,80}один цикл",
+            "a known whole-volume plan must route to one cycle, not a campaign",
+        )
+        self.assertRegex(
+            self.section,
+            r"независимыми целями.{0,120}pdca-collection",
+            "independent goals must route to a collection",
+        )
+        self.assertRegex(
+            self.section,
+            r"одной общей цели/метрике.{0,120}кампания",
+            "a shared goal/metric with an information-dependent path must route "
+            "to this campaign",
+        )
+        self.assertIn(
+            "известный список не делает проект коллекцией",
+            self.section,
+            "a known list alone must not turn the work into a collection",
+        )
+
+    def test_unverifiable_goal_routes_to_a_plan_not_a_campaign(self) -> None:
+        self.assertRegex(
+            self.section,
+            r"цель не проверяема.{0,80}(PLAN|brainstorming)",
+            "an unverifiable goal must ask for PLAN/brainstorming first, "
+            "never a campaign",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

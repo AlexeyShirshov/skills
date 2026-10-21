@@ -464,5 +464,224 @@ class StandaloneVariantCollectionHandoffTest(unittest.TestCase):
                 )
 
 
+class CollectionPlanGapTest(unittest.TestCase):
+    """SKILL.md: a failed own PLAN/preparation is a gap, never a `ready` placeholder.
+
+    The ALL-barrier is all-or-nothing: one unplannable unit keeps the DAG, the groups
+    and the lane allocation from starting, so no early DO is possible for any unit.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
+        cls.plain = _plain(cls.skill)
+
+    def test_unplannable_unit_is_a_gap_without_a_ready_placeholder(self):
+        barrier = _plain(
+            _section(self.skill, "3. **ALL-barrier.**", "4. **Кластеризация")
+        )
+        self.assertTrue(barrier, "SKILL.md §P.3 ALL-barrier not found")
+        self.assertIn(
+            "gap",
+            barrier,
+            "§P.3 must call a unit without a meaningful plan a 'gap'",
+        )
+        self.assertIn(
+            "не помечается ready-placeholder'ом",
+            barrier,
+            "§P.3 must forbid a 'ready' placeholder for a unit whose plan is impossible",
+        )
+        self.assertIn(
+            "барьер не пройден",
+            barrier,
+            "§P.3 must state that the barrier is not passed while the gap stands",
+        )
+        self.assertIn(
+            "ранний DO запрещён",
+            barrier,
+            "§P.3 must forbid an early DO while the barrier is open",
+        )
+
+    def test_gap_keeps_lanes_unallocated(self):
+        d = _plain(_section(self.skill, "### D —", "### C —"))
+        self.assertTrue(d, "SKILL.md §D section not found")
+        self.assertIn(
+            "только после ALL-barrier",
+            d,
+            "§D must allocate lanes only after the ALL-barrier",
+        )
+        self.assertIn(
+            "До этого шага их нет",
+            d,
+            "§D must state that no lane exists before the barrier",
+        )
+
+    def test_gap_stands_for_campaign_preparation_too(self):
+        windows = _windows(self.plain, "Единица без осмысленного плана", 260)
+        self.assertTrue(
+            windows,
+            "SKILL.md lacks the shared gap sentence for both execution kinds",
+        )
+        window = windows[0]
+        self.assertIn(
+            "каркаса",
+            window,
+            "the shared gap sentence must cover a campaign whose frame is not ready",
+        )
+        self.assertIn(
+            "ни один лейн",
+            window,
+            "the shared gap sentence must state that no lane is allocated before the barrier",
+        )
+        self.assertIn(
+            "для обоих видов",
+            window,
+            "the shared gap sentence must bind both execution kinds",
+        )
+
+    def test_reentry_requires_evidence_or_a_new_oracle(self):
+        windows = _windows(self.plain, "обязательный вход собственного PLAN", 400)
+        self.assertTrue(
+            windows,
+            "SKILL.md must make the previous terminal reason a required PLAN input",
+        )
+        window = windows[0]
+        self.assertIn(
+            "доказательство теперь получаемо",
+            window,
+            "re-entry must prove the failed evidence is now obtainable",
+        )
+        self.assertIn(
+            "переопределяет оракул",
+            window,
+            "re-entry must either prove the evidence or re-scope the oracle",
+        )
+        self.assertIn(
+            "иначе задача остаётся gap'ом",
+            window,
+            "a silent re-run of the same criterion must leave the unit a gap",
+        )
+
+
+class CollectionUnitKindOwnershipTest(unittest.TestCase):
+    """SKILL.md + runner: the collection PLAN owns `execution_kind`; the runner never infers it."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
+        cls.plain = _plain(cls.skill)
+
+    def test_collection_plan_decides_execution_kind_before_dispatch(self):
+        p = _plain(_section(self.skill, "### P —", "### D —"))
+        self.assertTrue(p, "SKILL.md §P section not found")
+        windows = [
+            window
+            for window in _windows(p, "execution_kind", 320)
+            if "решает PLAN коллекции" in window
+        ]
+        self.assertTrue(
+            windows,
+            "SKILL.md must state that the collection PLAN (`pdca-planner`) decides "
+            "each unit's `execution_kind`",
+        )
+        window = windows[0]
+        for token in (
+            "pdca-planner",
+            "до per-kind dispatch",
+            "передаёт готовое значение",
+            "не выводит его из текста задачи",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token,
+                    window,
+                    f"the `execution_kind` ownership sentence lost {token!r}",
+                )
+
+    def test_runner_never_classifies_the_task(self):
+        runner = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+        text = _plain(runner.read_text(encoding="utf-8"))
+        for token in (
+            "never classifies the task",
+            "you do not infer it",
+            "execution_kind",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token,
+                    text,
+                    f"the runner prompt must refuse to classify the task: {token!r} missing",
+                )
+
+    def test_unknown_execution_kind_fails_closed(self):
+        windows = _windows(self.plain, "legacy-файлы", 280)
+        self.assertTrue(windows, "SKILL.md lost the legacy `execution_kind` rule")
+        window = windows[0]
+        for token in (
+            "неизвестное значение execution_kind",
+            "fail closed",
+            "а не догадка",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token,
+                    window,
+                    f"an unknown `execution_kind` must fail closed: {token!r} missing",
+                )
+
+
+class CollectionPostBarrierUnitTest(unittest.TestCase):
+    """SKILL.md: a campaign/unit accepted after the barrier never mutates the DAG silently."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
+        cls.revision = _plain(
+            _section(cls.skill, "## Неактуальный PLAN", "### Резервация поверхности")
+        )
+
+    def test_new_campaign_after_the_barrier_needs_explicit_replan(self):
+        self.assertTrue(
+            self.revision,
+            "SKILL.md §Неактуальный PLAN и пересмотр расписания not found",
+        )
+        for token in (
+            "Новая кампания или новая единица после барьера",
+            "не меняет DAG молча",
+            "явный collection replan/reapprove",
+            "в normal mode — пользователь",
+            "Старые identity, статусы и evidence сохраняются",
+            "автоматического recluster нет",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(
+                    token,
+                    self.revision,
+                    f"the post-barrier unit rule lost {token!r}",
+                )
+
+    def test_schedule_revision_window_is_before_lanes_only(self):
+        self.assertIn(
+            "Изменение до старта лейнов",
+            self.revision,
+            "the pre-lane revision window must stay named",
+        )
+        self.assertIn(
+            "единственное разрешённое окно пересмотра",
+            self.revision,
+            "the pre-lane window must stay the only allowed schedule revision",
+        )
+        self.assertIn(
+            "После старта лейнов",
+            self.revision,
+            "the post-lane prohibition must stay named",
+        )
+        self.assertIn(
+            "запрещены",
+            self.revision,
+            "automatic rerun/remerge/recluster must stay forbidden after lanes start",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

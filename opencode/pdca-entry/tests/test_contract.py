@@ -308,5 +308,58 @@ class ArtifactsTest(unittest.TestCase):
                 self.assertNotRegex(read(path), r"(?m)^\s*model\s*:")
 
 
+class CampaignCriteriaTest(unittest.TestCase):
+    """The entry delegates campaign criteria instead of restating them.
+
+    The canonical discriminator lives in ``pdca-incremental`` §«Когда выбирать»;
+    the entry only points at it and states who decides a unit's form.
+    """
+
+    def test_campaign_criteria_are_delegated_to_incremental(self):
+        text = norm(read(SKILL))
+        self.assertIn(
+            "canonical in `pdca-incremental` §«Когда выбирать»",
+            text,
+            "the entry must point at the canonical campaign criteria instead of "
+            "restating them",
+        )
+        for criterion in (
+            "the goal is checkable",
+            "the path is unknown",
+            "the steps are information-dependent",
+            "a whole-volume plan would be a stub",
+        ):
+            with self.subTest(criterion=criterion):
+                self.assertIn(
+                    criterion,
+                    text,
+                    f"the entry dropped a campaign criterion: {criterion!r}",
+                )
+
+    def test_collection_plan_decides_each_units_form_of_execution(self):
+        self.assertIn(
+            "PLAN of the collection decides each unit's form of execution",
+            norm(read(SKILL)),
+            "the entry must name the collection PLAN as the decider of "
+            "`execution_kind`, not the runner or the task text",
+        )
+
+    def test_shared_goal_versus_independent_goals_is_stated(self):
+        section = norm(routing_section())
+        for phrase in (
+            "One shared goal/metric",
+            "even across a known list",
+            "A single shared goal whose whole plan is already known",
+            "Do not choose incremental merely because a batch is serialized",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(
+                    phrase,
+                    section,
+                    f"the routing decision lost the batch-vs-campaign "
+                    f"discriminator: {phrase!r}",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
