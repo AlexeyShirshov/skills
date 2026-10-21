@@ -1,0 +1,65 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "mockgo/deepseek-v4.1-flash",
+  "small_model": "mockds/deepseek-flash",
+  "default_agent": "build",
+  "providers": {
+    "mockgo": {
+      "name": "Mock Go",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:18081/v1",
+        "apiKey": "test"
+      },
+      "models": {
+        "deepseek-v4.1-flash": {
+          "name": "Mock DeepSeek V4.1 Flash (Go)",
+          "limit": { "context": 200000, "output": 32000 },
+          "capabilities": { "tools": true, "input": ["text"], "output": ["text"] }
+        }
+      }
+    },
+    "mockds": {
+      "name": "Mock DeepSeek direct",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:18082/v1",
+        "apiKey": "test"
+      },
+      "models": {
+        "deepseek-flash": {
+          "name": "Mock DeepSeek Flash (direct)",
+          "limit": { "context": 200000, "output": 32000 },
+          "capabilities": { "tools": true, "input": ["text"], "output": ["text"] }
+        },
+        "sol": {
+          "name": "Mock Sol (direct twin)",
+          "limit": { "context": 200000, "output": 32000 },
+          "capabilities": { "tools": true, "input": ["text"], "output": ["text"] }
+        }
+      }
+    },
+    "mockai": {
+      "name": "Mock ChatGPT",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:18083/v1",
+        "apiKey": "test"
+      },
+      "models": {
+        "sol": {
+          "name": "Mock Sol (ChatGPT)",
+          "limit": { "context": 200000, "output": 32000 },
+          "capabilities": { "tools": true, "input": ["text"], "output": ["text"] }
+        }
+      }
+    }
+  },
+  "agent": {
+    "build": { "model": "mockgo/deepseek-v4.1-flash" },
+    "coder": { "model": "mockgo/deepseek-v4.1-flash" },
+    "scout": { "model": "mockgo/deepseek-v4.1-flash" }
+  },
+  "plugins": ["__PLUGIN__"],
+  "permissions": [{ "action": "*", "resource": "*", "effect": "allow" }]
+}

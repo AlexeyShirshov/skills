@@ -1,0 +1,38 @@
+{
+  "name": "zen-failover",
+  "version": "0.1.0",
+  "description": "OpenCode V2 server plugin: when a subscription provider's usage limit is hit, move every agent, the default model and the active session to its fallback, probe the plan once a minute and come back as soon as it answers again.",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "failover",
+    "rate-limit",
+    "quota",
+    "subscription",
+    "chatgpt",
+    "opencode-go"
+  ],
+  "license": "MIT",
+  "author": "Alexey Shirshov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexeyShirshov/skills.git",
+    "directory": "opencode/plugins/zen-failover"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "test/run.sh"
+  }
+}
