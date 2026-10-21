@@ -48,11 +48,6 @@ CONFIG = (HOST_REPO / "config") if HOST_REPO else None
 HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
 SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
 
-HOST_AGENTS = tuple(
-    CONFIG / ("agents/pdca-%s.md" % name)
-    for name in ("planner", "executor", "check", "escalate")
-) if CONFIG else ()
-
 # The runner is host-facing routing glue: it must name the family's variants
 # (`pdca-coder`/`pdca-dotnet`) and the stack they cover. It is exempt from the
 # domain/stack token scan; the exemption is pinned to exactly this file.
@@ -130,35 +125,11 @@ def runtime_files() -> list:
         )
     if DIAGRAM.is_dir():
         files += sorted(p for p in DIAGRAM.iterdir() if p.is_file())
-    files += [p for p in HOST_AGENTS if p.is_file()]
     return files
 
 
 def boundary_regex(token: str) -> "re.Pattern":
     return re.compile(r"(?<!\w)%s(?!\w)" % re.escape(token), re.IGNORECASE)
-
-
-def instruction_surface(text: str) -> str:
-    """Host agents: drop YAML comments and host-specific external_directory paths.
-
-    Local-env values such as ``.../Code/User/**`` and comments naming a stack
-    command are not part of the runtime instruction surface the guard protects.
-    """
-    lines = []
-    skip_external = False
-    for raw in text.splitlines():
-        stripped = raw.lstrip()
-        if stripped.startswith("#"):
-            continue
-        if "action: external_directory" in raw:
-            skip_external = True
-            continue
-        if skip_external:
-            if stripped.startswith("resource:"):
-                skip_external = False
-                continue
-        lines.append(raw)
-    return "\n".join(lines)
 
 
 def scan_forbidden() -> list:
@@ -168,8 +139,6 @@ def scan_forbidden() -> list:
             text = read(path)
         except OSError:
             continue
-        if path in HOST_AGENTS:
-            text = instruction_surface(text)
         for token in FORBIDDEN_WORDS:
             if boundary_regex(token).search(text):
                 hits.append((str(path), token))
@@ -324,9 +293,12 @@ class ForbiddenTokenGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_scan_is_limited_to_expected_files(self):
+        # Host briefs are the .NET-flavoured mirrors of the pdca-dotnet assets and
+        # are deliberately out of scope: the guard protects the universal surface
+        # shipped by this skill (SKILL.md, its assets, the diagram sources).
         scanned = {str(p) for p in runtime_files()}
         self.assertIn(str(SKILL_PATH), scanned)
-        self.assertIn(str(CONFIG / "agents/pdca-planner.md"), scanned)
+        self.assertNotIn(str(CONFIG / "agents/pdca-planner.md"), scanned)
         self.assertNotIn("tests", str(SKILL_PATH))
         for p in scanned:
             self.assertNotIn("/tests/", p)

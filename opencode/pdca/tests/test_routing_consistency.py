@@ -4,10 +4,11 @@ Structural only: these tests parse the role frontmatter/permission blocks, the
 host profiles, the curated-skill list and AGENTS.md; they never execute a model
 or the live cycle.
 
-They prove: the four host roles exist, match their asset mirrors byte-for-byte,
-carry only a `# tier:` label (never a `model:` field), and keep the intended
-narrow permissions; the profiles bind every surviving role — the `pdca-*` family
-and the host keys that still exist — to a model; the shared RUNNER
+They prove: the four host roles exist, carry only a `# tier:` label (never a
+`model:` field), keep the intended narrow permissions, and match the
+`pdca-dotnet` asset mirror byte-for-byte (the universal skill's own assets are
+domain-neutral on purpose); the profiles bind every surviving role — the `pdca-*`
+family and the host keys that still exist — to a model; the shared RUNNER
 `pdca-orchestrator` is asserted separately; the integration is additive.
 
 Run:
@@ -23,9 +24,14 @@ import unittest
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 SKILL = SKILL_DIR / "SKILL.md"
 ASSET_AGENTS = SKILL_DIR / "assets/agents"
+# The host `pdca-*` agents are the .NET-flavoured briefs, and the universal
+# skill's own assets are domain-neutral, so host body/permission parity is
+# asserted against `pdca-dotnet`'s assets (the mirror of the host briefs).
+HOST_ASSETS = REPO_ROOT / "opencode/pdca-dotnet/assets/agents"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
@@ -117,90 +123,18 @@ def load_jsonc(path: Path) -> dict:
     return json.loads(text)
 
 
-def _frontmatter_block(path: Path) -> str:
-    text = read(path)
-    if not text.startswith("---"):
-        raise AssertionError("%s: no frontmatter" % path)
-    end = text.find("\n---", 3)
-    if end < 0:
-        raise AssertionError("%s: unterminated frontmatter" % path)
-    return text[3:end]
-
-
-def permission_rules(path: Path) -> list[dict]:
-    """V2 frontmatter `permissions:` — an ordered list of {action, resource, effect}."""
-    rules: list[dict] = []
-    current: dict | None = None
-    in_list = False
-    for raw in _frontmatter_block(path).splitlines():
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        indent = len(raw) - len(raw.lstrip(" "))
-        stripped = raw.strip()
-        if indent == 0:
-            if stripped == "permission:":
-                raise AssertionError(
-                    "%s: V1 `permission:` frontmatter — migrate to V2 `permissions:`" % path)
-            in_list = stripped == "permissions:"
-            current = None
-            continue
-        if not in_list:
-            continue
-        if stripped.startswith("- "):
-            current = {}
-            rules.append(current)
-            stripped = stripped[2:]
-        if current is None:
-            continue
-        key, sep, value = stripped.partition(":")
-        if not sep:
-            raise AssertionError("%s: malformed permission line %r" % (path, raw))
-        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
-    if not rules:
-        raise AssertionError("%s: no V2 `permissions:` rules" % path)
-    for rule in rules:
-        missing = {"action", "resource", "effect"} - set(rule)
-        if missing:
-            raise AssertionError("%s: rule missing %s: %r" % (path, sorted(missing), rule))
-        if rule["effect"] not in {"allow", "deny", "ask"}:
-            raise AssertionError("%s: bad effect %r" % (path, rule))
-    return rules
-
-
-# The V2 base policy every agent starts with; agent rules are appended after it.
-BASE_POLICY = (
-    {"action": "*", "resource": "*", "effect": "allow"},
-    {"action": "read", "resource": "*.env", "effect": "ask"},
-    {"action": "read", "resource": "*.env.*", "effect": "ask"},
-    {"action": "read", "resource": "*.env.example", "effect": "allow"},
-)
-
-
 def _matches(pattern: str, value: str) -> bool:
-    """V2 whole-value wildcard: `*` = any run, `?` = one character."""
+    """Whole-value wildcard: `*` = any run, `?` = one character."""
     regex = "".join(
         ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
     flags = re.IGNORECASE if os.name == "nt" else 0
     return re.fullmatch(regex, value, flags | re.DOTALL) is not None
 
 
-def effective(rules: list[dict], action: str, resource: str) -> str:
-    """Last matching rule wins; no match falls back to `ask`."""
-    effect = "ask"
-    for rule in BASE_POLICY + tuple(rules):
-        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
-            effect = rule["effect"]
-    return effect
-
-
-def allowed_resources(rules: list[dict], action: str) -> set:
-    """Resources the agent's own rules allow for `action` after last-match resolution."""
-    probes = {rule["resource"] for rule in rules if _matches(rule["action"], action)}
-    return {res for res in probes if effective(rules, action, res) == "allow"}
-
-
 # Published skill assets stay V1-compatible: V1 knows only `permission:`, while
-# V2 translates that legacy frontmatter automatically. Host config is native V2.
+# V2 translates that legacy frontmatter automatically. The host role briefs are
+# their canonical source, so they stay V1 too (only host-only primaries such as
+# `architect` use native V2 `permissions:`).
 V1_ACTION = {"subagent": "task", "shell": "bash"}
 
 
@@ -289,33 +223,37 @@ class RoleParityTest(unittest.TestCase):
                 self.assertTrue(legacy_permission(path))
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_assets_match_host_except_external_directory(self):
-        # The portable asset mirrors the host agent's body and effective permissions,
-        # but must not carry the host-specific `external_directory` (local-env paths).
+    def test_host_briefs_match_dotnet_assets_except_external_directory(self):
+        # The host role briefs are canonical for the .NET-flavoured text; the
+        # `pdca-dotnet` assets mirror them. The universal skill's own assets are
+        # domain-neutral on purpose and are not compared here. The mirror must not
+        # carry the host-specific `external_directory` (local-env paths).
         for name in ROLE_TIER:
             with self.subTest(role=name):
                 host = read(HOST_DIR / ("%s.md" % name))
-                asset = read(ASSET_AGENTS / ("%s.md" % name))
+                asset = read(HOST_ASSETS / ("%s.md" % name))
                 self.assertEqual(
                     canon(host.split("\n---\n", 1)[1]),
                     canon(asset.split("\n---\n", 1)[1]),
                     "%s host/asset body differ" % name,
                 )
-                hperm = permission_rules(HOST_DIR / ("%s.md" % name))
-                aperm = legacy_permission(ASSET_AGENTS / ("%s.md" % name))
+                # Both sides are V1 `permission:` maps: the published assets must
+                # run on V1, so the host briefs stay V1 too.
+                hperm = legacy_permission(HOST_DIR / ("%s.md" % name))
+                aperm = legacy_permission(HOST_ASSETS / ("%s.md" % name))
                 self.assertNotIn(
                     "external_directory", aperm,
                     "%s: portable asset must not carry host external_directory rules" % name,
                 )
                 self.assertEqual(
-                    effective(hperm, "*", "*"),
+                    legacy_effective(hperm, "*", "*"),
                     legacy_effective(aperm, "*", "*"),
                     "%s host/asset default deny differ" % name,
                 )
                 for action in ("read", "glob", "shell", "subagent", "skill", "question"):
                     with self.subTest(role=name, action=action):
                         self.assertEqual(
-                            canon_resources(allowed_resources(hperm, action)),
+                            canon_resources(legacy_allowed(hperm, action)),
                             canon_resources(legacy_allowed(aperm, action)),
                             "%s: %s allowlist differs host vs asset" % (name, action),
                         )
@@ -326,13 +264,13 @@ class PermissionRoutingTest(unittest.TestCase):
     def test_planner_and_check_are_default_deny(self):
         for name in ("pdca-planner", "pdca-check"):
             with self.subTest(role=name):
-                rules = permission_rules(HOST_DIR / ("%s.md" % name))
-                self.assertEqual("deny", effective(rules, "*", "*"))
+                perm = legacy_permission(HOST_DIR / ("%s.md" % name))
+                self.assertEqual("deny", legacy_effective(perm, "*", "*"))
 
     def test_escalate_only_allows_scout(self):
-        rules = permission_rules(HOST_DIR / "pdca-escalate.md")
-        self.assertEqual("deny", effective(rules, "subagent", "*"))
-        self.assertEqual({"pdca-scout"}, canon_resources(allowed_resources(rules, "subagent")))
+        perm = legacy_permission(HOST_DIR / "pdca-escalate.md")
+        self.assertEqual("deny", legacy_effective(perm, "subagent", "*"))
+        self.assertEqual({"pdca-scout"}, canon_resources(legacy_allowed(perm, "subagent")))
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
@@ -393,9 +331,9 @@ class OrchestratorVariantSelectionTest(unittest.TestCase):
         self.assertTrue(ORCHESTRATOR.is_file())
 
     def test_orchestrator_subagent_allowlist_covers_universal_roles(self):
-        rules = permission_rules(ORCHESTRATOR)
-        self.assertEqual("deny", effective(rules, "subagent", "*"))
-        allowed = allowed_resources(rules, "subagent")
+        perm = legacy_permission(ORCHESTRATOR)
+        self.assertEqual("deny", legacy_effective(perm, "subagent", "*"))
+        allowed = legacy_allowed(perm, "subagent")
         for role in self.UNIVERSAL_ROLES:
             with self.subTest(role=role):
                 self.assertIn(role, allowed)

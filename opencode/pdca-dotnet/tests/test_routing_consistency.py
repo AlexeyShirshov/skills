@@ -63,8 +63,8 @@ def canon_resources(resources: set) -> set:
 # Host-profile paths, relative to the host repo root.
 PROFILES = ["config/profiles/deepseek.jsonc", "config/profiles/gp.jsonc"]
 # Permission probes that must resolve identically in config/agents <-> assets/agents.
-# V2 has no per-tool subtrees: a rule is {action, resource, effect} and the whole
-# ordered list resolves last-match-wins, so probes assert the effective result.
+# Both sides are V1 `permission:` maps (the assets must run on V1), so a probe is
+# resolved through the legacy action-key semantics with `*` as the fallback.
 MIRROR = {
     "pdca-planner": [("*", "*")],
     "pdca-check": [("*", "*")],
@@ -270,16 +270,16 @@ class RolePermissionTest(unittest.TestCase):
     def test_cheap_orchestrator_canonical_subagent_allowlist(self):
         self.assertTrue(ORCHESTRATOR.exists(), "canonical pdca-orchestrator agent missing")
         self.assertRegex(read(ORCHESTRATOR), r"(?m)^# tier: cheap\s*$")
-        rules = permission_rules(ORCHESTRATOR)
-        self.assertEqual(effective(rules, "subagent", "*"), "deny")
+        perm = legacy_permission(ORCHESTRATOR)
+        self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
         self.assertEqual(
-            allowed_resources(rules, "subagent"),
+            legacy_allowed(perm, "subagent"),
             {"pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
              "pdca-scout", "pdca-security-auditor",
              "docfx-specialist", "dotnet-*"},
         )
-        self.assertEqual(effective(rules, "edit", "*"), "deny")
-        self.assertEqual(effective(rules, "shell", "*"), "deny")
+        self.assertEqual(legacy_effective(perm, "edit", "*"), "deny")
+        self.assertEqual(legacy_effective(perm, "shell", "*"), "deny")
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_orchestrator_description_covers_single_autonomous_cycle_no_single_tasks_ban(self):
@@ -341,10 +341,10 @@ class RolePermissionTest(unittest.TestCase):
     def test_planner_and_check_have_no_subagent_permission_host_config(self):
         for role in ("pdca-planner", "pdca-check"):
             with self.subTest(role=role, base="host"):
-                rules = permission_rules(CONFIG_AGENTS / f"{role}.md")
-                self.assertEqual(effective(rules, "*", "*"), "deny")
-                self.assertEqual(effective(rules, "subagent", "*"), "deny")
-                self.assertEqual(allowed_resources(rules, "subagent"), set())
+                perm = legacy_permission(CONFIG_AGENTS / f"{role}.md")
+                self.assertEqual(legacy_effective(perm, "*", "*"), "deny")
+                self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
+                self.assertEqual(legacy_allowed(perm, "subagent"), set())
 
     def test_escalate_subagent_only_scout(self):
         perm = legacy_permission(ASSET_AGENTS / "pdca-escalate.md")
@@ -353,9 +353,9 @@ class RolePermissionTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_escalate_subagent_only_scout_host_config(self):
-        rules = permission_rules(CONFIG_AGENTS / "pdca-escalate.md")
-        self.assertEqual(effective(rules, "subagent", "*"), "deny")
-        self.assertEqual(canon_resources(allowed_resources(rules, "subagent")), {"pdca-scout"})
+        perm = legacy_permission(CONFIG_AGENTS / "pdca-escalate.md")
+        self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
+        self.assertEqual(canon_resources(legacy_allowed(perm, "subagent")), {"pdca-scout"})
 
     def test_security_auditor_allows_exactly_three_skills(self):
         perm = legacy_permission(ASSET_AGENTS / "pdca-security-auditor.md")
@@ -364,9 +364,9 @@ class RolePermissionTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_security_auditor_allows_exactly_three_skills_host_config(self):
-        rules = permission_rules(CONFIG_AGENTS / "pdca-security-auditor.md")
-        self.assertEqual(effective(rules, "skill", "*"), "deny")
-        self.assertEqual(allowed_resources(rules, "skill"), SEC_SKILLS)
+        perm = legacy_permission(CONFIG_AGENTS / "pdca-security-auditor.md")
+        self.assertEqual(legacy_effective(perm, "skill", "*"), "deny")
+        self.assertEqual(legacy_allowed(perm, "skill"), SEC_SKILLS)
 
     def test_asset_agents_keep_v1_permission_map_for_compat(self):
         # V1 only understands `permission:`; V2 translates it automatically.
@@ -379,34 +379,38 @@ class RolePermissionTest(unittest.TestCase):
                 self.assertTrue(legacy_permission(path))
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_host_agents_use_v2_permissions_lists(self):
-        # Not every agent declares permissions (many inherit the base policy), but
-        # no host agent may keep the V1 `permission:` map.
-        for path in sorted(CONFIG_AGENTS.glob("*.md")):
+    def test_host_role_briefs_stay_v1_permission_maps(self):
+        # The portable assets must run on V1, which knows only `permission:`. The
+        # host role briefs are their canonical source, so they stay V1-compatible:
+        # a native V2 `permissions:` list here would be silently dropped in V1.
+        # Host-only primaries (e.g. `architect`) are out of this contract.
+        for role in TIERS:
+            path = CONFIG_AGENTS / f"{role}.md"
+            if role == "architect" or not path.is_file():
+                continue
             block = _frontmatter_block(path)
-            with self.subTest(path=path.name):
-                self.assertNotRegex(block, r"(?m)^permission:")
-                if re.search(r"(?m)^permissions:", block):
-                    self.assertTrue(permission_rules(path))
+            with self.subTest(role=role):
+                self.assertNotRegex(block, r"(?m)^permissions:")
+                self.assertTrue(legacy_permission(path), f"{role}: no V1 permission map")
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_required_permissions_mirror_config_and_asset(self):
         for role, probes in MIRROR.items():
-            cfg = permission_rules(CONFIG_AGENTS / f"{role}.md")
+            cfg = legacy_permission(CONFIG_AGENTS / f"{role}.md")
             asset = legacy_permission(ASSET_AGENTS / f"{role}.md")
             self.assertNotIn("external_directory", asset,
                              f"{role}: portable asset must not carry host external_directory")
             for action, resource in probes:
                 with self.subTest(role=role, action=action, resource=resource):
                     self.assertEqual(
-                        effective(cfg, action, resource),
+                        legacy_effective(cfg, action, resource),
                         legacy_effective(asset, action, resource),
                     )
             for action in MIRROR_ALLOW.get(role, []):
                 with self.subTest(role=role, action=action, set="allowlist"):
                     self.assertEqual(
-                        canon_resources(allowed_resources(cfg, action)),
-                        legacy_allowed(asset, action),
+                        canon_resources(legacy_allowed(cfg, action)),
+                        canon_resources(legacy_allowed(asset, action)),
                     )
 
     def _assert_role_tiers_are_tier_comments(self, base: Path) -> None:

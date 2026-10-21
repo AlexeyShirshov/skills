@@ -49,6 +49,10 @@ FORBIDDEN_COMMAND_STEMS = (
 INSPECTION_STEMS = frozenset(
     ("cd", "ls", "cat", "sed", "head", "tail", "wc", "stat", "file")
 )
+# Read-only git subcommands allowed in the V1 `bash` map (`git <sub> ...`).
+GIT_INSPECTION = frozenset(
+    ("status", "log", "diff", "show", "blame", "ls-files", "grep", "rev-parse", "branch")
+)
 
 
 def read(path: Path) -> str:
@@ -81,81 +85,53 @@ def frontmatter(path: Path) -> dict:
     return _parse_block(text[3:end])
 
 
-def _frontmatter_block(path: Path) -> str:
-    text = read(path)
-    if not text.startswith("---"):
-        raise AssertionError("%s: no frontmatter" % path)
-    end = text.find("\n---", 3)
-    if end < 0:
-        raise AssertionError("%s: unterminated frontmatter" % path)
-    return text[3:end]
-
-
-def permission_rules(path: Path) -> list[dict]:
-    """V2 frontmatter `permissions:` — an ordered list of {action, resource, effect}."""
-    rules: list[dict] = []
-    current: dict | None = None
-    in_list = False
-    for raw in _frontmatter_block(path).splitlines():
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        indent = len(raw) - len(raw.lstrip(" "))
-        stripped = raw.strip()
-        if indent == 0:
-            if stripped == "permission:":
-                raise AssertionError(
-                    "%s: V1 `permission:` frontmatter — migrate to V2 `permissions:`" % path)
-            in_list = stripped == "permissions:"
-            current = None
-            continue
-        if not in_list:
-            continue
-        if stripped.startswith("- "):
-            current = {}
-            rules.append(current)
-            stripped = stripped[2:]
-        if current is None:
-            continue
-        key, sep, value = stripped.partition(":")
-        if not sep:
-            raise AssertionError("%s: malformed permission line %r" % (path, raw))
-        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
-    if not rules:
-        raise AssertionError("%s: no V2 `permissions:` rules" % path)
-    return rules
-
-
-BASE_POLICY = (
-    {"action": "*", "resource": "*", "effect": "allow"},
-    {"action": "read", "resource": "*.env", "effect": "ask"},
-    {"action": "read", "resource": "*.env.*", "effect": "ask"},
-    {"action": "read", "resource": "*.env.example", "effect": "allow"},
-)
-
-
 def _matches(pattern: str, value: str) -> bool:
+    """Whole-value wildcard: `*` = any run, `?` = one character."""
     regex = "".join(
         ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
     flags = re.IGNORECASE if os.name == "nt" else 0
     return re.fullmatch(regex, value, flags | re.DOTALL) is not None
 
 
-def effective(rules: list[dict], action: str, resource: str) -> str:
-    """Last matching rule wins; no match falls back to `ask`."""
+# The host role briefs are V1 `permission:` maps: the published assets are their
+# mirrors and must run on V1, which knows only that legacy shape.
+V1_ACTION = {"subagent": "task", "shell": "bash"}
+
+
+def legacy_permission(path: Path) -> dict:
+    data = frontmatter(path)
+    node = data.get("permission")
+    if not isinstance(node, dict) or not node:
+        raise AssertionError("%s: expected a non-empty V1 `permission:` map" % path)
+    return node
+
+
+def legacy_effective(perm: dict, action: str, resource: str) -> str:
+    node = perm.get(V1_ACTION.get(action, action))
+    if node is None:
+        node = perm.get("*")
+    if node is None:
+        return "allow"
+    if isinstance(node, str):
+        return node
     effect = "ask"
-    for rule in BASE_POLICY + tuple(rules):
-        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
-            effect = rule["effect"]
+    for pattern, value in node.items():
+        if _matches(pattern, resource):
+            effect = value
     return effect
 
 
-def allowed_resources(rules: list[dict], action: str) -> set:
-    probes = {rule["resource"] for rule in rules if _matches(rule["action"], action)}
-    return {res for res in probes if effective(rules, action, res) == "allow"}
+def legacy_allowed(perm: dict, action: str) -> set:
+    node = perm.get(V1_ACTION.get(action, action))
+    if isinstance(node, str):
+        return {"*"} if node == "allow" else set()
+    if not isinstance(node, dict):
+        return set()
+    return {res for res in node if legacy_effective(perm, action, res) == "allow"}
 
 
-def rules_of(role: str) -> list[dict]:
-    return permission_rules(HOST_DIR / ("%s.md" % role))
+def perm_of(role: str) -> dict:
+    return legacy_permission(HOST_DIR / ("%s.md" % role))
 
 
 def load_module():
@@ -237,40 +213,51 @@ class RunnerAssetBoundaryTest(unittest.TestCase):
 class ReadOnlyRoleBoundaryTest(unittest.TestCase):
     def test_planner_check_runner_do_not_grant_edit_or_write(self):
         for role in ("pdca-planner", "pdca-check", "pdca-orchestrator"):
-            rules = rules_of(role)
+            perm = perm_of(role)
             with self.subTest(role=role):
-                self.assertNotEqual("allow", effective(rules, "edit", "*"))
-                self.assertFalse([r for r in rules if r["action"] == "write"])
+                for action in ("edit", "write"):
+                    self.assertNotEqual(
+                        "allow", legacy_effective(perm, action, "*"),
+                        "%s must not grant `%s`" % (role, action),
+                    )
 
     def test_planner_and_check_grant_no_bash(self):
         for role in ("pdca-planner", "pdca-check"):
-            rules = rules_of(role)
+            perm = perm_of(role)
             with self.subTest(role=role):
-                self.assertNotEqual("allow", effective(rules, "shell", "*"))
-                self.assertEqual(set(), allowed_resources(rules, "shell"))
+                self.assertNotEqual("allow", legacy_effective(perm, "shell", "*"))
+                self.assertEqual(set(), legacy_allowed(perm, "shell"))
 
     def test_escalate_bash_is_inspection_only(self):
-        rules = rules_of("pdca-escalate")
-        self.assertEqual("deny", effective(rules, "shell", "*"))
-        allowed = allowed_resources(rules, "shell")
+        perm = perm_of("pdca-escalate")
+        self.assertEqual("deny", legacy_effective(perm, "shell", "*"))
+        allowed = legacy_allowed(perm, "shell")
         self.assertTrue(allowed)
         for key in allowed:
-            stem = key.split()[0].rstrip("*")
+            words = key.split()
+            stem = words[0].rstrip("*")
             with self.subTest(key=key):
+                if stem == "git":
+                    self.assertGreater(len(words), 1, "bare `git` would allow writes")
+                    self.assertIn(
+                        words[1].rstrip("*"), GIT_INSPECTION,
+                        "`%s` is not a read-only git subcommand" % key,
+                    )
+                    continue
                 self.assertIn(stem, INSPECTION_STEMS)
                 self.assertNotIn(stem, FORBIDDEN_COMMAND_STEMS)
 
     def test_runner_subagent_excludes_general_and_explore(self):
-        rules = rules_of("pdca-orchestrator")
-        self.assertEqual("deny", effective(rules, "subagent", "*"))
-        allowed = allowed_resources(rules, "subagent")
+        perm = perm_of("pdca-orchestrator")
+        self.assertEqual("deny", legacy_effective(perm, "subagent", "*"))
+        allowed = legacy_allowed(perm, "subagent")
         self.assertNotIn("general", allowed)
         self.assertNotIn("explore", allowed)
 
     def test_executor_grants_edit_and_bash(self):
-        rules = rules_of("pdca-executor")
-        self.assertEqual("allow", effective(rules, "edit", "*"))
-        self.assertEqual("allow", effective(rules, "shell", "*"))
+        perm = perm_of("pdca-executor")
+        self.assertEqual("allow", legacy_effective(perm, "edit", "*"))
+        self.assertEqual("allow", legacy_effective(perm, "shell", "*"))
 
 
 class CostReadNoWriteTest(unittest.TestCase):
