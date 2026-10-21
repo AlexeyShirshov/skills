@@ -6,8 +6,8 @@ or the live cycle.
 
 They prove: the four host roles exist, match their asset mirrors byte-for-byte,
 carry only a `# tier:` label (never a `model:` field), and keep the intended
-narrow permissions; the profiles bind the four new roles to the expected tier
-models while leaving the existing keys intact; the shared RUNNER
+narrow permissions; the profiles bind every surviving role — the `pdca-*` family
+and the host keys that still exist — to a model; the shared RUNNER
 `pdca-orchestrator` is asserted separately; the integration is additive.
 
 Run:
@@ -51,26 +51,15 @@ ROLE_TIER = {
 # (`pdca-orchestrator`) as portable assets, both on the cheap tier.
 ASSET_TIER = dict(ROLE_TIER, **{"pdca-scout": "cheap", "pdca-orchestrator": "cheap"})
 
-# The universal roles mirror the host roles' routing: `pdca-<role>` binds the
-# same model/variant as its host counterpart. Asserted against the profiles
-# themselves, so the shared skill names no concrete model id.
-PDCA_MIRROR = {
-    "pdca-planner": "planner",
-    "pdca-check": "check",
-    "pdca-escalate": "escalate",
-    "pdca-executor": "coder",
-}
-HOST_ROLES = (
-    "architect", "planner", "check", "escalate", "security-auditor",
-    "coder", "scout", "pdca-orchestrator",
-)
-# The host copy of the shared gatherer is spelled `scout`; the skill ships it
-# prefixed (`pdca-scout`). Host/asset comparisons normalise both sides.
-ALIASES = {
-    "scout": "pdca-scout", "planner": "pdca-planner", "coder": "pdca-executor",
-    "check": "pdca-check", "escalate": "pdca-escalate",
-    "security-auditor": "pdca-security-auditor",
-}
+# The `pdca-*` roles bind their models directly in the profiles. The bare host
+# aliases (`planner`, `check`, `escalate`, `security-auditor`) were retired: no
+# agent file and no profile key may bring them back.
+HOST_ROLES = ("architect", "coder", "scout", "pdca-orchestrator")
+BOUND_ROLES = tuple(ROLE_TIER) + HOST_ROLES
+# The host copy of the shared gatherer/implementer is spelled `scout`/`coder`;
+# the skill ships them prefixed. Host/asset comparisons normalise both sides.
+ALIASES = {"scout": "pdca-scout", "coder": "pdca-executor"}
+DEAD_HOST_ROLES = ("planner", "check", "escalate", "security-auditor")
 
 
 def canon(text: str) -> str:
@@ -348,27 +337,28 @@ class PermissionRoutingTest(unittest.TestCase):
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class ProfileBindingTest(unittest.TestCase):
-    def test_deepseek_pdca_roles_mirror_host_routing(self):
+    def test_deepseek_roles_keep_a_model(self):
         agents = load_jsonc(PROFILES / "deepseek.jsonc")["agent"]
-        for role, host in PDCA_MIRROR.items():
-            with self.subTest(role=role):
-                spec = agents.get(role)
-                self.assertIsInstance(spec, dict)
-                self.assertTrue(spec.get("model"), "%s has no model" % role)
-                self.assertEqual(spec.get("model"), (agents.get(host) or {}).get("model"))
-                self.assertEqual(spec.get("variant"), (agents.get(host) or {}).get("variant"))
-
-    def test_deepseek_existing_roles_keep_a_model(self):
-        agents = load_jsonc(PROFILES / "deepseek.jsonc")["agent"]
-        for role in HOST_ROLES:
+        for role in BOUND_ROLES:
             with self.subTest(role=role):
                 self.assertTrue((agents.get(role) or {}).get("model"), "%s has no model" % role)
 
     def test_gp_roles_keep_a_model(self):
         agents = load_jsonc(PROFILES / "gp.jsonc")["agent"]
-        for role in list(PDCA_MIRROR) + list(HOST_ROLES):
+        for role in BOUND_ROLES:
             with self.subTest(role=role):
                 self.assertTrue((agents.get(role) or {}).get("model"), "%s has no model" % role)
+
+    def test_retired_bare_roles_have_no_binding_and_no_agent_file(self):
+        for profile in ("deepseek.jsonc", "gp.jsonc"):
+            agents = load_jsonc(PROFILES / profile)["agent"]
+            for role in DEAD_HOST_ROLES:
+                with self.subTest(profile=profile, role=role):
+                    self.assertNotIn(role, agents, "%s still binds %s" % (profile, role))
+                    self.assertFalse(
+                        (HOST_DIR / ("%s.md" % role)).exists(),
+                        "config/agents/%s.md must stay deleted" % role,
+                    )
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)

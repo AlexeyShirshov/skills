@@ -46,18 +46,10 @@ TIERS = {
 }
 ORCHESTRATOR = CONFIG_AGENTS / "pdca-orchestrator.md" if CONFIG_AGENTS else None
 LEGACY_ORCHESTRATOR = CONFIG_AGENTS / "lane.md" if CONFIG_AGENTS else None
-# The published assets use the prefixed agent ids; the host config an older deploy
-# mirrors still carries the unprefixed names for the coder-family roles.
-HOST_NAME = {
-    "pdca-planner": "planner", "pdca-executor": "coder", "pdca-check": "check",
-    "pdca-escalate": "escalate", "pdca-scout": "scout",
-    "pdca-security-auditor": "security-auditor",
-}
-ALIASES = {v: k for k, v in HOST_NAME.items()}
-
-
-def host_name(agent_id: str) -> str:
-    return HOST_NAME.get(agent_id, agent_id)
+# The published assets and the host config share the prefixed agent ids. Only the
+# shared gatherer/implementer still live in the host as `scout`/`coder`, so the
+# host/asset comparisons normalise those two bare names.
+ALIASES = {"scout": "pdca-scout", "coder": "pdca-executor"}
 
 
 def canon_resources(resources: set) -> set:
@@ -282,9 +274,9 @@ class RolePermissionTest(unittest.TestCase):
         self.assertEqual(effective(rules, "subagent", "*"), "deny")
         self.assertEqual(
             allowed_resources(rules, "subagent"),
-            {"planner", "coder", "check", "escalate", "scout", "security-auditor",
-             "docfx-specialist", "dotnet-*",
-             "pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate"},
+            {"pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
+             "pdca-scout", "pdca-security-auditor",
+             "docfx-specialist", "dotnet-*"},
         )
         self.assertEqual(effective(rules, "edit", "*"), "deny")
         self.assertEqual(effective(rules, "shell", "*"), "deny")
@@ -349,7 +341,7 @@ class RolePermissionTest(unittest.TestCase):
     def test_planner_and_check_have_no_subagent_permission_host_config(self):
         for role in ("pdca-planner", "pdca-check"):
             with self.subTest(role=role, base="host"):
-                rules = permission_rules(CONFIG_AGENTS / f"{host_name(role)}.md")
+                rules = permission_rules(CONFIG_AGENTS / f"{role}.md")
                 self.assertEqual(effective(rules, "*", "*"), "deny")
                 self.assertEqual(effective(rules, "subagent", "*"), "deny")
                 self.assertEqual(allowed_resources(rules, "subagent"), set())
@@ -361,7 +353,7 @@ class RolePermissionTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_escalate_subagent_only_scout_host_config(self):
-        rules = permission_rules(CONFIG_AGENTS / f"{host_name('pdca-escalate')}.md")
+        rules = permission_rules(CONFIG_AGENTS / "pdca-escalate.md")
         self.assertEqual(effective(rules, "subagent", "*"), "deny")
         self.assertEqual(canon_resources(allowed_resources(rules, "subagent")), {"pdca-scout"})
 
@@ -372,7 +364,7 @@ class RolePermissionTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_security_auditor_allows_exactly_three_skills_host_config(self):
-        rules = permission_rules(CONFIG_AGENTS / f"{host_name('pdca-security-auditor')}.md")
+        rules = permission_rules(CONFIG_AGENTS / "pdca-security-auditor.md")
         self.assertEqual(effective(rules, "skill", "*"), "deny")
         self.assertEqual(allowed_resources(rules, "skill"), SEC_SKILLS)
 
@@ -400,14 +392,14 @@ class RolePermissionTest(unittest.TestCase):
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_required_permissions_mirror_config_and_asset(self):
         for role, probes in MIRROR.items():
-            cfg = permission_rules(CONFIG_AGENTS / f"{host_name(role)}.md")
+            cfg = permission_rules(CONFIG_AGENTS / f"{role}.md")
             asset = legacy_permission(ASSET_AGENTS / f"{role}.md")
             self.assertNotIn("external_directory", asset,
                              f"{role}: portable asset must not carry host external_directory")
             for action, resource in probes:
                 with self.subTest(role=role, action=action, resource=resource):
                     self.assertEqual(
-                        effective(cfg, action, host_name(resource)),
+                        effective(cfg, action, resource),
                         legacy_effective(asset, action, resource),
                     )
             for action in MIRROR_ALLOW.get(role, []):

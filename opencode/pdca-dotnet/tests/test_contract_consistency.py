@@ -33,11 +33,13 @@ HOST_ROOT = HOST_REPO  # host repo root, for its README
 HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
 SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
 CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
+# Host briefs carry the same prefixed ids as the published assets; only the shared
+# gatherer/implementer still live in the host as `scout`/`coder`.
 CONFIG_BRIEFS = [
     CONFIG_AGENTS / f"{name}.md"
-    for name in ("planner", "coder", "check", "escalate")
+    for name in ("pdca-planner", "coder", "pdca-check", "pdca-escalate")
 ] if CONFIG_AGENTS else []
-# Asset stem -> host stem, for the shared contract branches.
+# Asset stem -> canonical contract branch, for the shared contract branches.
 CANON = {
     "pdca-planner": "planner", "pdca-executor": "coder", "pdca-check": "check",
     "pdca-escalate": "escalate", "pdca-scout": "scout",
@@ -80,6 +82,16 @@ def norm(text: str) -> str:
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def is_en(path: Path) -> bool:
+    """Language of a brief, detected from its text.
+
+    The published assets and the host `pdca-*` briefs (synced from those assets)
+    are EN; the legacy host `coder`/`scout` briefs are RU. The path is not a
+    reliable signal any more, so the language is taken from the content.
+    """
+    return not re.search(r"[А-Яа-яЁё]", read(path))
 
 
 def between(text: str, start: str, end: str) -> str:
@@ -297,9 +309,9 @@ class ContractConsistencyTest(unittest.TestCase):
             self.assertRegex(text, pat, f"{label}: missing /{pat}/")
 
     def _assert_brief_contract(self, path: Path) -> None:
-        en = "assets/agents" in str(path)
-        # The host briefs carry the unprefixed stems; the published assets the
-        # prefixed ids. One canonical stem selects the contract branch.
+        en = is_en(path)
+        # The host briefs and the published assets share the prefixed ids; one
+        # canonical stem selects the contract branch.
         name = CANON.get(path.stem, path.stem)
         if name == "coder":
             status = self._scoped(
@@ -367,7 +379,7 @@ class ContractConsistencyTest(unittest.TestCase):
                 self._assert_brief_contract(path)
 
     def _assert_escalator_brief_revision_scoped(self, path: Path) -> None:
-        en = "assets/agents" in str(path)
+        en = is_en(path)
         para = self._scoped(
             path,
             "The counter is scoped" if en else "Счётчик привязан",
@@ -452,10 +464,11 @@ class ContractConsistencyTest(unittest.TestCase):
             self._assert_planner_classification(CONFIG_BRIEFS[0])
 
     def _assert_planner_response_format(self, path: Path) -> None:
+        en = is_en(path)
         resp = self._scoped(
             path,
-            "## Response format" if "assets/agents" in str(path) else "## Формат ответа",
-            "A missing item" if "assets/agents" in str(path) else "Пропущенный пункт",
+            "## Response format" if en else "## Формат ответа",
+            "A missing item" if en else "Пропущенный пункт",
         )
         self._assert_patterns(resp, f"pdca-planner response {path}", [
             r"(?i)confidence and gaps|уверенность и пробелы",
@@ -570,7 +583,7 @@ class ContractConsistencyTest(unittest.TestCase):
     # --- Task 2 fix round 1: user-go boundary + authority invocation ------
 
     def _assert_planner_plan_disk_paragraph(self, path: Path) -> None:
-        en = "assets/agents" in str(path)
+        en = is_en(path)
         para = self._scoped(
             path,
             "11. Take into account" if en else "11. Учти",
@@ -914,13 +927,15 @@ class FinalFixGuardTest(unittest.TestCase):
             between(cls.skill_raw, "**Unit states**", "In parallel-worktree mode")
         )
         cls.planner_en = norm(read(ASSET_BRIEFS[0]))
-        # The RU host briefs / host README / host plan live in the `opencode-config`
+        # The host briefs / host README / host plan live in the `opencode-config`
         # repo; the guards that read them are host-gated (empty string otherwise).
-        cls.planner_ru = norm(read(CONFIG_BRIEFS[0])) if HOST_AVAILABLE else ""
+        # The host `pdca-*` briefs mirror the EN assets, the legacy `coder` brief is
+        # RU, so the host guards match either wording.
+        cls.planner_host = norm(read(CONFIG_BRIEFS[0])) if HOST_AVAILABLE else ""
         cls.coder_en = norm(read(ASSET_BRIEFS[1]))
-        cls.coder_ru = norm(read(CONFIG_BRIEFS[1])) if HOST_AVAILABLE else ""
+        cls.coder_host = norm(read(CONFIG_BRIEFS[1])) if HOST_AVAILABLE else ""
         cls.check_en = norm(read(ASSET_BRIEFS[2]))
-        cls.check_ru = norm(read(CONFIG_BRIEFS[2])) if HOST_AVAILABLE else ""
+        cls.check_host = norm(read(CONFIG_BRIEFS[2])) if HOST_AVAILABLE else ""
         cls.scout_en = norm(read(SKILL_DIR / "assets/agents/pdca-scout.md"))
         cls.scenarios = read(SCENARIOS_PATH)
         cls.plan = norm(read(PLAN_PATH)) if HOST_AVAILABLE else ""
@@ -954,9 +969,10 @@ class FinalFixGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_host_briefs_distinguish_additive_from_replacement(self):
-        # RU inflects/capitalizes ("Аддитивное предусловие"); compare case-insensitively.
-        self.assertIn("аддитив", self.planner_ru.lower())
-        self.assertIn("аддитив", self.coder_ru.lower())
+        # The host `pdca-planner` brief mirrors the EN asset; the legacy `coder`
+        # brief is RU. Accept either wording.
+        self.assertRegex(self.planner_host, r"(?i)additive|аддитив")
+        self.assertRegex(self.coder_host, r"(?i)additive|аддитив")
 
     def test_scenarios_split_b_into_additive_and_replacement(self):
         self.assertIn("B1", self.scenarios)
@@ -1025,9 +1041,10 @@ class FinalFixGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_host_coder_brief_mandates_durable_state_and_defect_history(self):
-        self.assertIn("историю дефект", self.coder_ru)
+        # The legacy host `coder` brief is RU; accept the EN wording too.
+        self.assertRegex(self.coder_host, r"(?i)defect history|историю дефект")
         # RU keeps the literal durable-state field name "Plan revision r".
-        self.assertIn("Plan revision r", self.coder_ru)
+        self.assertIn("Plan revision r", self.coder_host)
 
     def test_check_brief_carries_r_n_and_defect_history_as_history_only(self):
         self.assertIn("defect history", self.check_en)
@@ -1037,7 +1054,8 @@ class FinalFixGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_host_check_brief_carries_defect_history(self):
-        self.assertIn("историю дефект", self.check_ru)
+        # The host `pdca-check` brief mirrors the EN asset; accept the RU wording too.
+        self.assertRegex(self.check_host, r"(?i)defect history|историю дефект")
 
     def test_scout_brief_can_report_status_snapshot_and_defect_history(self):
         self.assertIn("defect history", self.scout_en)
