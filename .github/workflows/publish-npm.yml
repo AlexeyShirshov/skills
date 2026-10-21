@@ -5,23 +5,27 @@ name: publish-npm
 # The tag carries the version and must match package.json (the workflow refuses a mismatch, so the
 # registry version is always the one the repo shows).
 #
-#   git tag opencode-roslyn-v0.1.0 && git push origin opencode-roslyn-v0.1.0
+#   git tag opencode-sidebar-plugins-v1.0.0 && git push origin opencode-sidebar-plugins-v1.0.0
 #   npx --yes npm@latest stage list && npx --yes npm@latest stage approve <id>   # approve
 #
-# Setup on npmjs.com, once, after the package exists: Packages → opencode-roslyn → Settings →
-# Trusted publishing → GitHub Actions, with
+# A package must already exist on npm before trusted publishing can be configured for it:
+# the first version is published once by a maintainer with `npm publish --access public`
+# (npmjs.com → Packages → <package> → Settings → Trusted publishing → GitHub Actions, with
 #   Organization or user: AlexeyShirshov
 #   Repository:           skills
 #   Workflow filename:    publish-npm.yml
-#   Allowed actions:      leave the default (stage-only) — the workflow stages, it never publishes
+#   Allowed actions:      leave the default (stage-only) — the workflow stages, it never publishes)
+#
+# Adding a package: add its tag pattern to `on.push.tags` and a case arm to the `resolve` job.
 on:
   push:
     tags:
       - "opencode-roslyn-v*"
+      - "opencode-sidebar-plugins-v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish (e.g. opencode-roslyn-v0.1.0)"
+        description: "Existing tag to publish (e.g. opencode-sidebar-plugins-v1.0.0)"
         required: true
 
 permissions:
@@ -29,12 +33,38 @@ permissions:
   id-token: write # OIDC token for npm trusted publishing
 
 jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      package: ${{ steps.tag.outputs.package }}
+      directory: ${{ steps.tag.outputs.directory }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - name: Read the package from the tag
+        id: tag
+        shell: bash
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$TAG" in
+            opencode-roslyn-v*) PACKAGE=opencode-roslyn; DIRECTORY=opencode/plugins/opencode-roslyn ;;
+            opencode-sidebar-plugins-v*) PACKAGE=opencode-sidebar-plugins; DIRECTORY=opencode/plugins/sidebar-plugins ;;
+            *) echo "::error::unknown release tag: $TAG"; exit 1 ;;
+          esac
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#"$PACKAGE"-v}" >> "$GITHUB_OUTPUT"
+          echo "releasing $PACKAGE from $DIRECTORY"
+
   npm:
+    needs: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: opencode/plugins/opencode-roslyn
+        working-directory: ${{ needs.resolve.outputs.directory }}
 
     steps:
       - uses: actions/checkout@v7
@@ -50,19 +80,20 @@ jobs:
 
       - name: Check the tag matches package.json
         shell: bash
+        env:
+          PACKAGE: ${{ needs.resolve.outputs.package }}
+          WANT: ${{ needs.resolve.outputs.version }}
         run: |
           set -euo pipefail
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
-          WANT="${TAG#opencode-roslyn-v}"
           HAVE="$(node -p "require('./package.json').version")"
           if [ "$WANT" != "$HAVE" ]; then
-            echo "::error::tag $TAG says $WANT but package.json says $HAVE"
+            echo "::error::tag says $WANT but package.json says $HAVE"
             exit 1
           fi
-          echo "publishing opencode-roslyn $HAVE"
+          echo "publishing $PACKAGE $HAVE"
 
       - name: Smoke test
-        run: node test/smoke.mjs
+        run: npm test
 
       # Staged publishing: the CI only *offers* the version, a maintainer approves it with 2FA
       # (`npm stage approve` or the package page on npmjs.com). That is what lets the trusted

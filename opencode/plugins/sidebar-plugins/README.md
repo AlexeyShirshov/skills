@@ -1,5 +1,8 @@
 # opencode-sidebar-plugins
 
+[![npm](https://img.shields.io/npm/v/opencode-sidebar-plugins)](https://www.npmjs.com/package/opencode-sidebar-plugins)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 A `Plugins` section in the [OpenCode](https://opencode.ai) V2 CLI sidebar that lists
 what is loaded — and, by default, only what actually reaches the model context.
 
@@ -18,8 +21,9 @@ separates the two, so the sidebar answers "what am I paying for?" instead of
 ## Requirements
 
 - OpenCode V2 CLI (`opencode` 2.x).
-- No runtime dependencies: `node:fs`/`node:path` in the data layer, the host's
-  OpenTUI/Solid peers in the view.
+- Depends only on the host's `@opencode/plugin` TUI API (plus the OpenTUI/Solid
+  peers the host already provides); the data layer itself uses only `node:fs`
+  and `node:path`.
 
 ## Install
 
@@ -28,12 +32,25 @@ Add it to `cli.json` (not `opencode.json(c)`):
 
 ```jsonc title="~/.config/opencode/cli.json"
 {
-  "plugins": [{ "package": "./plugins/sidebar-plugins", "options": { "scope": "context" } }]
+  "plugins": [
+    { "package": "opencode-sidebar-plugins", "options": { "scope": "context" } }
+  ]
 }
 ```
 
-The directory needs `package.json` with `exports: { "./tui": "./tui.tsx" }`, the
-same layout the built-in loader uses for local CLI plugins.
+A string entry uses the defaults: `{ "plugins": ["opencode-sidebar-plugins"] }`.
+
+While only a staged release exists on npm, pin the dist-tag explicitly:
+`"opencode-sidebar-plugins@staging"`.
+
+### From a local checkout
+
+The same layout works from disk — `<config>/plugins/<name>/` with `package.json`
+declaring `exports: { "./tui": "./tui.tsx" }`:
+
+```jsonc
+{ "plugins": [{ "package": "./plugins/sidebar-plugins" }] }
+```
 
 ## Options
 
@@ -99,8 +116,11 @@ contributor is worse than showing an unproven one.
 
 ## Local development
 
-`data.ts` is dependency-free (node builtins only) and can be exercised outside the
-TUI against a dumped `/api/plugin` response:
+`data.ts` is dependency-free (node builtins only), so the classifier runs outside
+the TUI. `npm test` (or `bun test/smoke.mjs`) covers the built-in table, the
+source scan and the package fallback; the same script gates releases in CI.
+
+Against a live host, dump `/api/plugin` and render the rows:
 
 ```bash
 opencode api get /api/plugin > /tmp/opencode/plugins.json
@@ -111,6 +131,10 @@ bun -e '
   console.table(build(raw, pluginDirectories(process.cwd())).filter((i) => !i.builtin))
 '
 ```
+
+The view has no local preview: to see a change, copy the package to
+`~/.config/opencode/plugins/` (or install it from npm) and restart the CLI — TUI
+plugins live in the CLI process, so `opencode service restart` does not reload them.
 
 ## License
 

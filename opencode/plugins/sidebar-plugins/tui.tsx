@@ -157,7 +157,7 @@ function Section(props: {
 }
 
 export default Plugin.define({
-  id: "sandbox.sidebar-plugins",
+  id: "alexeyshirshov.sidebar-plugins",
   setup(context) {
     if (context.options.enabled === false) return
 

@@ -1,7 +1,47 @@
 {
-  "name": "opencode-config-sidebar-plugins",
+  "name": "opencode-sidebar-plugins",
   "version": "1.0.0",
-  "private": true,
+  "description": "A Plugins section in the OpenCode V2 CLI sidebar — every loaded plugin and, by default, only those that actually reach the model context (prompt, tools, agents, skills).",
   "type": "module",
-  "exports": { "./tui": "./tui.tsx" }
+  "exports": {
+    "./tui": "./tui.tsx"
+  },
+  "files": [
+    "tui.tsx",
+    "data.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-tui",
+    "tui",
+    "sidebar",
+    "plugins",
+    "context",
+    "tokens",
+    "diagnostics"
+  ],
+  "license": "MIT",
+  "author": "Alexey Shirshov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexeyShirshov/skills.git",
+    "directory": "opencode/plugins/sidebar-plugins"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types test/smoke.mjs"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.1.0"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.8",
+    "@opentui/solid": ">=0.5.8",
+    "solid-js": ">=1.9.0"
+  }
 }
