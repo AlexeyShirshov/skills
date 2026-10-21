@@ -1,0 +1,42 @@
+{
+  "name": "opencode-git-status",
+  "version": "1.0.0",
+  "description": "Git working-tree status for the OpenCode CLI sidebar footer — current branch, ahead/behind, staged, modified, untracked, conflicts and stashes on one line.",
+  "type": "module",
+  "exports": {
+    "./tui": "./tui.tsx"
+  },
+  "files": [
+    "tui.tsx",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-tui",
+    "tui",
+    "git",
+    "git-status",
+    "branch",
+    "sidebar"
+  ],
+  "license": "MIT",
+  "author": "Alexey Shirshov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexeyShirshov/skills.git",
+    "directory": "opencode/plugins/git-status"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.1.0"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.8",
+    "@opentui/solid": ">=0.5.8",
+    "solid-js": ">=1.9.0"
+  }
+}
