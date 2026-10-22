@@ -248,7 +248,8 @@ Blockers: <ticket/condition → which goals are closed>
 Protected/foreign: <paths/hashes excluded from the credit>
 Tickets: <numbers>
 Checkpoint: <pause reason, last accepted number, resume point — or —>
-Pending approval: <durable ref → cycle N / plan revision r / criteria set — or —>
+Pending approval ref: <durable ref → task/cycle_id / cycle N / plan revision r / criteria set — or —>
+Approval record: <approval against the ref: approver, time, reason, same identity — or —>
 Stop verdict: <empty while running>
 ```
 
@@ -382,8 +383,9 @@ the plan is applicable, **the same** step continues without a new PLAN and witho
 step; if the plan is stale, `pdca-planner` makes a real revision by the base rules, and it
 needs a **fresh** approval — the old approval does not authorize it. Approval-resume does
 not do an unconditional replan and does not create a new step. Until the approval the
-campaign is a checkpoint (`Checkpoint` in the status), not `met`/`incomplete`; compaction
-is safe because the ref and the record are durable. Autonomous mode does not invent an
+campaign is a checkpoint (`Checkpoint` in the status), not `met`/`incomplete`; a missing or
+mismatched approval record is an **approval-needed checkpoint**, never DO and never a fresh
+PLAN. Compaction is safe because the ref and the record are durable. Autonomous mode does not invent an
 external approval: until it is obtained this is a blocker/STOP, not a silent pass.
 
 ### 3.1. Step kinds: increment, repair, verify

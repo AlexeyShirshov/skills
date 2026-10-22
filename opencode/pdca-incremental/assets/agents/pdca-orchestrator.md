@@ -87,8 +87,12 @@ not classify the task.
   variant (gather → decide; `pdca-executor` persists the status); stop at the **PLAN → DO**
   boundary and return `plan_handoff` to the collection parent with task/status/variant/
   PLAN-revision refs and the collection handoff metadata (planned footprint/uncertainty,
-  requirements on predecessor results, assumptions/prerequisites). Do **not** start DO, do not
-  create branches or worktrees, and do not write the task's code.
+  requirements on predecessor results, assumptions/prerequisites). In **normal** mode that
+  boundary is not complete until `pdca-executor` has persisted the **durable pending approval
+  ref** and the handoff carries its **pointer** (task/`cycle_id`, `N`, `r`, criteria set); the
+  handoff is then a checkpoint for the parent, which owns obtaining the user's approval. In
+  **autonomous** mode the handoff carries no approval ref and none is invented. Do **not** start
+  DO, do not create branches or worktrees, and do not write the task's code.
 - **`execution_kind=campaign`** — there is **no unit-level `selected_variant`**. Run the
   preparation route of the **incremental contract supplied by the caller by exact ID**
   (`pdca-incremental`): `pdca-scout` gathers facts, `pdca-planner` decides, and `pdca-executor`
@@ -118,9 +122,15 @@ the `collection_status_path` of the lane's unit.
   `n`, `selected_variant`, status path — and validate applicability first through the roles:
   `pdca-scout` checks that predecessor outputs/prerequisites and the footprint are still valid,
   `pdca-planner` decides whether the saved plan applies. If it applies, continue with **DO →
-  CHECK → ACT**; if it does not, `pdca-planner` issues a real revision under the base rules
-  (`r`/`n`, no cycle reset); in normal mode that revised plan needs a **fresh approval** under the
-  normal-mode approval protocol (below) before DO starts. Loop-backs inside the resumed cycle keep
+  CHECK → ACT** only when the mode allows it: **autonomous** resumes directly, while **normal**
+  mode requires the **recorded approval matching the handoff's pending approval ref**
+  (task/`cycle_id`, `N`, `r`, criteria) — applicability is not approval and an unchanged saved
+  plan is no exception. A handoff with no pending ref, or no matching recorded approval, yields an
+  **approval-needed checkpoint**: return the checkpoint/handoff to the parent with the ref (or the
+  reason it is absent) and start **neither DO nor a fresh PLAN**. If the saved plan does not
+  apply, `pdca-planner` issues a real revision under the base rules (`r`/`n`, no cycle reset),
+  which needs a **fresh approval ref** under the normal-mode approval protocol (below) before DO;
+  the previous revision's approval is never inherited. Loop-backs inside the resumed cycle keep
   their base meaning. Every **new** cycle still runs the full cycle.
 
 ## Input 3 — `execution_kind=campaign`: campaign state machine, inline (collection-lane)
@@ -150,18 +160,23 @@ caller) has obtained the user's approval. The protocol:
 1. When a step's own PLAN is ready and its plan is persisted, `pdca-executor` writes a **durable
    pending approval ref** into the status record. The ref binds the stable **task/`cycle_id`**,
    the exact **cycle `N`**, plan revision `r` and the acceptance criteria set (`N` is not globally
-   unique on its own); a brief, a plan summary or a chat message is not an approval.
+   unique on its own); a brief, a plan summary or a chat message is not an approval. At a
+   caller-driven PLAN → DO boundary the `plan_handoff`/checkpoint **carries that ref as its
+   pointer** — a normal-mode handoff without it is incomplete, and readiness
+   (`plan_state=ready`, barrier passed) is not an approval and never starts DO.
 2. Return the **checkpoint** to the parent/cheap primary with that ref. Do not start DO and do not
    ask the user yourself.
 3. The primary asks the user and, on explicit approval, dispatches `pdca-executor` to record the
    approval against **the same ref** (approval record + reason).
 4. Resume the **same cycle/step**, but first run the **applicability check** through the roles
    (`pdca-scout` facts, `pdca-planner` decision), exactly as Input 2 requires. If the saved plan
-   still applies and the recorded approval matches the ref (task/`cycle_id`, cycle/revision/
+   still applies **and** the recorded approval matches the ref (task/`cycle_id`, cycle/revision/
    criteria), start DO. If the plan is stale, `pdca-planner` issues a genuine revision under the
-   base rules (`r`/`n`, no cycle reset), and that revision needs a **fresh approval**; the stale
-   approval never authorizes it. Approval resume does not unconditionally replan and does not
-   start a new step; compaction is safe because the ref and its record are durable.
+   base rules (`r`/`n`, no cycle reset), and that revision needs a **fresh approval ref**; the
+   stale approval never authorizes it. A missing or mismatched approval record yields an
+   **approval-needed checkpoint** handed back to the parent — not DO and not a fresh PLAN.
+   Approval resume does not unconditionally replan and does not start a new step; compaction is
+   safe because the ref and its record are durable.
 5. Autonomous mode does not manufacture approval: an approval required by the environment or the
    user is still a blocker/STOP until obtained (or the parent obtains it out-of-band).
 

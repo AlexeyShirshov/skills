@@ -64,13 +64,17 @@ can perform the whole checklist from [`docs/install-prompt.md`](docs/install-pro
 
 ### From a checkout
 
-Clone the repository and copy the skill(s) you want into an opencode skills directory.
+Clone the repository and copy the skill directories you want into an opencode skills directory.
+Copy a skill directory whole: `SKILL.md`, `assets/`, and `scripts/` where the skill ships it — the
+helpers there are the source of the runtime copies the executor stages into the project's
+`.pdca/scripts/` (see the workspace note above). `tests/` and the diagram generators are
+development-only and not needed at runtime.
 
-Global (all projects):
+Global (all projects) — the full family, `pdca-entry` included:
 
 ```sh
-cp -r opencode/pdca opencode/pdca-coder opencode/pdca-collection opencode/pdca-dotnet \
-  opencode/pdca-incremental ~/.config/opencode/skills/
+cp -r opencode/pdca-entry opencode/pdca opencode/pdca-coder opencode/pdca-collection \
+  opencode/pdca-dotnet opencode/pdca-incremental ~/.config/opencode/skills/
 ```
 
 Per project:
@@ -80,7 +84,9 @@ mkdir -p .opencode/skills
 cp -r opencode/pdca* .opencode/skills/
 ```
 
-Skills are discovered by the `name` field in their frontmatter.
+Skills are discovered by the `name` field in their frontmatter. Copying all six does not change
+which ones the model may pick: only `pdca-entry` is advertised, the contracts keep
+`metadata.opencode/autoinvoke: false`.
 
 ## Usage
 

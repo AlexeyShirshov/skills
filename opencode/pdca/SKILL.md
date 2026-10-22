@@ -362,18 +362,23 @@ plan counts). A question, a change request or a non-committal reply is not an ap
 does not start; without approval nothing is created/edited **except the status file** — wait,
 clarify, or rewrite the plan (via `pdca-planner`, same file by `pdca-executor`).
 
-**Durable approval protocol (caller-driven cycles).** When the cycle is run by a driver on behalf
-of a parent/primary, the driver may plan but **never obtains or assumes the approval**.
+**Durable approval protocol (caller-driven cycles, normal mode only).** In **normal mode**, when
+the cycle is run by a driver on behalf of a parent/primary, the driver may plan but **never
+obtains or assumes the approval**.
 `pdca-executor` persists a durable **pending approval ref** binding the stable task/`cycle_id`,
 the exact cycle `N`, plan revision `r` and the acceptance-criteria set (`N` is not globally unique
-on its own); the driver returns a checkpoint to the parent, the primary asks the user, and
+on its own); a caller-driven PLAN → DO `plan_handoff` **carries it as its pointer** and the driver
+returns that checkpoint to the parent, the primary asks the user, and
 `pdca-executor` records the approval against the **same** ref. Resume validates the match and
-first checks applicability through the roles: an applicable plan continues the **same**
-cycle/step; a stale plan gets a genuine `pdca-planner` revision and a **fresh approval**, which the
-stale approval never authorizes. Approval resume neither unconditionally replans nor starts a new
+first checks applicability through the roles: an applicable plan whose recorded approval matches
+the ref continues the **same** cycle/step — an unchanged saved plan is no exception; a stale plan
+gets a genuine `pdca-planner` revision and a **fresh approval ref**, which the stale approval never
+authorizes. Approval resume neither unconditionally replans nor starts a new
 step, and compaction is safe because the ref and record are durable. A mismatched or missing
-approval is a blocker, not a pass. Autonomous mode still respects approvals required by the
-environment or the user.
+approval is an **approval-needed checkpoint** handed back to the parent — not DO and not a fresh
+PLAN, and not a pass. **Autonomous mode has no such slots and no plan-approval gate:** it writes
+no pending approval ref, a handoff carries none, and DO starts without an approval; only an
+approval required by the environment or the user still blocks (§Autonomous mode).
 
 **Autonomous mode** is the same contract with no pauses and no questions. The cheap primary
 delegates the single cycle to the cheap `pdca-orchestrator` via a subagent; it drives PLAN → DO
@@ -385,10 +390,17 @@ durable reason (§Host requirements).
 collection driver (its `COLLECTION TASK PLAN` entry), the collection caller owns the
 PLAN → DO boundary: the cycle finishes PLAN, persists the status file, and yields control
 back to the collection parent with a `plan_handoff` — same task identity, same `N`/`r`/`n` —
-instead of starting DO. The parent later resumes **the same cycle** from DO after an
-applicability check through the roles (`pdca-scout` facts, `pdca-planner` decision) — never an
-unconditional second PLAN; a genuine incompatibility follows the base revision rules and needs a
-**fresh approval**, which the stale approval never authorizes; approval resume does not
+instead of starting DO. In normal mode that boundary is not complete until `pdca-executor` has
+persisted the durable **pending approval ref** (§Durable approval protocol) and the handoff
+carries its pointer (task/`cycle_id`, `N`, `r`, criteria set); autonomous mode returns no
+approval ref and never fabricates one, so its handoff is directly resumable. The parent later
+resumes **the same cycle** from DO after an applicability check through the roles (`pdca-scout`
+facts, `pdca-planner` decision) — never an unconditional second PLAN. Applicability is not
+approval: in normal mode DO starts only when the recorded approval matches the ref, and an
+unchanged saved plan is no exception; a missing/mismatched approval yields an **approval-needed
+checkpoint** (the ref, or the reason it is absent) instead of DO or a fresh PLAN. A genuine
+incompatibility follows the base revision rules and needs a **fresh approval ref**, which the
+stale approval never authorizes; approval resume does not
 unconditionally replan or add a step. This is a
 caller-driven handoff, not a standalone-autonomous pause and
 not a user approval: standalone normal mode still starts only after the user approves the
@@ -432,6 +444,17 @@ checkout — so it never collides with the project's own `scripts/` or its other
   `python3 .pdca/scripts/<helper>.py …`. A helper is never run from the installed skill directory,
   and the project's own `scripts/` is never used for bookkeeping. Copies are byte-identical to the
   skill's version; a project fork must be declared (path + reason) in the status file.
+- **Staging is the first mechanical step.** Before the **first** helper command of a cycle —
+  including the PLAN brief validation (`.pdca/scripts/validate_inner_loop.py brief …`) —
+  `pdca-executor` stages the helpers the plan actually needs from the `scripts/` of the **selected
+  installed package** (the cycle variant named by the dispatch/plan) into `.pdca/scripts/`, as
+  byte-identical copies. This staging is an **explicitly allowed brief/PLAN prerequisite**: the
+  brief/PLAN names the helpers to stage (only helpers actually shipped and required — no
+  speculative extras) and the executor records the source package path, the destination paths and
+  the copy evidence in the status file, so it is not an unplanned edit outside the plan and needs
+  no separate `P:` task. A required original missing from the installed package is a **resource
+  blocker**, reported rather than worked around: the executor never generates a substitute helper
+  and never runs a helper command from the installed skill directory.
 - **Status** — `.pdca/status/<task>-<N>.md` (§Durable status).
 - **Evidence** — `.pdca/<task>/rv<k>/` (§Phase contracts, default evidence dir).
 - A plan may add subdirectories under `.pdca/` (e.g. `.pdca/<task>/inputs/`), but never renames the
@@ -453,7 +476,16 @@ distinguishing suffix under `.pdca/status/`, but never leaves the workspace root
 - **Contents:** goal/expected result/criteria (each with verification method); plan revision
   `r`; units with dependencies and states (`pending`/`running`/`blocked`/`done`/`superseded`);
   evidence; attempts and defect history; accepted decisions/approvals/blockers/next step; the
-  progress log.
+  progress log; in normal mode the **`Pending approval ref`** and **`Approval record`** slots
+  below.
+- **Approval slots (normal mode only).** Two canonical fields, written by `pdca-executor` when the
+  parent/primary dispatches the write: `Pending approval ref` — the durable pointer binding the
+  stable task/`cycle_id`, the cycle `N`, the plan revision `r` and the acceptance-criteria set (the
+  same pointer a caller-driven `plan_handoff` carries); `Approval record` — the approval against
+  that ref: the **approver** (the parent/primary that obtained it), time, reason, and the same
+  identity (task/`cycle_id`, `N`, `r`, criteria). A brief or a chat message is not the record.
+  Both slots are absent in autonomous mode — no approval is required, so an absent value is
+  normal there, not a gap or a blocker.
 - **No permitted persistent storage →** this is **explicitly** recorded in the session handoff
   as a limitation; the state is **never** presented as durable and the task **never** as
   verified. Writing outside the authorized area is forbidden.

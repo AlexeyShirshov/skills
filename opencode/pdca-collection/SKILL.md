@@ -103,7 +103,9 @@ replace it.
      collection parent** — it is not DO, not an error and not the completion of the task. Together with
      the plan, handoff metadata goes to the collection: the planned write footprint and its
      uncertainty, the requirements on the predecessors' results, assumptions/prerequisites
-     and refs. The task's code is **not** written at this step.
+     and refs, and — in normal mode — the durable pending approval ref pointer (the handoff is a
+     checkpoint for the parent, which owns obtaining the approval). The task's code is **not**
+     written at this step.
    - `campaign` — **frame preparation**, not a step PLAN: `pdca-scout` gathers facts,
      `pdca-planner` makes decisions, `pdca-executor` writes the immutable preparation document
      (§"Barrier by unit kinds"), `preparation_state` (`pending` | `ready`; `ready` is not
@@ -154,7 +156,9 @@ replace it.
    is met for **every** unit (§"Barrier by unit kinds"): for `cycle` — this cycle's own genuine
    PLAN with `plan_state=ready`; for `campaign` — an approved preparation document with
    `preparation_state=ready` and `preparation_ref`. A unit's readiness by its kind is **not** a
-   user approval and **not** a successful completion of the task. A task for which a
+   user approval and **not** a successful completion of the task; readiness alone never triggers
+   lane allocation or an early DO — in normal mode the lane's DO still waits for the recorded
+   approval against the unit's pending approval ref (§Approval protocol). A task for which a
    meaningful plan is impossible (not enough data/decisions) stays a gap and is **not**
    marked with a `ready` placeholder: the barrier is not passed, early DO is forbidden. The barrier
    constrains the **start** of the DAG/groups/lanes, not the order of the PLANs: it does not require
@@ -476,7 +480,8 @@ approval ref, and the current unit receives `disposition=paused`. The step brief
 an approval. The driver may plan, but **does not** obtain the approval from the user and does not
 start a gated DO: that is done by the parent/cheap primary (§"Approval protocol" below), after which
 `pdca-executor` records the approval against the same ref. Resume first checks the applicability of the
-saved plan through the roles: an applicable plan continues **the same** step without a new PLAN;
+saved plan through the roles: an applicable plan whose recorded approval matches the pending ref
+(normal mode) continues **the same** step without a new PLAN;
 a stale plan gets a genuine revision from `pdca-planner` and a **fresh** approval, and the old approval
 does not authorize it. Approval-resume does not do an unconditional replan and does not create a new step.
 
@@ -496,13 +501,17 @@ A unit waiting for a user approval is `disposition=paused` with the status `in-p
    binding the stable `task`/`cycle_id`, the exact `cycle N`, the plan revision `r` and the set of
    acceptance criteria (`N` by itself is not globally unique). A brief, a summary or a chat message
    is not an approval.
-2. The driver/lane returns a **checkpoint** to the parent (the collection primary) with this ref and **does not**
+2. The driver/lane returns a **checkpoint** to the parent (the collection primary) with this ref —
+   the `plan_handoff` carries it as its approval pointer — and **does not**
    ask the user itself and **does not** start DO.
 3. The primary asks the user. An explicit approval → `pdca-executor` records an approval record
    against **the same** ref.
 4. Resume **first checks the applicability** of the saved plan to the actual state through
-   the roles (`pdca-scout` — facts, `pdca-planner` — decision). If the plan is applicable — the **same**
-   cycle/step continues and DO starts. If the plan is stale — `pdca-planner` makes a genuine
+   the roles (`pdca-scout` — facts, `pdca-planner` — decision). If the plan is applicable **and**
+   the recorded approval matches the ref (`task`/`cycle_id`, `N`, `r`, criteria set) — the **same**
+   cycle/step continues and DO starts; an unchanged saved plan is no exception. Applicability
+   without a matching record is an **approval-needed checkpoint**, not DO and not a fresh PLAN.
+   If the plan is stale — `pdca-planner` makes a genuine
    revision by the base rules, and it needs a **fresh** approval; the old approval does not
    authorize it. Approval-resume does not do an unconditional replan and does not create a new step; the state
    is durable, so compaction is safe.
@@ -625,8 +634,8 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   a link to the task's status file;
   `plan_state` (`ready` ≠ an approval and ≠ `done`) is not the execution status of the task but the readiness
   of its plan; the merge is at the group level, a task never has the status `merged`;
-- per unit: `execution_kind` (`cycle` | `campaign`); for `cycle` — `plan_state` and
-  `selected_variant`; for `campaign` — `preparation_state` (`pending` | `ready`),
+- per unit: `execution_kind` (`cycle` | `campaign`); for `cycle` — `plan_state`,
+  `selected_variant` and the pending approval ref pointer (normal mode); for `campaign` — `preparation_state` (`pending` | `ready`),
   the **single authoritative** `preparation_ref` (`.../preparation.md@r<k>`) and `campaign_ref`
   (optional before the baseline bootstrap, mandatory after); the per-unit `disposition`
   (`active` | `paused` | `finalized`) — an explicit field of **both** forms, `cycle` and `campaign`;

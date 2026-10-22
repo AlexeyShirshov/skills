@@ -27,6 +27,10 @@ SKILL = SKILL_DIR / "SKILL.md"
 EN_CODER = SKILL_DIR / "assets/agents/pdca-executor.md"
 SELECTOR = "FullyQualifiedName~Foo.Tests.BarTests"
 SELECTOR_2 = "FullyQualifiedName~Shared.Tests.ContractTests"
+SEL_A = "FullyQualifiedName~Foo.Tests.A"
+SEL_B = "FullyQualifiedName~Foo.Tests.B"
+SEL_OR = SEL_A + "|" + SEL_B
+SEL_AND = SEL_A + "&" + SEL_B
 
 
 def run_gate(mode, payload=None, raw=None):
@@ -39,6 +43,27 @@ def run_gate(mode, payload=None, raw=None):
             path.write_text(json.dumps(payload), encoding="utf-8")
         return subprocess.run(
             [sys.executable, str(SCRIPT), mode, str(path)],
+            capture_output=True,
+            text=True,
+        )
+
+
+def run_gate_with_journal(payload, journal):
+    """Run `report <payload> --journal <journal>`; return the process."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "report.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        journal_path = Path(tmp) / "journal.json"
+        journal_path.write_text(json.dumps(journal), encoding="utf-8")
+        return subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "report",
+                str(path),
+                "--journal",
+                str(journal_path),
+            ],
             capture_output=True,
             text=True,
         )
@@ -315,7 +340,7 @@ class ReportGateTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, output(proc))
 
     def test_missing_selected_count_rejected(self):
-        bad = exec_(["dotnet", "test", "proj", "--filter", SELECTOR])
+        bad = exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR])
         del bad["selected_count"]
         proc = run_gate("report", valid_report(scope=docs_scope(), executions=[bad]))
         self.assertEqual(proc.returncode, 2)
@@ -326,7 +351,7 @@ class ReportGateTests(unittest.TestCase):
         proc = run_gate("report", valid_report(
             scope=docs_scope(),
             executions=[
-                exec_(["dotnet", "test", "proj", "--filter", SELECTOR], selected_count=0)
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], selected_count=0)
             ],
         ))
         self.assertEqual(proc.returncode, 2)
@@ -372,7 +397,7 @@ class ReportGateTests(unittest.TestCase):
     def test_all_selecting_filter_rejected(self):
         report = valid_report(
             scope=docs_scope(),
-            executions=[exec_(["dotnet", "test", "proj", "--filter", "*"])],
+            executions=[exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", "*"])],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 2)
@@ -399,7 +424,7 @@ class ReportGateTests(unittest.TestCase):
                     "validated_before_run": True,
                 }
             ],
-            executions=[exec_(["dotnet", "test", "proj", "--filter", SELECTOR_2])],
+            executions=[exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR_2])],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 0, output(proc))
@@ -407,7 +432,7 @@ class ReportGateTests(unittest.TestCase):
     def test_silent_widening_rejected(self):
         report = valid_report(
             scope=docs_scope(),
-            executions=[exec_(["dotnet", "test", "proj", "--filter", SELECTOR_2])],
+            executions=[exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR_2])],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 2)
@@ -423,7 +448,7 @@ class ReportGateTests(unittest.TestCase):
                     "validated_before_run": False,
                 }
             ],
-            executions=[exec_(["dotnet", "test", "proj", "--filter", SELECTOR_2])],
+            executions=[exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR_2])],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 2)
@@ -471,7 +496,7 @@ class ReportGateTests(unittest.TestCase):
     def test_docs_only_no_build_rc0(self):
         report = valid_report(
             scope=docs_scope(),
-            executions=[exec_(["dotnet", "test", "proj", "--filter", SELECTOR])],
+            executions=[exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR])],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 0, output(proc))
@@ -481,7 +506,7 @@ class ReportGateTests(unittest.TestCase):
         # affected rebuild.
         report = valid_report(
             scope=valid_scope(files=["docs/notes.md"], rebuild="affected"),
-            executions=[exec_(["dotnet", "build", "proj"])],
+            executions=[exec_(["dotnet", "build", "tests/Foo.Tests.csproj"])],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 2)
@@ -492,7 +517,7 @@ class ReportGateTests(unittest.TestCase):
             scope=docs_scope(),
             executions=[
                 exec_(
-                    ["dotnet", "test", "proj", "-c", "Release",
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "-c", "Release",
                      "--framework", "net8.0", "--filter", SELECTOR]
                 )
             ],
@@ -505,7 +530,7 @@ class ReportGateTests(unittest.TestCase):
             scope=docs_scope(),
             executions=[
                 exec_(
-                    ["dotnet", "test", "proj", "-c", "Debug", "--filter", SELECTOR]
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "-c", "Debug", "--filter", SELECTOR]
                 )
             ],
         )
@@ -528,7 +553,7 @@ class ReportGateTests(unittest.TestCase):
             scope=docs_scope(),
             executions=[
                 exec_(
-                    ["dotnet", "test", "proj", "-c", "Release",
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "-c", "Release",
                      "--filter", "FullyQualifiedName~Unrelated"]
                 )
             ],
@@ -541,15 +566,15 @@ class ReportGateTests(unittest.TestCase):
         report = valid_report(
             scope=docs_scope(),
             executions=[
-                exec_(["dotnet", "test", "proj", "--filter", SELECTOR], code=1),
-                exec_(["dotnet", "test", "proj", "--filter", SELECTOR], code=0),
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], code=1),
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], code=0),
             ],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 0, output(proc))
 
     def test_missing_exit_code_rejected(self):
-        bad = exec_(["dotnet", "test", "proj", "--filter", SELECTOR])
+        bad = exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR])
         del bad["exit_code"]
         report = valid_report(scope=docs_scope(), executions=[bad])
         proc = run_gate("report", report)
@@ -573,7 +598,7 @@ class ReportGateTests(unittest.TestCase):
     def test_missing_final_green_rejected(self):
         report = valid_report(
             scope=docs_scope(),
-            executions=[exec_(["dotnet", "test", "proj", "--filter", SELECTOR], code=1)],
+            executions=[exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], code=1)],
         )
         proc = run_gate("report", report)
         self.assertEqual(proc.returncode, 2)
@@ -611,7 +636,7 @@ class ReportGateTests(unittest.TestCase):
             scope=docs_scope(),
             executions=[
                 exec_(
-                    ["dotnet", "test", "proj", "--filter", SELECTOR], phase="boundary"
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], phase="boundary"
                 )
             ],
         )
@@ -648,7 +673,7 @@ class ReportGateTests(unittest.TestCase):
         report = valid_report(
             scope=docs_scope(),
             executions=[
-                exec_(["dotnet", "build", "proj"], phase="boundary", source="r2", artifact="r1")
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], phase="boundary", source="r2", artifact="r1")
             ],
         )
         proc = run_gate("report", report)
@@ -668,7 +693,7 @@ class ReportGateTests(unittest.TestCase):
         report = valid_report(
             scope=docs_scope(),
             executions=[
-                exec_(["dotnet", "build", "proj", "&&", "dotnet", "build", "proj"])
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj", "&&", "dotnet", "build", "tests/Foo.Tests.csproj"])
             ],
         )
         proc = run_gate("report", report)
@@ -698,7 +723,7 @@ class ReportGateTests(unittest.TestCase):
             valid_report(
                 scope=docs_scope(),
                 executions=[exec_(
-                    ["dotnet", "test", "proj", "--filter", SELECTOR],
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR],
                     phase="middle",
                 )],
             ),
@@ -713,7 +738,7 @@ class ReportGateTests(unittest.TestCase):
             valid_report(
                 scope=docs_scope(),
                 executions=[exec_(
-                    ["dotnet", "test", "proj", "--filter", SELECTOR], source=""
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], source=""
                 )],
             ),
         )
@@ -727,7 +752,7 @@ class ReportGateTests(unittest.TestCase):
             valid_report(
                 scope=docs_scope(),
                 executions=[exec_(
-                    ["dotnet", "test", "proj", "--filter", SELECTOR], artifact=""
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], artifact=""
                 )],
             ),
         )
@@ -742,7 +767,7 @@ class ReportGateTests(unittest.TestCase):
             valid_report(
                 scope=docs_scope(),
                 executions=[exec_(
-                    ["dotnet", "test", "proj", "--filter", SELECTOR], code=True
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR], code=True
                 )],
             ),
         )
@@ -756,7 +781,7 @@ class ReportGateTests(unittest.TestCase):
             valid_report(
                 scope=docs_scope(),
                 executions=[exec_(
-                    ["dotnet", "test", "proj", "--filter", SELECTOR],
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR],
                     selected_count=True,
                 )],
             ),
@@ -809,8 +834,8 @@ class ReportGateTests(unittest.TestCase):
         # so this also locks the asymmetry: a `dotnet test` dangling filter is
         # caught by the dotnet-test rule, a non-test dangling `--filter` is not.
         for command in (
-            ["dotnet", "test", "proj", "-filter"],
-            ["dotnet", "test", "proj", "--filter"],
+            ["dotnet", "test", "tests/Foo.Tests.csproj", "-filter"],
+            ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter"],
             ["vstest", "--filter"],
         ):
             with self.subTest(command=command):
@@ -1432,14 +1457,17 @@ class ArchivedPackTests(unittest.TestCase):
                 }
             ],
         }
-        manifest_path = Path(tmp) / "manifest.json"
+        # The frozen manifest is a protected record of this task's own rv dir, so
+        # the fixture keeps it there (the receipt path is canonical and contained).
+        manifest_path = root / "manifest.json"
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        rel_manifest = "artifacts/pdca/D235/rv1/manifest.json"
         receipt = CleanupReceiptTests().receipt()
         receipt["frozen_manifest"] = {
-            "path": "manifest.json",
+            "path": rel_manifest,
             "sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         }
-        receipt["retained"]["frozen_manifest"] = "manifest.json"
+        receipt["retained"]["frozen_manifest"] = rel_manifest
         receipt["removed"][0]["path"] = rel_body
         receipt["removed"][0]["sha256"] = hashlib.sha256(body.read_bytes()).hexdigest()
         receipt_path = Path(tmp) / "cleanup.json"
@@ -1495,6 +1523,1128 @@ class ArchivedPackTests(unittest.TestCase):
             )
         self.assertEqual(proc.returncode, 2)
         self.assertIn("rewritten after cleanup", output(proc))
+
+
+class ProjectionFaithfulnessTests(unittest.TestCase):
+    """Fix 1: `report --journal` reconciles values, not only execution ids.
+
+    The journal is authoritative: the report unit/scope and every journal-derived
+    execution field must match the mechanical projection.  A faithful projection
+    still passes; a rewritten result/argv/phase/revision, an invented amendment or
+    a reordered/duplicated row is rejected.
+    """
+
+    @staticmethod
+    def journal():
+        return {
+            "unit": "D1",
+            "scope": valid_scope(),
+            "events": [
+                {
+                    "id": "e1",
+                    "event": "start",
+                    "phase": "inner",
+                    "command": ["dotnet", "build", "tests/Foo.Tests.csproj"],
+                    "source_revision": "r1",
+                    "artifact_revision": "r1",
+                    "at": "2026-10-22T10:00:00Z",
+                },
+                {
+                    "id": "e1",
+                    "event": "finish",
+                    "state": "finished",
+                    "exit_code": 0,
+                    "selected_count": 5,
+                    "at": "2026-10-22T10:00:20Z",
+                    "log": "artifacts/pdca/D1/rv1/logs/e1.log",
+                },
+                {
+                    "id": "e2",
+                    "event": "start",
+                    "phase": "inner",
+                    "command": [
+                        "dotnet",
+                        "test",
+                        "tests/Foo.Tests.csproj",
+                        "--no-build",
+                        "--filter",
+                        SELECTOR,
+                    ],
+                    "source_revision": "r1",
+                    "artifact_revision": "r1",
+                    "at": "2026-10-22T10:00:21Z",
+                },
+                {
+                    "id": "e2",
+                    "event": "finish",
+                    "state": "finished",
+                    "exit_code": 0,
+                    "selected_count": 7,
+                    "at": "2026-10-22T10:00:35Z",
+                    "log": "artifacts/pdca/D1/rv1/logs/e2.log",
+                },
+            ],
+        }
+
+    def faithful_report(self):
+        proc = run_gate("project", self.journal())
+        self.assertEqual(proc.returncode, 0, output(proc))
+        return json.loads(proc.stdout)
+
+    def assert_projection_rejected(self, report, *needles):
+        proc = run_gate_with_journal(report, self.journal())
+        self.assertEqual(proc.returncode, 2, output(proc))
+        text = output(proc)
+        self.assertIn("projection mismatch", text)
+        for needle in needles:
+            self.assertIn(needle, text)
+        return proc
+
+    def test_exact_faithful_projection_passes(self):
+        proc = run_gate_with_journal(self.faithful_report(), self.journal())
+        self.assertEqual(proc.returncode, 0, output(proc))
+        self.assertNotIn("projection mismatch", output(proc))
+
+    def test_legacy_finished_state_omission_is_canonicalised(self):
+        # `state` defaults to finished for a legacy row, exactly as the
+        # projection's explicit "finished" value.
+        report = self.faithful_report()
+        for execution in report["executions"]:
+            execution.pop("state")
+        proc = run_gate_with_journal(report, self.journal())
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_provenance_omission_does_not_fabricate_a_result(self):
+        # The report schema does not mandate journal timestamps/log; omitting
+        # provenance cannot fabricate a result, so it stays valid ...
+        report = self.faithful_report()
+        for execution in report["executions"]:
+            for field in ("started_at", "finished_at", "log"):
+                execution.pop(field, None)
+        proc = run_gate_with_journal(report, self.journal())
+        self.assertEqual(proc.returncode, 0, output(proc))
+        # ... while a *rewritten* provenance value is a projection mismatch.
+
+    def test_rewritten_exit_code_rejected(self):
+        report = self.faithful_report()
+        report["executions"][0]["exit_code"] = 1
+        self.assert_projection_rejected(report, "exit_code")
+
+    def test_rewritten_selected_count_rejected(self):
+        report = self.faithful_report()
+        report["executions"][1]["selected_count"] = 8
+        self.assert_projection_rejected(report, "selected_count")
+
+    def test_rewritten_state_rejected(self):
+        report = self.faithful_report()
+        report["executions"][0]["state"] = "canceled"
+        self.assert_projection_rejected(report, "state")
+
+    def test_rewritten_command_rejected(self):
+        report = self.faithful_report()
+        report["executions"][1]["command"] = [
+            "dotnet",
+            "test",
+            "tests/Other.Tests.csproj",
+            "--no-build",
+            "--filter",
+            SELECTOR,
+        ]
+        self.assert_projection_rejected(report, "command")
+
+    def test_boundary_move_rejected(self):
+        report = self.faithful_report()
+        report["executions"][0]["phase"] = "boundary"
+        self.assert_projection_rejected(report, "phase")
+
+    def test_rewritten_source_revision_rejected(self):
+        report = self.faithful_report()
+        report["executions"][1]["source_revision"] = "r2"
+        self.assert_projection_rejected(report, "source_revision")
+
+    def test_rewritten_artifact_revision_rejected(self):
+        report = self.faithful_report()
+        report["executions"][0]["artifact_revision"] = "r2"
+        self.assert_projection_rejected(report, "artifact_revision")
+
+    def test_rewritten_log_rejected(self):
+        report = self.faithful_report()
+        report["executions"][1]["log"] = "artifacts/pdca/D1/rv1/logs/other.log"
+        self.assert_projection_rejected(report, "log")
+
+    def test_rewritten_started_at_rejected(self):
+        report = self.faithful_report()
+        report["executions"][0]["started_at"] = "2026-10-22T11:00:00Z"
+        self.assert_projection_rejected(report, "started_at")
+
+    def test_report_unit_rewrite_rejected(self):
+        report = self.faithful_report()
+        report["unit"] = "D2"
+        self.assert_projection_rejected(report, "unit")
+
+    def test_report_scope_rewrite_rejected(self):
+        report = self.faithful_report()
+        report["scope"] = valid_scope(selectors=[SELECTOR, SELECTOR_2])
+        self.assert_projection_rejected(report, "scope")
+
+    def test_invented_validated_amendment_rejected(self):
+        # A report may not legalise a selector with an amendment the journal
+        # never recorded.
+        report = self.faithful_report()
+        report["amendments"] = [
+            {
+                "reason": "invented after the fact",
+                "added_selectors": [SELECTOR_2],
+                "validated_before_run": True,
+            }
+        ]
+        self.assert_projection_rejected(report, "amendments")
+
+    def test_duplicate_report_execution_rejected(self):
+        report = self.faithful_report()
+        report["executions"].append(json.loads(json.dumps(report["executions"][1])))
+        self.assert_projection_rejected(report, "duplicate execution id")
+
+    def test_reordered_projection_rejected(self):
+        report = self.faithful_report()
+        report["executions"].reverse()
+        self.assert_projection_rejected(report, "order differs")
+
+    def test_report_execution_without_id_rejected(self):
+        report = self.faithful_report()
+        report["executions"][0].pop("id")
+        proc = run_gate_with_journal(report, self.journal())
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("must carry the journal execution id", output(proc))
+
+    def test_canceled_run_reported_as_finished_success_rejected(self):
+        journal = self.journal()
+        journal["events"][3] = {
+            "id": "e2",
+            "event": "finish",
+            "state": "canceled",
+            "exit_code": None,
+            "selected_count": None,
+            "at": "2026-10-22T10:00:35Z",
+        }
+        fabricated = {
+            "unit": "D1",
+            "scope": valid_scope(),
+            "executions": [
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], id="e1"),
+                exec_(
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--no-build",
+                     "--filter", SELECTOR],
+                    id="e2",
+                    selected_count=7,
+                ),
+            ],
+        }
+        proc = run_gate_with_journal(fabricated, journal)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        text = output(proc)
+        self.assertIn("projection mismatch", text)
+        self.assertIn("state", text)
+        self.assertIn("exit_code", text)
+
+    def test_canceled_run_faithful_projection_is_not_a_projection_mismatch(self):
+        journal = self.journal()
+        journal["events"][3] = {
+            "id": "e2",
+            "event": "finish",
+            "state": "canceled",
+            "exit_code": None,
+            "selected_count": None,
+            "at": "2026-10-22T10:00:35Z",
+        }
+        faithful = {
+            "unit": "D1",
+            "scope": valid_scope(),
+            "executions": [
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], id="e1"),
+                exec_(
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--no-build",
+                     "--filter", SELECTOR],
+                    id="e2",
+                    state="canceled",
+                    exit_code=None,
+                    selected_count=None,
+                ),
+            ],
+        }
+        proc = run_gate_with_journal(faithful, journal)
+        # The canceled attempt is retained but cannot satisfy success; the
+        # projection itself is faithful.
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no finished execution", output(proc))
+        self.assertNotIn("projection mismatch", output(proc))
+
+    def test_null_result_omission_for_unfinished_run_is_canonicalised(self):
+        journal = self.journal()
+        journal["events"][3] = {
+            "id": "e2",
+            "event": "finish",
+            "state": "canceled",
+            "exit_code": None,
+            "selected_count": None,
+            "at": "2026-10-22T10:00:35Z",
+        }
+        faithful = {
+            "unit": "D1",
+            "scope": valid_scope(),
+            "executions": [
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], id="e1"),
+                {
+                    "id": "e2",
+                    "command": ["dotnet", "test", "tests/Foo.Tests.csproj",
+                                "--no-build", "--filter", SELECTOR],
+                    "phase": "inner",
+                    "source_revision": "r1",
+                    "artifact_revision": "r1",
+                    "state": "canceled",
+                },
+            ],
+        }
+        proc = run_gate_with_journal(faithful, journal)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertNotIn("projection mismatch", output(proc))
+
+    def test_started_but_never_finished_reported_as_success_rejected(self):
+        journal = self.journal()
+        journal["events"] = journal["events"][:3]  # e2 started, no finish
+        fabricated = {
+            "unit": "D1",
+            "scope": valid_scope(),
+            "executions": [
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"], id="e1"),
+                exec_(
+                    ["dotnet", "test", "tests/Foo.Tests.csproj", "--no-build",
+                     "--filter", SELECTOR],
+                    id="e2",
+                    selected_count=7,
+                ),
+            ],
+        }
+        proc = run_gate_with_journal(fabricated, journal)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("projection mismatch", output(proc))
+        self.assertIn("state", output(proc))
+
+    def test_kind_rewrite_rejected(self):
+        journal = self.journal()
+        journal["events"][0]["kind"] = "build"
+        proc = run_gate("project", journal)
+        self.assertEqual(proc.returncode, 0, output(proc))
+        report = json.loads(proc.stdout)
+        report["executions"][0]["kind"] = "other"
+        proc = run_gate_with_journal(report, journal)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("projection mismatch", output(proc))
+        self.assertIn("kind", output(proc))
+
+
+class CleanupPathScopeTests(unittest.TestCase):
+    """Fix 2: cleanup paths are canonical, portable and inside the exact rv dir.
+
+    The receipt is only data (no filesystem deletion), so these controls never
+    create or remove a file: a legitimate inside path is accepted even when it
+    does not exist, while traversal/absolute/Windows/mixed-separator spellings and
+    neighbour/root/glob targets are rejected.
+    """
+
+    def receipt(self, path, task="D235", evidence_root="artifacts/pdca"):
+        receipt = CleanupReceiptTests().receipt()
+        receipt["task"] = task
+        receipt["evidence_root"] = evidence_root
+        receipt["removed"] = [
+            {"path": path, "sha256": "c" * 64, "kind": "temp", "reason": "staged body"}
+        ]
+        return receipt
+
+    def assert_rejected(self, path, needle="outside this task's own rv dir"):
+        proc = run_gate("cleanup", self.receipt(path))
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn(needle, output(proc))
+
+    def test_traversal_to_neighbour_rejected(self):
+        self.assert_rejected("artifacts/pdca/D235/rv1/../../D999/rv9/secret.txt")
+
+    def test_traversal_that_normalises_inside_rejected(self):
+        # Even a `..` that resolves back inside is not a canonical receipt path.
+        self.assert_rejected("artifacts/pdca/D235/rv1/staged/../copy.bin")
+
+    def test_absolute_path_rejected(self):
+        self.assert_rejected("/etc/passwd")
+
+    def test_windows_absolute_path_rejected(self):
+        self.assert_rejected("C:\\pdca\\D235\\rv1\\secret.txt")
+
+    def test_mixed_separator_traversal_rejected(self):
+        self.assert_rejected("artifacts/pdca/D235/rv1\\..\\D999\\rv9\\secret.txt")
+
+    def test_backslash_path_rejected(self):
+        self.assert_rejected("artifacts/pdca/D235/rv1\\staged\\copy.bin")
+
+    def test_direct_neighbour_rejected(self):
+        self.assert_rejected("artifacts/pdca/D999/rv9/secret.txt")
+
+    def test_task_root_rv_root_and_glob_rejected(self):
+        for path in (
+            "artifacts/pdca/D235",
+            "artifacts/pdca/D235/rv1",
+            "artifacts/pdca/D235/rv1/*",
+        ):
+            with self.subTest(path=path):
+                self.assert_rejected(path)
+
+    def test_prefix_neighbour_and_other_rv_rejected(self):
+        for path in (
+            "artifacts/pdca/D235X/rv1/staged/copy.bin",
+            "artifacts/pdca/D235/rv10/staged/copy.bin",
+        ):
+            with self.subTest(path=path):
+                self.assert_rejected(path)
+
+    def test_legit_inside_path_accepted_without_the_file_existing(self):
+        proc = run_gate(
+            "cleanup",
+            self.receipt("artifacts/pdca/D235/rv1/staged/deep/copy.bin"),
+        )
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_legit_inside_path_with_default_evidence_root_accepted(self):
+        receipt = self.receipt(".pdca/D235/rv1/staged/copy.bin", evidence_root=".pdca")
+        receipt["closure"]["final_report"] = ".pdca/D235/rv1/final-report.md"
+        receipt["frozen_manifest"]["path"] = ".pdca/D235/rv1/manifest.json"
+        for role in receipt["retained"]:
+            receipt["retained"][role] = ".pdca/D235/rv1/%s.json" % role
+        receipt["retained"]["frozen_manifest"] = ".pdca/D235/rv1/manifest.json"
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_one_traversal_among_legit_paths_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/staged/copy.bin")
+        receipt["removed"].append(
+            {
+                "path": "artifacts/pdca/D235/rv1/../../D999/rv9/secret.txt",
+                "sha256": "d" * 64,
+                "kind": "temp",
+                "reason": "second removal",
+            }
+        )
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("outside this task's own rv dir", output(proc))
+
+    def test_malformed_task_identifier_rejected(self):
+        for task in ("../D235", "D/235", "D 235", ".hidden"):
+            with self.subTest(task=task):
+                receipt = self.receipt(
+                    "artifacts/pdca/D235/rv1/staged/copy.bin", task=task
+                )
+                proc = run_gate("cleanup", receipt)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("portable task identifier", output(proc))
+
+    def test_empty_task_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/staged/copy.bin", task="")
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("cleanup.task", output(proc))
+
+    def test_retained_traversal_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/staged/copy.bin")
+        receipt["retained"]["final_report"] = (
+            "artifacts/pdca/D235/rv1/../../D999/rv9/final-report.md"
+        )
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("cleanup.retained.final_report", output(proc))
+
+    def test_retained_neighbour_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/staged/copy.bin")
+        receipt["retained"]["certification"] = "artifacts/pdca/D999/rv9/check.json"
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("cleanup.retained.certification", output(proc))
+
+    def test_frozen_manifest_outside_rv_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/staged/copy.bin")
+        receipt["frozen_manifest"]["path"] = "artifacts/pdca/D235/rv1/../rv2/manifest.json"
+        receipt["retained"]["frozen_manifest"] = "artifacts/pdca/D235/rv1/../rv2/manifest.json"
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("frozen_manifest", output(proc))
+
+    def test_frozen_manifest_not_the_retained_one_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/staged/copy.bin")
+        receipt["frozen_manifest"]["path"] = "artifacts/pdca/D235/rv1/other.json"
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("retained.frozen_manifest", output(proc))
+
+    def test_removing_a_retained_record_rejected(self):
+        receipt = self.receipt("artifacts/pdca/D235/rv1/final-report.md")
+        proc = run_gate("cleanup", receipt)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("retained record", output(proc))
+
+
+class InnerCommandScopeTests(unittest.TestCase):
+    """Fix 3: the actual command scope is enforced, independently of `kind`."""
+
+    INTEGRATION = "tests/Integration.Tests.csproj"
+
+    def scope(self, **overrides):
+        return valid_scope(integration_projects=[self.INTEGRATION], **overrides)
+
+    def integration_executions(self, kind=None):
+        executions = [
+            exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+            exec_(["dotnet", "test", self.INTEGRATION]),
+        ]
+        if kind is not None:
+            executions[1]["kind"] = kind
+        return executions
+
+    def test_kind_other_cannot_launder_an_integration_test(self):
+        report = valid_report(
+            scope=self.scope(), executions=self.integration_executions(kind="other")
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("does not override the actual scope", output(proc))
+        self.assertIn("inside DO", output(proc))
+
+    def test_kind_build_cannot_launder_an_integration_test(self):
+        report = valid_report(
+            scope=self.scope(), executions=self.integration_executions(kind="build")
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("does not override the actual scope", output(proc))
+        self.assertIn("inside DO", output(proc))
+
+    def test_kind_unit_over_integration_project_rejected(self):
+        report = valid_report(
+            scope=self.scope(), executions=self.integration_executions(kind="unit")
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("not unit", output(proc))
+        self.assertIn("inside DO", output(proc))
+
+    def test_kind_integration_inner_rejected(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=self.integration_executions(kind="integration"),
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("inside DO", output(proc))
+
+    def test_bare_inner_test_rejected(self):
+        report = valid_report(scope=docs_scope(), executions=[exec_(["dotnet", "test"])])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no explicit project target", output(proc))
+
+    def test_bare_inner_build_rejected(self):
+        report = valid_report(scope=docs_scope(), executions=[exec_(["dotnet", "build"])])
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no explicit project target", output(proc))
+
+    def test_bare_inner_test_with_configuration_rejected(self):
+        # `Release` is the value of `-c`, not a project target.
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[exec_(["dotnet", "test", "-c", "Release"])],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no explicit project target", output(proc))
+
+    def test_bare_inner_test_with_no_build_rejected(self):
+        report = valid_report(
+            scope=docs_scope(), executions=[exec_(["dotnet", "test", "--no-build"])]
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no explicit project target", output(proc))
+
+    def test_out_of_scope_test_project_rejected(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Other.Tests.csproj",
+                       "--filter", SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("project out of scope", output(proc))
+
+    def test_out_of_scope_build_project_rejected(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[exec_(["dotnet", "build", "tests/Other.Tests.csproj"])],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("project out of scope", output(proc))
+
+    def test_scoped_project_inner_allowed(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter", SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_project_identity_normalisation_allowed(self):
+        # Lexical normalisation only: `./` and a redundant in-repo `..` are the
+        # same path.  Case is deliberately NOT normalised (see the case-mismatch
+        # regression below): the old case-folded identity blessed a different
+        # file on a case-sensitive filesystem.
+        for token in (
+            "./tests/Foo.Tests.csproj",
+            "tests/./Foo.Tests.csproj",
+            "tests/../tests/Foo.Tests.csproj",
+        ):
+            with self.subTest(token=token):
+                report = valid_report(
+                    scope=docs_scope(),
+                    executions=[
+                        exec_(["dotnet", "test", token, "--filter", SELECTOR])
+                    ],
+                )
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_project_identity_case_mismatch_rejected(self):
+        # Deliberate change: identity is exact-case after lexical normalisation.
+        # The report carries no filesystem case policy, so on Linux a differently
+        # cased path may be a different file outside the affected subset; the gate
+        # fails closed instead of inferring a case-insensitive filesystem from the
+        # verification host.
+        for token in (
+            "tests/foo.tests.csproj",     # lowercase filename
+            "Tests/Foo.Tests.csproj",     # cased directory
+            "tests/Foo.Tests.CSPROJ",     # cased extension
+        ):
+            with self.subTest(token=token):
+                report = valid_report(
+                    scope=docs_scope(),
+                    executions=[
+                        exec_(["dotnet", "test", token, "--filter", SELECTOR])
+                    ],
+                )
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("project out of scope", output(proc))
+
+    def test_lowercase_scope_and_lowercase_command_allowed(self):
+        # Positive control: a scope that explicitly declares the lowercase
+        # project accepts the identical lowercase command (author and execution
+        # use the same case).
+        report = valid_report(
+            scope=docs_scope(projects=["tests/foo.tests.csproj"]),
+            executions=[
+                exec_(["dotnet", "test", "tests/foo.tests.csproj",
+                       "--filter", SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_integration_identity_is_exact_case(self):
+        # The integration comparator is the same exact-case identity: a
+        # differently cased path is a distinct declared project, not the
+        # protected integration project.
+        scope = valid_scope(
+            projects=[
+                "tests/Foo.Tests.csproj",
+                "tests/Integration.Tests.csproj",
+                "tests/integration.tests.csproj",
+            ],
+            integration_projects=["tests/Integration.Tests.csproj"],
+        )
+        exact = valid_report(
+            scope=scope,
+            executions=[
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+                exec_(["dotnet", "test", "tests/Integration.Tests.csproj"]),
+            ],
+        )
+        proc = run_gate("report", exact)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("inside DO", output(proc))
+
+        differently_cased = valid_report(
+            scope=scope,
+            executions=[
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+                exec_(["dotnet", "test", "tests/integration.tests.csproj"]),
+            ],
+        )
+        proc = run_gate("report", differently_cased)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_escaping_or_unportable_project_rejected(self):
+        for token in (
+            "../Foo.Tests.csproj",
+            "tests/../../Foo.Tests.csproj",
+            "/abs/tests/Foo.Tests.csproj",
+            "C:/tests/Foo.Tests.csproj",
+            "tests\\Foo.Tests.csproj",
+        ):
+            with self.subTest(token=token):
+                report = valid_report(
+                    scope=docs_scope(),
+                    executions=[exec_(["dotnet", "test", token])],
+                )
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("not a provable portable", output(proc))
+
+    def test_same_basename_in_another_directory_rejected(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[exec_(["dotnet", "test", "tests/Other/Foo.Tests.csproj"])],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("project out of scope", output(proc))
+
+    def test_option_value_is_not_a_project_target(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj",
+                       "-c", "Release"])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_project_option_form_allowed(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "--project", "tests/Foo.Tests.csproj",
+                       "--filter", SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_project_equals_form_allowed(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "--project=tests/Foo.Tests.csproj",
+                       "--filter", SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_filter_equals_form_is_checked_against_scope(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter=" + SELECTOR_2])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("out of scope", output(proc))
+
+    def test_filter_equals_in_scope_allowed(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter=" + SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_empty_filter_equals_is_broad(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj", "--filter="])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("broad", output(proc))
+
+    def test_runner_arguments_after_double_dash_are_not_projects(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter", SELECTOR, "--", "--foo", "bar"])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_non_test_dotnet_command_preserved(self):
+        report = valid_report(
+            scope=docs_scope(), executions=[exec_(["dotnet", "restore"])]
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_integration_project_build_only_inner_allowed(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+                exec_(["dotnet", "build", self.INTEGRATION]),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_integration_project_boundary_test_allowed(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+                exec_(["dotnet", "test", self.INTEGRATION], phase="boundary"),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_out_of_scope_project_is_not_legalised_by_a_selector_amendment(self):
+        report = valid_report(
+            scope=docs_scope(),
+            amendments=[
+                {
+                    "reason": "shared contract widening",
+                    "added_selectors": [SELECTOR_2],
+                    "validated_before_run": True,
+                }
+            ],
+            executions=[
+                exec_(["dotnet", "test", "tests/Other.Tests.csproj",
+                       "--filter", SELECTOR_2])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("project out of scope", output(proc))
+
+    def test_integration_project_normalized_spelling_inner_rejected(self):
+        # Classification and membership use the same lexical identity: `./` and
+        # `//` spellings of the declared integration project are still that
+        # project, so an inner run is a policy violation, not a unit run.
+        scope = valid_scope(integration_projects=[self.INTEGRATION])
+        for token in (
+            self.INTEGRATION,
+            "tests/./Integration.Tests.csproj",
+            "tests//Integration.Tests.csproj",
+        ):
+            with self.subTest(token=token):
+                report = valid_report(
+                    scope=scope,
+                    executions=[
+                        exec_(["dotnet", "build", "tests/Foo.Tests.csproj"]),
+                        exec_(["dotnet", "test", token]),
+                    ],
+                )
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("inside DO", output(proc))
+
+    def test_unit_project_normalized_spelling_allowed(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests//Foo.Tests.csproj",
+                       "--filter", SELECTOR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_blame_crash_dump_type_value_is_not_a_project(self):
+        # Official VSTest option: `--blame-crash-dump-type <full|mini>` takes a
+        # value, so the value is never a positional project target.
+        for value in ("full", "mini"):
+            with self.subTest(value=value):
+                report = valid_report(
+                    scope=docs_scope(),
+                    executions=[
+                        exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                               "--blame-crash-dump-type", value,
+                               "--filter", SELECTOR])
+                    ],
+                )
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_blame_crash_dump_type_without_a_project_is_bare(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "--blame-crash-dump-type", "full"])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no explicit project target", output(proc))
+
+
+class FinalGreenIdentityTests(unittest.TestCase):
+    """Finding 3: final green is grouped by the actual project identity."""
+
+    PROJECT_A = "tests/A.Tests.csproj"
+    PROJECT_B = "tests/B.Tests.csproj"
+
+    def scope(self):
+        return docs_scope(projects=[self.PROJECT_A, self.PROJECT_B])
+
+    def test_option_order_permutation_is_the_same_group(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "test", "-c", "Release",
+                       self.PROJECT_A, "--filter", SELECTOR], code=1),
+                exec_(["dotnet", "test", self.PROJECT_A, "-c", "Release",
+                       "--filter", SELECTOR], code=0),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_same_project_red_then_green_allowed(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "test", self.PROJECT_A,
+                       "--filter", SELECTOR], code=1),
+                exec_(["dotnet", "test", self.PROJECT_A,
+                       "--filter", SELECTOR], code=0),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_different_projects_with_the_same_filter_do_not_hide_red(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "test", self.PROJECT_A,
+                       "--filter", SELECTOR], code=1),
+                exec_(["dotnet", "test", self.PROJECT_B,
+                       "--filter", SELECTOR], code=0),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no final green", output(proc))
+
+    def test_different_projects_without_filter_do_not_hide_red(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "test", self.PROJECT_A], code=1),
+                exec_(["dotnet", "test", self.PROJECT_B], code=0),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no final green", output(proc))
+
+    def test_multi_project_command_does_not_absorb_a_red_single_project(self):
+        report = valid_report(
+            scope=self.scope(),
+            executions=[
+                exec_(["dotnet", "test", self.PROJECT_A], code=1),
+                exec_(["dotnet", "test", self.PROJECT_A, self.PROJECT_B],
+                      code=0),
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no final green", output(proc))
+
+
+class JournalFinishOrderTests(unittest.TestCase):
+    """Finding 6: terminal green follows the journal's finish-event order."""
+
+    COMMAND = ["dotnet", "test", "tests/Foo.Tests.csproj", "--filter", SELECTOR]
+
+    def journal(self, finishes):
+        events = [
+            {
+                "id": "e1",
+                "event": "start",
+                "phase": "inner",
+                "command": list(self.COMMAND),
+                "source_revision": "r1",
+                "artifact_revision": "r1",
+                "at": "2026-10-22T10:00:00Z",
+            },
+            {
+                "id": "e2",
+                "event": "start",
+                "phase": "inner",
+                "command": list(self.COMMAND),
+                "source_revision": "r1",
+                "artifact_revision": "r1",
+                "at": "2026-10-22T10:00:01Z",
+            },
+        ]
+        for event_id, code in finishes:
+            events.append(
+                {
+                    "id": event_id,
+                    "event": "finish",
+                    "state": "finished",
+                    "exit_code": code,
+                    "selected_count": 5,
+                    "at": "2026-10-22T10:00:02Z",
+                }
+            )
+        return {"unit": "D1", "scope": docs_scope(), "events": events}
+
+    @staticmethod
+    def report(e1_code, e2_code):
+        return {
+            "unit": "D1",
+            "scope": docs_scope(),
+            "executions": [
+                exec_(list(JournalFinishOrderTests.COMMAND), id="e1", code=e1_code),
+                exec_(list(JournalFinishOrderTests.COMMAND), id="e2", code=e2_code),
+            ],
+        }
+
+    def test_last_completion_red_rejects_despite_start_order(self):
+        # e2 finished green first, then e1 finished red: the terminal result of
+        # the group is red, so a start-order projection may not pass.
+        journal = self.journal([("e2", 0), ("e1", 1)])
+        proc = run_gate("project", journal)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no final green", output(proc))
+
+        proc = run_gate_with_journal(self.report(1, 0), journal)
+        self.assertEqual(proc.returncode, 2, output(proc))
+        self.assertIn("no final green", output(proc))
+
+    def test_serialized_red_then_green_passes(self):
+        journal = self.journal([("e1", 1), ("e2", 0)])
+        proc = run_gate("project", journal)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+        proc = run_gate_with_journal(self.report(1, 0), journal)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_journal_mode_does_not_judge_terminal_green(self):
+        journal = self.journal([("e2", 0), ("e1", 1)])
+        proc = run_gate("journal", journal)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+
+class ShellHygieneTests(unittest.TestCase):
+    """Fix 4: an operator inside an argv value is not a shell command."""
+
+    def test_vstest_or_filter_allowed(self):
+        report = valid_report(
+            scope=docs_scope(selectors=[SEL_OR]),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter", SEL_OR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_vstest_or_filter_equals_form_allowed(self):
+        report = valid_report(
+            scope=docs_scope(selectors=[SEL_OR]),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter=" + SEL_OR])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_vstest_and_filter_allowed(self):
+        report = valid_report(
+            scope=docs_scope(selectors=[SEL_AND]),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter", SEL_AND])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_logger_value_with_semicolon_allowed(self):
+        report = valid_report(
+            scope=docs_scope(),
+            executions=[
+                exec_(["dotnet", "test", "tests/Foo.Tests.csproj",
+                       "--filter", SELECTOR,
+                       "--logger", "console;verbosity=detailed"])
+            ],
+        )
+        proc = run_gate("report", report)
+        self.assertEqual(proc.returncode, 0, output(proc))
+
+    def test_shell_wrapper_rejected(self):
+        for command in (
+            ["bash", "-c", "dotnet test tests/Foo.Tests.csproj"],
+            ["sh", "-c", "dotnet test tests/Foo.Tests.csproj"],
+            ["pwsh", "-Command", "dotnet test tests/Foo.Tests.csproj"],
+            ["powershell", "-Command", "dotnet test tests/Foo.Tests.csproj"],
+        ):
+            with self.subTest(command=command):
+                report = valid_report(scope=docs_scope(), executions=[exec_(command)])
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("shell wrapper", output(proc))
+
+    def test_absolute_shell_wrapper_rejected(self):
+        # An absolute/Windows path to the same executable is the same wrapper;
+        # the canonical basename is checked across `/`, `\` and `.exe`.
+        for command in (
+            ["/bin/bash", "-c", "dotnet test tests/Foo.Tests.csproj"],
+            ["/bin/sh", "-c", "dotnet test tests/Foo.Tests.csproj"],
+            ["C:\\Windows\\System32\\cmd.exe", "/c",
+             "dotnet test tests/Foo.Tests.csproj"],
+            ["/usr/bin/pwsh", "-Command",
+             "dotnet test tests/Foo.Tests.csproj"],
+        ):
+            with self.subTest(command=command):
+                report = valid_report(scope=docs_scope(), executions=[exec_(command)])
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("shell wrapper", output(proc))
+
+    def test_standalone_operator_token_rejected(self):
+        for operator in ("|", "||", "&&", ";", "&", ">", ">>", "<"):
+            with self.subTest(operator=operator):
+                command = ["dotnet", "test", "tests/Foo.Tests.csproj",
+                           operator, "out.log"]
+                report = valid_report(scope=docs_scope(), executions=[exec_(command)])
+                proc = run_gate("report", report)
+                self.assertEqual(proc.returncode, 2, output(proc))
+                self.assertIn("shell wrapper", output(proc))
 
 
 class SkillBriefExampleTest(unittest.TestCase):

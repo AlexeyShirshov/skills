@@ -537,7 +537,8 @@ Details live in files; only a pointer enters the orchestrator's context.
 Every implementation brief to `pdca-executor` **MUST** carry a mandatory structured `test scope` (with a
 rationale); **without it the orchestrator must NOT dispatch the brief** — it returns to `pdca-planner`
 to complete the scope. `pdca-executor` runs `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **before
-any edit**; a nonzero exit is **fail-closed** → return to the orchestrator (do not start editing).
+any edit** (the helper is staged into `.pdca/scripts/` first — §Skill workspace of the base
+`pdca` contract); a nonzero exit is **fail-closed** → return to the orchestrator (do not start editing).
 
 Required fields — the **brief is a wrapper**: the unit id at the top level, the scope nested under
 `scope`. (A bare scope object is rejected with `missing required key: unit`.)
@@ -882,9 +883,12 @@ same `selected_variant` — instead of starting DO. The parent later resumes **t
 cycle** from DO after an applicability check through the roles (`pdca-scout` facts,
 `pdca-planner` decision) — never an unconditional second PLAN; a genuine incompatibility follows
 the base revision rules and needs a **fresh approval**, which the stale approval never authorizes;
-approval resume does not unconditionally replan or add a step. In normal mode the resume also
-validates the durable pending-approval ref (stable task/`cycle_id`, same `N`/`r`/criteria) before
-DO. This is a caller-driven handoff, not a
+approval resume does not unconditionally replan or add a step. In normal mode the boundary is
+not complete until `pdca-executor` has persisted the durable pending approval ref (stable
+task/`cycle_id`, `N`, `r`, criteria set) and the handoff carries its pointer; the resume then
+requires the recorded approval matching that ref, so an unchanged saved plan is no exception, and
+a missing/mismatched approval yields an **approval-needed checkpoint** — never DO and never a
+fresh PLAN. This is a caller-driven handoff, not a
 standalone-autonomous pause and not a user approval: standalone normal mode still starts only after the
 user approves the plan, and standalone autonomous still starts DO immediately.
 
@@ -1038,12 +1042,35 @@ starts a new manifest generation; the superseded one is kept. A **CHECK → DO**
 **unchanged contract** also starts a **new immutable generation** for the new attempt/snapshot in a
 **fresh attempt child directory**, retaining the prior one — without a fake replan or reset of
 `r`/`n`. Minimum content — each entry
-maps one contract row to its evidence **by reference, not by copy**:
-- `task`, `tree`, `contract_rv`, `status_file`;
-- `required_rows` — the mandatory row IDs of the pinned contract;
-- `rows[]` — one per required row: `id`, `status` (`met` | `open` | `na`), and for `met` an
-  `evidence[]` of `{kind, path, command?, exit?, value?}` (repo-relative/absolute path, exit code,
-  key number, test symbol); for `open` a `reason`; for `na` an observed `predicate`.
+maps one contract row to its evidence **by reference, not by copy**. The mechanical gate is the
+**union of two helpers with different responsibilities**, so the minimum is their exact joint
+requirement; neither helper is weakened and neither substitutes for the other:
+- required by `validate_inner_loop.py manifest`: `task`, `status_file`, `tree` (non-empty
+  strings), `contract_rv` (integer ≥ 1), `required_rows`, and the `rows[]` shape plus two-way
+  `required_rows` ↔ `rows[]` coverage;
+- required by `pdca_evidence.py lint`: `tree` (40-hex, resolvable by `git cat-file -t`, equal to
+  the recomputed frozen tree), `base_ref`, `footprint`, `exclusions`, and the same two-way
+  coverage (plus the receipt/generation checks of §Mechanical evidence pipeline).
+
+A self-contained minimum therefore carries: `task`, `status_file`, `contract_rv`, `tree`,
+`base_ref`, `footprint`, `exclusions`, `required_rows`, `rows[]` — where:
+- `tree` is the frozen synthetic tree id, never a claim that it equals `HEAD^{tree}`;
+- `base_ref`, `footprint`, `exclusions` are the tree's input binding: a resolvable ref/commit, a
+  non-empty list of repo-relative footprint paths (none covered by an exclusion), and the
+  exclusion list (e.g. `.pdca/**`). Without them the tree cannot be recomputed, so the lint fails;
+- `required_rows` are the mandatory row IDs of the pinned contract; `rows[]` has one per required
+  row: `id`, `status` (`met` | `open` | `na`), and for `met` an `evidence[]` of
+  `{kind, path, command?, exit?, value?}` — `path` is **repo-relative and contained in the
+  repository** (no absolute path, no `..` traversal, no symlink escape: the helper rejects all
+  three) — plus exit code, key number, test symbol; for `open` a `reason`; for `na` an observed
+  `predicate`.
+**Optional metadata, not gate requirements:** `tree_binding` — when present it must equal `tree`
+(the `generate` output always writes it and every receipt carries the same pair), and
+`tree_method` — the helper's frozen-tree recipe verbatim, so reconciliation repeats the recorded
+recipe instead of inventing one. Both may be omitted from a hand-written minimum; neither helper
+rejects their absence.
+A hand-written minimum is accepted only when its `tree` equals the tree recomputed from its
+`base_ref` + `footprint` + `exclusions` (the `generate` output satisfies this by construction).
 Every `required_rows` entry must appear; a row without a resolving reference is `open`, never
 silently dropped. Logs stay references — the manifest is a thin index, not a copy of artifacts.
 **No PASS while any BINDING/APPLICABLE `required_rows` entry is `open`;** CHECK resolves a row by
@@ -1449,6 +1476,13 @@ only in ACT — loop-backs change `r`/`n`, not `<N>`; §State machine). Examples
 
 **Every write is by `pdca-executor`** — `pdca-planner`, `pdca-check` and the primary have no file permissions; the primary
 composes content from reports and passes it in the brief.
+**Approval slots (normal mode only).** The file carries the canonical `Pending approval ref` and
+`Approval record` fields of the base contract (§Durable status in `pdca`): the ref binds the
+stable task/`cycle_id`, the cycle `N`, the plan revision `r` and the acceptance-criteria set (a
+caller-driven `plan_handoff` carries the same pointer); the record names the **approver** (the
+parent/primary that obtained it), the time, the reason and the same identity, and is written by
+`pdca-executor` on the parent's dispatch. Both slots are absent in autonomous mode — no approval
+is required there, so an absent value is normal.
 Lifecycle (finalization in ACT — see "Lifetime"):
 1. **Creation, last step of PLAN before the start signal:** the plan — goal, acceptance criteria, test
    strategy with the variant and priority matrices, docs plan, perf/recon/unit-mode decisions, DO task

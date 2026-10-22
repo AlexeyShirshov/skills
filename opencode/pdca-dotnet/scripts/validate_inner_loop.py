@@ -17,7 +17,11 @@ This helper validates the JSON artifacts that make that enforceable:
     launch, the result appended on completion) that the report is projected from;
   * a **report** (brief + `executions`), produced before CHECK passes; with
     ``--journal`` it is additionally checked to be a *faithful projection* of the
-    journal (a dropped execution is a completeness failure, never a way to pass);
+    journal: the report unit/scope and every journal-derived execution field
+    (command/argv, phase, state, exit code, selected count, revisions and the
+    recorded provenance) must match, so a dropped execution, a rewritten result,
+    a boundary move or a hand-selected subset is a completeness failure, never a
+    way to pass;
   * a **manifest** — the frozen evidence manifest (contract row ID -> evidence by
     reference), written at the DO->CHECK boundary and reconciled by CHECK.
 
@@ -107,6 +111,7 @@ import argparse
 import hashlib
 import json
 import os
+import posixpath
 import re
 import sys
 
@@ -147,11 +152,90 @@ NO_RESULT_STATES = IN_FLIGHT_STATES + NOT_STARTED_STATES
 # Journal event kinds (mandatory capture path: start at launch, result appended).
 JOURNAL_EVENTS = ("start", "finish")
 
-# Shell wrappers and flags whose presence means the real command cannot be
-# verified statically (rule 7).
-SHELL_TOKENS = {"sh", "bash", "zsh", "pwsh", "powershell"}
+# Shell wrappers and standalone operator tokens whose presence means the real
+# command cannot be verified statically (rule 7).  An operator character inside
+# an argv *value* is not a shell operator: a VSTest filter such as
+# ``FullyQualifiedName~A|FullyQualifiedName~B`` or a logger value such as
+# ``console;verbosity=detailed`` is one argument, not a compound command.
+SHELL_TOKENS = {
+    "sh",
+    "bash",
+    "zsh",
+    "dash",
+    "ksh",
+    "fish",
+    "pwsh",
+    "powershell",
+    "powershell.exe",
+    "pwsh.exe",
+    "cmd",
+    "cmd.exe",
+}
 SHELL_FLAGS = {"-c", "-Command"}
-COMPOUND_TOKENS = ("&&", "||", ";", "|", ">", "<", "$(")
+STANDALONE_OPERATORS = {
+    "&&",
+    "||",
+    ";",
+    "|",
+    "&",
+    ">",
+    ">>",
+    "<",
+    "<<",
+    "2>",
+    "2>>",
+    "&>",
+    "$(",
+}
+
+# Options of `dotnet build`/`dotnet test` that consume the following token as a
+# value.  Option values are never positional project targets; treating them as
+# projects both invents out-of-scope projects and hides a bare command.
+DOTNET_VALUE_OPTIONS = {
+    "-c",
+    "--configuration",
+    "-f",
+    "--framework",
+    "-r",
+    "--runtime",
+    "-o",
+    "--output",
+    "--filter",
+    "-filter",
+    "--logger",
+    "-l",
+    "--results-directory",
+    "--collect",
+    "--settings",
+    "-s",
+    "--arch",
+    "-a",
+    "--os",
+    "--diag",
+    "--verbosity",
+    "-v",
+    "--maxcpucount",
+    "-m",
+    "--blame-hang-timeout",
+    "--blame-hang-dump-type",
+    "--blame-crash-dump-type",
+    "--test-adapter-path",
+    "--name",
+    "-n",
+    "--environment",
+    "-e",
+    "--property",
+    "-p",
+    "--artifacts-path",
+    "--ucr",
+    "--user-controls",
+}
+# Options that name a project explicitly (the newer `dotnet test` syntax).
+DOTNET_PROJECT_OPTIONS = {"--project"}
+
+# Portable project/task path grammar: repo-relative, POSIX separators only.
+_PORTABLE_FORBIDDEN = (":", '"', "<", ">", "|")
+_TASK_ID = re.compile(r"^[A-Za-z][A-Za-z0-9]*(?:[-_.][A-Za-z0-9]+)*$")
 
 
 class _UsageError(Exception):
@@ -214,12 +298,20 @@ def verb(command):
 
 
 def filter_present(command):
-    return "--filter" in command or "-filter" in command
+    return any(
+        token in ("--filter", "-filter")
+        or token.startswith("--filter=")
+        or token.startswith("-filter=")
+        for token in command
+    )
 
 
 def filter_value(command):
     """Return the filter value, or None when absent / missing its value."""
     for flag in ("--filter", "-filter"):
+        for token in command:
+            if token.startswith(flag + "="):
+                return token.split("=", 1)[1]
         if flag in command:
             idx = command.index(flag)
             if idx + 1 < len(command) and not command[idx + 1].startswith("-"):
@@ -243,7 +335,9 @@ def references_solution(command):
 def selected_projects(command):
     """Positional arguments a `dotnet test`/`dotnet build` selects (rule 14).
 
-    The value of ``--filter``/``-filter`` is an option value, never a project.
+    The value of ``--filter``/``-filter`` (and of every other value-taking
+    option) is an option value, never a project; ``--project <path>`` names a
+    project explicitly.  Tokens after ``--`` are runner arguments, not projects.
     """
     if not is_dotnet(command):
         return []
@@ -252,23 +346,97 @@ def selected_projects(command):
     idx = 0
     while idx < len(tokens):
         token = tokens[idx]
-        if token in ("--filter", "-filter"):
+        if token == "--":
+            break
+        if token in DOTNET_PROJECT_OPTIONS:
+            if idx + 1 < len(tokens):
+                projects.append(tokens[idx + 1])
             idx += 2
             continue
-        if not token.startswith("-"):
-            projects.append(token)
+        if any(token.startswith(option + "=") for option in DOTNET_PROJECT_OPTIONS):
+            projects.append(token.split("=", 1)[1])
+            idx += 1
+            continue
+        if token in DOTNET_VALUE_OPTIONS:
+            idx += 2
+            continue
+        if token.startswith("-"):
+            idx += 1
+            continue
+        projects.append(token)
         idx += 1
     return projects
 
 
+def project_identity(token):
+    """Normalise a project target to a comparable repo-relative identity.
+
+    Returns ``None`` when the token is not a provably portable project path:
+    absolute (POSIX or Windows), a drive/colon path, a glob, a backslash/mixed
+    separator, a shell-expanded token, or one that escapes the repository via
+    ``..``.  An in-repository ``./`` or redundant ``..`` spelling is normalised
+    to the same identity, so it cannot be used to disguise a different project.
+
+    The identity keeps its **exact case**: this is a lexical path, not a
+    filesystem lookup.  The report carries no case policy for the verification
+    host, so on a case-sensitive filesystem a differently cased path may be a
+    different file; membership therefore fails closed unless scope and execution
+    use identical case.
+    """
+    if not _nonempty_str(token):
+        return None
+    if "\\" in token or token.startswith("~"):
+        return None
+    if token.startswith("/") or re.match(r"^[A-Za-z]:", token):
+        return None
+    if any(char in token for char in _GLOB_CHARS):
+        return None
+    if any(char in token for char in _PORTABLE_FORBIDDEN):
+        return None
+    if "$(" in token or "`" in token or "\x00" in token:
+        return None
+    normalised = posixpath.normpath(token)
+    if normalised in (".", "..") or normalised.startswith("../") or "/../" in normalised:
+        return None
+    return normalised
+
+
+def _scope_project_identities(scope):
+    """The declared project scope: affected projects plus integration projects."""
+    identities = set()
+    if not isinstance(scope, dict):
+        return identities
+    for key in ("projects", "integration_projects"):
+        raw = scope.get(key)
+        if not isinstance(raw, list):
+            continue
+        for token in raw:
+            identity = project_identity(token)
+            if identity is not None:
+                identities.add(identity)
+    return identities
+
+
 def selects_integration_project(command, integration_projects):
-    """True when the command really selects a project PLAN declared integration."""
+    """True when the command selects exactly a project PLAN declared integration.
+
+    Uses the same exact-case lexical identity as the project-scope rule: a
+    suffix/basename match would conflate distinct files (and a case-folded match
+    would conflate distinct paths on a case-sensitive filesystem).
+    """
     if not integration_projects:
         return False
+    declared = {
+        identity
+        for identity in (project_identity(project) for project in integration_projects)
+        if identity is not None
+    }
+    if not declared:
+        return False
     for token in selected_projects(command):
-        for project in integration_projects:
-            if token == project or token.endswith("/" + project) or project.endswith("/" + token):
-                return True
+        identity = project_identity(token)
+        if identity is not None and identity in declared:
+            return True
     return False
 
 
@@ -291,31 +459,39 @@ def command_is_broad(command):
             idx = command.index(flag)
             if idx + 1 >= len(command) or command[idx + 1].startswith("-"):
                 return True
+    # `--filter=` (empty value) is a valueless filter spelled differently.
+    if any(token in ("--filter=", "-filter=") for token in command):
+        return True
     return False
 
 
 def actual_kind(execution, scope):
-    """The run's actual kind: declared ``kind`` wins, else inferred.
+    """The run's actual kind: the actually selected scope wins, else declared.
 
-    Inference follows the **selected projects/command**, so a mixed solution run
-    that really executes integration is never reclassified as `unit` by a command
-    name or a filter (E10).
+    A ``dotnet test`` of a solution or of a project PLAN declared integration
+    is an integration run **whatever** its ``kind`` says: declaring ``unit``,
+    ``build`` or ``other`` cannot relabel the actual selection (E10).  The
+    declared kind is used only when the command does not itself prove an
+    integration run.
     """
     declared = execution.get("kind")
-    if declared in EXEC_KINDS:
-        return declared
     command = execution["command"]
-    if is_build(command):
-        return "build"
-    if not is_test(command):
-        return "other"
     integration_projects = ()
     if isinstance(scope, dict):
         raw = scope.get("integration_projects")
         if isinstance(raw, list):
             integration_projects = tuple(t for t in raw if isinstance(t, str))
-    if references_solution(command) or selects_integration_project(command, integration_projects):
+    if is_test(command) and (
+        references_solution(command)
+        or selects_integration_project(command, integration_projects)
+    ):
         return INTEGRATION_KIND
+    if declared in EXEC_KINDS:
+        return declared
+    if is_build(command):
+        return "build"
+    if not is_test(command):
+        return "other"
     return "unit"
 
 
@@ -472,16 +648,35 @@ def validate_execution(execution, idx):
 
 
 def _identity(execution):
-    """Grouping key: phase + filter-or-project identity (rule 14)."""
+    """Grouping key: phase + filter/selected-project identity (rule 14).
+
+    Uses the same parser and exact-case normaliser as the scope rules, so an
+    option order or an option value cannot split or merge groups.  A multi-project
+    command is identified by its whole target set: two different projects can
+    never cancel each other's red result, while a retry of the same project (and
+    the same filter, when one is used) is the same group and a later green
+    supersedes the earlier red.
+    """
     command = execution["command"]
     phase = execution["phase"]
     if is_test(command):
+        projects = []
+        for token in selected_projects(command):
+            identity = project_identity(token)
+            projects.append(identity if identity is not None else token)
+        projects_key = tuple(sorted(projects))
         value = filter_value(command)
         if filter_present(command) and value not in (None, ""):
-            return (phase, "filter", value)
-        project = next((t for t in command[2:] if not t.startswith("-")), "")
-        return (phase, "project", project)
+            return (phase, "filter", value, projects_key)
+        return (phase, "projects", projects_key)
     return (phase, "cmd", tuple(command))
+
+
+def _executable_basename(token):
+    """The lower-cased executable basename across ``/``, ``\\`` and ``.exe``."""
+    if not _nonempty_str(token):
+        return ""
+    return token.replace("\\", "/").rsplit("/", 1)[-1].lower()
 
 
 def _rule_hygiene(executions, violations):
@@ -490,12 +685,15 @@ def _rule_hygiene(executions, violations):
         # `-c`/`-Command` are only shell-invocation flags when the command is
         # itself launched by a shell; in `dotnet test ... -c Release` the token
         # is a legitimate configuration flag and must not be rejected (D1 fix).
-        shell_invocation = bool(command) and command[0] in SHELL_TOKENS
+        # An absolute/Windows wrapper (`/bin/bash`, `C:\...\cmd.exe`) is the same
+        # executable as its bare name, so detect the canonical basename.
+        shell_invocation = (
+            bool(command) and _executable_basename(command[0]) in SHELL_TOKENS
+        )
         unsafe = any(
-            token in SHELL_TOKENS
+            _executable_basename(token) in SHELL_TOKENS
             or (shell_invocation and token in SHELL_FLAGS)
-            or any(part in token for part in COMPOUND_TOKENS)
-            or "`" in token
+            or token in STANDALONE_OPERATORS
             for token in command
         )
         if unsafe:
@@ -557,18 +755,27 @@ def _rule_integration_scope(scope, executions, violations):
     for idx, execution in enumerate(executions):
         command = execution["command"]
         declared = execution.get("kind")
-        kind = actual_kind(execution, scope)
-        # Classification must match the actually selected scope: a solution-wide
-        # or integration-project run may not be labelled `unit`.
-        if declared == "unit" and is_test(command) and (
+        actually_integration = is_test(command) and (
             references_solution(command)
             or selects_integration_project(command, integration_projects)
-        ):
-            violations.append(
-                "execution %d declares kind 'unit' but the selected scope runs "
-                "integration (a mixed solution/project run is not unit): %r"
-                % (idx, command)
-            )
+        )
+        kind = actual_kind(execution, scope)
+        # Classification must match the actually selected scope: a solution-wide
+        # or integration-project test run is integration regardless of the
+        # declared kind (a label cannot launder the actual scope).
+        if declared in ("unit", "build", "other") and actually_integration:
+            if declared == "unit":
+                violations.append(
+                    "execution %d declares kind 'unit' but the selected scope runs "
+                    "integration (a mixed solution/project run is not unit): %r"
+                    % (idx, command)
+                )
+            else:
+                violations.append(
+                    "execution %d declares kind %r but the selected scope runs "
+                    "integration (a declared kind does not override the actual "
+                    "scope): %r" % (idx, declared, command)
+                )
         if kind != INTEGRATION_KIND:
             continue
         state = _exec_state(execution)
@@ -593,6 +800,50 @@ def _rule_integration_scope(scope, executions, violations):
             "%d executed (over-budget runs are retained in the raw journal, "
             "not dropped)" % (planned, len(boundary_integration))
         )
+
+
+def _rule_project_scope(scope, executions, violations):
+    """The actual project targets must be the declared affected subset.
+
+    The declared ``kind`` is not a scope: a ``dotnet test``/``build`` of an
+    out-of-scope project is a silent widening whatever the run is called.  Inside
+    DO a bare ``dotnet test``/``build`` is rejected as well — with no explicit
+    target it resolves the solution from the invoking CWD, which the artifact
+    cannot prove is the affected subset.  A solution token is handled by the
+    broad-command rule (inner) and the boundary sweep rule, so it is not
+    re-checked here.  The amendment contract supports ``added_selectors`` only;
+    there is no project amendment, so an out-of-scope project fails closed.
+    """
+    allowed = _scope_project_identities(scope)
+    for idx, execution in enumerate(executions):
+        command = execution["command"]
+        if not (is_dotnet(command) and verb(command) in ("build", "test")):
+            continue
+        if references_solution(command):
+            continue
+        projects = selected_projects(command)
+        if not projects:
+            if execution["phase"] == "inner":
+                violations.append(
+                    "execution %d: bare %r has no explicit project target; a bare "
+                    "dotnet build/test resolves the solution from the invoking CWD, "
+                    "so the affected subset cannot be proven" % (idx, command)
+                )
+            continue
+        for token in projects:
+            identity = project_identity(token)
+            if identity is None:
+                violations.append(
+                    "execution %d: project target %r is not a provable portable "
+                    "repo-relative project path" % (idx, token)
+                )
+                continue
+            if identity not in allowed:
+                violations.append(
+                    "execution %d: project out of scope / silent widening: %r is not "
+                    "in scope.projects (the amendment contract supports "
+                    "added_selectors only; no project amendment exists)" % (idx, token)
+                )
 
 
 def _rule_scope_conformance(data, executions, violations):
@@ -691,12 +942,35 @@ def _rule_boundary_freshness(executions, violations):
             )
 
 
-def _rule_final_green(executions, violations):
+def _journal_finish_order(journal):
+    """Execution id -> position of its finish event (append order is authoritative).
+
+    The journal is append-only, so the finish-event order is the actual completion
+    order.  Textual ``at`` timestamps are never sorted: they are caller-supplied
+    strings, not a clock.
+    """
+    order = {}
+    position = 0
+    for event in journal.get("events", []):
+        if not isinstance(event, dict) or event.get("event") != "finish":
+            continue
+        event_id = event.get("id")
+        if _nonempty_str(event_id):
+            order[event_id] = position
+            position += 1
+    return order
+
+
+def _rule_final_green(executions, violations, finish_order=None):
     groups = {}
-    for execution in executions:
-        groups.setdefault(_identity(execution), []).append(execution)
+    for position, execution in enumerate(executions):
+        groups.setdefault(_identity(execution), []).append((position, execution))
     for key, items in groups.items():
-        finished = [e for e in items if _exec_state(e) == FINISHED_STATE]
+        finished = [
+            (position, execution)
+            for position, execution in items
+            if _exec_state(execution) == FINISHED_STATE
+        ]
         if not finished:
             violations.append(
                 "no finished execution for group %r: unfinished/not-started "
@@ -704,7 +978,19 @@ def _rule_final_green(executions, violations):
                 % (key,)
             )
             continue
-        if finished[-1]["exit_code"] != 0:
+        if finish_order is not None:
+            def _finish_position(item):
+                position, execution = item
+                event_id = execution.get("id")
+                if _nonempty_str(event_id) and event_id in finish_order:
+                    return (0, finish_order[event_id], position)
+                # Unknown chronology: treat it as the latest (fail closed).
+                return (1, 0, position)
+
+            terminal = max(finished, key=_finish_position)[1]
+        else:
+            terminal = finished[-1][1]
+        if terminal["exit_code"] != 0:
             violations.append("no final green result for group %r" % (key,))
 
 
@@ -737,13 +1023,15 @@ def validate_report(data, journal=None):
 
     _rule_boundary(scope, executions, violations)
     _rule_integration_scope(scope, executions, violations)
+    _rule_project_scope(scope, executions, violations)
     _rule_scope_conformance(data, executions, violations)
     _rule_rebuild(scope, executions, violations)
     _rule_freshness(executions, violations)
     _rule_boundary_freshness(executions, violations)
-    _rule_final_green(executions, violations)
+    finish_order = _journal_finish_order(journal) if journal is not None else None
+    _rule_final_green(executions, violations, finish_order)
     if journal is not None:
-        violations.extend(_rule_projection_completeness(journal, executions))
+        violations.extend(_rule_projection_completeness(journal, data))
     return violations
 
 
@@ -921,10 +1209,73 @@ def project_journal(data):
     return report
 
 
-def _rule_projection_completeness(journal, executions):
-    """A report handed to CHECK must be a faithful projection of the raw journal."""
+# Fields the mechanical projection derives from the journal and that decide
+# whether a run may count as evidence.  The journal is authoritative for every
+# one of them: a report may not rewrite them.
+_PROJECTION_BINDING_FIELDS = (
+    "command",
+    "phase",
+    "state",
+    "exit_code",
+    "selected_count",
+    "source_revision",
+    "artifact_revision",
+)
+# Provenance the projection carries when the journal recorded it.  A report that
+# carries provenance must match it; omitting it cannot fabricate a result and the
+# report schema does not mandate it (journal timestamps are not execution facts).
+_PROJECTION_PROVENANCE_FIELDS = ("started_at", "finished_at", "log", "kind")
+
+
+def _canonical_report_execution(execution):
+    """Canonical report execution: the documented defaults the projection uses.
+
+    ``state`` defaults to ``finished`` for a legacy row, and an unfinished run
+    may omit its (always null) ``exit_code``/``selected_count`` — exactly the
+    values ``project_journal`` emits for it.
+    """
+    canonical = dict(execution)
+    canonical.setdefault("state", FINISHED_STATE)
+    if canonical.get("state") != FINISHED_STATE:
+        canonical.setdefault("exit_code", None)
+        canonical.setdefault("selected_count", None)
+    return canonical
+
+
+def _rule_projection_completeness(journal, report):
+    """A report handed to CHECK must be a faithful projection of the raw journal.
+
+    IDs alone are not faithfulness: the journal also owns the report unit/scope
+    and, for every execution, the command/argv, phase, state, exit code, selected
+    count and revisions.  Comparing only the ID set would accept a report that
+    turns a failed/canceled/not-started run into finished success, moves a run
+    across the boundary, or rewrites the argv.  Missing, extra and duplicate IDs
+    fail too; a reordered projection is rejected because the last finished result
+    (and therefore final green) depends on the order.
+    """
     violations = []
     projected = project_journal(journal)
+    executions = report.get("executions") if isinstance(report, dict) else []
+    if not isinstance(executions, list):
+        executions = []
+
+    if report.get("unit") != journal.get("unit"):
+        violations.append(
+            "projection mismatch: report unit %r is not the journal unit %r "
+            "(the journal is authoritative)" % (report.get("unit"), journal.get("unit"))
+        )
+    if report.get("scope") != journal.get("scope"):
+        violations.append(
+            "projection mismatch: report scope is not the journal scope "
+            "(the journal is authoritative)"
+        )
+    if (report.get("amendments") or []) != (journal.get("amendments") or []):
+        violations.append(
+            "projection mismatch: report amendments are not the journal amendments "
+            "(a selector may not be legalised by an amendment the journal never "
+            "recorded)"
+        )
+
     projected_ids = [e.get("id") for e in projected["executions"]]
     report_ids = [e.get("id") for e in executions]
     if any(not _nonempty_str(execution_id) for execution_id in report_ids):
@@ -932,6 +1283,17 @@ def _rule_projection_completeness(journal, executions):
             "report executions must carry the journal execution id when a "
             "journal is supplied"
         )
+
+    duplicates = sorted(
+        {execution_id for execution_id in report_ids if report_ids.count(execution_id) > 1}
+    )
+    if duplicates:
+        violations.append(
+            "projection mismatch: report contains duplicate execution id(s) %s "
+            "(one journal execution has exactly one report row)"
+            % ", ".join(repr(i) for i in duplicates)
+        )
+
     projected_set = set(projected_ids)
     report_set = set(report_ids)
     missing = [i for i in projected_ids if i not in report_set]
@@ -948,6 +1310,41 @@ def _rule_projection_completeness(journal, executions):
             "report is projected from the journal, not hand-selected)"
             % ", ".join(repr(i) for i in extra)
         )
+
+    if not duplicates and not missing and not extra and report_ids != projected_ids:
+        violations.append(
+            "projection mismatch: order differs from the raw journal (the last "
+            "finished result and the boundary position depend on the recorded order)"
+        )
+
+    projected_by_id = {e.get("id"): e for e in projected["executions"]}
+    report_by_id = {}
+    for execution in executions:
+        execution_id = execution.get("id")
+        if _nonempty_str(execution_id) and execution_id not in report_by_id:
+            report_by_id[execution_id] = execution
+    for execution_id in projected_ids:
+        expected = projected_by_id.get(execution_id)
+        actual = report_by_id.get(execution_id)
+        if expected is None or actual is None:
+            continue
+        actual = _canonical_report_execution(actual)
+        for field in _PROJECTION_BINDING_FIELDS:
+            if expected.get(field) != actual.get(field):
+                violations.append(
+                    "projection mismatch for execution %r: %s report %r != journal %r "
+                    "(the journal is authoritative)"
+                    % (execution_id, field, actual.get(field), expected.get(field))
+                )
+        for field in _PROJECTION_PROVENANCE_FIELDS:
+            if field not in expected:
+                continue
+            if field in actual and actual.get(field) != expected.get(field):
+                violations.append(
+                    "projection mismatch for execution %r: %s report %r != journal %r "
+                    "(the journal is authoritative)"
+                    % (execution_id, field, actual.get(field), expected.get(field))
+                )
     return violations
 
 
@@ -966,20 +1363,58 @@ def sha256_of(path):
         return hashlib.sha256(handle.read()).hexdigest()
 
 
+def _is_task_id(value):
+    """A portable task identifier (``D1``, ``T2``, ``D235``) — never a path."""
+    return _nonempty_str(value) and bool(_TASK_ID.match(value))
+
+
+def _canonical_repo_path(value):
+    """A canonical, portable, repo-relative path — or ``None``.
+
+    Rejects absolute paths (POSIX and Windows/drive), backslashes and mixed
+    separators, globs, Windows-reserved characters, empty/``.``/``..`` segments
+    and trailing separators.  Callers compare these canonical strings, so a
+    traversal spelling can never be mistaken for an inside path.
+    """
+    if not _nonempty_str(value):
+        return None
+    if "\x00" in value or "\\" in value:
+        return None
+    if value.startswith("/") or re.match(r"^[A-Za-z]:", value):
+        return None
+    if any(char in value for char in _GLOB_CHARS):
+        return None
+    if any(char in value for char in _PORTABLE_FORBIDDEN):
+        return None
+    segments = value.split("/")
+    if any(segment in ("", ".", "..") for segment in segments):
+        return None
+    return value
+
+
+def _canonical_task_rv_path(path, evidence_root, task, rv):
+    """Canonical path inside exactly this task's own ``rv<rv>`` dir, or ``None``.
+
+    Containment is checked on the canonical form, so ``..`` can never normalise
+    into a neighbour's directory; the task identifier must itself be portable
+    (no separators/dots), and the path must be a file *below* the rv dir — not
+    the task dir, not the rv dir and not a glob.
+    """
+    canonical = _canonical_repo_path(path)
+    root = _canonical_repo_path(evidence_root)
+    if canonical is None or root is None:
+        return None
+    if not _is_task_id(task) or not _is_int(rv) or rv < 1:
+        return None
+    prefix = "%s/%s/rv%d/" % (root, task, rv)
+    if not canonical.startswith(prefix):
+        return None
+    return canonical
+
+
 def _in_task_rv_dir(path, evidence_root, task, rv):
     """The deletion scope: only this task's own rv snapshot dir, never a blanket rm."""
-    if not _nonempty_str(path):
-        return False
-    if any(char in path for char in _GLOB_CHARS):
-        return False
-    prefix = "%s/%s/" % (evidence_root.rstrip("/"), task)
-    if not path.startswith(prefix):
-        return False
-    if "/rv%d/" % rv not in path:
-        return False
-    normalised = path.rstrip("/")
-    task_root = "%s/%s" % (evidence_root.rstrip("/"), task)
-    return normalised not in (task_root, "%s/rv%d" % (task_root, rv))
+    return _canonical_task_rv_path(path, evidence_root, task, rv) is not None
 
 
 def validate_cleanup(data):
@@ -992,8 +1427,14 @@ def validate_cleanup(data):
     may be removed by a broad pattern.
     """
     violations = []
-    if not _nonempty_str(data.get("task")):
+    task = data.get("task")
+    if not _nonempty_str(task):
         violations.append("cleanup.task must be a nonempty string")
+    elif not _is_task_id(task):
+        violations.append(
+            "cleanup.task must be a portable task identifier (letters/digits plus "
+            "-/_/.), never a path: %r" % task
+        )
     rv = data.get("rv")
     if not _is_int(rv) or rv < 1:
         violations.append("cleanup.rv must be an integer >= 1")
@@ -1001,6 +1442,11 @@ def validate_cleanup(data):
     evidence_root = data.get("evidence_root", ".pdca")
     if not _nonempty_str(evidence_root):
         violations.append("cleanup.evidence_root must be a nonempty string")
+    elif _canonical_repo_path(evidence_root) is None:
+        violations.append(
+            "cleanup.evidence_root must be a canonical repo-relative path: %r"
+            % evidence_root
+        )
     if not _nonempty_str(data.get("at")):
         violations.append("cleanup.at must be a nonempty timestamp")
 
@@ -1025,8 +1471,20 @@ def validate_cleanup(data):
     if not isinstance(frozen, dict):
         violations.append("cleanup.frozen_manifest must be an object")
         frozen = {}
-    if not _nonempty_str(frozen.get("path")):
+    frozen_path = frozen.get("path")
+    if not _nonempty_str(frozen_path):
         violations.append("cleanup.frozen_manifest.path must be a nonempty string")
+    frozen_canonical = (
+        _canonical_task_rv_path(frozen_path, evidence_root, task, rv)
+        if _nonempty_str(frozen_path)
+        else None
+    )
+    if _nonempty_str(frozen_path) and frozen_canonical is None:
+        violations.append(
+            "cleanup.frozen_manifest.path %r is outside this task's own rv dir "
+            "%s/%s/rv%s (the frozen manifest is a protected record of this rv)"
+            % (frozen_path, evidence_root, task, rv)
+        )
     if not _is_sha256(frozen.get("sha256")):
         violations.append("cleanup.frozen_manifest.sha256 must be a sha256 hex digest")
 
@@ -1034,13 +1492,31 @@ def validate_cleanup(data):
     if not isinstance(retained, dict):
         violations.append("cleanup.retained must be an object of role -> path")
         retained = {}
+    retained_paths = set()
     for role in RETAINED_ROLES:
-        if not _nonempty_str(retained.get(role)):
+        path = retained.get(role)
+        if not _nonempty_str(path):
             violations.append(
                 "cleanup.retained.%s must be a nonempty path (the compact records "
                 "are kept, not cleaned)" % role
             )
-    if _nonempty_str(frozen.get("path")) and retained.get("frozen_manifest") != frozen.get("path"):
+            continue
+        canonical = _canonical_task_rv_path(path, evidence_root, task, rv)
+        if canonical is None:
+            violations.append(
+                "cleanup.retained.%s %r is outside this task's own rv dir %s/%s/rv%s "
+                "(the protected records are this task's own rv files, never a "
+                "neighbour's or a traversal spelling)"
+                % (role, path, evidence_root, task, rv)
+            )
+            continue
+        retained_paths.add(canonical)
+    if frozen_canonical is not None and retained_paths and (
+        _canonical_task_rv_path(
+            retained.get("frozen_manifest"), evidence_root, task, rv
+        )
+        != frozen_canonical
+    ):
         violations.append(
             "cleanup.retained.frozen_manifest must be the frozen manifest path "
             "(the frozen manifest is retained, never rewritten)"
@@ -1054,9 +1530,7 @@ def validate_cleanup(data):
         )
         removed = []
 
-    retained_paths = {path for path in retained.values() if _nonempty_str(path)}
     seen = set()
-    task = data.get("task")
     for idx, item in enumerate(removed):
         if not isinstance(item, dict):
             violations.append("cleanup.removed %d must be an object" % idx)
@@ -1076,18 +1550,20 @@ def validate_cleanup(data):
             )
         if not _nonempty_str(item.get("reason")):
             violations.append("cleanup.removed %d reason must be a nonempty string" % idx)
-        if path in seen:
+        canonical = _canonical_task_rv_path(path, evidence_root, task, rv)
+        if canonical is None:
+            violations.append(
+                "cleanup.removed %r is outside this task's own rv dir %s/%s/rv%s "
+                "(no blanket rm, no other task's artifacts, no traversal spelling, "
+                "no broad pattern)" % (path, evidence_root, task, rv)
+            )
+            continue
+        if canonical in seen:
             violations.append("cleanup.removed duplicate path: %r" % path)
-        seen.add(path)
-        if path in retained_paths:
+        seen.add(canonical)
+        if canonical in retained_paths:
             violations.append(
                 "cleanup.removed %r is a retained record and must not be deleted" % path
-            )
-        if not _in_task_rv_dir(path, evidence_root, task, rv) :
-            violations.append(
-                "cleanup.removed %r is outside this task's own rv dir %s/%s/rv%r "
-                "(no blanket rm, no other task's artifacts, no broad pattern)"
-                % (path, evidence_root, task, rv)
             )
     return violations
 
@@ -1116,7 +1592,11 @@ def validate_archived(manifest, manifest_path, receipt):
             "the frozen manifest was rewritten after cleanup (digest %s != receipt %s)"
             % (actual, frozen.get("sha256"))
         )
-    removed = {item["path"] for item in receipt.get("removed", []) if isinstance(item, dict)}
+    removed = {
+        os.path.normpath(item["path"])
+        for item in receipt.get("removed", [])
+        if isinstance(item, dict) and _nonempty_str(item.get("path"))
+    }
     rows = manifest.get("rows")
     if isinstance(rows, list):
         for row in rows:
@@ -1129,7 +1609,7 @@ def validate_archived(manifest, manifest_path, receipt):
                 if not isinstance(item, dict):
                     continue
                 path = item.get("path")
-                if not _nonempty_str(path) or path in removed:
+                if not _nonempty_str(path) or os.path.normpath(path) in removed:
                     continue
                 if not os.path.exists(path):
                     violations.append(
@@ -1301,7 +1781,9 @@ def main(argv=None):
             return 2
         # Projection is mechanical: every recorded start becomes an execution.
         projections = project_journal(data)
-        violations = validate_report(projections)
+        # Pass the journal so terminal green follows the authoritative
+        # finish-event order, while the projection keeps start order.
+        violations = validate_report(projections, journal=data)
         if violations:
             # Keep stdout machine-parseable: diagnostics go to stderr.
             for message in violations:

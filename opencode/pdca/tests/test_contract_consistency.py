@@ -408,5 +408,46 @@ class AuditGateBoundaryTest(unittest.TestCase):
         self.assertIn("diagnostic notes", self.skill)
 
 
+class HelperStagingPrerequisiteTest(unittest.TestCase):
+    """§Skill workspace: helper staging is an explicit mechanical first step.
+
+    Producer: `pdca-executor`; when: before the first helper command, including the
+    PLAN brief validation; source: the selected installed package's `scripts/`;
+    destination: the project `.pdca/scripts/` as byte-identical copies. A missing
+    original is a resource blocker — no generated substitute, no run from the
+    installed skill directory.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = norm(read(SKILL_PATH))
+        cls.executor = norm(read(ASSET_AGENTS / "pdca-executor.md"))
+
+    def test_staging_names_producer_when_source_and_destination(self):
+        self.assertIn("Staging is the first mechanical step", self.skill)
+        self.assertIn("pdca-executor stages the helpers", self.skill)
+        self.assertIn("first helper command of a cycle", self.skill)
+        self.assertIn("PLAN brief validation", self.skill)
+        self.assertIn("selected installed package", self.skill)
+        self.assertIn("into .pdca/scripts/", self.skill)
+        self.assertIn("byte-identical copies", self.skill)
+
+    def test_staging_is_a_declared_prerequisite_not_an_unplanned_edit(self):
+        self.assertIn("explicitly allowed brief/PLAN prerequisite", self.skill)
+        self.assertIn("not an unplanned edit outside the plan", self.skill)
+        self.assertIn("no separate P: task", self.skill)
+        self.assertIn("only helpers actually shipped and required", self.skill)
+
+    def test_missing_source_is_a_blocker_not_a_substitute(self):
+        self.assertIn("resource blocker", self.skill)
+        self.assertIn("never generates a substitute helper", self.skill)
+        self.assertIn("never runs a helper command from the installed skill directory", self.skill)
+
+    def test_executor_asset_carries_the_same_duty(self):
+        self.assertIn("Helper staging is an allowed prerequisite", self.executor)
+        self.assertIn("resource blocker", self.executor)
+        self.assertIn("never run a helper from the installed skill directory", self.executor)
+
+
 if __name__ == "__main__":
     unittest.main()

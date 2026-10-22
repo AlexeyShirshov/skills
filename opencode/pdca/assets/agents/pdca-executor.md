@@ -31,6 +31,13 @@ sufficient change and preserve the surrounding conventions of the permitted work
 
 - **Carry out only the plan's actions.** No re-research, no plan rewrite, no "while I'm at it"
   work outside the unit's footprint; anything outside the plan is a separate `P:` task.
+- **Helper staging is an allowed prerequisite.** Before the first helper command of the cycle —
+  including the PLAN brief validation — stage the plan's required helpers from the `scripts/` of
+  the selected installed package into `.pdca/scripts/` as byte-identical copies (the brief/PLAN
+  names them; no speculative extras). This is a declared brief/PLAN prerequisite, not an
+  unplanned edit and not a separate `P:` task; record source package, destinations and copy
+  evidence. A missing original is a **resource blocker**: never generate a substitute and never
+  run a helper from the installed skill directory (§Skill workspace of the cycle contract).
 - **Status file.** You are the single role that writes the cycle status file. Write exactly the
   content given in the brief, and append progress-log lines of the form
   `<UTC time> | <phase> | revision r | iteration n/3 | <event> | <evidence pointer>` — append

@@ -41,7 +41,8 @@ explicitly to the cheap primary (`build` by default), preserving the task, the s
 
 ## 2. Install the skills
 
-Only `SKILL.md` and `assets/` travel; map the skills root to your host:
+Install the whole skill directory: `SKILL.md`, `assets/`, and `scripts/` where the skill ships it.
+Map the skills root to your host:
 
 | Host | Skills root |
 |---|---|
@@ -73,8 +74,13 @@ For the PDCA family the global skills root is enough — OpenCode discovers
 `~/.config/opencode/skills`. The `skills-keep.txt` + `curate-skills.mjs` pack is only for skills kept
 in a custom `skills` source; if the family lives there, add the six ids to that list and rebuild it.
 
-Nothing else in the skill directory needs installing. The runtime workspace `.pdca/` is created by
-the cycle itself in the project it runs in.
+The helpers under the installed skill's `scripts/` are the **source** of the runtime copies (for
+example `pdca_cost.py`, `validate_inner_loop.py`, `pdca_evidence.py`). Before the first helper run,
+`pdca-executor` stages them into the project's `.pdca/scripts/` as byte-identical copies, and every
+command runs from the project root (`python3 .pdca/scripts/<helper>.py …`); a helper is never
+executed from the installed skill directory. The `.pdca/` workspace itself is created by the cycle in
+the project it runs in. `tests/` and the diagram generators under `assets/diagram/` are
+development-only and not needed at runtime.
 
 ## 3. Install the role agents
 

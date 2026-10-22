@@ -823,9 +823,12 @@ same `selected_variant` — instead of starting DO. The parent later resumes **t
 cycle** from DO after an applicability check through the roles (`pdca-scout` facts,
 `pdca-planner` decision) — never an unconditional second PLAN; a genuine incompatibility follows
 the base revision rules and needs a **fresh approval**, which the stale approval never authorizes;
-approval resume does not unconditionally replan or add a step. In normal mode the resume also
-validates the durable pending-approval ref (stable task/`cycle_id`, same `N`/`r`/criteria) before
-DO. This is a caller-driven handoff, not a
+approval resume does not unconditionally replan or add a step. In normal mode the boundary is
+not complete until `pdca-executor` has persisted the durable pending approval ref (stable
+task/`cycle_id`, `N`, `r`, criteria set) and the handoff carries its pointer; the resume then
+requires the recorded approval matching that ref, so an unchanged saved plan is no exception, and
+a missing/mismatched approval yields an **approval-needed checkpoint** — never DO and never a
+fresh PLAN. This is a caller-driven handoff, not a
 standalone-autonomous pause and not a user approval: standalone normal mode still starts only after the
 user approves the plan, and standalone autonomous still starts DO immediately.
 
@@ -1195,6 +1198,13 @@ only in ACT — loop-backs change `r`/`n`, not `<N>`; §State machine). Examples
 
 **Every write is by `pdca-executor`** — `pdca-planner`, `pdca-check` and the primary have no file permissions; the primary
 composes content from reports and passes it in the brief.
+**Approval slots (normal mode only).** The file carries the canonical `Pending approval ref` and
+`Approval record` fields of the base contract (§Durable status in `pdca`): the ref binds the
+stable task/`cycle_id`, the cycle `N`, the plan revision `r` and the acceptance-criteria set (a
+caller-driven `plan_handoff` carries the same pointer); the record names the **approver** (the
+parent/primary that obtained it), the time, the reason and the same identity, and is written by
+`pdca-executor` on the parent's dispatch. Both slots are absent in autonomous mode — no approval
+is required there, so an absent value is normal.
 Lifecycle (finalization in ACT — see "Lifetime"):
 1. **Creation, last step of PLAN before the start signal:** the plan — goal, acceptance criteria, test
    strategy with the variant and priority matrices, docs plan, perf/recon/unit-mode decisions, the

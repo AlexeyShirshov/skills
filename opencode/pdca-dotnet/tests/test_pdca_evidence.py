@@ -14,6 +14,7 @@ import contextlib
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -631,6 +632,164 @@ class UsageTests(FixtureCase):
             "badbase.json", lambda c: c.__setitem__("base_ref", "no-such-ref-xyz")
         )
         self.assertEqual(self.generate_quiet(contract=path), 1)
+
+
+class MinimumManifestTests(FixtureCase):
+    """The documented minimum manifest is genuinely usable by *both* mechanical gates.
+
+    §"Frozen evidence manifest" of ``SKILL.md`` states the joint requirement of
+    ``validate_inner_loop.py manifest`` (row/evidence shape + coverage) and
+    ``pdca_evidence.py lint`` (frozen-tree binding).  A hand-written minimum built from
+    that list must pass both, every *required* field must be rejected by its owning gate
+    when omitted, and the optional metadata (``tree_binding``/``tree_method``) must be
+    accepted both present and absent.  The document is not a second schema source: the
+    guard below mirrors the two helpers, not a new contract.
+    """
+
+    SKILL = os.path.join(os.path.dirname(HERE), "SKILL.md")
+
+    def _minimum(self):
+        footprint = ["tool.py", "notes.md"]
+        exclusions = ["artifacts/**"]
+        tree = pdca.compute_frozen_tree(self.fx["repo"], self.fx["base"], footprint, exclusions)
+        return {
+            "task": "TEST",
+            "status_file": "docs/specs/status/DTEST.md",
+            "contract_rv": 1,
+            "tree": tree,
+            "base_ref": self.fx["base"],
+            "footprint": footprint,
+            "exclusions": exclusions,
+            "required_rows": ["N1", "N2"],
+            "rows": [
+                {
+                    "id": "N1",
+                    "status": "met",
+                    "evidence": [{"kind": "log", "path": "notes.md", "exit": 0}],
+                },
+                {"id": "N2", "status": "open", "reason": "not observed yet"},
+            ],
+        }
+
+    def _write_minimum(self, mutate=None):
+        directory = os.path.join(self.root, "minimum")
+        os.makedirs(directory, exist_ok=True)
+        manifest = self._minimum()
+        if mutate:
+            mutate(manifest)
+        path = os.path.join(directory, "manifest.json")
+        with open(path, "w", encoding="utf-8") as stream:
+            json.dump(manifest, stream, indent=2, sort_keys=True)
+        return path
+
+    @staticmethod
+    def _shape_gate():
+        """The other tracked helper: row/evidence shape + coverage (never the tree)."""
+        sys.path.insert(0, SCRIPTS)
+        import validate_inner_loop
+
+        return validate_inner_loop.validate_manifest
+
+    def test_documented_minimum_passes_both_gates(self):
+        path = self._write_minimum()
+        rc, err = self.lint_capture(manifest=path)
+        self.assertEqual(rc, 0, err)
+        with open(path, "r", encoding="utf-8") as stream:
+            self.assertEqual(self._shape_gate()(json.load(stream)), [])
+
+    def test_optional_metadata_is_accepted_present_or_absent(self):
+        path = self._write_minimum()
+        self.assertEqual(self.lint(manifest=path), 0)
+        with open(path, "r", encoding="utf-8") as stream:
+            self.assertEqual(self._shape_gate()(json.load(stream)), [])
+
+        def add_optional(data):
+            data["tree_binding"] = data["tree"]
+            data["tree_method"] = pdca.TREE_METHOD
+
+        path = self._write_minimum(add_optional)
+        self.assertEqual(self.lint(manifest=path), 0)
+        with open(path, "r", encoding="utf-8") as stream:
+            self.assertEqual(self._shape_gate()(json.load(stream)), [])
+
+    def test_omitting_a_required_field_is_rejected_by_its_gate(self):
+        # field -> (lint rejects, shape gate rejects)
+        for field, lint_rejects, shape_rejects in (
+            ("task", False, True),
+            ("status_file", False, True),
+            ("contract_rv", False, True),
+            ("tree", True, True),
+            ("base_ref", True, False),
+            ("footprint", True, False),
+            ("exclusions", True, False),
+            ("required_rows", True, True),
+            ("rows", True, True),
+        ):
+            with self.subTest(field=field):
+                path = self._write_minimum(lambda data, key=field: data.pop(key))
+                rc, _err = self.lint_capture(manifest=path)
+                self.assertEqual(rc == 2, lint_rejects,
+                                 "%s: lint rejected=%s, expected %s"
+                                 % (field, rc == 2, lint_rejects))
+                with open(path, "r", encoding="utf-8") as stream:
+                    violations = self._shape_gate()(json.load(stream))
+                self.assertEqual(bool(violations), shape_rejects,
+                                 "%s: shape gate violations=%r" % (field, violations))
+
+    def test_tree_binding_when_present_must_equal_the_frozen_tree(self):
+        path = self._write_minimum(
+            lambda data: data.__setitem__("tree_binding", "a" * 40)
+        )
+        rc, err = self.lint_capture(manifest=path)
+        self.assertEqual(rc, 2)
+        self.assertIn("manifest tree_binding != tree", err)
+
+    def test_absolute_and_traversing_evidence_paths_are_rejected(self):
+        for value, marker in (
+            ("/etc/passwd", "absolute path not allowed"),
+            ("../../etc/passwd", "path escapes allowed root"),
+        ):
+            with self.subTest(path=value):
+                path = self._write_minimum(
+                    lambda data, bad=value: data["rows"][0]["evidence"][0].__setitem__(
+                        "path", bad
+                    )
+                )
+                rc, err = self.lint_capture(manifest=path)
+                self.assertEqual(rc, 2, err)
+                self.assertIn(marker, err)
+
+    def test_skill_minimum_content_names_the_joint_required_fields(self):
+        with open(self.SKILL, "r", encoding="utf-8") as stream:
+            text = stream.read()
+        start = text.index("Minimum content")
+        end = text.index("**No PASS while any BINDING/APPLICABLE `required_rows`", start)
+        block = re.sub(r"\s+", " ", text[start:end])
+        for token in (
+            "`task`",
+            "`status_file`",
+            "`contract_rv`",
+            "`tree`",
+            "`base_ref`",
+            "`footprint`",
+            "`exclusions`",
+            "`required_rows`",
+            "`rows[]`",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, block)
+        # Responsibility is split between the two helpers, not claimed for the lint alone.
+        self.assertIn("`validate_inner_loop.py manifest`", block)
+        self.assertIn("`pdca_evidence.py lint`", block)
+        self.assertNotIn("lint gate below is authoritative", block)
+        # Optional metadata is not presented as a gate requirement.
+        optional = block[block.index("Optional metadata"):]
+        self.assertIn("`tree_binding`", optional)
+        self.assertIn("`tree_method`", optional)
+        self.assertIn("may be omitted", optional)
+        # The old prose permitted an absolute evidence path the helper safely denies.
+        self.assertNotIn("repo-relative/absolute", block)
+        self.assertIn("repo-relative and contained in the repository", block)
 
 
 if __name__ == "__main__":

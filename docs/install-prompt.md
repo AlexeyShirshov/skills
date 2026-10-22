@@ -4,9 +4,10 @@ Copy the fenced prompt below into a cheap primary session (for example `build`),
 block with your values, and send it. The agent installs the family idempotently, makes backups, and
 stops on anything it cannot verify. The prompt is written in Russian — it mirrors the maintainer's
 working language; commands and file names are exact. The family is host-agnostic: the same
-`SKILL.md` + `assets/` go to OpenCode, Claude Code, Codex or a custom host (`dsh`, …); the roots and
-the subagent frontmatter differ and are resolved in step 0. For OpenCode the prompt detects the
-major (V1 or V2) and uses the matching delegation/permission keys; V2 is the reference adapter.
+`SKILL.md` + `assets/` + `scripts/` (where a skill ships it) go to OpenCode, Claude Code, Codex or a
+custom host (`dsh`, …); the roots and the subagent frontmatter differ and are resolved in step 0.
+For OpenCode the prompt detects the major (V1 or V2) and uses the matching delegation/permission
+keys; V2 is the reference adapter.
 
 ## Inputs (fill before sending)
 
@@ -69,10 +70,15 @@ PROFILE=<профиль или пусто>
    - Покажи план изменений (каталоги и файлы) и продолжай.
 
 1. Скиллы
-   - Скопируй из $SKILLS_REPO/opencode/ в $SKILLS_ROOT:
+   - Скопируй из $SKILLS_REPO/opencode/ в $SKILLS_ROOT каталоги целиком:
      pdca-entry, $VARIANT, а также pdca-collection и pdca-incremental, если соответствующий
-     INSTALL_* = yes. Если entry должен роутить и в другие цикловые варианты, установи и их —
-     иначе перечисли в отчёте, какие цели маршрута отсутствуют.
+     INSTALL_* = yes. Каталог скилла — это `SKILL.md`, `assets/` и `scripts/`, если скилл их
+     поставляет; `tests/` и генераторы диаграмм для рантайма не нужны. Если entry должен роутить
+     и в другие цикловые варианты, установи и их — иначе перечисли в отчёте, какие цели маршрута
+     отсутствуют.
+   - Хелперы из `scripts/` установленного скилла — источник рантайм-копий: `pdca-executor` кладёт
+     их байт-в-байт копиями в `.pdca/scripts/` проекта и запускает оттуда
+     (`python3 .pdca/scripts/<helper>.py …`), а не из установленного каталога скилла.
    - Существующие каталоги с теми же именами сначала сохрани в <name>.bak-<UTC timestamp>.
    - Проверь frontmatter каждого установленного SKILL.md:
      * `name` совпадает с именем каталога;

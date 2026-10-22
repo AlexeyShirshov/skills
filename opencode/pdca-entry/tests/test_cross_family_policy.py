@@ -540,5 +540,120 @@ class ResourceRuleScenarios(unittest.TestCase):
         self.assertNotIn("It is **not a silent run without the role**", text)
 
 
+class PlanHandoffApprovalScenarios(unittest.TestCase):
+    """Text guard: the caller-driven normal PLAN → DO boundary carries a durable approval.
+
+    A resumed cycle with an *unchanged* saved plan still needs the recorded approval:
+    applicability alone never starts DO, and a missing record is an approval-needed
+    checkpoint — not a fresh PLAN and not DO.  Autonomous mode is unaffected.
+    """
+
+    def _input1(self) -> str:
+        return section(
+            read(RUNNER),
+            "## Input 1 — `COLLECTION TASK PLAN` (phase P of a collection)",
+        )
+
+    def _resume(self) -> str:
+        return section(
+            read(RUNNER),
+            "## Input 2 — `execution_kind=cycle`: one full cycle or a resumed cycle",
+        )
+
+    def _protocol(self) -> str:
+        return section(read(RUNNER), "## Normal-mode approval protocol")
+
+    def test_normal_plan_do_handoff_carries_the_pending_ref_pointer(self) -> None:
+        input1 = self._input1()
+        self.assertIn("durable pending approval ref", input1)
+        self.assertIn("pointer", input1)
+        self.assertIn("`N`, `r`, criteria set", input1)
+        self.assertIn("the handoff carries its pointer", flat(BASE))
+        for path in (CODER, DOTNET):
+            with self.subTest(contract=path.parent.name):
+                self.assertIn("the handoff carries its pointer", flat(path))
+        self.assertIn("`plan_handoff` carries it as its approval pointer",
+                      flat(COLLECTION))
+        self.assertIn("`plan_handoff` **carries it as its pointer**", flat(BASE))
+
+    def test_unchanged_plan_resume_requires_the_recorded_approval(self) -> None:
+        resume = self._resume()
+        self.assertIn("applicability is not approval", resume)
+        self.assertIn("unchanged saved plan is no exception", resume)
+        self.assertIn("recorded approval matching", resume)
+        self.assertIn("only when the mode allows it", resume)
+        self.assertIn("unchanged saved plan is no exception", flat(BASE))
+        self.assertIn("unchanged saved plan is no exception", flat(COLLECTION))
+        for path in (CODER, DOTNET):
+            with self.subTest(contract=path.parent.name):
+                self.assertIn("unchanged saved plan is no exception", flat(path))
+
+    def test_missing_approval_yields_an_approval_needed_checkpoint(self) -> None:
+        resume = self._resume()
+        self.assertIn("approval-needed checkpoint", resume)
+        self.assertIn("neither DO nor a fresh PLAN", resume)
+        self.assertIn("approval-needed checkpoint", self._protocol())
+        self.assertIn("approval-needed checkpoint", flat(BASE))
+        self.assertIn("approval-needed checkpoint", flat(COLLECTION))
+        self.assertIn("approval-needed checkpoint", flat(INCREMENTAL))
+        for path in (CODER, DOTNET):
+            with self.subTest(contract=path.parent.name):
+                self.assertIn("approval-needed checkpoint", flat(path))
+
+    def test_stale_plan_gets_a_fresh_ref_and_never_inherits_the_old_one(self) -> None:
+        resume = self._resume()
+        self.assertIn("fresh approval ref", resume)
+        self.assertIn("never inherited", resume)
+        protocol = self._protocol()
+        self.assertIn("fresh approval ref", protocol)
+        self.assertIn("stale approval never authorizes it", protocol)
+        self.assertIn("fresh approval ref", flat(BASE))
+        self.assertIn("old approval does not authorize", flat(COLLECTION))
+        self.assertIn("old approval does not authorize it", flat(INCREMENTAL))
+        for path in (CODER, DOTNET):
+            with self.subTest(contract=path.parent.name):
+                self.assertIn("fresh approval", flat(path))
+                self.assertIn("stale approval never authorizes", flat(path))
+
+    def test_autonomous_handoff_carries_no_approval_ref(self) -> None:
+        input1 = self._input1()
+        self.assertIn("the handoff carries no approval ref", input1)
+        self.assertIn("autonomous** resumes directly", self._resume())
+        self.assertIn("never fabricates one", flat(BASE))
+        self.assertIn("standalone autonomous still starts DO immediately", flat(BASE))
+        self.assertIn("Autonomous mode does not invent an approval", flat(COLLECTION))
+
+    def test_barrier_readiness_is_not_approval_and_does_not_start_do(self) -> None:
+        col = flat(COLLECTION)
+        self.assertIn("readiness alone never triggers", col)
+        self.assertIn("lane allocation or an early DO", col)
+        self.assertIn("pending approval ref pointer", col)
+
+    def test_normal_mode_scope_is_explicit_in_every_approval_protocol(self) -> None:
+        base = flat(BASE)
+        self.assertIn(
+            "Durable approval protocol (caller-driven cycles, normal mode only)", base
+        )
+        self.assertIn("Autonomous mode has no such slots and no plan-approval gate", base)
+        self.assertIn("## Normal-mode approval protocol", read(RUNNER))
+        self.assertIn("### Approval protocol (normal mode)", read(COLLECTION))
+        self.assertIn("Normal mode: the step approval is durable", flat(INCREMENTAL))
+
+    def test_status_records_the_canonical_approval_slots(self) -> None:
+        for path in (BASE, CODER, DOTNET):
+            text = flat(path)
+            with self.subTest(contract=path.parent.name):
+                self.assertIn("`Pending approval ref`", text)
+                self.assertIn("`Approval record`", text)
+                self.assertIn("approver", text)
+                self.assertIn("task/`cycle_id`", text)
+                self.assertIn("criteria", text)
+                self.assertIn("Both slots are absent in autonomous mode", text)
+        inc = flat(INCREMENTAL)
+        self.assertIn("Pending approval ref:", inc)
+        self.assertIn("Approval record:", inc)
+        self.assertIn("approver", inc)
+
+
 if __name__ == "__main__":
     unittest.main()
