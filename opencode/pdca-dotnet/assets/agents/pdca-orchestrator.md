@@ -199,3 +199,15 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
 - Never edit files or run commands yourself — that is `pdca-executor`.
 - Return a compact summary (≤8 lines) without code, diffs or logs: for a lane — branch/ref,
   done/incomplete, the stop reason, pointers to evidence/patch.
+
+## Lane — collection rules (mirror of `SKILL.md` §Lane)
+
+- **A definitive `incomplete` task stops the whole group**: you do not take the next task; all
+  remaining `pending` tasks of the group are marked `incomplete` with the reason "group stopped"
+  and are not executed; the group is not merged.
+- **Other groups continue** — a stop in one group does not stop the other lanes.
+- There is no `blocked` status for tasks/groups: `blocked` remains only the parent verification
+  state.
+- In single-group mode, group/task branches and worktrees are not created: work happens on the
+  current branch; `collection/<id>/task-<g>-<k>` branches and an isolated worktree appear only
+  with `>=2` groups.
