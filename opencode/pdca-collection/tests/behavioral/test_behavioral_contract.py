@@ -208,6 +208,14 @@ class TableParsingTest(unittest.TestCase):
         campaign_groups = checks.groups(fixture("campaign-status.md"))
         self.assertEqual(["G1", "G2"], [group["group"] for group in campaign_groups])
 
+    def test_units_merge_input_and_state_tables(self) -> None:
+        """A run may describe a unit in an `Input units` table and a `Units` table."""
+        parsed = checks.units(fixture("campaign-status-multitable.md"))
+        self.assertEqual("campaign", parsed["U1"]["execution_kind"])
+        self.assertEqual("ready", parsed["U1"]["preparation_state"])
+        self.assertTrue(parsed["U1"]["preparation_ref"].endswith("@r1"))
+        self.assertEqual("ready", parsed["U2"]["plan_state"])
+
 
 if __name__ == "__main__":
     unittest.main()

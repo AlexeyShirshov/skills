@@ -74,13 +74,28 @@ def _records(header: list[str], rows: list[list[str]]) -> list[dict[str, str]]:
 
 
 def units(status_text: str) -> dict[str, dict[str, str]]:
-    """Per-unit records keyed by the first cell (the unit/task id)."""
-    header, rows = _table_after(status_text.splitlines(), "execution_kind")
-    return {
-        row[0]: record
-        for row, record in zip(rows, _records(header, rows))
-        if row and row[0]
-    }
+    """Per-unit records keyed by the first cell, merged across the unit tables.
+
+    A status file may describe a unit in more than one table (e.g. an ``Input units``
+    table with the brief and a ``Units`` table with the state fields). Records are
+    merged by unit id; a non-empty value never gets overwritten by an empty one.
+    """
+    out: dict[str, dict[str, str]] = {}
+    state_fields = {"execution_kind", "plan_state", "preparation_state", "preparation_ref"}
+    for header, rows in _all_tables(status_text):
+        keys = [name.lower() for name in header]
+        if not state_fields & set(keys):
+            continue
+        for row, record in zip(rows, _records(header, rows)):
+            if not row or not row[0]:
+                continue
+            bucket = out.setdefault(row[0], {})
+            for key, value in record.items():
+                current = (bucket.get(key) or "").strip()
+                if not current or current.lower() in DASHES:
+                    if (value or "").strip():
+                        bucket[key] = value
+    return out
 
 
 def groups(status_text: str) -> list[dict[str, str]]:

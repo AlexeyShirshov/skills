@@ -55,6 +55,18 @@ Environment:
 `OPENCODE_CONFIG` and `OPENCODE_SESSION_ID` are stripped from the child environment: inheriting
 them makes the sandbox load the host profile and/or attach to the host session.
 
+## Recorded runs and the offline suite
+
+`fixtures/` holds the artifacts of three real sandbox runs (`gap-status.md`,
+`campaign-status.md`, `campaign-preparation.md`, `lane-status.md`). The offline test
+(`test_behavioral_contract.py`, part of the normal `unittest discover`) replays them through
+`checks.py` and then mutates them the way a contract violation would — a `ready` placeholder on
+the gap unit, an allocated group despite the open barrier, a cycle instead of a campaign, a
+missing frame point, a runtime status at the barrier, a missing product change after DO — and
+requires every mutation to be caught. Refresh the fixtures only together with the status-file
+format, and keep both table shapes in mind: the recorded runs use a units table and a separate
+tasks table, with different column orders.
+
 ## What the probes do not prove
 
 DO/CHECK/ACT quality, autocommit and `merge --no-ff` integration, group-stop after a terminal

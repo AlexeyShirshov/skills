@@ -32,6 +32,7 @@ Requires a sandbox that already has the skills/agents installed (``install``).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -213,9 +214,10 @@ def verdict(probe: str, workdir: Path, exit_code: int) -> list[str]:
     if status_path is None:
         return [f"no collection status file under {repo / '.pdca/status'} (exit={exit_code})"]
     status_text = status_path.read_text(encoding="utf-8")
-    before = {}
+    before: dict[str, str] | None = None
     meta = workdir / "baseline.sha256"
     if meta.is_file():
+        before = {}
         for line in meta.read_text(encoding="utf-8").splitlines():
             digest, _, name = line.partition("  ")
             before[name] = digest
@@ -283,8 +285,16 @@ def run_probe(probe: str, workdir: Path | None) -> int:
 
 
 def check_only(workdir: Path) -> int:
-    probe = workdir.name.split("-")[0]
-    failures = verdict(probe, workdir.resolve(), 0)
+    workdir = workdir.resolve()
+    recorded = workdir / "result.json"
+    probe = None
+    if recorded.is_file():
+        probe = json.loads(recorded.read_text(encoding="utf-8")).get("probe")
+    if probe not in PROBES:
+        probe = next((name for name in PROBES if name in workdir.name), None)
+    if probe is None:
+        sys.exit(f"cannot tell which probe {workdir} recorded; expected one of {sorted(PROBES)}")
+    failures = verdict(probe, workdir, 0)
     for failure in failures:
         print(f"  - {failure}")
     print("PASS" if not failures else "FAIL")
