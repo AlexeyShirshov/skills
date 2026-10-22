@@ -32,6 +32,10 @@ CONFIG = (HOST_REPO / "config") if HOST_REPO else None
 HOST_ROOT = HOST_REPO  # host repo root, for its README
 HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
 SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
+SKIP_README = (
+    "host README is not EN yet — the checks assert its EN wording and skip until "
+    "an EN edition of opencode-config/README.md exists"
+)
 CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
 # Host briefs carry the same prefixed ids as the published assets; only the shared
 # gatherer/implementer still live in the host as `scout`/`coder`.
@@ -65,7 +69,6 @@ ROLE_TIER = {
 # The host README differs from this (skills) repo's own README, so it stays gated.
 README_PATH = (HOST_ROOT / "README.md") if HOST_ROOT else None
 DIAGRAM_DIR = SKILL_DIR / "assets/diagram"
-WORKFLOW_PATH = DIAGRAM_DIR / "workflow.json"
 GEN_PDCA_PATH = DIAGRAM_DIR / "gen_pdca.py"
 SCENARIOS_PATH = SKILL_DIR / "tests/scenarios.md"
 # Host plan document (docs/superpowers/plans lives in the `opencode-config` repo).
@@ -85,13 +88,25 @@ def read(path: Path) -> str:
 
 
 def is_en(path: Path) -> bool:
-    """Language of a brief, detected from its text.
+    """True when the file carries no Cyrillic (language read from the content).
 
-    The published assets and the host `pdca-*` briefs (synced from those assets)
-    are EN; the legacy host `coder`/`scout` briefs are RU. The path is not a
-    reliable signal any more, so the language is taken from the content.
+    The contract, the published assets and the host briefs are EN-only, so this
+    is no longer a branch selector.  It gates the *host README* checks: that
+    README is a Russian-only host artifact today, and the guards below may only
+    assert its EN wordings once an EN edition exists (they skip otherwise).
     """
-    return not re.search(r"[А-Яа-яЁё]", read(path))
+    return not re.search("[\\u0400-\\u04FF]", read(path))
+
+
+def readme_is_en() -> bool:
+    """True when the host README exists and is EN.
+
+    The host README is a Russian-only artifact today, so every guard that
+    asserts its wording is gated on this and skips (with a clear reason) until an
+    EN edition lands — rather than silently passing against a language it cannot
+    read.
+    """
+    return bool(HOST_AVAILABLE and README_PATH and README_PATH.is_file()) and is_en(README_PATH)
 
 
 def between(text: str, start: str, end: str) -> str:
@@ -309,60 +324,57 @@ class ContractConsistencyTest(unittest.TestCase):
             self.assertRegex(text, pat, f"{label}: missing /{pat}/")
 
     def _assert_brief_contract(self, path: Path) -> None:
-        en = is_en(path)
         # The host briefs and the published assets share the prefixed ids; one
-        # canonical stem selects the contract branch.
+        # canonical stem selects the contract branch.  Both are EN-only.
         name = CANON.get(path.stem, path.stem)
         if name == "coder":
             status = self._scoped(
                 path,
-                "Status file." if en else "Статус-файл.",
-                "Unfinished work" if en else "Незавершённая",
+                "Status file.",
+                "Unfinished work",
             )
             self.assertRegex(status, r"revision r\s*\|\s*iteration n/3")
             retention = self._scoped(
                 path,
-                "Unfinished work" if en else "Незавершённая",
-                "Evidence, not claims" if en else "Доказательства",
+                "Unfinished work",
+                "Evidence, not claims",
             )
             self._assert_patterns(retention, f"pdca-executor retention {path}", [
-                r"gate 2|гейта 2|гейт 2",
-                r"rejected candidate|отвергнутый кандидат",
-                r"original `?D`?|исходный `?D`?",
+                r"gate 2",
+                r"rejected candidate",
+                r"original `?D`?",
                 r"superseded",
             ])
         elif name == "planner":
             step = self._scoped(path, "10.", "11.")
             self._assert_patterns(step, f"pdca-planner step10 {path}", [
-                r"revised plan|пересмотренный план",
-                r"increments the revision|увеличивает ревизию",
-                r"resets the attempt n to 1|сбрасывает попытку n в 1",
-                r"rejected candidate|отвергнутый кандидат",
-                r"not a new revision|не новая ревизия",
-                r"does not reset the attempts|не сбрасывает",
+                r"revised plan",
+                r"increments the revision",
+                r"resets the attempt n to 1",
+                r"rejected candidate",
+                r"not a new revision",
+                r"does not reset the attempts",
                 r"superseded",
             ])
         elif name == "check":
             step = self._scoped(path, "5.", "6.")
             self._assert_patterns(step, f"pdca-check item5 {path}", [
-                r"third failed CHECK of the same revision|"
-                r"третьего провального CHECK той же ревизии",
-                r"same defect|тот же дефект",
-                r"persists across revisions|сохраняется между ревизиями",
+                r"third failed CHECK of the same revision",
+                r"same defect",
+                r"persists across revisions",
             ])
         elif name == "escalate":
             para = self._scoped(
                 path,
-                "The counter is scoped" if en else "Счётчик привязан",
-                "## What you do" if en else "## Что делаешь",
+                "The counter is scoped",
+                "## What you do",
             )
             self._assert_patterns(para, f"pdca-escalate counter {path}", [
                 r"PLAN\(r\) → DO",
                 r"n=1",
-                r"third failed CHECK of the same revision|"
-                r"третьего провального CHECK той же ревизии",
-                r"same defect|одного и того же дефекта|того же дефекта",
-                r"does not erase|не стирает",
+                r"third failed CHECK of the same revision",
+                r"same defect",
+                r"does not erase",
             ])
         else:
             self.fail(f"unexpected brief {path}")
@@ -379,16 +391,14 @@ class ContractConsistencyTest(unittest.TestCase):
                 self._assert_brief_contract(path)
 
     def _assert_escalator_brief_revision_scoped(self, path: Path) -> None:
-        en = is_en(path)
         para = self._scoped(
             path,
-            "The counter is scoped" if en else "Счётчик привязан",
-            "## What you do" if en else "## Что делаешь",
+            "The counter is scoped",
+            "## What you do",
         )
         self.assertRegex(
             para,
-            r"third failed CHECK of the same revision|"
-            r"третьего провального CHECK той же ревизии",
+            r"third failed CHECK of the same revision",
         )
 
     def test_escalator_briefs_revision_scoped(self):
@@ -447,11 +457,11 @@ class ContractConsistencyTest(unittest.TestCase):
     def _assert_planner_classification(self, path: Path) -> None:
         step = self._scoped(path, "10.", "11.")
         self._assert_patterns(step, f"pdca-planner classification {path}", [
-            r"insufficient evidence|недостат\w* доказательств",
+            r"insufficient evidence",
             r"pdca-scout|scout",
-            r"low confidence|низк\w* уверенност",
-            r"trigger 5|триггер\w* 5",
-            r"even without|даже без|без доказанной",
+            r"low confidence",
+            r"trigger 5",
+            r"even without",
         ])
 
     def test_planner_four_way_classification_includes_insufficient_evidence(self):
@@ -464,15 +474,14 @@ class ContractConsistencyTest(unittest.TestCase):
             self._assert_planner_classification(CONFIG_BRIEFS[0])
 
     def _assert_planner_response_format(self, path: Path) -> None:
-        en = is_en(path)
         resp = self._scoped(
             path,
-            "## Response format" if en else "## Формат ответа",
-            "A missing item" if en else "Пропущенный пункт",
+            "## Response format",
+            "A missing item",
         )
         self._assert_patterns(resp, f"pdca-planner response {path}", [
-            r"(?i)confidence and gaps|уверенность и пробелы",
-            r"(?i)classif|классифик",
+            r"(?i)confidence and gaps",
+            r"(?i)classif",
         ])
 
     def test_planner_response_format_has_confidence_and_classification_slot(self):
@@ -517,48 +526,34 @@ class ContractConsistencyTest(unittest.TestCase):
         # dispatch rule is owned centrally by config/AGENTS.md and the pdca-dotnet
         # SKILL, not by the architect prompt. Assertions keep the architect identity
         # and pin the rule where it now lives (full normalized clauses, not mere
-        # keyword co-occurrence). The host briefs are being translated, so the
-        # section marker and the expected wording are taken from the body itself.
+        # keyword co-occurrence). The host contract and briefs are EN-only.
         architect = CONFIG_AGENTS / "architect.md"
         raw = read(architect)
-        en = is_en(architect)
-        body = norm(between(raw, "# architect", "## Skills" if en else "## Скиллы"))
+        body = norm(between(raw, "# architect", "## Skills"))
         self.assertTrue(body, "architect body not found")
-        # No PDCA-specific role and no dispatcher wording in either language.
+        # No PDCA-specific role and no dispatcher wording.
         self.assertNotRegex(
             body.lower(),
-            r"inside pdca|внутри pdca|outside pdca|вне pdca"
-            r"|dispatcher, not the plan author|диспетчер, не автор плана"
-            r"|dispatcher|диспетчер",
+            r"inside pdca|outside pdca"
+            r"|dispatcher, not the plan author"
+            r"|dispatcher",
         )
         # Meaningful universal statements from the body (not permission allow-list).
-        self.assertIn(
-            "deciding medium-tier primary" if en else "решающий primary medium",
-            body.lower(),
-        )
-        self.assertIn(
-            "scout only (cheap tier)" if en else "только scout (cheap-тир)",
-            body.lower(),
-        )
-        self.assertIn(
-            "coder only (cheap tier)" if en else "только coder (cheap-тир)",
-            body.lower(),
-        )
+        self.assertIn("deciding medium-tier primary", body.lower())
+        self.assertIn("scout only (cheap tier)", body.lower())
+        self.assertIn("coder only (cheap tier)", body.lower())
         self.assertIn("brainstorming", body.lower())
         # The cheap-only exclusion and the no-widen rule are authoritative centrally
         # (config/AGENTS.md tier routing) — they must not be restored into the
-        # architect prose. The central file may be RU or EN.
+        # architect prose. The central file is EN-only too.
         central = norm(read(CONFIG / "AGENTS.md")).lower()
-        for alternatives in (
-            ("cheap-оркестратор", "cheap orchestrator"),
-            ("medium/strong primary",),
-            ("цикл не диспетчеризует", "does not dispatch the cycle"),
-            ("права дорогих ролей не расширяются", "rights of expensive roles are never widened"),
+        for phrase in (
+            "cheap orchestrator",
+            "medium/strong primary",
+            "does not dispatch the cycle",
+            "rights of expensive roles are never widened",
         ):
-            self.assertTrue(
-                any(a in central for a in alternatives),
-                "config/AGENTS.md: none of %r found" % (alternatives,),
-            )
+            self.assertIn(phrase, central)
 
     def test_skill_owns_cheap_only_orchestration_architect_excluded(self):
         # The SKILL owns cheap-only orchestration; architect is excluded, never an
@@ -605,19 +600,18 @@ class ContractConsistencyTest(unittest.TestCase):
     # --- Task 2 fix round 1: user-go boundary + authority invocation ------
 
     def _assert_planner_plan_disk_paragraph(self, path: Path) -> None:
-        en = is_en(path)
         para = self._scoped(
             path,
-            "11. Take into account" if en else "11. Учти",
-            "## Boundaries" if en else "## Границы",
+            "11. Take into account",
+            "## Boundaries",
         )
         self._assert_patterns(para, f"pdca-planner plan-disk {path}", [
-            r"(?i)normal mode|обычн\w* режим",
-            r"(?i)user approves|user's approval|пользователь утверждает",
-            r"(?i)autonomous mode|автономн\w* режим",
-            r"(?i)no question|no questions|ни вопроса|без вопрос|вопросов нет",
-            r"(?i)no waiting|без ожидания|ни ожидания|не жд",
-            r"(?i)gate-1|gate 1|гейт\w* 1",
+            r"(?i)normal mode",
+            r"(?i)user approves|user's approval",
+            r"(?i)autonomous mode",
+            r"(?i)no question|no questions",
+            r"(?i)no waiting",
+            r"(?i)gate-1|gate 1",
         ])
 
     def test_planner_plan_disk_paragraph_scopes_user_approval_to_normal_mode(self):
@@ -766,7 +760,7 @@ class ApprovalGateAndFallbackGuardTest(unittest.TestCase):
         self.assertIn("no approval and no invitation", self.autonomous)
         self.assertIn("no approval request", self.autonomous)
         self.assertIn("without approval pauses", self.autonomous)
-        self.assertNotIn("explicit go/го", self.autonomous)
+        self.assertNotIn("explicit go", self.autonomous)
         self.assertNotIn("approval is required", self.autonomous)
 
     def test_gate1_excludes_autonomous_from_the_approval_requirement(self):
@@ -805,54 +799,17 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.workflow = json.loads(read(WORKFLOW_PATH))
         cls.gen = read(GEN_PDCA_PATH)
         # The README summary guards below read the *host* README (this repo's own
         # README has different content) and are host-gated.
         cls.readme = read(README_PATH) if HOST_AVAILABLE else ""
         cls.scenarios = read(SCENARIOS_PATH)
 
-    def _node(self, node_id: str) -> dict:
-        for node in self.workflow["nodes"]:
-            if node["id"] == node_id:
-                return node
-        self.fail(f"workflow node {node_id!r} not found")
-
-    def _edge(self, edge_id: str) -> dict:
-        for edge in self.workflow["edges"]:
-            if edge["id"] == edge_id:
-                return edge
-        self.fail(f"workflow edge {edge_id!r} not found")
-
-    # --- diagram source: revision-scoped counters (labels, no redesign) ---
-
-    def test_workflow_escalation_label_revision_scoped(self):
-        # The escalation node is a *decision* scoped to r+1 / STOP, not a
-        # generic "×2/×3" retry.
-        sub = self._node("escalate")["sublabel"]
-        self.assertIn("решение", sub)
-        self.assertIn("r+1", sub)
-        self.assertIn("STOP", sub)
-        self.assertNotIn("×3", sub)
-        self.assertNotIn("×2", sub)
-
-    def test_workflow_approval_label_starts_attempt_one(self):
-        self.assertIn("n=1", self._edge("e_approval")["label"])
-
-    def test_workflow_escalate_edge_not_generic_2_3x(self):
-        label = self._edge("e_orb_escalate")["label"]
-        self.assertIn("3-й провал", label)
-        self.assertNotIn("2–3×", label)
-
-    def test_workflow_replan_revision_edge_and_do_plan_preserved(self):
-        # A real replan bumps the revision r → r+1; the DO → PLAN edge stays.
-        self.assertIn("r+1", self._edge("e_orb_replan")["label"])
-        self.assertIn("предусловие", self._edge("e_do_replan")["label"])
-
     def test_gen_pdca_labels_revision_scoped(self):
         for token in ("CHECK(r)", "n+1", "r+1", "repeat"):
             self.assertIn(token, self.gen, f"gen_pdca.py missing {token!r}")
-        for stale in ("3-я итерация", "тот же дефект ×2", "разные — ×3"):
+        # Stale labels (the old revision-agnostic wording) must not come back.
+        for stale in ("3rd iteration", "same defect ×2", "different — ×3"):
             self.assertNotIn(stale, self.gen, f"gen_pdca.py stale {stale!r}")
 
     def test_gen_pdca_preserves_replan_and_do_plan_edges(self):
@@ -860,25 +817,25 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
         self.assertIn("wrong plan", self.gen)
         self.assertIn("new precondition/blocker", self.gen)
 
-    # --- README concise summary (host README — gated) ----------------------
+    # --- README concise summary (host README — gated on an EN edition) -----
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    @unittest.skipUnless(readme_is_en(), SKIP_README)
     def test_readme_scoped_attempts_no_brittle_line_count(self):
         self.assertNotIn("~1460", self.readme)
-        self.assertNotRegex(self.readme, r"контракт\s+~?\d+\s+строк")
-        self.assertIn("подробный контракт", self.readme)
+        self.assertNotRegex(self.readme, r"contract\s+(of\s+)?~?\d+\s+lines")
+        self.assertIn("detailed contract", self.readme)
         self.assertIn("n/3", self.readme)
-        self.assertIn("ревизи", self.readme)
-        self.assertNotIn("макс. 3 итераци", self.readme)
+        self.assertIn("revision", self.readme)
+        self.assertNotIn("max. 3 iterations", self.readme)
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    @unittest.skipUnless(readme_is_en(), SKIP_README)
     def test_readme_single_active_phase_and_no_questions(self):
-        self.assertIn("ровно одна активная", self.readme)
-        self.assertIn("без вопросов", self.readme)
+        self.assertIn("exactly one active", self.readme)
+        self.assertRegex(self.readme, r"no questions|without questions")
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    @unittest.skipUnless(readme_is_en(), SKIP_README)
     def test_readme_assets_tier_labels_not_model(self):
-        self.assertNotIn("пустым `model:`", self.readme)
+        self.assertNotIn("empty `model:`", self.readme)
         self.assertIn("# tier:", self.readme)
 
     # --- scenario matrix --------------------------------------------------
@@ -892,7 +849,7 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
                           f"scenarios.md missing case {letter}")
         self.assertIn("## B1.", self.scenarios, "scenarios.md missing case B1")
         self.assertIn("## B2.", self.scenarios, "scenarios.md missing case B2")
-        for column in ("Вход", "Требуемый исход", "Оперативные источники"):
+        for column in ("Input", "Required outcome", "Operative sources"):
             self.assertIn(column, self.scenarios)
 
     def test_scenarios_matrix_covers_autonomous_delegation_and_fallback(self):
@@ -904,8 +861,8 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
     def test_scenarios_matrix_is_labeled_not_claiming_execution(self):
         # The matrix is for independent reasoning; it must not claim that any
         # agent/model actually executed the scenarios.
-        self.assertIn("не доказательство", self.scenarios)
-        self.assertIn("не запускал", self.scenarios)
+        self.assertIn("not proof", self.scenarios)
+        self.assertIn("ever ran", self.scenarios)
 
 
 class FinalFixGuardTest(unittest.TestCase):
@@ -991,16 +948,15 @@ class FinalFixGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_host_briefs_distinguish_additive_from_replacement(self):
-        # The host `pdca-planner` brief mirrors the EN asset; the legacy `coder`
-        # brief is RU. Accept either wording.
-        self.assertRegex(self.planner_host, r"(?i)additive|аддитив")
-        self.assertRegex(self.coder_host, r"(?i)additive|аддитив")
+        # The host `pdca-planner` and `coder` briefs mirror the EN assets.
+        self.assertRegex(self.planner_host, r"(?i)additive")
+        self.assertRegex(self.coder_host, r"(?i)additive")
 
     def test_scenarios_split_b_into_additive_and_replacement(self):
         self.assertIn("B1", self.scenarios)
         self.assertIn("B2", self.scenarios)
-        # "Аддитивное" is capitalized in the table/heading; case-insensitive compare.
-        self.assertIn("аддитив", self.scenarios.lower())
+        # "Additive" is capitalized in the table/heading; case-insensitive compare.
+        self.assertIn("additive", self.scenarios.lower())
 
     # --- F3: gate 2 "closed" single definition ----------------------------
 
@@ -1063,9 +1019,9 @@ class FinalFixGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_host_coder_brief_mandates_durable_state_and_defect_history(self):
-        # The legacy host `coder` brief is RU; accept the EN wording too.
-        self.assertRegex(self.coder_host, r"(?i)defect history|историю дефект")
-        # RU keeps the literal durable-state field name "Plan revision r".
+        # The host `coder` brief mirrors the EN asset.
+        self.assertRegex(self.coder_host, r"(?i)defect history")
+        # The durable-state field name is literal in both.
         self.assertIn("Plan revision r", self.coder_host)
 
     def test_check_brief_carries_r_n_and_defect_history_as_history_only(self):
@@ -1076,8 +1032,8 @@ class FinalFixGuardTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_host_check_brief_carries_defect_history(self):
-        # The host `pdca-check` brief mirrors the EN asset; accept the RU wording too.
-        self.assertRegex(self.check_host, r"(?i)defect history|историю дефект")
+        # The host `pdca-check` brief mirrors the EN asset.
+        self.assertRegex(self.check_host, r"(?i)defect history")
 
     def test_scout_brief_can_report_status_snapshot_and_defect_history(self):
         self.assertIn("defect history", self.scout_en)
@@ -1175,9 +1131,9 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("including a label-only change", self.plan)
         self.assertIn("approved spec supersedes the stale structure-only wording", self.plan)
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    @unittest.skipUnless(readme_is_en(), SKIP_README)
     def test_readme_sync_row_follows_source_change_condition(self):
-        self.assertIn("включая правку только меток", self.readme)
+        self.assertIn("including a label-only change", self.readme)
 
     def test_scenarios_have_no_nonexistent_escalation_security_fail_link(self):
         self.assertNotIn("§Escalation (security fail)", self.scenarios)

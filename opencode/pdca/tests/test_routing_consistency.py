@@ -316,8 +316,8 @@ class AdditiveIntegrationTest(unittest.TestCase):
         text = read(AGENTS_MD)
         self.assertIn("pdca-entry", text)
         self.assertIn("skill pdca", text)
-        self.assertNotIn("Trigger phrases «по циклу»", text)
-        self.assertNotIn("«по циклу» / «через PDCA» → `pdca-coder`", text)
+        self.assertNotIn("Trigger phrases", text)
+        self.assertNotIn("-> `pdca-coder`", text)
         self.assertNotIn("picks the cycle variant", text)
 
 
@@ -372,7 +372,7 @@ class RunnerMetadataBoundaryTest(unittest.TestCase):
         self.assertIn("read", text)
 
     def test_runner_does_not_search_the_workspace_or_shell_out(self):
-        negations = re.compile(r"\b(?:never|not|no|cannot|don't)\b|не\b")
+        negations = re.compile(r"\b(?:never|not|no|cannot|don't)\b")
         for line in read(RUNNER_ASSET).splitlines():
             low = line.lower()
             flagged = [p for p in ("workspace discovery",) if p in low]

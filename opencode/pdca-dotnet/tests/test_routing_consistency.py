@@ -26,7 +26,6 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL = SKILL_DIR / "SKILL.md"
 DIAGRAM = SKILL_DIR / "assets/diagram"
 GEN = DIAGRAM / "gen_pdca.py"
-WORKFLOW = DIAGRAM / "workflow.json"
 OUTPUTS = ["pdca-hand.svg", "pdca-hand.html", "pdca-hand-dark.svg", "pdca-hand-dark.html"]
 # Host config (agents/profiles/AGENTS.md/README) lives in the `opencode-config` repo, not in this
 # one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
@@ -427,47 +426,6 @@ class RolePermissionTest(unittest.TestCase):
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_all_role_tiers_are_tier_comments_host_config(self):
         self._assert_role_tiers_are_tier_comments(CONFIG_AGENTS)
-
-
-class WorkflowContractTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        data = json.loads(read(WORKFLOW))
-        cls.nodes = {n["id"]: n for n in data["nodes"]}
-        cls.edges = {e["id"]: e for e in data["edges"]}
-
-    def test_security_fork_and_report_return_to_check(self):
-        fork = self.edges["e_sec_audit"]
-        self.assertEqual((fork["from"], fork["to"]), ("check", "sec_audit"))
-        report = self.edges["e_sec_report"]
-        self.assertEqual((report["from"], report["to"]), ("sec_audit", "check"))
-        self.assertIn("условно", fork["label"])
-        self.assertIn("отчёт", report["label"])
-        self.assertIn("агрегац", report["label"])
-
-    def test_lenses_edge_to_act_requires_all_four_plus_security(self):
-        edge = self.edges["e_lenses"]
-        self.assertEqual((edge["from"], edge["to"]), ("check", "act"))
-        for token in ("4", "security", "final CHECK"):
-            self.assertIn(token, edge["label"])
-
-    def test_escalate_to_orchestrator_is_a_decision_not_a_recommendation(self):
-        edge = self.edges["e_escalate_orb"]
-        self.assertEqual((edge["from"], edge["to"]), ("escalate", "orb"))
-        self.assertIn("решение", edge["label"])
-        self.assertNotIn("рекоменд", edge["label"])
-
-    def test_orchestrator_routes_conditionally_and_never_to_act(self):
-        do, replan = self.edges["e_orb_do"], self.edges["e_orb_replan"]
-        self.assertEqual((do["from"], do["to"]), ("orb", "do"))
-        self.assertIn("не исчерпан", do["label"])
-        self.assertEqual((replan["from"], replan["to"]), ("orb", "plan"))
-        self.assertIn("исчерпан", replan["label"])
-        self.assertIn("r+1", replan["label"])
-        self.assertEqual(
-            (self.edges["e_orb_stop"]["from"], self.edges["e_orb_stop"]["to"]), ("orb", "stop"))
-        self.assertNotIn("e_orb_act", self.edges)
-        self.assertEqual({e["from"] for e in self.edges.values() if e["to"] == "act"}, {"check"})
 
 
 def _direction(root, edge_id: str) -> tuple:

@@ -79,9 +79,7 @@ class RoutingScenarios(unittest.TestCase):
         self.assertIn("even with one footprint/one lane", inc)
         self.assertIn("property of the schedule", inc)
         # The old entry rule (>=2 disjoint footprints) is gone.
-        assert_absent(self, inc,
-                      "≥2 непересекающихся footprint",
-                      "≥2 non-intersecting footprints")
+        assert_absent(self, inc, "≥2 non-intersecting footprints")
 
     def test_one_shared_goal_with_unknown_path_is_incremental(self) -> None:
         inc = flat(INCREMENTAL)
@@ -176,7 +174,7 @@ class RepairAndMetScenarios(unittest.TestCase):
         self.assertIn("current accepted snapshot", inc)
         self.assertIn("baseline already satisfies the goal", inc)
         assert_absent(self, inc,
-                      "предикат истинен на принятом замере; единственный успех")
+                      "the predicate is true on the accepted measurement; the only success")
 
 
 class ActScenarios(unittest.TestCase):
@@ -453,7 +451,7 @@ class BootstrapMetScenarios(unittest.TestCase):
         self.assertIn("not self-accept", stop)
         self.assertIn("not automatically", stop)
         self.assertIn("`repair`/`blocked`", stop)
-        self.assertNotIn("или `unreachable`, если обязательный `verify` не проходит", stop)
+        self.assertNotIn("or `unreachable` if the mandatory `verify` fails", stop)
 
     def test_docs_do_not_derive_unreachable_from_a_red_verify(self) -> None:
         for path, obsolete in (

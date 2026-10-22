@@ -1,299 +1,300 @@
-# Сценарная матрица pdca-dotnet (A–L)
+# pdca-dotnet scenario matrix (A–L)
 
-Статус: **статическая (не исполняемая) матрица для независимого разбора**. Это — **не доказательство** поведения: ни один агент/модель по этим сценариям **не запускался**, реальный цикл не исполнялся, production-автомат не создавался. Присутствие правил проверяет
-`test_contract_consistency.py`, и она тоже лишь фиксирует наличие правил, а не поведение.
-Поведенческий разбор проходит независимый `pdca-escalate` по полным соответствующим контрактам.
+Status: **a static (non-executable) matrix for independent review**. This is **not proof** of
+behavior: no agent or model **ever ran** these scenarios, no real cycle was executed, no
+production state machine was created. Rule presence is checked by
+`test_contract_consistency.py`, and that too only pins the presence of rules, not behavior.
+The behavioral review is performed by an independent `pdca-escalate` against the full corresponding
+contracts.
 
-Источник правил (действующая норма): `opencode/pdca-dotnet/SKILL.md` (§State machine,
-§Transition gates, §Orchestrator role, §Host requirements), EN-роли
-`opencode/pdca-dotnet/assets/agents/*.md` с зеркалами `config/agents/*.md` и исходники диаграммы
-`opencode/pdca-dotnet/assets/diagram/{workflow.json,gen_pdca.py}`. Исторический дизайн
-`docs/superpowers/specs/2026-10-01-pdca-consistency-design.md` — только контекст, не норма (в нём
-допустим любой primary, включая `architect`; действует cheap-only). Счётчики: цикл `<N>` (растёт
-только в ACT), ревизия плана `r`, попытка `n/3` в пределах
-ревизии; отвергнутый кандидат **без смены плана** не новая ревизия и не сбрасывает ретраи.
+Source of the rules (the operative norm): `opencode/pdca-dotnet/SKILL.md` (§State machine,
+§Transition gates, §Orchestrator role, §Host requirements), the EN role briefs
+`opencode/pdca-dotnet/assets/agents/*.md` with the mirrors `config/agents/*.md`, and the diagram
+sources `opencode/pdca-dotnet/assets/diagram/gen_pdca.py`. The historical design
+`docs/superpowers/specs/2026-10-01-pdca-consistency-design.md` is context only, not the norm (it
+allows any primary, including `architect`; the operative rule is cheap-only). Counters: cycle `<N>`
+(grows only in ACT), plan revision `r`, attempt `n/3` within a
+revision; a rejected candidate **without a plan change** is not a new revision and does not reset retries.
 
-Хостовые артефакты (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`, хостовый
-`README.md`, спеки в `docs/superpowers/…`) живут в репозитории `opencode-config`; тесты обращаются
-к ним только при `OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе эти проверки пропускаются.
+Host artifacts (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`, the host
+`README.md`, specs under `docs/superpowers/…`) live in the `opencode-config` repository; the tests
+reach them only with `OPENCODE_CONFIG_REPO=<path to opencode-config>`, otherwise those checks are
+skipped.
 
-| # | Кратко | Требуемый исход |
+| # | Summary | Required outcome |
 | --- | --- | --- |
-| A | Частичный `D` заблокирован, кандидат отвергнут | Исходный `D` возобновлён, не `done`, та же попытка `n` |
-| B1 | Аддитивное предусловие | Исходный `D` активен, критерии/остаток без изменений, отображения замены нет, gate 2 закрыт до завершения остатка |
-| B2 | Фактическая замена объёма | Явное отображение `superseded→replacement`, замена активна и несёт критерии; `superseded` не `done` |
-| C | r1: два провала CHECK → реальный replan r2 | `n` сброшен в 1 на r2; повтор того же дефекта после фикса всё равно эскалируется |
-| D | Один план, три провальных CHECK | `pdca-escalate`, 4-й попытки нет; `DO → PLAN` — не провальный CHECK |
-| E | `pdca-planner` не может классифицировать кандидата | Сначала точечные факты (`pdca-scout`), затем `pdca-escalate` по низкой уверенности даже без доказанной внешности |
-| F | Автономно: нет критерия / недоступен ресурс | Без вопроса; сбор/решение, затем blocked STOP с записанным итогом; обычный режим сохраняет вопросы и апрув плана |
-| G | Три параллельных потока DO | Единственное зеркало прогресса — статус-файл: агрегированный `D:` и правдивые состояния каждого потока в нём |
-| H | Cheap-only оркестрация; `architect` — решения вне цикла | Цикл ведёт только cheap-tier primary (эффективный тир, не имя агента); начальный PLAN/replan — `pdca-planner`; в ролях только `# tier`, без `model:` |
-| I | Security-триггер red | Conditional gather возвращается в агрегат `pdca-check` (своего независимого вердикта нет); обычный security-провал — провальный CHECK ревизии по общим счётчикам; немедленная эскалация — только жёсткий security-tradeoff |
-| J | Эскалация: исчерпана ревизия `r` или нет | `pdca-escalate` даёт **решение**; оркестратор только роутит: revised remediation `r+1` → `pdca-planner`, реализация/STOP → `pdca-executor`; семантически не перевыбирает, гейты/no-4th/scope/security не отменяет |
-| K | Автономно: cheap primary делегирует цикл | `subagent(pdca-orchestrator)` с cycle brief; субагент ведёт PLAN→DO→CHECK→ACT, возвращает сводку ≤8 строк; primary не читает/не правит |
-| L | Fallback: `pdca-orchestrator` недоступен | Flat primary ведёт цикл сам, fallback зафиксирован (`Notice:`); гейты/no-4th/scope/security не отменяются |
+| A | Partial `D` blocked, candidate rejected | The original `D` is resumed, not `done`, same attempt `n` |
+| B1 | Additive prerequisite | The original `D` stays active, criteria/remainder unchanged, no replacement mapping, gate 2 closed until the remainder completes |
+| B2 | Actual scope replacement | Explicit `superseded→replacement` mapping, the replacement is active and carries the criteria; `superseded` is not `done` |
+| C | r1: two failed CHECKs → a real replan r2 | `n` reset to 1 on r2; a recurrence of the same defect after a fix is still escalated |
+| D | One plan, three failed CHECKs | `pdca-escalate`, no 4th attempt; `DO → PLAN` is not a failed CHECK |
+| E | `pdca-planner` cannot classify the candidate | Point facts first (`pdca-scout`), then `pdca-escalate` on low confidence even without established externalness |
+| F | Autonomous: no criterion / resource unavailable | No question; gather/decide, then a blocked STOP with a recorded outcome; normal mode keeps questions and plan approval |
+| G | Three parallel DO streams | The only progress mirror is the status file: the aggregate `D:` and the truthful per-stream states in it |
+| H | Cheap-only orchestration; `architect` — decisions outside the cycle | Only the cheap-tier primary drives the cycle (effective tier, not the agent name); the initial PLAN/replan is `pdca-planner`'s; the roles carry only `# tier`, no `model:` |
+| I | Security trigger red | The conditional gather returns into the `pdca-check` aggregate (it has no independent verdict of its own); an ordinary security failure is a failed CHECK of the revision under the shared counters; immediate escalation is for a hard security trade-off only |
+| J | Escalation: revision `r` exhausted or not | `pdca-escalate` returns a **decision**; the orchestrator only routes: revised remediation `r+1` → `pdca-planner`, implementation/STOP → `pdca-executor`; it never re-selects semantically and never waives the gates/no-4th/scope/security |
+| K | Autonomous: the cheap primary delegates the cycle | `subagent(pdca-orchestrator)` with a cycle brief; the subagent drives PLAN→DO→CHECK→ACT and returns a ≤8-line summary; the primary neither reads nor edits |
+| L | Fallback: `pdca-orchestrator` unavailable | The flat primary drives the cycle itself, the fallback is recorded (`Notice:`); gates/no-4th/scope/security are not waived |
 
-Общая оперативная база (применяется ко всем кейсам, если ниже не уточнено):
+Common operative base (applies to every case unless stated below):
 `opencode/pdca-dotnet/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
-§Phase progress mirror, §Escalation (`pdca-escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
+§Phase progress mirror, §Escalation (`pdca-escalate`) (triggers, incl. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
-§Orchestrator role; `opencode/pdca-dotnet/assets/agents/*.md` и зеркала
+§Orchestrator role; `opencode/pdca-dotnet/assets/agents/*.md` and the mirrors
 `config/agents/*.md` (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`,
-`architect`); `README.md`; метки диаграммы `opencode/pdca-dotnet/assets/diagram/{workflow.json,gen_pdca.py}`.
+`architect`); `README.md`; the diagram labels `opencode/pdca-dotnet/assets/diagram/gen_pdca.py`.
 
 ---
 
-## A. Частичный `D` заблокирован, кандидат отвергнут
+## A. Partial `D` blocked, candidate rejected
 
-**Вход:** реализация `D` остановлена на частичном результате и отчёте DO о блокере; `pdca-planner`
-отвергает DO-кандидата, план **не меняется**.
-**Требуемый исход:** незавершённая реализация `D` не помечается `completed`; работа
-возобновляется с **исходного** `D`, а не заводится новая; счётчик попыток не растёт и не
-сбрасывается (та же попытка `n`); гейт 2 не открывается.
-**Оперативные источники:** SKILL §State machine / §Transition gates (gate 2: blocker report ≠ `done`,
+**Input:** the implementation of `D` stopped at a partial result with a DO blocker report; `pdca-planner`
+rejects the DO candidate, the plan **does not change**.
+**Required outcome:** the unfinished implementation of `D` is not marked `completed`; the work
+resumes from the **original** `D` instead of opening a new one; the attempt counter neither grows nor
+resets (the same attempt `n`); gate 2 does not open.
+**Operative sources:** SKILL §State machine / §Transition gates (gate 2: blocker report ≠ `done`,
 rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`, `config/agents/pdca-executor.md`
 (Unfinished work / retention); §Cycle status file.
 
-## B1. Аддитивное предусловие (не замена)
+## B1. Additive prerequisite (not a replacement)
 
-**Вход:** DO сообщает о предусловии, добавляющем недостающую возможность; `pdca-planner` принимает его
-как in-cycle задачу.
-**Требуемый исход:** исходный `D` остаётся **активным** с критериями и остатком **без изменений**
-(blocked на новой зависимости, **не `superseded`**); добавляется новая **активная** единица;
-**отображения `superseded→replacement` нет**; гейт DO→CHECK заблокирован, пока остаток не завершён;
-`done` — только фактически выполненная принятая работа; анализ кандидата «реализация завершена» не
-завершает `D`.
-**Оперативные источники:** SKILL §State machine / gate 2 / §Cycle status file (unit states, additive
+**Input:** DO reports a prerequisite that adds a missing capability; `pdca-planner` accepts it
+as an in-cycle task.
+**Required outcome:** the original `D` stays **active** with its criteria and remainder **unchanged**
+(blocked on a new dependency, **not `superseded`**); a new **active** unit is added;
+**there is no `superseded→replacement` mapping**; the DO→CHECK gate is closed until the remainder is done;
+`done` — only work actually performed and accepted; the candidate analysis "implementation complete" does not
+complete `D`.
+**Operative sources:** SKILL §State machine / gate 2 / §Cycle status file (unit states, additive
 prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`.
 
-## B2. Фактическая замена объёма
+## B2. Actual scope replacement
 
-**Вход:** `pdca-planner` фактически заменяет объём работы (не добавление предусловия).
-**Требуемый исход:** исходная единица помечается `superseded` и **обязательно** оформляется явное
-отображение `superseded→replacement`; единицы-замены **активны** и несут **все исходные критерии
-приёмки и остаток**; цепочка замены должна свестись к активным `done`-единицам, покрывающим
-сохранённые критерии; `superseded` никогда не считается `done`; гейт 2 отклоняется при
-отсутствующем отображении/замене, висячей/циклической/само-замене или pending/blocked замене.
-**Оперативные источники:** SKILL §State machine / gate 2 / §Cycle status file (unit states incl.
+**Input:** `pdca-planner` actually replaces the scope of the work (not an added prerequisite).
+**Required outcome:** the original unit is marked `superseded` and an explicit
+`superseded→replacement` mapping **must** be recorded; the replacement units are **active** and carry **all original acceptance
+criteria and the remainder**; the replacement chain must resolve to active `done` units covering the
+preserved criteria; `superseded` never counts as `done`; gate 2 is rejected when the mapping/replacement is
+missing, when a replacement is orphan/circular/self, or when a replacement is pending/blocked.
+**Operative sources:** SKILL §State machine / gate 2 / §Cycle status file (unit states incl.
 `superseded`, replacement chain); `assets/agents/pdca-planner.md`.
 
-## C. Реальный replan между ревизиями
+## C. A real replan between revisions
 
-**Вход:** ревизия r1: два провальных CHECK (попытка `n=3`); `pdca-planner` выдаёт пересмотренный план
-→ r2 (не отвергнутый кандидат без смены плана). Дополнительно: один и тот же дефект повторяется
-после одного фикса на другой ревизии.
-**Требуемый исход:** `DO → PLAN`/`CHECK → PLAN` не расходуют попытки следующей ревизии; r2
-начинает `PLAN(r2) → DO` с `n=1`; исходящая провальная попытка записана в статус-файле до замены
-плана; история одного и того же дефекта **не стирается** репланом — повтор дефекта после одного
-фикса эскалируется **до второго фикса**. Исчерпанная ревизия (третий провальный CHECK) **не
-получает 4-й попытки даже после `pdca-escalate`**; продолжить можно **только** через реально
-пересмотренный план `r+1` (фактически изменённые задачи/зависимости/действия при сохранении
-исходного критерия); переименование/переформулировка или сброс сессии — **не** новая ревизия.
-**Оперативные источники:** SKILL §State machine / §Escalation (триггер про один и тот же дефект) /
+**Input:** revision r1: two failed CHECKs (attempt `n=3`); `pdca-planner` issues a revised plan
+→ r2 (not a rejected candidate without a plan change). In addition: the same defect recurs
+after one fix on another revision.
+**Required outcome:** `DO → PLAN`/`CHECK → PLAN` do not consume the next revision's attempts; r2
+starts `PLAN(r2) → DO` with `n=1`; the outgoing failed attempt is recorded in the status file before the plan is
+replaced; the history of the same defect **is not erased** by a replan — a recurrence of the defect after one
+fix is escalated **before the second fix**. An exhausted revision (third failed CHECK) **does not
+get a 4th attempt even after `pdca-escalate`**; continuation is possible **only** through a genuinely
+revised plan `r+1` (actually changed tasks/dependencies/actions while the original criterion is preserved);
+a rename/reword or a session reset is **not** a new revision.
+**Operative sources:** SKILL §State machine / §Escalation (the same-defect trigger) /
 §Cycle status file; `assets/agents/pdca-planner.md`, `assets/agents/pdca-check.md`, `assets/agents/pdca-escalate.md`.
 
-## D. Третий провальный CHECK одного плана
+## D. Third failed CHECK of one plan
 
-**Вход:** один план (ревизия r), три провальных CHECK подряд; отдельно рассматривается переход
-`DO → PLAN` внутри той же ревизии (новое предусловие/блокер).
-**Требуемый исход:** после третьего провального CHECK **одной и той же** ревизии вызывается
-`pdca-escalate`; четвёртой попытки нет; сам `DO → PLAN` — **не** провальный CHECK и не расходует
-попытку следующей ревизии.
-**Оперативные источники:** SKILL §State machine (`third failed CHECK of the same revision`,
+**Input:** one plan (revision r), three failed CHECKs in a row; the `DO → PLAN` transition
+inside the same revision (a new prerequisite/blocker) is considered separately.
+**Required outcome:** after the third failed CHECK of **the same** revision `pdca-escalate` is called;
+there is no fourth attempt; the `DO → PLAN` itself is **not** a failed CHECK and does not consume
+the next revision's attempt.
+**Operative sources:** SKILL §State machine (`third failed CHECK of the same revision`,
 `no 4th attempt`, `PLAN(r) → DO`, `CHECK → DO`); §Red flags (revision-local 4th attempt);
 `assets/agents/pdca-check.md`, `assets/agents/pdca-escalate.md`.
 
-## E. Неклассифицируемый кандидат: факты, затем низкая уверенность
+## E. Unclassifiable candidate: facts, then low confidence
 
-**Вход:** `pdca-planner` не может уверенно классифицировать DO-кандидата; доказательств мало и
-внешняя природа блокера **не доказана**.
-**Требуемый исход:** сначала точечный сбор фактов через `pdca-scout` (`file:line`/URL), не
-исчерпывающий перебор; при стойко низкой уверенности — `pdca-escalate` по существующему триггеру 5
-**даже без доказанной внешности**; DO не выдаёт финальный вердикт и не делает STOP.
-**Оперативные источники:** SKILL §Escalation (триггер 5, low confidence, without established
+**Input:** `pdca-planner` cannot classify the DO candidate with confidence; the evidence is scarce and the
+external nature of the blocker is **not established**.
+**Required outcome:** point fact-gathering through `pdca-scout` first (`file:line`/URL), not an
+exhaustive sweep; with persistently low confidence — `pdca-escalate` under existing trigger 5
+**even without established externalness**; DO does not issue the final verdict and does not STOP.
+**Operative sources:** SKILL §Escalation (trigger 5, low confidence, without established
 externalness, provisional candidate); `assets/agents/pdca-planner.md` (item 10, four-way
 classification, insufficient evidence); `assets/agents/pdca-scout.md`.
 
-## F. Автономный режим: без вопросов
+## F. Autonomous mode: no questions
 
-**Вход:** автономный прогон; отсутствует критерий приёмки / недоступен ресурс; ветка
-заблокирована или неоднозначна и неразрешима в цикле. Отдельно — обычный режим.
-**Требуемый исход:** в автономном режиме **вообще нет вопросов** пользователю, апрувов,
-приглашений начать сессию (включая missing acceptance criteria и unavailable resource);
-проблема проходит через `pdca-planner`/`pdca-escalate`, затем **STOP** с записанным итогом
-(закрыто/осталось/блокеры) и без вопроса. STOP **условен**: если эскалация разрешает вопрос и есть
-actionable пересмотренный план (`r+1`) — работа продолжается; остановка **не** автоматическая после
-каждой успешной эскалации, а только когда эскалация не разрешает вопрос и actionable плана нет.
-`Notice:` и финальный итог допустимы; автономность — не разрешение авто-коммита. В обычном режиме
-сохраняются необходимые вопросы и явный апрув плана.
-**Оперативные источники:** SKILL §Autonomous mode, §Transition gates (gate 1: normal mode
+**Input:** an autonomous run; an acceptance criterion is missing / a resource is unavailable; the branch is
+blocked or ambiguous and unresolvable within the cycle. Separately — normal mode.
+**Required outcome:** in autonomous mode there are **no questions at all** to the user, no approvals,
+no invitations to start a session (including missing acceptance criteria and an unavailable resource);
+the problem goes through `pdca-planner`/`pdca-escalate`, then a **STOP** with a recorded outcome
+(closed/remaining/blockers) and without a question. The STOP is **conditional**: if the escalation resolves the
+question and an actionable revised plan (`r+1`) exists — the work continues; the stop is **not** automatic after
+every successful escalation, but only when the escalation does not resolve the question and no actionable plan exists.
+`Notice:` and a final summary are allowed; autonomy is not permission to auto-commit. In normal mode the necessary
+questions and the explicit plan approval are retained.
+**Operative sources:** SKILL §Autonomous mode, §Transition gates (gate 1: normal mode
 plan approval), §State machine; `assets/agents/pdca-planner.md` (plan-disk paragraph).
 
-## G. Один агрегированный активный `D:` при параллельных потоках
+## G. One aggregated active `D:` with parallel streams
 
-**Вход:** три параллельных потока/единицы DO.
-**Требуемый исход:** единственное зеркало прогресса — статус-файл: в нём агрегированный `D:` и
-правдивые состояния единиц (`pending`/`running`/`blocked`/`done`/`superseded`); агрегированный
-`D:` закрывается только когда все единицы и DO-потоки удовлетворяют гейту 2; replan переносит
-агрегированную фазовую метку, не завершая единицы ложно.
-**Оперативные источники:** SKILL §Phase progress mirror (status file only, same turn, reconcile,
+**Input:** three parallel DO streams/units.
+**Required outcome:** the only progress mirror is the status file: it carries the aggregate `D:` and the
+truthful unit states (`pending`/`running`/`blocked`/`done`/`superseded`); the aggregate
+`D:` closes only when all units and DO streams satisfy gate 2; a replan carries the
+aggregate phase label without falsely completing units.
+**Operative sources:** SKILL §Phase progress mirror (status file only, same turn, reconcile,
 never from memory), §Transition gates (gate 1 records the single aggregate `D:` in the status
 file), §Cycle status file.
 
-## H. Cheap-only оркестрация, полномочия PLAN и привязки моделей
+## H. Cheap-only orchestration, PLAN authority and model bindings
 
-**Вход:** цикл запускается из primary; нужен начальный PLAN и replan; установка шести EN-ассетов
-ролей.
-**Требуемый исход:** цикл ведёт **только cheap-tier primary** (по **эффективному тиру профиля**, а
-не по имени агента); medium/strong primary (в т.ч. `architect`) цикл не диспетчеризует и вне цикла
-остаётся решающим primary; и начальный PLAN, и replan принадлежат субагенту `pdca-planner`, вердикт —
-`pdca-check`; привязки моделей даёт `agent`-блок профиля хоста, в ролях только ярлык `# tier`
+**Input:** the cycle is started from a primary; an initial PLAN and a replan are needed; the six EN role
+assets are being installed.
+**Required outcome:** the cycle is driven by the **cheap-tier primary only** (by the profile's **effective tier**, not
+by the agent name); a medium/strong primary (incl. `architect`) does not dispatch the cycle and remains the deciding
+primary outside the cycle; both the initial PLAN and every replan belong to the `pdca-planner` subagent, the verdict to
+`pdca-check`; the model bindings come from the host profile's `agent` block, and the roles carry only the `# tier` label
 (`pdca-executor`/`pdca-scout`/`pdca-orchestrator` = cheap; `pdca-planner`/`pdca-check`/`pdca-security-auditor` = medium; `pdca-escalate` = strong),
-`model:` в ролях отсутствует; профили не редактируются ради выбора id; `general`/`explore` не
-обходятся; права дорогих ролей не расширяются.
-**Оперативные источники:** SKILL §Orchestrator role, §Host requirements (roles → agents);
-`config/AGENTS.md` (Tier routing), `README.md` (§Тиры ролей); `config/agents/architect.md`;
-`assets/agents/*.md` (tier labels, no `model:`); `config/profiles/*.jsonc` (`agent` block, только
-чтение).
+`model:` is absent from the roles; the profiles are not edited to pick an id; `general`/`explore` are not
+bypassed; the rights of expensive roles are never widened.
+**Operative sources:** SKILL §Orchestrator role, §Host requirements (roles → agents);
+`config/AGENTS.md` (Tier routing), `README.md` (role-tier section — still Russian-only, §Тиры ролей);
+`config/agents/architect.md`;
+`assets/agents/*.md` (tier labels, no `model:`); `config/profiles/*.jsonc` (the `agent` block, read-only).
 
-## I. Security-conditional gather и агрегатный вердикт
+## I. Security-conditional gather and the aggregate verdict
 
-**Вход:** срабатывает security-триггер (auth/секреты/ввод/крипто); `pdca-security-auditor` возвращает
-отчёт/находку.
-**Требуемый исход:** security — **conditional gather-поток** CHECK; его результат **возвращается в
-агрегат** и судится `pdca-check` (своего независимого вердикта нет; обычный security-дефект не обходит
-агрегированный триаж); гейт 3 зелёный только при **всех** потоках; обычный security-провал считается
-провальным CHECK текущей ревизии по общим счётчикам `n/3`/истории дефектов; немедленная эскалация —
-только **жёсткий security-tradeoff**; финальный вердикт по всем потокам — `pdca-check`'s.
-**Оперативные источники:** SKILL §Transition gates (gate 3, «every failed CHECK … triggered security
+**Input:** a security trigger fires (auth/secrets/input/crypto); `pdca-security-auditor` returns a
+report/finding.
+**Required outcome:** security is a **conditional gather stream** of CHECK; its result **returns into the
+aggregate** and is judged by `pdca-check` (it has no independent verdict of its own; an ordinary security defect does not
+bypass the aggregated triage); gate 3 is green only with **all** streams; an ordinary security failure counts as a
+failed CHECK of the current revision under the shared counters `n/3`/defect history; immediate escalation —
+for a **hard security trade-off** only; the final verdict across all streams is `pdca-check`'s.
+**Operative sources:** SKILL §Transition gates (gate 3, «every failed CHECK … triggered security
 failure»), §Parallel CHECK streams (security gather/return; any failed stream counts as a failed CHECK
 of the current revision), §Escalation (hard security trade-off, counters);
 `assets/agents/pdca-security-auditor.md`, `assets/agents/pdca-check.md`.
 
-## J. Решение эскалации: роутинг, не перевыбор и без обхода гейтов
+## J. The escalation decision: routing, not re-selection and no gate bypass
 
-**Вход:** `pdca-escalate` вернул решение. Два случая: (1) ревизия **не исчерпана**; (2) ревизия
-**исчерпана** (третий провальный CHECK той же `r`).
-**Требуемый исход:** `pdca-escalate` возвращает **решение**, не меню и не код; cheap-оркестратор исполняет
-его **только маршрутизацией** — реально пересмотренный remediation-план `r+1` → `pdca-planner` (автор
-плана), реализация по текущему плану или STOP статуса → `pdca-executor`; оркестратор **семантически не
-перевыбирает** и план не переписывает. Решение **не отменяет** гейты, запрет 4-й попытки, scope и
-security-ограничения; при **не исчерпанной** ревизии продолжение возможно по текущему плану, при
-**исчерпанной** — 4-й попытки нет даже после эскалации, продолжение только через genuine `r+1`; нет
-actionable-плана → **STOP** (обычный режим — вопрос пользователю; автономный — записанный STOP без
-вопроса).
-**Оперативные источники:** SKILL §Orchestrator role (execute by routing, never re-decide),
+**Input:** `pdca-escalate` returned a decision. Two cases: (1) the revision is **not exhausted**; (2) the revision
+**is exhausted** (third failed CHECK of the same `r`).
+**Required outcome:** `pdca-escalate` returns a **decision**, not a menu and not code; the cheap orchestrator executes
+it **by routing only** — a genuinely revised remediation plan `r+1` → `pdca-planner` (the plan
+author), implementation under the current plan or a status STOP → `pdca-executor`; the orchestrator **never
+re-selects semantically** and does not rewrite the plan. A decision **does not waive** the gates, the ban on a 4th attempt,
+scope and security constraints; with a **non-exhausted** revision continuation is possible under the current plan, with an
+**exhausted** one there is no 4th attempt even after the escalation, and continuation is only via a genuine `r+1`;
+no actionable plan → **STOP** (normal mode — a question to the user; autonomous — a recorded STOP without a
+question).
+**Operative sources:** SKILL §Orchestrator role (execute by routing, never re-decide),
 §Escalation (After the escalation …), §State machine (no 4th), §Red flags;
 `config/agents/escalate.md`, `assets/agents/pdca-escalate.md`.
 
-## K. Автономное делегирование: primary диспатчит `pdca-orchestrator`
+## K. Autonomous delegation: the primary dispatches `pdca-orchestrator`
 
-**Вход:** cheap-tier primary; пользователь **явно** просит работать автономно; цикл ещё не начат.
-**Требуемый исход:** primary **не ведёт** цикл сам, а запускает субагента
-`pdca-orchestrator` с **cycle brief** (goal, scope, acceptance criteria, constraints,
-references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и возвращает компактную
-**сводку ≤8 строк**; primary лишь передаёт сводку дальше и **не читает** файлы/логи и **не правит** их;
-коллекционный статус-файл не создаётся, обязательный pdca-dotnet статус-файл пишет `pdca-executor`;
-вопросы не задаются.
-**Оперативные источники:** SKILL §Two paths → "Two paths, one contract." / §Autonomous mode
-(Delegation) / §Host requirements (Autonomous driver; setup-allowlist включает `pdca-orchestrator`);
-`config/agents/pdca-orchestrator.md` (вход «одиночный автономный цикл», cycle brief → сводка ≤8 строк).
+**Input:** a cheap-tier primary; the user **explicitly** asks to work autonomously; the cycle has not been started yet.
+**Required outcome:** the primary **does not drive** the cycle itself but starts a `pdca-orchestrator`
+subagent with a **cycle brief** (goal, scope, acceptance criteria, constraints,
+references); `pdca-orchestrator` runs PLAN→DO→CHECK→ACT and returns a compact
+**≤8-line summary**; the primary only passes the summary on and **does not read** files/logs and **does not edit** them;
+no collection status file is created, the mandatory pdca-dotnet status file is written by `pdca-executor`;
+no questions are asked.
+**Operative sources:** SKILL §Two paths → "Two paths, one contract." / §Autonomous mode
+(Delegation) / §Host requirements (Autonomous driver; the setup allowlist includes `pdca-orchestrator`);
+`config/agents/pdca-orchestrator.md` (input "single autonomous cycle", cycle brief → a ≤8-line summary).
 
-## L. Fallback: `pdca-orchestrator` недоступен
+## L. Fallback: `pdca-orchestrator` unavailable
 
-**Вход:** автономная просьба, но запуск субагента `pdca-orchestrator` невозможен — агент отсутствует,
-либо `subagent_depth` < 2, либо делегирование запрещено хостом.
-**Требуемый исход:** primary переходит в **flat primary** и ведёт цикл **сам** (PLAN→DO→CHECK→ACT
-с теми же гейтами); fallback зафиксирован (`Notice:` в статус-файле); запрет 4-й попытки, scope и
-security-ограничения **не отменяются**; вопросы по-прежнему не задаются.
-**Оперативные источники:** SKILL §Autonomous mode (Delegation: fall back to the flat primary, log
+**Input:** an autonomous request, but starting the `pdca-orchestrator` subagent is impossible — the agent is absent,
+or `subagent_depth` < 2, or delegation is forbidden by the host.
+**Required outcome:** the primary switches to the **flat primary** and drives the cycle **itself** (PLAN→DO→CHECK→ACT
+with the same gates); the fallback is recorded (`Notice:` in the status file); the ban on a 4th attempt, scope and
+security constraints are **not waived**; questions are still not asked.
+**Operative sources:** SKILL §Autonomous mode (Delegation: fall back to the flat primary, log
 the fallback) / §Host requirements (resource blocker); `config/agents/pdca-orchestrator.md`.
 
 ---
 
-## Дополнительно: отвергнутый кандидат не сбрасывает ретраи
+## Additional: a rejected candidate does not reset retries
 
-**Вход:** `pdca-planner` отвергает DO-кандидата/просит уточнение, план остаётся тем же.
-**Требуемый исход:** это **не** новая ревизия (`r` не растёт) и **не** сброс счётчика попыток
-(`n` не обнуляется); кейсы A/C/D не могут быть обойдены через «переоткрытие» кандидатом.
-**Оперативные источники:** SKILL §State machine (rejected candidate not a new revision, does not
+**Input:** `pdca-planner` rejects the DO candidate / asks for a clarification, the plan stays the same.
+**Required outcome:** this is **not** a new revision (`r` does not grow) and **not** a reset of the attempt counter
+(`n` is not zeroed); cases A/C/D cannot be bypassed through a candidate "reopening".
+**Operative sources:** SKILL §State machine (rejected candidate not a new revision, does not
 reset the attempt counter, not erased by a replan); `assets/agents/pdca-planner.md` item 10.
 
 ---
 
-## #238 — pressure-сценарии: BINDING/APPLICABLE-гейт и audit-disposition
+## #238 — pressure scenarios: the BINDING/APPLICABLE gate and audit disposition
 
-Матрица для **всех трёх** вариантов (`pdca`, `pdca-coder`, `pdca-dotnet`); общие сценарии
-прогоняются для каждого, variant-specific — только где применимо. Это **не доказательство**
-поведения: ни один агент/модель по этим сценариям не запускался, реальный цикл не исполнялся.
-Наличие правил проверяет `test_contract_consistency.py` (`AuditGateBoundaryTest`); поведенческий
-прогон — отдельный шаг с **fresh** role-контекстом и фактическим тиром роли (model IDs не
-хардкодить).
+The matrix is for **all three** variants (`pdca`, `pdca-coder`, `pdca-dotnet`); the shared scenarios
+are run for each, the variant-specific ones only where applicable. This is **not proof** of
+behavior: no agent or model ever ran these scenarios, no real cycle was executed.
+Rule presence is checked by `test_contract_consistency.py` (`AuditGateBoundaryTest`); the behavioral
+run is a separate step with a **fresh** role context and the role's actual tier (never hardcode model IDs).
 
-### A238. Зелёные required-строки и audit-ссылка без ledger-hash
+### A238. Green required rows and an audit reference without a ledger hash
 
-**Вход:** build/tests зелёные и обязательные строки `met`; старый report ссылается на log/patch
-без отдельного ledger-hash.
-**Требуемый исход:** CHECK принимает по required-строкам; недостающий hash — audit-note, **нет**
-`incomplete`/STOP и нового round ради hash.
-**Оперативные источники:** SKILL §Frozen evidence manifest → «Binding/applicability disposition
+**Input:** build/tests green and the mandatory rows `met`; an old report references a log/patch
+without a separate ledger hash.
+**Required outcome:** CHECK passes on the required rows; a missing hash is an audit note, **no**
+`incomplete`/STOP and no new round for the sake of the hash.
+**Operative sources:** SKILL §Frozen evidence manifest → «Binding/applicability disposition
 (append-only)».
 
-### B238. Тесты на текущем незакоммиченном состоянии без `committed == tested`
+### B238. Tests on the current uncommitted state without `committed == tested`
 
-**Вход:** tests выполнены на текущем uncommitted состоянии; per-path snapshot на момент запуска
-отсутствует.
-**Требуемый исход:** честная identity фактически проверенного состояния принимается; существующий
-freshness без mismatch ⇒ нет commit/provenance-блокера и нет требования коммитить ради PASS.
-**Оперативные источники:** SKILL §Evidence over assertion; §Frozen evidence manifest.
+**Input:** the tests ran on the current uncommitted state; no per-path snapshot exists at run time.
+**Required outcome:** an honest identity of the state actually verified is accepted; existing
+freshness without a mismatch ⇒ no commit/provenance blocker and no requirement to commit for the sake of PASS.
+**Operative sources:** SKILL §Evidence over assertion; §Frozen evidence manifest.
 
-### C238. CHECK постфактум требует runtime-дигесты / recursive inventory
+### C238. CHECK retrospectively demands runtime digests / a recursive inventory
 
-**Вход:** CHECK пытается добавить ретроспективные runtime-дигесты или рекурсивный инвентарь
-ссылок прошлых артефактов.
-**Требуемый исход:** audit-only требование отвергается с rationale; исходная строка остаётся
-`open` с disposition `diagnostic_nonbinding` и исключается из binding-блокеров; product-работа не
-перезапускается.
-**Оперативные источники:** SKILL → «Binding/applicability disposition (append-only)».
+**Input:** CHECK tries to add retrospective runtime digests or a recursive inventory of links to past artifacts.
+**Required outcome:** the audit-only requirement is rejected with a rationale; the original row stays
+`open` with the disposition `diagnostic_nonbinding` and is excluded from the binding blockers; product work is not
+restarted.
+**Operative sources:** SKILL → «Binding/applicability disposition (append-only)».
 
-### D238. PLAN сам freeze-нул transitive inventory без user-acceptance
+### D238. PLAN itself froze a transitive inventory without user acceptance
 
-**Вход:** PLAN-автор закрепил generic `complete transitive inventory`, не согласованный как
-отдельная audit-цель.
-**Требуемый исход:** правило не становится обязательным по инерции; explicit invalid
-classification записан; реальные mandatory acceptance сохранены; ложного product `incomplete` нет.
-**Оперативные источники:** SKILL §CHECK completeness gate → «PLAN does not invent audit hard
+**Input:** the PLAN author pinned a generic `complete transitive inventory` that was not agreed as a
+separate audit goal.
+**Required outcome:** the rule does not become mandatory by inertia; an explicit invalid
+classification is recorded; the real mandatory acceptance is preserved; there is no false product `incomplete`.
+**Operative sources:** SKILL §CHECK completeness gate → «PLAN does not invent audit hard
 gates».
 
-### E238. Реальный failed/missing required test или stale binary
+### E238. A real failed/missing required test or a stale binary
 
-**Вход:** обязательный тест упал/отсутствует либо обнаружен stale `--no-build`/другая ревизия.
-**Требуемый исход:** существующий FAIL/re-gather/STOP-маршрут сохраняется; audit-exemption **не**
-маскирует реальную проблему freshness/функциональности.
-**Оперативные источники:** SKILL §CHECK completeness gate; §Versioned evidence contract.
+**Input:** a mandatory test failed/is missing, or a stale `--no-build` or a different revision is detected.
+**Required outcome:** the existing FAIL/re-gather/STOP route is preserved; the audit exemption does **not**
+mask a real freshness/functional problem.
+**Operative sources:** SKILL §CHECK completeness gate; §Versioned evidence contract.
 
-### F238. Direct-evidence из #235 не ослаблен
+### F238. Direct evidence from #235 is not weakened
 
-**Вход:** задача требует reviewer pack с полными телами, source-copy fidelity и полный execution
+**Input:** the task requires a reviewer pack with full bodies, source-copy fidelity and a full execution
 ledger.
-**Требуемый исход:** обязательные direct-evidence требования #235 не ослаблены; «диагностическими»
-объявляются только extra recursive/retrospective audit-proofs, а не представленный нужный body,
-mismatch staged-source или неподтверждённый запуск.
-**Оперативные источники:** SKILL §Reviewer evidence pack; §Execution journal and the
+**Required outcome:** the mandatory direct-evidence requirements of #235 are not weakened; only extra recursive/retrospective
+audit proofs are declared "diagnostic", not the required body that was presented, a staged-source
+mismatch, or an unconfirmed run.
+**Operative sources:** SKILL §Reviewer evidence pack; §Execution journal and the
 unit/integration policy.
 
-### G238. Пользователь явно заказал конечную audit-задачу
+### G238. The user explicitly ordered a finite audit task
 
-**Вход:** user согласовал finite audit как **отдельную** audit-задачу.
-**Требуемый исход:** её acceptance остаётся **binding**; обычный fail/re-gather при невыполнении
-сохраняется; disposition-путь к ней неприменим.
-**Оперативные источники:** SKILL → «…stays binding»; §Frozen evidence manifest.
+**Input:** the user agreed on a finite audit as a **separate** audit task.
+**Required outcome:** its acceptance stays **binding**; the ordinary fail/re-gather on non-fulfilment is
+preserved; the disposition path does not apply to it.
+**Operative sources:** SKILL → «…stays binding»; §Frozen evidence manifest.
 
-### H238. Append-only, отсутствие новых гейтов и согласованность ролей
+### H238. Append-only, no new gates, and role consistency
 
-**Вход:** проверка последствий правки.
-**Требуемый исход:** ни один файл/статус/артефакт/исторический вердикт #232 не переписан; нет
-нового hashing/provenance-графа; runtime (`config/agents/**`) и canonical (`assets/agents/**`)
-role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
-**Оперативные источники:** `config/agents/check.md`, `config/agents/pdca-check.md`,
-`assets/agents/pdca-check.md` — пункт «binding/applicable».
+**Input:** checking the consequences of the edit.
+**Required outcome:** no file/status/artifact/historical verdict of #232 is rewritten; there is no
+new hashing/provenance graph; the runtime (`config/agents/**`) and canonical (`assets/agents/**`)
+role rules are consistent; the result distinguishes a diagnostic note from an actual mandatory unmet.
+**Operative sources:** `config/agents/check.md`, `config/agents/pdca-check.md`,
+`assets/agents/pdca-check.md` — the "binding/applicable" item.

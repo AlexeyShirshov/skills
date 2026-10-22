@@ -173,7 +173,7 @@ class CompositionTest(unittest.TestCase):
         self.assertRegex(
             text.lower(),
             r"different fields|not the same field|not interchangeable|"
-            r"different things|разные поля|не одно и то же",
+            r"different things|different fields",
             "the entry must say execution_kind and selected_variant are different fields",
         )
 
@@ -182,7 +182,7 @@ class CompositionTest(unittest.TestCase):
             s for s in sentences(norm(read(SKILL)))
             if re.search(r"\bbatch\b|\bcollections?\b", s, re.I)
             and re.search(r"\bcampaigns?\b", s, re.I)
-            and re.search(r"contain|include|units?\b|содерж|включ", s, re.I)
+            and re.search(r"contain|include|units?\b", s, re.I)
         ]
         self.assertTrue(hits, "the entry must say a collection/batch may contain campaign units")
 

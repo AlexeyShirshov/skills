@@ -59,7 +59,6 @@ SCAN_EXEMPT = frozenset((RUNNER_ASSET,))
 FORBIDDEN_WORDS = (
     "coding",
     "code",
-    "код",
     "dotnet",
     "python",
     "roslyn",

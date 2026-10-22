@@ -33,8 +33,8 @@ CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
 SCRIPT = SKILL_DIR / "scripts/validate_inner_loop.py"
 SKILL = SKILL_DIR / "SKILL.md"
 EN_CODER = SKILL_DIR / "assets/agents/pdca-executor.md"
-# The RU coder brief is a host artifact (config/agents) and needs the host repo.
-RU_CODER = CONFIG_AGENTS / "coder.md" if CONFIG_AGENTS else None
+# The host coder brief (config/agents/coder.md) needs the host repo; it is EN too.
+HOST_CODER = CONFIG_AGENTS / "coder.md" if CONFIG_AGENTS else None
 
 SELECTOR = "FullyQualifiedName~Foo.Tests.BarTests"
 SELECTOR_2 = "FullyQualifiedName~Shared.Tests.ContractTests"
@@ -960,15 +960,11 @@ class _CoderParityMixin:
     Rule-presence only: reads the coder Markdown bodies as text (paths resolved
     relative to this test file / the host repo) and asserts the standalone bullet
     is present, that it sits between the Evidence and Git bullets, and that it
-    encodes the key concepts with wording-robust RU+EN regexes.  It never
-    executes an agent or the cycle.
-
-    Each entry is a tuple of accepted wordings: the host briefs are being
-    translated to EN, so the language of a body is taken from its content (the
-    first accepted anchor actually present) rather than from the path.
+    encodes the key concepts (the contract and every brief are EN-only).
+    It never executes an agent or the cycle.
     """
 
-    # Stable bold prefixes introduced by D3 (RU and EN wording).
+    # Stable bold prefixes introduced by D3.
     ANCHORS: dict = {}
     EVIDENCE: dict = {}
 
@@ -1000,19 +996,19 @@ class _CoderParityMixin:
             self._present(texts[path], path, self.ANCHORS, "inner-loop bullet anchor")
         for path in self.ANCHORS:
             bullet = self._bullet(texts[path], path).lower()
-            # affected subset (RU поднабор/затронут / EN affected/subset)
-            self.assertRegex(bullet, r"affected|затронут|поднабор|subset")
+            # affected subset
+            self.assertRegex(bullet, r"affected|subset")
             # both run kinds are named and distinguished (E10)
             self.assertRegex(bullet, r"unit")
-            self.assertRegex(bullet, r"integration|интеграц")
+            self.assertRegex(bullet, r"integration")
             # the filter is explicitly NOT the classification criterion
-            self.assertRegex(bullet, r"filter|фильтр")
+            self.assertRegex(bullet, r"filter")
             # stream / DO→CHECK boundary for integration
-            self.assertRegex(bullet, r"boundary|границ")
+            self.assertRegex(bullet, r"boundary")
             # prohibition of the whole solution (a whole *unit project* run is legal)
-            self.assertRegex(bullet, r"whole solution|всё решение")
+            self.assertRegex(bullet, r"whole solution")
             # the ledger is projected from the raw journal
-            self.assertRegex(bullet, r"journal|журнал")
+            self.assertRegex(bullet, r"journal")
         for path in self.ANCHORS:
             text = texts[path]
             evidence = text.index(
@@ -1047,8 +1043,8 @@ class _CoderParityMixin:
 class CoderParityTests(_CoderParityMixin, unittest.TestCase):
     """D3 guards: the published EN coder asset carries the inner-loop bullet.
 
-    The RU host body (``config/agents/coder.md``) lives in the `opencode-config`
-    repo, so the two-body RU+EN parity guards are host-gated in
+    The host coder body (``config/agents/coder.md``) lives in the `opencode-config`
+    repo, so the two-body parity guards are host-gated in
     ``HostCoderParityTests`` below.
     """
 
@@ -1058,19 +1054,15 @@ class CoderParityTests(_CoderParityMixin, unittest.TestCase):
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class HostCoderParityTests(_CoderParityMixin, unittest.TestCase):
-    """D3 guards: both coder bodies (EN asset + host brief) stay in parity.
-
-    The host `config/agents/coder.md` brief is being translated to EN, so both
-    wordings are accepted and the body's language is read from its content.
-    """
+    """D3 guards: both coder bodies (EN asset + host brief) stay in parity."""
 
     ANCHORS = {
-        EN_CODER: ("**Inner loop", "**Внутренний цикл"),
-        RU_CODER: ("**Inner loop", "**Внутренний цикл"),
+        EN_CODER: ("**Inner loop",),
+        HOST_CODER: ("**Inner loop",),
     }
     EVIDENCE = {
-        EN_CODER: ("Evidence, not claims", "Доказательства, а не заявления"),
-        RU_CODER: ("Evidence, not claims", "Доказательства, а не заявления"),
+        EN_CODER: ("Evidence, not claims",),
+        HOST_CODER: ("Evidence, not claims",),
     }
 
 
