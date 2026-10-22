@@ -300,7 +300,7 @@ ALL-barrier and the persistent binding of the schedule (§P.3–§P.4). Before t
 ### C — verification (the standard CHECK)
 
 The common verification of a collection is the **standard CHECK of the base contract** (two ticks:
-Gather cheap → verdict `pdca-check` medium; the input and the verdict format — `config/agents/check.md`,
+Gather cheap → verdict `pdca-check` medium; the input and the verdict format — `config/agents/pdca-check.md`,
 the structure — `config/skills/pdca-coder/SKILL.md` §CHECK; for .NET — the identical
 `config/skills/pdca-dotnet/SKILL.md` §CHECK), and **not** a separate
 bespoke stage of the collection. When all lanes are stopped, in the main tree: all

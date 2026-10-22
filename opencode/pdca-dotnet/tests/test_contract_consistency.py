@@ -13,7 +13,6 @@ Run:
 from __future__ import annotations
 
 import json
-import os
 import re
 import unittest
 from pathlib import Path
@@ -25,24 +24,6 @@ ASSET_BRIEFS = [
     SKILL_DIR / f"assets/agents/{name}.md"
     for name in ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate")
 ]
-# Host config (agents/profiles/AGENTS.md/README) lives in the `opencode-config` repo, not in this
-# one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
-HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
-CONFIG = (HOST_REPO / "config") if HOST_REPO else None
-HOST_ROOT = HOST_REPO  # host repo root, for its README
-HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
-SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
-SKIP_README = (
-    "host README is not EN yet — the checks assert its EN wording and skip until "
-    "an EN edition of opencode-config/README.md exists"
-)
-CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
-# Host briefs carry the same prefixed ids as the published assets; only the shared
-# gatherer/implementer still live in the host as `scout`/`coder`.
-CONFIG_BRIEFS = [
-    CONFIG_AGENTS / f"{name}.md"
-    for name in ("pdca-planner", "coder", "pdca-check", "pdca-escalate")
-] if CONFIG_AGENTS else []
 # Asset stem -> canonical contract branch, for the shared contract branches.
 CANON = {
     "pdca-planner": "planner", "pdca-executor": "coder", "pdca-check": "check",
@@ -64,18 +45,12 @@ ROLE_TIER = {
     "pdca-scout": "cheap",
     "pdca-security-auditor": "medium",
 }
-# Task 3: cross-artifact label sources (host README + diagram source) and the
-# non-executable scenario matrix.  These are text/JSON presence guards only.
-# The host README differs from this (skills) repo's own README, so it stays gated.
-README_PATH = (HOST_ROOT / "README.md") if HOST_ROOT else None
+# Task 3: cross-artifact label sources (diagram source) and the non-executable
+# scenario matrix.  These are text/JSON presence guards only.
 DIAGRAM_DIR = SKILL_DIR / "assets/diagram"
 GEN_PDCA_PATH = DIAGRAM_DIR / "gen_pdca.py"
 SCENARIOS_PATH = SKILL_DIR / "tests/scenarios.md"
 # Host plan document (docs/superpowers/plans lives in the `opencode-config` repo).
-PLAN_PATH = (
-    HOST_ROOT / "docs/superpowers/plans/2026-10-01-pdca-consistency-plan.md"
-) if HOST_ROOT else None
-
 
 def norm(text: str) -> str:
     """Collapse whitespace (incl. line wraps) and drop backticks/format noise."""
@@ -87,26 +62,6 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def is_en(path: Path) -> bool:
-    """True when the file carries no Cyrillic (language read from the content).
-
-    The contract, the published assets and the host briefs are EN-only, so this
-    is no longer a branch selector.  It gates the *host README* checks: that
-    README is a Russian-only host artifact today, and the guards below may only
-    assert its EN wordings once an EN edition exists (they skip otherwise).
-    """
-    return not re.search("[\\u0400-\\u04FF]", read(path))
-
-
-def readme_is_en() -> bool:
-    """True when the host README exists and is EN.
-
-    The host README is a Russian-only artifact today, so every guard that
-    asserts its wording is gated on this and skips (with a clear reason) until an
-    EN edition lands — rather than silently passing against a language it cannot
-    read.
-    """
-    return bool(HOST_AVAILABLE and README_PATH and README_PATH.is_file()) and is_en(README_PATH)
 
 
 def between(text: str, start: str, end: str) -> str:
@@ -324,8 +279,8 @@ class ContractConsistencyTest(unittest.TestCase):
             self.assertRegex(text, pat, f"{label}: missing /{pat}/")
 
     def _assert_brief_contract(self, path: Path) -> None:
-        # The host briefs and the published assets share the prefixed ids; one
-        # canonical stem selects the contract branch.  Both are EN-only.
+        # The published assets use prefixed ids; one canonical stem selects the
+        # contract branch.  The assets are EN-only.
         name = CANON.get(path.stem, path.stem)
         if name == "coder":
             status = self._scoped(
@@ -384,12 +339,6 @@ class ContractConsistencyTest(unittest.TestCase):
             with self.subTest(path=path.name):
                 self._assert_brief_contract(path)
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_config_briefs_mirror_scoped_contract(self):
-        for path in CONFIG_BRIEFS:
-            with self.subTest(path=path.name):
-                self._assert_brief_contract(path)
-
     def _assert_escalator_brief_revision_scoped(self, path: Path) -> None:
         para = self._scoped(
             path,
@@ -404,11 +353,6 @@ class ContractConsistencyTest(unittest.TestCase):
     def test_escalator_briefs_revision_scoped(self):
         with self.subTest(path=str(ASSET_BRIEFS[3])):
             self._assert_escalator_brief_revision_scoped(ASSET_BRIEFS[3])
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_escalator_briefs_revision_scoped_host_brief(self):
-        with self.subTest(path=str(CONFIG_BRIEFS[3])):
-            self._assert_escalator_brief_revision_scoped(CONFIG_BRIEFS[3])
 
     # --- Task 2: autonomous mode is question-free -------------------------
 
@@ -468,11 +412,6 @@ class ContractConsistencyTest(unittest.TestCase):
         with self.subTest(path=str(ASSET_BRIEFS[0])):
             self._assert_planner_classification(ASSET_BRIEFS[0])
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_planner_four_way_classification_includes_insufficient_evidence_host_brief(self):
-        with self.subTest(path=str(CONFIG_BRIEFS[0])):
-            self._assert_planner_classification(CONFIG_BRIEFS[0])
-
     def _assert_planner_response_format(self, path: Path) -> None:
         resp = self._scoped(
             path,
@@ -488,20 +427,15 @@ class ContractConsistencyTest(unittest.TestCase):
         with self.subTest(path=str(ASSET_BRIEFS[0])):
             self._assert_planner_response_format(ASSET_BRIEFS[0])
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_planner_response_format_has_confidence_and_classification_slot_host_brief(self):
-        with self.subTest(path=str(CONFIG_BRIEFS[0])):
-            self._assert_planner_response_format(CONFIG_BRIEFS[0])
-
-    # --- Task 2: primary is a dispatcher incl. architect ------------------
+    # --- Task 2: primary is a cheap dispatcher ----------------------------
 
     def test_orchestrator_is_cheap_only_dispatcher(self):
         # Cheap-only: only an effective-cheap primary drives the cycle; a
-        # medium/strong primary (incl. architect) is explicitly excluded.
+        # medium/strong primary is explicitly excluded.
         self.assertIn("dispatcher, not a reader and not a decider", self.orchestrator)
         self.assertIn("Cheap primary only", self.orchestrator)
         self.assertIn(
-            "medium/strong primary (e.g. architect) does not drive the cycle",
+            "medium/strong primary does not drive the cycle",
             self.orchestrator,
         )
         self.assertIn("never authors a plan", self.orchestrator)
@@ -519,45 +453,9 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("build is the shorthand throughout", self.skill)
         self.assertNotIn("the orchestrator (primary)", self.skill)
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_architect_outside_cycle_and_central_cheap_dispatcher(self):
-        # Architect is a universal decision primary, not a PDCA-specific role: the
-        # PDCA paragraph was deliberately removed from its body. The cheap-only
-        # dispatch rule is owned centrally by config/AGENTS.md and the pdca-dotnet
-        # SKILL, not by the architect prompt. Assertions keep the architect identity
-        # and pin the rule where it now lives (full normalized clauses, not mere
-        # keyword co-occurrence). The host contract and briefs are EN-only.
-        architect = CONFIG_AGENTS / "architect.md"
-        raw = read(architect)
-        body = norm(between(raw, "# architect", "## Skills"))
-        self.assertTrue(body, "architect body not found")
-        # No PDCA-specific role and no dispatcher wording.
-        self.assertNotRegex(
-            body.lower(),
-            r"inside pdca|outside pdca"
-            r"|dispatcher, not the plan author"
-            r"|dispatcher",
-        )
-        # Meaningful universal statements from the body (not permission allow-list).
-        self.assertIn("deciding medium-tier primary", body.lower())
-        self.assertIn("scout only (cheap tier)", body.lower())
-        self.assertIn("coder only (cheap tier)", body.lower())
-        self.assertIn("brainstorming", body.lower())
-        # The cheap-only exclusion and the no-widen rule are authoritative centrally
-        # (config/AGENTS.md tier routing) — they must not be restored into the
-        # architect prose. The central file is EN-only too.
-        central = norm(read(CONFIG / "AGENTS.md")).lower()
-        for phrase in (
-            "cheap orchestrator",
-            "medium/strong primary",
-            "does not dispatch the cycle",
-            "rights of expensive roles are never widened",
-        ):
-            self.assertIn(phrase, central)
-
-    def test_skill_owns_cheap_only_orchestration_architect_excluded(self):
-        # The SKILL owns cheap-only orchestration; architect is excluded, never an
-        # "every primary" dispatcher.
+    def test_skill_owns_cheap_only_orchestration_expensive_primary_excluded(self):
+        # The SKILL owns cheap-only orchestration; a medium/strong primary is
+        # excluded, never an "every primary" dispatcher.
         self.assertIn("cheap-only", self.skill.lower())
         self.assertIn(
             "you are a dispatcher, not a reader and not a decider",
@@ -565,7 +463,7 @@ class ContractConsistencyTest(unittest.TestCase):
         )
         self.assertIn("cheap primary only", self.orchestrator.lower())
         self.assertIn(
-            "medium/strong primary (e.g. architect) does not drive the cycle",
+            "medium/strong primary does not drive the cycle",
             self.orchestrator.lower(),
         )
         self.assertIn(
@@ -620,14 +518,9 @@ class ContractConsistencyTest(unittest.TestCase):
         with self.subTest(path=str(ASSET_BRIEFS[0])):
             self._assert_planner_plan_disk_paragraph(ASSET_BRIEFS[0])
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_planner_plan_disk_paragraph_scopes_user_approval_to_normal_mode_host_brief(self):
-        with self.subTest(path=str(CONFIG_BRIEFS[0])):
-            self._assert_planner_plan_disk_paragraph(CONFIG_BRIEFS[0])
-
     def test_plan_authority_invocation_unambiguous(self):
         # The cheap orchestrator forwards the request/evidence; planner authors the
-        # plan; coder writes. No "every primary incl architect" authority wording.
+        # plan; coder writes. No "every primary" authority wording.
         section = norm(between(
             self.skill_raw,
             "Starting a cycle and the",
@@ -642,7 +535,6 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("pdca-executor writes", section)
         self.assertIn("belong to pdca-planner", section)
         self.assertNotIn("every primary", section)
-        self.assertNotIn("architect", section)
 
     def test_cycle_quickref_marks_approval_normal_mode_only(self):
         cycle = norm(between(
@@ -790,7 +682,7 @@ class ApprovalGateAndFallbackGuardTest(unittest.TestCase):
 
 
 class CrossArtifactLabelGuardTest(unittest.TestCase):
-    """Task 3 guards: README summary + diagram label sources + scenario matrix.
+    """Task 3 guards: diagram label sources + scenario matrix.
 
     Rule-presence only.  These read JSON/text; they never execute a model, the
     real PDCA cycle, or a production state machine, and therefore do not prove
@@ -800,9 +692,6 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.gen = read(GEN_PDCA_PATH)
-        # The README summary guards below read the *host* README (this repo's own
-        # README has different content) and are host-gated.
-        cls.readme = read(README_PATH) if HOST_AVAILABLE else ""
         cls.scenarios = read(SCENARIOS_PATH)
 
     def test_gen_pdca_labels_revision_scoped(self):
@@ -816,27 +705,6 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
         # No topology redesign: the CHECK → PLAN and DO → PLAN returns remain.
         self.assertIn("wrong plan", self.gen)
         self.assertIn("new precondition/blocker", self.gen)
-
-    # --- README concise summary (host README — gated on an EN edition) -----
-
-    @unittest.skipUnless(readme_is_en(), SKIP_README)
-    def test_readme_scoped_attempts_no_brittle_line_count(self):
-        self.assertNotIn("~1460", self.readme)
-        self.assertNotRegex(self.readme, r"contract\s+(of\s+)?~?\d+\s+lines")
-        self.assertIn("detailed contract", self.readme)
-        self.assertIn("n/3", self.readme)
-        self.assertIn("revision", self.readme)
-        self.assertNotIn("max. 3 iterations", self.readme)
-
-    @unittest.skipUnless(readme_is_en(), SKIP_README)
-    def test_readme_single_active_phase_and_no_questions(self):
-        self.assertIn("exactly one active", self.readme)
-        self.assertRegex(self.readme, r"no questions|without questions")
-
-    @unittest.skipUnless(readme_is_en(), SKIP_README)
-    def test_readme_assets_tier_labels_not_model(self):
-        self.assertNotIn("empty `model:`", self.readme)
-        self.assertIn("# tier:", self.readme)
 
     # --- scenario matrix --------------------------------------------------
 
@@ -906,19 +774,10 @@ class FinalFixGuardTest(unittest.TestCase):
             between(cls.skill_raw, "**Unit states**", "In parallel-worktree mode")
         )
         cls.planner_en = norm(read(ASSET_BRIEFS[0]))
-        # The host briefs / host README / host plan live in the `opencode-config`
-        # repo; the guards that read them are host-gated (empty string otherwise).
-        # The host `pdca-*` briefs mirror the EN assets, the legacy `coder` brief is
-        # RU, so the host guards match either wording.
-        cls.planner_host = norm(read(CONFIG_BRIEFS[0])) if HOST_AVAILABLE else ""
         cls.coder_en = norm(read(ASSET_BRIEFS[1]))
-        cls.coder_host = norm(read(CONFIG_BRIEFS[1])) if HOST_AVAILABLE else ""
         cls.check_en = norm(read(ASSET_BRIEFS[2]))
-        cls.check_host = norm(read(CONFIG_BRIEFS[2])) if HOST_AVAILABLE else ""
         cls.scout_en = norm(read(SKILL_DIR / "assets/agents/pdca-scout.md"))
         cls.scenarios = read(SCENARIOS_PATH)
-        cls.plan = norm(read(PLAN_PATH)) if HOST_AVAILABLE else ""
-        cls.readme = norm(read(README_PATH)) if HOST_AVAILABLE else ""
 
     # --- F4: additive prerequisite != replacement -------------------------
 
@@ -945,12 +804,6 @@ class FinalFixGuardTest(unittest.TestCase):
     def test_planner_and_coder_briefs_distinguish_additive_from_replacement(self):
         self.assertIn("additive", self.planner_en)
         self.assertIn("additive", self.coder_en)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_host_briefs_distinguish_additive_from_replacement(self):
-        # The host `pdca-planner` and `coder` briefs mirror the EN assets.
-        self.assertRegex(self.planner_host, r"(?i)additive")
-        self.assertRegex(self.coder_host, r"(?i)additive")
 
     def test_scenarios_split_b_into_additive_and_replacement(self):
         self.assertIn("B1", self.scenarios)
@@ -1017,23 +870,11 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("defect history", self.coder_en)
         self.assertIn("Plan revision r", self.coder_en)
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_host_coder_brief_mandates_durable_state_and_defect_history(self):
-        # The host `coder` brief mirrors the EN asset.
-        self.assertRegex(self.coder_host, r"(?i)defect history")
-        # The durable-state field name is literal in both.
-        self.assertIn("Plan revision r", self.coder_host)
-
     def test_check_brief_carries_r_n_and_defect_history_as_history_only(self):
         self.assertIn("defect history", self.check_en)
         self.assertIn("revision r", self.check_en)
         self.assertIn("not evidence for the current CHECK", self.check_en)
         self.assertIn("current full aggregated report", self.check_en)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_host_check_brief_carries_defect_history(self):
-        # The host `pdca-check` brief mirrors the EN asset.
-        self.assertRegex(self.check_host, r"(?i)defect history")
 
     def test_scout_brief_can_report_status_snapshot_and_defect_history(self):
         self.assertIn("defect history", self.scout_en)
@@ -1122,18 +963,6 @@ class FinalFixGuardTest(unittest.TestCase):
         self.assertIn("the host's primary", self.skill)
         self.assertNotIn("any primary", self.skill)
         self.assertIn("effective host-profile tier is cheap", self.skill)
-
-    # --- artifact: source change (incl label-only) allows delivery --------
-    # (the plan document and the README summary are host artifacts → gated)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_plan_delivery_condition_is_source_change_incl_labels(self):
-        self.assertIn("including a label-only change", self.plan)
-        self.assertIn("approved spec supersedes the stale structure-only wording", self.plan)
-
-    @unittest.skipUnless(readme_is_en(), SKIP_README)
-    def test_readme_sync_row_follows_source_change_condition(self):
-        self.assertIn("including a label-only change", self.readme)
 
     def test_scenarios_have_no_nonexistent_escalation_security_fail_link(self):
         self.assertNotIn("§Escalation (security fail)", self.scenarios)

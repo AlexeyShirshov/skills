@@ -46,7 +46,6 @@ DEFAULT_AGENTS_DIR = os.path.expanduser("~/.config/opencode/agents")
 
 PHASE = {
     "build": "Оркестратор",
-    "architect": "Оркестратор",
     "plan": "Оркестратор",
     "pdca-planner": "P·PLAN",
     "planner": "P·PLAN",

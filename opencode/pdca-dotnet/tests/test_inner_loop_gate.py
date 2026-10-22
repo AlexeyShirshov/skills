@@ -13,7 +13,6 @@ Run:
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import sys
@@ -23,19 +22,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 SKILL_DIR = Path(__file__).resolve().parents[1]
-HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
-CONFIG = (HOST_REPO / "config") if HOST_REPO else None
-HOST_ROOT = HOST_REPO  # host repo root, for its README
-HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
-SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
-CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
-
 SCRIPT = SKILL_DIR / "scripts/validate_inner_loop.py"
 SKILL = SKILL_DIR / "SKILL.md"
 EN_CODER = SKILL_DIR / "assets/agents/pdca-executor.md"
-# The host coder brief (config/agents/coder.md) needs the host repo; it is EN too.
-HOST_CODER = CONFIG_AGENTS / "coder.md" if CONFIG_AGENTS else None
-
 SELECTOR = "FullyQualifiedName~Foo.Tests.BarTests"
 SELECTOR_2 = "FullyQualifiedName~Shared.Tests.ContractTests"
 
@@ -957,11 +946,10 @@ class ContractWiringTests(unittest.TestCase):
 class _CoderParityMixin:
     """Shared D3 inner-loop bullet guards for the coder bodies in ``ANCHORS``.
 
-    Rule-presence only: reads the coder Markdown bodies as text (paths resolved
-    relative to this test file / the host repo) and asserts the standalone bullet
-    is present, that it sits between the Evidence and Git bullets, and that it
-    encodes the key concepts (the contract and every brief are EN-only).
-    It never executes an agent or the cycle.
+    Rule-presence only: reads the coder Markdown body as text and asserts the
+    standalone bullet is present, that it sits between the Evidence and Git
+    bullets, and that it encodes the key concepts (the contract and every brief
+    are EN-only). It never executes an agent or the cycle.
     """
 
     # Stable bold prefixes introduced by D3.
@@ -1041,29 +1029,11 @@ class _CoderParityMixin:
 
 
 class CoderParityTests(_CoderParityMixin, unittest.TestCase):
-    """D3 guards: the published EN coder asset carries the inner-loop bullet.
-
-    The host coder body (``config/agents/coder.md``) lives in the `opencode-config`
-    repo, so the two-body parity guards are host-gated in
-    ``HostCoderParityTests`` below.
-    """
+    """D3 guards: the published EN coder asset carries the inner-loop bullet."""
 
     ANCHORS = {EN_CODER: ("**Inner loop",)}
     EVIDENCE = {EN_CODER: ("Evidence, not claims",)}
 
-
-@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-class HostCoderParityTests(_CoderParityMixin, unittest.TestCase):
-    """D3 guards: both coder bodies (EN asset + host brief) stay in parity."""
-
-    ANCHORS = {
-        EN_CODER: ("**Inner loop",),
-        HOST_CODER: ("**Inner loop",),
-    }
-    EVIDENCE = {
-        EN_CODER: ("Evidence, not claims",),
-        HOST_CODER: ("Evidence, not claims",),
-    }
 
 
 class IntegrationPolicyTests(unittest.TestCase):

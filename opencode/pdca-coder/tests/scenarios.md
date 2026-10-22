@@ -8,14 +8,14 @@ production-автомат не создавался. Присутствие пр
 
 Источник правил (действующая норма): `opencode/pdca-coder/SKILL.md` (§State machine,
 §Transition gates, §Orchestrator role, §Host requirements, §PLAN selects the toolchain and lenses),
-EN-роли `opencode/pdca-coder/assets/agents/*.md` с зеркалами `config/agents/*.md` и источник
+EN-роли `opencode/pdca-coder/assets/agents/*.md` и источник
 диаграммы `opencode/pdca-coder/assets/diagram/gen_pdca.py`. Счётчики: цикл `<N>` (растёт
 только в ACT), ревизия плана `r`, попытка `n/3` в пределах
 ревизии; отвергнутый кандидат **без смены плана** не новая ревизия и не сбрасывает ретраи.
 
-Хостовые артефакты (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`, хостовый
-`README.md`) живут в репозитории `opencode-config`; тесты обращаются к ним только при
-`OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе эти проверки пропускаются.
+Установленная копия скилла (`config/skills/pdca-coder/**`) живёт в репозитории `opencode-config`;
+тест обращается к ней только при `OPENCODE_CONFIG_REPO=<путь к opencode-config>`, иначе проверка
+пропускается.
 
 | # | Кратко | Требуемый исход |
 | --- | --- | --- |
@@ -27,7 +27,7 @@ EN-роли `opencode/pdca-coder/assets/agents/*.md` с зеркалами `conf
 | E | `pdca-planner` не может классифицировать кандидата | Сначала точечные факты (`pdca-scout`), затем `pdca-escalate` по низкой уверенности даже без доказанной внешности |
 | F | Автономно: нет критерия / недоступен ресурс | Без вопроса; сбор/решение, затем blocked STOP с записанным итогом; обычный режим сохраняет вопросы и апрув плана |
 | G | Три параллельных потока DO | Единственное зеркало прогресса — статус-файл: агрегированный `D:` и правдивые состояния каждого потока в нём |
-| H | Cheap-only оркестрация; `architect` — решения вне цикла | Цикл ведёт только cheap-tier primary (эффективный тир, не имя агента); начальный PLAN/replan — `pdca-planner`; в ролях только `# tier`, без `model:` |
+| H | Cheap-only оркестрация; medium/strong primary — решения вне цикла | Цикл ведёт только cheap-tier primary (эффективный тир, не имя агента); начальный PLAN/replan — `pdca-planner`; в ролях только `# tier`, без `model:` |
 | I | Security-триггер red | Conditional gather возвращается в агрегат `pdca-check` (своего независимого вердикта нет); обычный security-провал — провальный CHECK ревизии по общим счётчикам; немедленная эскалация — только жёсткий security-tradeoff |
 | J | Эскалация: исчерпана ревизия `r` или нет | `pdca-escalate` даёт **решение**; оркестратор только роутит: revised remediation `r+1` → `pdca-planner`, реализация/STOP → `pdca-executor`; семантически не перевыбирает, гейты/no-4th/scope/security не отменяет |
 | K | Автономно: cheap primary делегирует цикл | `subagent(pdca-orchestrator)` с cycle brief; субагент ведёт PLAN→DO→CHECK→ACT, возвращает сводку ≤8 строк; primary не читает/не правит |
@@ -38,8 +38,8 @@ EN-роли `opencode/pdca-coder/assets/agents/*.md` с зеркалами `conf
 §Phase progress mirror, §Escalation (`pdca-escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
 §Orchestrator role, §PLAN selects the toolchain and lenses; `opencode/pdca-coder/assets/agents/*.md`
-и зеркала `config/agents/*.md` (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`,
-`architect`); `README.md`; метки диаграммы `opencode/pdca-coder/assets/diagram/pdca-coder-hand.svg`.
+(`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`,
+`pdca-orchestrator`); метки диаграммы `opencode/pdca-coder/assets/diagram/pdca-coder-hand.svg`.
 
 ---
 
@@ -51,7 +51,7 @@ EN-роли `opencode/pdca-coder/assets/agents/*.md` с зеркалами `conf
 возобновляется с **исходного** `D`, а не заводится новая; счётчик попыток не растёт и не
 сбрасывается (та же попытка `n`); гейт 2 не открывается.
 **Оперативные источники:** SKILL §State machine / §Transition gates (gate 2: blocker report ≠ `done`,
-rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`, `config/agents/pdca-executor.md`
+rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`
 (Unfinished work / retention); §Cycle status file.
 
 ## B1. Аддитивное предусловие (не замена)
@@ -145,14 +145,13 @@ file), §Cycle status file.
 **Вход:** цикл запускается из primary; нужен начальный PLAN и replan; установка шести EN-ассетов
 ролей.
 **Требуемый исход:** цикл ведёт **только cheap-tier primary** (по **эффективному тиру профиля**, а
-не по имени агента); medium/strong primary (в т.ч. `architect`) цикл не диспетчеризует и вне цикла
+не по имени агента); medium/strong primary цикл не диспетчеризует и вне цикла
 остаётся решающим primary; и начальный PLAN, и replan принадлежат субагенту `pdca-planner`, вердикт —
 `pdca-check`; привязки моделей даёт `agent`-блок профиля хоста, в ролях только ярлык `# tier`
 (`pdca-executor`/`pdca-scout`/`pdca-orchestrator` = cheap; `pdca-planner`/`pdca-check`/`pdca-security-auditor` = medium; `pdca-escalate` = strong),
 `model:` в ролях отсутствует; профили не редактируются ради выбора id; `general`/`explore` не
 обходятся; права дорогих ролей не расширяются.
 **Оперативные источники:** SKILL §Orchestrator role, §Host requirements (roles → agents);
-`config/AGENTS.md` (Tier routing), `README.md` (§Тиры ролей); `config/agents/architect.md`;
 `assets/agents/*.md` (tier labels, no `model:`); `config/profiles/*.jsonc` (`agent` block, только
 чтение).
 
@@ -184,7 +183,7 @@ actionable-плана → **STOP** (обычный режим — вопрос �
 вопроса).
 **Оперативные источники:** SKILL §Orchestrator role (execute by routing, never re-decide),
 §Escalation (After the escalation …), §State machine (no 4th), §Red flags;
-`config/agents/escalate.md`, `assets/agents/pdca-escalate.md`.
+`assets/agents/pdca-escalate.md`.
 
 ## K. Автономное делегирование: primary диспатчит `pdca-orchestrator`
 
@@ -197,7 +196,7 @@ references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и в�
 вопросы не задаются.
 **Оперативные источники:** SKILL §Two paths → "Two paths, one contract." / §Autonomous mode
 (Delegation) / §Host requirements (Autonomous driver; setup-allowlist включает `pdca-orchestrator`);
-`config/agents/pdca-orchestrator.md` (вход «одиночный автономный цикл», cycle brief → сводка ≤8 строк).
+`assets/agents/pdca-orchestrator.md` (вход «одиночный автономный цикл», cycle brief → сводка ≤8 строк).
 
 ## L. Fallback: `pdca-orchestrator` недоступен
 
@@ -207,7 +206,7 @@ references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и в�
 с теми же гейтами); fallback зафиксирован (`Notice:` в статус-файле); запрет 4-й попытки, scope и
 security-ограничения **не отменяются**; вопросы по-прежнему не задаются.
 **Оперативные источники:** SKILL §Autonomous mode (Delegation: fall back to the flat primary, log
-the fallback) / §Host requirements (resource blocker); `config/agents/pdca-orchestrator.md`.
+the fallback) / §Host requirements (resource blocker); `assets/agents/pdca-orchestrator.md`.
 
 ---
 
@@ -293,7 +292,5 @@ unit/integration policy.
 
 **Вход:** проверка последствий правки.
 **Требуемый исход:** ни один файл/статус/артефакт/исторический вердикт #232 не переписан; нет
-нового hashing/provenance-графа; runtime (`config/agents/**`) и canonical (`assets/agents/**`)
-role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
-**Оперативные источники:** `config/agents/check.md`, `config/agents/pdca-check.md`,
-`assets/agents/pdca-check.md` — пункт «binding/applicable».
+нового hashing/provenance-графа; canonical (`assets/agents/**`) role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
+**Оперативные источники:** `assets/agents/pdca-check.md` — пункт «binding/applicable».

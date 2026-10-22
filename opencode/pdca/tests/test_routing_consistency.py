@@ -59,8 +59,10 @@ ASSET_TIER = dict(ROLE_TIER, **{"pdca-scout": "cheap", "pdca-orchestrator": "che
 
 # The `pdca-*` roles bind their models directly in the profiles. The bare host
 # aliases (`planner`, `check`, `escalate`, `security-auditor`) were retired: no
-# agent file and no profile key may bring them back.
-HOST_ROLES = ("architect", "coder", "scout", "pdca-orchestrator")
+# agent file and no profile key may bring them back. Only the `pdca-*` agents are
+# this skill's contract; host-only primaries and the shared `scout`/`coder` briefs
+# are guarded by `opencode-config`'s own host-contract check.
+HOST_ROLES = ("pdca-orchestrator",)
 BOUND_ROLES = tuple(ROLE_TIER) + HOST_ROLES
 # The host copy of the shared gatherer/implementer is spelled `scout`/`coder`;
 # the skill ships them prefixed. Host/asset comparisons normalise both sides.
@@ -132,9 +134,8 @@ def _matches(pattern: str, value: str) -> bool:
 
 
 # Published skill assets stay V1-compatible: V1 knows only `permission:`, while
-# V2 translates that legacy frontmatter automatically. The host role briefs are
-# their canonical source, so they stay V1 too (only host-only primaries such as
-# `architect` use native V2 `permissions:`).
+# V2 translates that legacy frontmatter automatically. The host `pdca-*` role
+# briefs are their canonical source, so they stay V1 too.
 V1_ACTION = {"subagent": "task", "shell": "bash"}
 
 
@@ -329,6 +330,18 @@ class OrchestratorVariantSelectionTest(unittest.TestCase):
 
     def test_orchestrator_exists(self):
         self.assertTrue(ORCHESTRATOR.is_file())
+
+    def test_orchestrator_description_names_both_inputs(self):
+        # The description advertises BOTH inputs -- a pdca-collection group *or* a
+        # single autonomous cycle -- and names the selected variant, without
+        # banning single tasks.
+        desc = norm(frontmatter(ORCHESTRATOR).get("description", "")).lower()
+        self.assertTrue(desc, "pdca-orchestrator description missing")
+        self.assertIn("single autonomous", desc)
+        self.assertIn("selected_variant", desc)
+        self.assertIn("task", desc)
+        self.assertNotIn("picks the cycle variant", desc)
+        self.assertNotIn("do not use for single tasks", desc)
 
     def test_orchestrator_subagent_allowlist_covers_universal_roles(self):
         perm = legacy_permission(ORCHESTRATOR)

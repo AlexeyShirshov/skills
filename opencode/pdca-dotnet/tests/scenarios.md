@@ -9,17 +9,11 @@ contracts.
 
 Source of the rules (the operative norm): `opencode/pdca-dotnet/SKILL.md` (§State machine,
 §Transition gates, §Orchestrator role, §Host requirements), the EN role briefs
-`opencode/pdca-dotnet/assets/agents/*.md` with the mirrors `config/agents/*.md`, and the diagram
-sources `opencode/pdca-dotnet/assets/diagram/gen_pdca.py`. The historical design
+`opencode/pdca-dotnet/assets/agents/*.md`, and the diagram sources `opencode/pdca-dotnet/assets/diagram/gen_pdca.py`. The historical design
 `docs/superpowers/specs/2026-10-01-pdca-consistency-design.md` is context only, not the norm (it
-allows any primary, including `architect`; the operative rule is cheap-only). Counters: cycle `<N>`
+allows any primary; the operative rule is cheap-only). Counters: cycle `<N>`
 (grows only in ACT), plan revision `r`, attempt `n/3` within a
 revision; a rejected candidate **without a plan change** is not a new revision and does not reset retries.
-
-Host artifacts (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`, the host
-`README.md`, specs under `docs/superpowers/…`) live in the `opencode-config` repository; the tests
-reach them only with `OPENCODE_CONFIG_REPO=<path to opencode-config>`, otherwise those checks are
-skipped.
 
 | # | Summary | Required outcome |
 | --- | --- | --- |
@@ -31,7 +25,7 @@ skipped.
 | E | `pdca-planner` cannot classify the candidate | Point facts first (`pdca-scout`), then `pdca-escalate` on low confidence even without established externalness |
 | F | Autonomous: no criterion / resource unavailable | No question; gather/decide, then a blocked STOP with a recorded outcome; normal mode keeps questions and plan approval |
 | G | Three parallel DO streams | The only progress mirror is the status file: the aggregate `D:` and the truthful per-stream states in it |
-| H | Cheap-only orchestration; `architect` — decisions outside the cycle | Only the cheap-tier primary drives the cycle (effective tier, not the agent name); the initial PLAN/replan is `pdca-planner`'s; the roles carry only `# tier`, no `model:` |
+| H | Cheap-only orchestration; a medium/strong primary — decisions outside the cycle | Only the cheap-tier primary drives the cycle (effective tier, not the agent name); the initial PLAN/replan is `pdca-planner`'s; the roles carry only `# tier`, no `model:` |
 | I | Security trigger red | The conditional gather returns into the `pdca-check` aggregate (it has no independent verdict of its own); an ordinary security failure is a failed CHECK of the revision under the shared counters; immediate escalation is for a hard security trade-off only |
 | J | Escalation: revision `r` exhausted or not | `pdca-escalate` returns a **decision**; the orchestrator only routes: revised remediation `r+1` → `pdca-planner`, implementation/STOP → `pdca-executor`; it never re-selects semantically and never waives the gates/no-4th/scope/security |
 | K | Autonomous: the cheap primary delegates the cycle | `subagent(pdca-orchestrator)` with a cycle brief; the subagent drives PLAN→DO→CHECK→ACT and returns a ≤8-line summary; the primary neither reads nor edits |
@@ -41,9 +35,9 @@ Common operative base (applies to every case unless stated below):
 `opencode/pdca-dotnet/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
 §Phase progress mirror, §Escalation (`pdca-escalate`) (triggers, incl. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
-§Orchestrator role; `opencode/pdca-dotnet/assets/agents/*.md` and the mirrors
-`config/agents/*.md` (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`,
-`architect`); `README.md`; the diagram labels `opencode/pdca-dotnet/assets/diagram/gen_pdca.py`.
+§Orchestrator role; `opencode/pdca-dotnet/assets/agents/*.md` (`pdca-planner`, `pdca-executor`,
+`pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`, `pdca-orchestrator`); the diagram
+labels `opencode/pdca-dotnet/assets/diagram/gen_pdca.py`.
 
 ---
 
@@ -55,7 +49,7 @@ rejects the DO candidate, the plan **does not change**.
 resumes from the **original** `D` instead of opening a new one; the attempt counter neither grows nor
 resets (the same attempt `n`); gate 2 does not open.
 **Operative sources:** SKILL §State machine / §Transition gates (gate 2: blocker report ≠ `done`,
-rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`, `config/agents/pdca-executor.md`
+rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`
 (Unfinished work / retention); §Cycle status file.
 
 ## B1. Additive prerequisite (not a replacement)
@@ -149,16 +143,14 @@ file), §Cycle status file.
 **Input:** the cycle is started from a primary; an initial PLAN and a replan are needed; the six EN role
 assets are being installed.
 **Required outcome:** the cycle is driven by the **cheap-tier primary only** (by the profile's **effective tier**, not
-by the agent name); a medium/strong primary (incl. `architect`) does not dispatch the cycle and remains the deciding
+by the agent name); a medium/strong primary does not dispatch the cycle and remains the deciding
 primary outside the cycle; both the initial PLAN and every replan belong to the `pdca-planner` subagent, the verdict to
 `pdca-check`; the model bindings come from the host profile's `agent` block, and the roles carry only the `# tier` label
 (`pdca-executor`/`pdca-scout`/`pdca-orchestrator` = cheap; `pdca-planner`/`pdca-check`/`pdca-security-auditor` = medium; `pdca-escalate` = strong),
 `model:` is absent from the roles; the profiles are not edited to pick an id; `general`/`explore` are not
 bypassed; the rights of expensive roles are never widened.
 **Operative sources:** SKILL §Orchestrator role, §Host requirements (roles → agents);
-`config/AGENTS.md` (Tier routing), `README.md` (role-tier section — still Russian-only, §Тиры ролей);
-`config/agents/architect.md`;
-`assets/agents/*.md` (tier labels, no `model:`); `config/profiles/*.jsonc` (the `agent` block, read-only).
+`assets/agents/*.md` (tier labels, no `model:`).
 
 ## I. Security-conditional gather and the aggregate verdict
 
@@ -188,7 +180,7 @@ no actionable plan → **STOP** (normal mode — a question to the user; autonom
 question).
 **Operative sources:** SKILL §Orchestrator role (execute by routing, never re-decide),
 §Escalation (After the escalation …), §State machine (no 4th), §Red flags;
-`config/agents/escalate.md`, `assets/agents/pdca-escalate.md`.
+`assets/agents/pdca-escalate.md`.
 
 ## K. Autonomous delegation: the primary dispatches `pdca-orchestrator`
 
@@ -201,7 +193,7 @@ no collection status file is created, the mandatory pdca-dotnet status file is w
 no questions are asked.
 **Operative sources:** SKILL §Two paths → "Two paths, one contract." / §Autonomous mode
 (Delegation) / §Host requirements (Autonomous driver; the setup allowlist includes `pdca-orchestrator`);
-`config/agents/pdca-orchestrator.md` (input "single autonomous cycle", cycle brief → a ≤8-line summary).
+`assets/agents/pdca-orchestrator.md` (input "single autonomous cycle", cycle brief → a ≤8-line summary).
 
 ## L. Fallback: `pdca-orchestrator` unavailable
 
@@ -211,7 +203,7 @@ or `subagent_depth` < 2, or delegation is forbidden by the host.
 with the same gates); the fallback is recorded (`Notice:` in the status file); the ban on a 4th attempt, scope and
 security constraints are **not waived**; questions are still not asked.
 **Operative sources:** SKILL §Autonomous mode (Delegation: fall back to the flat primary, log
-the fallback) / §Host requirements (resource blocker); `config/agents/pdca-orchestrator.md`.
+the fallback) / §Host requirements (resource blocker); `assets/agents/pdca-orchestrator.md`.
 
 ---
 
@@ -294,7 +286,5 @@ preserved; the disposition path does not apply to it.
 
 **Input:** checking the consequences of the edit.
 **Required outcome:** no file/status/artifact/historical verdict of #232 is rewritten; there is no
-new hashing/provenance graph; the runtime (`config/agents/**`) and canonical (`assets/agents/**`)
-role rules are consistent; the result distinguishes a diagnostic note from an actual mandatory unmet.
-**Operative sources:** `config/agents/check.md`, `config/agents/pdca-check.md`,
-`assets/agents/pdca-check.md` — the "binding/applicable" item.
+new hashing/provenance graph; the canonical (`assets/agents/**`) role rules are consistent; the result distinguishes a diagnostic note from an actual mandatory unmet.
+**Operative sources:** `assets/agents/pdca-check.md` — the "binding/applicable" item.

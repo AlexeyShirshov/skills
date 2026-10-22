@@ -27,78 +27,22 @@ SKILL = SKILL_DIR / "SKILL.md"
 DIAGRAM = SKILL_DIR / "assets/diagram"
 GEN = DIAGRAM / "gen_pdca.py"
 OUTPUTS = ["pdca-hand.svg", "pdca-hand.html", "pdca-hand-dark.svg", "pdca-hand-dark.html"]
-# Host config (agents/profiles/AGENTS.md/README) lives in the `opencode-config` repo, not in this
-# one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
-HOST_REPO = Path(os.environ["OPENCODE_CONFIG_REPO"]) if os.environ.get("OPENCODE_CONFIG_REPO") else None
-CONFIG = (HOST_REPO / "config") if HOST_REPO else None
-HOST_ROOT = HOST_REPO  # host repo root, for its README
-HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
-SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
-CONFIG_AGENTS = (CONFIG / "agents") if CONFIG else None
 ASSET_AGENTS = SKILL_DIR / "assets/agents"
 TIERS = {
-    "architect": "medium", "pdca-planner": "medium", "pdca-executor": "cheap", "pdca-check": "medium",
+    "pdca-planner": "medium", "pdca-executor": "cheap", "pdca-check": "medium",
     "pdca-escalate": "strong", "pdca-scout": "cheap", "pdca-security-auditor": "medium",
     # The cheap orchestrator was renamed lane -> pdca-orchestrator; only the
     # canonical name is accepted (a legacy fallback would hide stale routing).
     "pdca-orchestrator": "cheap",
 }
-ORCHESTRATOR = CONFIG_AGENTS / "pdca-orchestrator.md" if CONFIG_AGENTS else None
-LEGACY_ORCHESTRATOR = CONFIG_AGENTS / "lane.md" if CONFIG_AGENTS else None
-# The published assets and the host config share the prefixed agent ids. Only the
-# shared gatherer/implementer still live in the host as `scout`/`coder`, so the
-# host/asset comparisons normalise those two bare names.
-ALIASES = {"scout": "pdca-scout", "coder": "pdca-executor"}
-
-
-def canon_resources(resources: set) -> set:
-    import re as _re
-    out = set()
-    for res in resources:
-        for bare, prefixed in ALIASES.items():
-            res = _re.sub(r"(?<![\w-])%s(?![\w-])" % _re.escape(bare), prefixed, res)
-        out.add(res)
-    return out
-# Host-profile paths, relative to the host repo root.
-PROFILES = ["config/profiles/deepseek.jsonc", "config/profiles/gp.jsonc"]
-# Permission probes that must resolve identically in config/agents <-> assets/agents.
-# Both sides are V1 `permission:` maps (the assets must run on V1), so a probe is
-# resolved through the legacy action-key semantics with `*` as the fallback.
-MIRROR = {
-    "pdca-planner": [("*", "*")],
-    "pdca-check": [("*", "*")],
-    "pdca-executor": [("edit", "*"), ("shell", "*")],
-    "pdca-escalate": [
-        ("*", "*"),
-        ("read", "*"), ("read", "secrets.env"),
-        ("subagent", "*"), ("subagent", "pdca-scout"), ("subagent", "general"),
-        ("shell", "*"), ("shell", "git status"), ("shell", "git push"),
-        ("skill", "*"), ("skill", "brainstorming"),
-    ],
-    "pdca-security-auditor": [
-        ("*", "*"),
-        ("read", "*"), ("read", "secrets.env"),
-        ("subagent", "*"), ("subagent", "pdca-scout"), ("subagent", "general"),
-        ("shell", "*"), ("shell", "git status"), ("shell", "git push"),
-        ("skill", "*"), ("skill", "dotnet-security-owasp"),
-        ("skill", "dotnet-cryptography"), ("skill", "other"),
-    ],
-}
 SEC_SKILLS = {"dotnet-security-owasp", "dotnet-secrets-management", "dotnet-cryptography"}
-# Whole-action allowlists that must stay byte-for-byte equivalent (as resolved
-# resource sets) between the host agent and the portable asset.
-MIRROR_ALLOW = {
-    "pdca-executor": ["edit", "shell"],
-    "pdca-escalate": ["read", "subagent", "shell", "skill", "question"],
-    "pdca-security-auditor": ["read", "subagent", "shell", "skill", "question"],
-}
 CRITICAL_TOKENS = [
     "Execute an pdca-escalate decision by routing, never by re-deciding",
     "cannot waive the gates, the no-4th rule",
     "there is no 4th",
     "Cheap primary only",
     "effective host-profile tier is cheap",
-    "medium/strong primary (e.g. architect) does not drive the cycle",
+    "medium/strong primary does not drive the cycle",
     "returns into the aggregated report",
     "ordinary security finding is an ordinary failed stream",
     "hard security trade-off",
@@ -139,81 +83,12 @@ def frontmatter(path: Path) -> dict:
     return _parse_block(text[3:text.find("\n---", 3)])
 
 
-def _frontmatter_block(path: Path) -> str:
-    text = read(path)
-    assert text.startswith("---"), f"{path}: no frontmatter"
-    end = text.find("\n---", 3)
-    assert end != -1, f"{path}: unterminated frontmatter"
-    return text[3:end]
-
-
-def permission_rules(path: Path) -> list[dict]:
-    """V2 frontmatter `permissions:` — an ordered list of {action, resource, effect}."""
-    rules: list[dict] = []
-    current: dict | None = None
-    in_list = False
-    for raw in _frontmatter_block(path).splitlines():
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        indent = len(raw) - len(raw.lstrip(" "))
-        stripped = raw.strip()
-        if indent == 0:
-            if stripped == "permission:":
-                raise AssertionError(
-                    f"{path}: V1 `permission:` frontmatter — migrate to V2 `permissions:`")
-            in_list = stripped == "permissions:"
-            current = None
-            continue
-        if not in_list:
-            continue
-        if stripped.startswith("- "):
-            current = {}
-            rules.append(current)
-            stripped = stripped[2:]
-        if current is None:
-            continue
-        key, sep, value = stripped.partition(":")
-        assert sep, f"{path}: malformed permission line {raw!r}"
-        current[key.strip().strip("\"'")] = value.strip().strip("\"'")
-    if not rules:
-        raise AssertionError(f"{path}: no V2 `permissions:` rules")
-    for rule in rules:
-        missing = {"action", "resource", "effect"} - set(rule)
-        assert not missing, f"{path}: rule missing {sorted(missing)}: {rule!r}"
-        assert rule["effect"] in {"allow", "deny", "ask"}, f"{path}: bad effect {rule!r}"
-    return rules
-
-
-# The V2 base policy every agent starts with; agent rules are appended after it.
-BASE_POLICY = (
-    {"action": "*", "resource": "*", "effect": "allow"},
-    {"action": "read", "resource": "*.env", "effect": "ask"},
-    {"action": "read", "resource": "*.env.*", "effect": "ask"},
-    {"action": "read", "resource": "*.env.example", "effect": "allow"},
-)
-
-
 def _matches(pattern: str, value: str) -> bool:
-    """V2 whole-value wildcard: `*` = any run, `?` = one character."""
+    """Whole-value wildcard match: `*` = any run, `?` = one character."""
     regex = "".join(
         ".*" if ch == "*" else "." if ch == "?" else re.escape(ch) for ch in pattern)
     flags = re.IGNORECASE if os.name == "nt" else 0
     return re.fullmatch(regex, value, flags | re.DOTALL) is not None
-
-
-def effective(rules: list[dict], action: str, resource: str) -> str:
-    """Last matching rule wins; no match falls back to `ask`."""
-    effect = "ask"
-    for rule in BASE_POLICY + tuple(rules):
-        if _matches(rule["action"], action) and _matches(rule["resource"], resource):
-            effect = rule["effect"]
-    return effect
-
-
-def allowed_resources(rules: list[dict], action: str) -> set:
-    """Resources the agent's own rules allow for `action` after last-match resolution."""
-    probes = {rule["resource"] for rule in rules if _matches(rule["action"], action)}
-    return {res for res in probes if effective(rules, action, res) == "allow"}
 
 
 # Published skill assets must stay V1-compatible: V1 knows only `permission:`, while
@@ -254,79 +129,8 @@ def legacy_allowed(perm: dict, action: str) -> set:
     return {res for res in node if legacy_effective(perm, action, res) == "allow"}
 
 
-def _agent_block(text: str) -> str:
-    """Raw text of a jsonc profile's top-level `agent` sub-map (comments tolerated)."""
-    match = re.search(r'"agent"\s*:\s*\{(.*?)\n\s*\}', text, re.S)
-    if match is None:
-        raise AssertionError("no top-level agent block in profile")
-    return match.group(1)
-
-
 class RolePermissionTest(unittest.TestCase):
     """Cheap orchestrator canonical allowlist; expensive roles stay narrow and mirror the assets."""
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_cheap_orchestrator_canonical_subagent_allowlist(self):
-        self.assertTrue(ORCHESTRATOR.exists(), "canonical pdca-orchestrator agent missing")
-        self.assertRegex(read(ORCHESTRATOR), r"(?m)^# tier: cheap\s*$")
-        perm = legacy_permission(ORCHESTRATOR)
-        self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
-        self.assertEqual(
-            legacy_allowed(perm, "subagent"),
-            {"pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
-             "pdca-scout", "pdca-security-auditor",
-             "docfx-specialist", "dotnet-*"},
-        )
-        self.assertEqual(legacy_effective(perm, "edit", "*"), "deny")
-        self.assertEqual(legacy_effective(perm, "shell", "*"), "deny")
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_orchestrator_description_covers_single_autonomous_cycle_no_single_tasks_ban(self):
-        # The description advertises BOTH inputs -- a pdca-collection group *or* a
-        # single autonomous pdca-dotnet cycle -- and must not ban single tasks. The
-        # canonical subagent allowlist and edit/shell: deny are pinned by
-        # test_cheap_orchestrator_canonical_subagent_allowlist above.
-        desc = norm(frontmatter(ORCHESTRATOR).get("description", "")).lower()
-        self.assertTrue(desc, "pdca-orchestrator description missing")
-        self.assertIn("single autonomous", desc)
-        self.assertIn("selected_variant", desc)
-        self.assertIn("task", desc)
-        self.assertNotIn("picks the cycle variant", desc)
-        self.assertNotIn("do not use for single tasks", desc)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_legacy_lane_agent_definition_is_absent(self):
-        # The cheap orchestrator was renamed; a lingering lane.md would mean stale
-        # routing is still discoverable.
-        self.assertFalse(
-            LEGACY_ORCHESTRATOR.exists(),
-            "legacy config/agents/lane.md must not exist (renamed to pdca-orchestrator)",
-        )
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_profiles_bind_canonical_orchestrator_not_legacy_lane(self):
-        # Model ids are host-profile concerns; only the registry key is asserted.
-        for rel in PROFILES:
-            with self.subTest(profile=rel):
-                agent = _agent_block(read(HOST_ROOT / rel))
-                self.assertIn('"pdca-orchestrator"', agent)
-                self.assertNotIn('"lane"', agent)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_architect_subagent_allowlist_is_default_deny_scout_and_coder_only(self):
-        rules = permission_rules(CONFIG_AGENTS / "architect.md")
-        self.assertEqual(effective(rules, "*", "*"), "deny")
-        self.assertEqual(effective(rules, "subagent", "*"), "deny")
-        allowed = canon_resources(allowed_resources(rules, "subagent"))
-        self.assertEqual(allowed, {"pdca-scout", "pdca-executor"})
-        self.assertFalse({k for k in allowed if k.startswith("dotnet")})
-        self.assertNotIn("pdca-security-auditor", allowed)
-        for wide in ("read", "grep", "glob", "shell", "edit", "webfetch", "websearch",
-                     "context7_query-docs", "execute"):
-            with self.subTest(action=wide):
-                self.assertEqual(effective(rules, wide, "*"), "deny")
-        self.assertEqual(effective(rules, "skill", "*"), "deny")
-        self.assertEqual(effective(rules, "skill", "brainstorming"), "allow")
 
     def test_planner_and_check_have_no_subagent_permission(self):
         for role in ("pdca-planner", "pdca-check"):
@@ -336,34 +140,13 @@ class RolePermissionTest(unittest.TestCase):
                 self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
                 self.assertEqual(legacy_allowed(perm, "subagent"), set())
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_planner_and_check_have_no_subagent_permission_host_config(self):
-        for role in ("pdca-planner", "pdca-check"):
-            with self.subTest(role=role, base="host"):
-                perm = legacy_permission(CONFIG_AGENTS / f"{role}.md")
-                self.assertEqual(legacy_effective(perm, "*", "*"), "deny")
-                self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
-                self.assertEqual(legacy_allowed(perm, "subagent"), set())
-
     def test_escalate_subagent_only_scout(self):
         perm = legacy_permission(ASSET_AGENTS / "pdca-escalate.md")
         self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
         self.assertEqual(legacy_allowed(perm, "subagent"), {"pdca-scout"})
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_escalate_subagent_only_scout_host_config(self):
-        perm = legacy_permission(CONFIG_AGENTS / "pdca-escalate.md")
-        self.assertEqual(legacy_effective(perm, "subagent", "*"), "deny")
-        self.assertEqual(canon_resources(legacy_allowed(perm, "subagent")), {"pdca-scout"})
-
     def test_security_auditor_allows_exactly_three_skills(self):
         perm = legacy_permission(ASSET_AGENTS / "pdca-security-auditor.md")
-        self.assertEqual(legacy_effective(perm, "skill", "*"), "deny")
-        self.assertEqual(legacy_allowed(perm, "skill"), SEC_SKILLS)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_security_auditor_allows_exactly_three_skills_host_config(self):
-        perm = legacy_permission(CONFIG_AGENTS / "pdca-security-auditor.md")
         self.assertEqual(legacy_effective(perm, "skill", "*"), "deny")
         self.assertEqual(legacy_allowed(perm, "skill"), SEC_SKILLS)
 
@@ -377,41 +160,6 @@ class RolePermissionTest(unittest.TestCase):
                 self.assertNotIn("permissions", data)
                 self.assertTrue(legacy_permission(path))
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_host_role_briefs_stay_v1_permission_maps(self):
-        # The portable assets must run on V1, which knows only `permission:`. The
-        # host role briefs are their canonical source, so they stay V1-compatible:
-        # a native V2 `permissions:` list here would be silently dropped in V1.
-        # Host-only primaries (e.g. `architect`) are out of this contract.
-        for role in TIERS:
-            path = CONFIG_AGENTS / f"{role}.md"
-            if role == "architect" or not path.is_file():
-                continue
-            block = _frontmatter_block(path)
-            with self.subTest(role=role):
-                self.assertNotRegex(block, r"(?m)^permissions:")
-                self.assertTrue(legacy_permission(path), f"{role}: no V1 permission map")
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_required_permissions_mirror_config_and_asset(self):
-        for role, probes in MIRROR.items():
-            cfg = legacy_permission(CONFIG_AGENTS / f"{role}.md")
-            asset = legacy_permission(ASSET_AGENTS / f"{role}.md")
-            self.assertNotIn("external_directory", asset,
-                             f"{role}: portable asset must not carry host external_directory")
-            for action, resource in probes:
-                with self.subTest(role=role, action=action, resource=resource):
-                    self.assertEqual(
-                        legacy_effective(cfg, action, resource),
-                        legacy_effective(asset, action, resource),
-                    )
-            for action in MIRROR_ALLOW.get(role, []):
-                with self.subTest(role=role, action=action, set="allowlist"):
-                    self.assertEqual(
-                        canon_resources(legacy_allowed(cfg, action)),
-                        canon_resources(legacy_allowed(asset, action)),
-                    )
-
     def _assert_role_tiers_are_tier_comments(self, base: Path) -> None:
         for name, tier in TIERS.items():
             paths = [base / f"{name}.md"]
@@ -422,10 +170,6 @@ class RolePermissionTest(unittest.TestCase):
 
     def test_all_role_tiers_are_tier_comments(self):
         self._assert_role_tiers_are_tier_comments(ASSET_AGENTS)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_all_role_tiers_are_tier_comments_host_config(self):
-        self._assert_role_tiers_are_tier_comments(CONFIG_AGENTS)
 
 
 def _direction(root, edge_id: str) -> tuple:

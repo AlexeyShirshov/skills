@@ -75,7 +75,7 @@ unit/integration policy.
 
 **Вход:** проверка последствий правки.
 **Требуемый исход:** ни один файл/статус/артефакт/исторический вердикт #232 не переписан; нет
-нового hashing/provenance-графа; runtime (`config/agents/**`) и canonical (`assets/agents/**`)
-role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
-**Оперативные источники:** `config/agents/check.md`, `config/agents/pdca-check.md`,
-`assets/agents/pdca-check.md` — пункт «binding/applicable».
+нового hashing/provenance-графа; хостовый бриф `config/agents/pdca-check.md` и canonical
+(`assets/agents/**`) role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
+**Оперативные источники:** `config/agents/pdca-check.md`, `assets/agents/pdca-check.md` —
+пункт «binding/applicable».

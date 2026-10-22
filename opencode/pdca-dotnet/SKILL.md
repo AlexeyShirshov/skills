@@ -55,8 +55,8 @@ provides them. A missing **required** role is a **resource blocker** (§table), 
 to built-ins.
 **PDCA orchestration is cheap-only:** the orchestrator is the **cheap-tier primary**
 (the host's primary; `build` is the shorthand throughout). A primary may drive the cycle **only when its effective host-profile tier is
-cheap** — the call is made by effective tier, **not** by agent name. A medium/strong primary (e.g.
-`architect`) does **not** orchestrate PDCA; outside the cycle it remains a decision primary. No
+cheap** — the call is made by effective tier, **not** by agent name. A medium/strong primary does
+**not** orchestrate PDCA; outside the cycle it remains a decision primary. No
 `model:` id is ever written into a role, the skill or the docs — the host profile binds ids.
 
 **Autonomous driver.** In autonomous mode the cycle driver is the cheap `pdca-orchestrator`
@@ -105,7 +105,7 @@ Decide, return to PLAN) → `pdca-planner`; CHECK verdict → `pdca-check`; esca
 `pdca-scout`; every file write and command → `pdca-executor`.
 
 **Cheap primary only (§Host requirements).** Only a cheap-tier primary takes this role; a medium/strong
-primary (e.g. `architect`) does not drive the cycle — outside PDCA it stays the decisions primary and
+primary does not drive the cycle — outside PDCA it stays the decisions primary and
 hands implementation to the cycle. The cheap orchestrator never authors a plan, never reads files and
 never runs a command; it routes facts to `pdca-scout` and every edit/command to `pdca-executor` via a
 subagent. Both the
