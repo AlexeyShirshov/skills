@@ -44,7 +44,7 @@
 - Lane result: G1 done; commit cc615724f9ba55cdfced6bc8207b5783502f1906 (calc.py only).
 - General CHECK: PASS (pdca-check medium); no merge state; collection closed.
 
-## Общая верификация и восстановление (general verification and recovery)
+## General verification and recovery
 
 - State: `pass`
 - Last general CHECK: PASS (pdca-check medium) on integrated tree; doctest exit 0 `5 passed and 0 failed.`; py_compile exit 0; smoke `5/12/-10/12/0/3.0`; only tracked change vs 639e101 is calc.py (+17/-0); HEAD cc615724f9ba55cdfced6bc8207b5783502f1906.

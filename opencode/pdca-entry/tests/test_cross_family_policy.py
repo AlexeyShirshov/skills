@@ -75,9 +75,9 @@ class RoutingScenarios(unittest.TestCase):
         self.assertIn("independent tasks with their own goals", entry)
         self.assertIn("parallelism is optional", entry)
         inc = flat(INCREMENTAL)
-        self.assertIn("независимыми целями", inc)
-        self.assertIn("даже при одном footprint/одном лейне", inc)
-        self.assertIn("свойство расписания", inc)
+        self.assertIn("independent goals", inc)
+        self.assertIn("even with one footprint/one lane", inc)
+        self.assertIn("property of the schedule", inc)
         # The old entry rule (>=2 disjoint footprints) is gone.
         assert_absent(self, inc,
                       "≥2 непересекающихся footprint",
@@ -85,9 +85,9 @@ class RoutingScenarios(unittest.TestCase):
 
     def test_one_shared_goal_with_unknown_path_is_incremental(self) -> None:
         inc = flat(INCREMENTAL)
-        self.assertIn("одной общей цели/метрике", inc)
-        self.assertIn("информационно зависим", inc)
-        self.assertIn("одна общая проверяемая цель/метрика", inc)
+        self.assertIn("one shared goal/metric", inc)
+        self.assertIn("information-dependent", inc)
+        self.assertIn("one shared verifiable goal/metric", inc)
 
 
 class CampaignPreparationScenarios(unittest.TestCase):
@@ -100,15 +100,15 @@ class CampaignPreparationScenarios(unittest.TestCase):
         self.assertIn("preparation_handoff", runner)
         self.assertIn("no unit-level `selected_variant`", runner)
         col = flat(COLLECTION)
-        self.assertIn("Unit-level `selected_variant` на барьере **не** требуется", col)
+        self.assertIn("A unit-level `selected_variant` is **not** required at the barrier", col)
         self.assertIn("preparation_handoff", col)
-        self.assertIn("Baseline, runtime-статус, планы будущих шагов", col)
+        self.assertIn("The baseline, the runtime status, the plans of future steps", col)
 
     def test_lane_carries_prep_refs_and_caller_selection_rule(self) -> None:
         col = flat(COLLECTION)
-        self.assertIn("`preparation_ref`/`campaign_ref` и **правило", col)
+        self.assertIn("`preparation_ref`/`campaign_ref` and **the dispatching rule", col)
         self.assertIn("stack rule", col)
-        self.assertIn("персистит в durable-записи шага **до** шага", col)
+        self.assertIn("persisted in the durable record of the step **before** the step", col)
         # The old "step's selected_variant" input field is gone.
         self.assertNotIn("the step's `selected_variant` and dispatch rule", flat(RUNNER))
 
@@ -124,8 +124,8 @@ class ResumeScenarios(unittest.TestCase):
         self.assertIn("unconditional second PLAN", runner)
         self.assertIn("DO → CHECK → ACT", runner)
         col = flat(COLLECTION)
-        self.assertIn("тот же `selected_variant`/N/`r`/`n`", col)
-        self.assertIn("через роли", col)
+        self.assertIn("the same `selected_variant`/N/`r`/`n`", col)
+        self.assertIn("through the roles", col)
 
     def test_all_six_runner_copies_are_identical(self) -> None:
         canonical = read(RUNNER)
@@ -152,7 +152,7 @@ class ApprovalScenarios(unittest.TestCase):
         self.assertIn("Approval protocol (normal mode)", col)
         self.assertIn("durable pending approval ref", col)
         inc = flat(INCREMENTAL)
-        self.assertIn("Normal mode: апрув шага", inc)
+        self.assertIn("Normal mode: the step approval", inc)
 
     def test_blanket_no_interactive_cycles_wording_is_gone(self) -> None:
         assert_absent(self, flat(RUNNER),
@@ -165,16 +165,16 @@ class RepairAndMetScenarios(unittest.TestCase):
 
     def test_repair_advances_the_last_accepted_baseline_once(self) -> None:
         inc = flat(INCREMENTAL)
-        self.assertIn("последнего **принятого** baseline", inc)
-        self.assertIn("один раз", inc)
-        self.assertIn("его delta не зачитывается", inc)
-        self.assertIn("`verify` baseline не двигает", inc)
+        self.assertIn("the last **accepted** baseline", inc)
+        self.assertIn("only once", inc)
+        self.assertIn("its delta is not credited", inc)
+        self.assertIn("`verify` does not move the baseline", inc)
 
     def test_met_needs_the_goal_and_all_due_verify(self) -> None:
         inc = flat(INCREMENTAL)
-        self.assertIn("все **due** обязательные `verify`", inc)
-        self.assertIn("текущем принятом snapshot", inc)
-        self.assertIn("baseline уже удовлетворяет цели", inc)
+        self.assertIn("all **due** mandatory `verify`", inc)
+        self.assertIn("current accepted snapshot", inc)
+        self.assertIn("baseline already satisfies the goal", inc)
         assert_absent(self, inc,
                       "предикат истинен на принятом замере; единственный успех")
 
@@ -217,11 +217,11 @@ class RoleScenarios(unittest.TestCase):
 
     def test_flat_fallback_keeps_parallel_independent_groups(self) -> None:
         col = flat(COLLECTION)
-        self.assertIn("Независимые группы сохраняют разрешённый параллелизм", col)
-        self.assertIn("до `cap` групп одновременно", col)
-        self.assertIn("последовательно", col)
-        self.assertIn("один** flat-primary fallback", col)
-        assert_absent(self, col, "по одному лейну")
+        self.assertIn("Independent groups keep the allowed parallelism", col)
+        self.assertIn("up to `cap` groups at a time", col)
+        self.assertIn("sequentially", col)
+        self.assertIn("**one** flat-primary fallback", col)
+        assert_absent(self, col, "one lane at a time")
 
 
 class CheckWriteScenarios(unittest.TestCase):
@@ -268,18 +268,22 @@ class NewCampaignScenarios(unittest.TestCase):
 
     def test_changed_goal_or_recipe_is_a_new_campaign(self) -> None:
         inc = flat(INCREMENTAL)
-        self.assertIn("Смена **цели, рецепта, порога или флора**", inc)
-        self.assertIn("новая кампания с новым baseline", inc)
+        self.assertIn("A change of the **goal, recipe, threshold or floor**", inc)
+        self.assertIn("a new campaign with a new baseline", inc)
         col = flat(COLLECTION)
-        self.assertIn("Изменение **цели, рецепта замера, порога или флора**", col)
-        self.assertIn("НОВАЯ КАМПАНИЯ", col.upper())
-        self.assertIn("совместимых с неизменными", col)
+        self.assertIn("A change of the **goal, measurement recipe, threshold or floor**", col)
+        self.assertIn("NEW CAMPAIGN", col.upper())
+        self.assertIn("compatible with the unchanged", col)
 
     def test_preparation_revision_does_not_absorb_a_goal_change(self) -> None:
         col = flat(COLLECTION)
-        self.assertIn("не ревизия", col)
-        self.assertIn("старые immutable-ревизии не переписываются", col)
-        self.assertNotIn("не «уточнение»: это `pdca-planner` и действующий апрув, затем **новая immutable ревизия** preparation document", col)
+        self.assertIn("is not a revision", col)
+        self.assertIn("the old immutable revisions are not rewritten", col)
+        self.assertNotIn(
+            "not a \"refinement\": that is `pdca-planner` and the applicable approval, "
+            "then a **new immutable revision** of the preparation document",
+            col,
+        )
 
 
 class GitScenarios(unittest.TestCase):
@@ -287,17 +291,17 @@ class GitScenarios(unittest.TestCase):
 
     def test_multi_group_no_commit_is_a_preflight_blocker(self) -> None:
         col = flat(COLLECTION)
-        self.assertIn("preflight блокер до аллокации worktree/лейнов", col)
-        self.assertIn("Отсутствие разрешения — **не** авторизация", col)
-        self.assertIn("одна группа", col.lower())
+        self.assertIn("preflight blocker before worktree/lane allocation", col)
+        self.assertIn("The absence of authorization is **not** an authorization", col)
+        self.assertIn("one group", col.lower())
         self.assertIn("safe stop", col.lower())
 
     def test_old_patch_only_fallback_is_gone(self) -> None:
         col = flat(COLLECTION)
         assert_absent(self, col,
-                      "Без разрешения коммитов и merge нет",
-                      "коммитов и merge нет; deny не обходится",
-                      "без него — patch-fallback")
+                      "Without authorization there are no commits and no merge",
+                      "there are no commits and no merge; the deny is not bypassed",
+                      "without it — a patch fallback")
         guide = flat(REPO / "docs/pdca-guide.md")
         assert_absent(self, guide,
                       "Without permission there are no commits or merges",
@@ -309,12 +313,11 @@ class IncrementKindScenarios(unittest.TestCase):
 
     def test_increment_is_not_the_only_baseline_mover(self) -> None:
         inc = read(INCREMENTAL)
-        step_kinds = section(inc, "### 3.1. Типы шагов: increment, repair, verify")
-        self.assertNotIn("Только он двигает", step_kinds)
+        step_kinds = section(inc, "### 3.1. Step kinds: increment, repair, verify")
         self.assertNotIn("only it moves", step_kinds.lower())
-        self.assertIn("`increment` или принятый `repair`", step_kinds)
-        self.assertIn("ровно один раз", step_kinds)
-        self.assertIn("`verify` baseline не двигает", step_kinds)
+        self.assertIn("`increment` or an accepted `repair`", step_kinds)
+        self.assertIn("exactly once", step_kinds)
+        self.assertIn("`verify` does not move the baseline", step_kinds)
 
     def test_docs_state_repair_moves_the_baseline_once(self) -> None:
         for path, repair_phrase, verify_phrase in (
@@ -401,8 +404,8 @@ class ApprovalResumeScenarios(unittest.TestCase):
 
     def test_contracts_agree_on_fresh_approval_after_stale_plan(self) -> None:
         for path, fresh, applicability, no_unconditional in (
-            (COLLECTION, "свежий", "применимость", "не делает безусловный replan"),
-            (INCREMENTAL, "свежий", "применимость", "не делает безусловный replan"),
+            (COLLECTION, "fresh", "applicability", "does not do an unconditional replan"),
+            (INCREMENTAL, "fresh", "applicability", "does not do an unconditional replan"),
             (BASE, "fresh approval", "applicability", "neither unconditionally replans"),
             (CODER, "fresh approval", "applicability", "does not unconditionally replan"),
             (DOTNET, "fresh approval", "applicability", "does not unconditionally replan"),
@@ -412,7 +415,8 @@ class ApprovalResumeScenarios(unittest.TestCase):
                 self.assertIn(fresh, text)
                 self.assertIn(applicability, text.lower())
                 self.assertIn(no_unconditional, text)
-        assert_absent(self, flat(COLLECTION), "без реплана и без нового шага")
+        assert_absent(self, flat(COLLECTION),
+                      "without a replan and without a new step")
 
 
 class CollectionUnitKindScenarios(unittest.TestCase):
@@ -420,29 +424,34 @@ class CollectionUnitKindScenarios(unittest.TestCase):
 
     def test_typed_barrier_and_per_unit_disposition(self) -> None:
         col = read(COLLECTION)
-        plan = section(col, "### P — собственные PLAN задач, барьер, кластеризация")
-        self.assertIn("Начальный `execution_kind` каждой единицы решает PLAN коллекции", plan)
-        self.assertIn("требование её вида", plan)
+        plan = section(col, "### P — per-task PLANs, the barrier, clustering")
+        self.assertIn(
+            "The initial `execution_kind` of every unit is decided by the collection PLAN",
+            plan,
+        )
+        self.assertIn("the requirement of its kind", plan)
         self.assertIn("`preparation_state=ready`", plan)
         self.assertIn("`plan_state=ready`", plan)
-        self.assertIn("PLAN'ы единиц независимы и идут параллельно", plan)
-        self.assertNotIn("пока собственный PLAN **всех** без исключения задач не готов", plan)
+        self.assertIn("The units' PLANs are independent and run in parallel", plan)
+        self.assertNotIn(
+            "until the own PLAN of **all** tasks without exception is ready", plan
+        )
 
-        status = section(col, "## Статус коллекции")
+        status = section(col, "## Collection status")
         self.assertIn("per-unit `disposition`", status)
-        self.assertIn("**обеих** форм, `cycle` и `campaign`", status)
+        self.assertIn("an explicit field of **both** forms, `cycle` and `campaign`", status)
         self.assertIn("`campaign_ref`", status)
-        self.assertIn("optional до baseline bootstrap", status)
+        self.assertIn("optional before the baseline bootstrap", status)
 
 
 class BootstrapMetScenarios(unittest.TestCase):
     """Text guard: the bootstrap baseline already satisfies the goal."""
 
     def test_red_verify_does_not_auto_become_unreachable(self) -> None:
-        stop = section(read(INCREMENTAL), "### 5. Решение об остановке")
-        self.assertIn("независимым `pdca-check`", stop)
-        self.assertIn("не self-accept", stop)
-        self.assertIn("а не автоматически", stop)
+        stop = section(read(INCREMENTAL), "### 5. Stop decision")
+        self.assertIn("independent `pdca-check`", stop)
+        self.assertIn("not self-accept", stop)
+        self.assertIn("not automatically", stop)
         self.assertIn("`repair`/`blocked`", stop)
         self.assertNotIn("или `unreachable`, если обязательный `verify` не проходит", stop)
 
@@ -464,12 +473,14 @@ class PostBarrierTopologyScenarios(unittest.TestCase):
 
     def test_new_unit_after_barrier_requires_explicit_replan(self) -> None:
         section_text = section(
-            read(COLLECTION), "## Неактуальный PLAN и пересмотр расписания"
+            read(COLLECTION), "## Stale PLAN and schedule revision"
         )
-        self.assertIn("Новая кампания или новая единица после барьера", section_text)
-        self.assertIn("явный collection replan/reapprove", section_text)
-        self.assertIn("Старые identity, статусы и evidence сохраняются", section_text)
-        self.assertIn("автоматического `recluster` нет", section_text)
+        self.assertIn("A new campaign or a new unit after the barrier", section_text)
+        self.assertIn("explicit collection replan/reapprove", section_text)
+        self.assertIn(
+            "The old identities, statuses and evidence are preserved", section_text
+        )
+        self.assertIn("there is no automatic `recluster`", section_text)
         self.assertIn("stop/scope", section_text)
 
 
@@ -488,10 +499,12 @@ class RoutingTableScenarios(unittest.TestCase):
                       flat(ENTRY))
 
     def test_no_contradictory_campaign_row_for_independent_goals(self) -> None:
-        choosing = section(read(INCREMENTAL), "## Когда выбирать")
-        self.assertNotIn("один общий поток без индивидуальной приёмки", choosing)
-        self.assertNotIn("независимыми целями, но все пункты", choosing)
-        self.assertIn("план на весь объём известен и это одна задача", choosing)
+        choosing = section(read(INCREMENTAL), "## When to choose")
+        choose_collection = "one common stream without per-item acceptance"
+        choose_collection_2 = "independent goals, but all items"
+        self.assertNotIn(choose_collection, choosing)
+        self.assertNotIn(choose_collection_2, choosing)
+        self.assertIn("the plan for the whole volume is known and this is one task", choosing)
 
 
 class EvidenceAttemptScenarios(unittest.TestCase):

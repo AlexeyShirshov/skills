@@ -46,9 +46,9 @@ BASE_VARIANTS = {
 }
 
 # The contract fixes the token families, not one exact sentence.
-_OWN_PLAN_TOKENS = ("собственный PLAN", "собственного PLAN")
+_OWN_PLAN_TOKENS = ("task's own PLAN", "own PLAN")
 _PLAN_STATE_VALUES = ("pending", "running", "ready")
-_APPROVAL_CONTEXT = re.compile(r"approv\w*|апрув", re.I)
+_APPROVAL_CONTEXT = re.compile(r"approv\w*", re.I)
 
 
 def _plain(text: str) -> str:
@@ -100,13 +100,13 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
     def test_p_section_declares_all_barrier(self):
         p = self._p_section()
         self.assertIn("ALL-barrier", p, "§P lacks the 'ALL-barrier' token")
-        self.assertIn("барьер", p, "§P lacks the Russian 'барьер' concept")
+        self.assertIn("barrier", p, "§P lacks the 'barrier' concept")
 
     def test_p_section_allows_parallel_plans(self):
         # The barrier constrains the START of DAG/lanes, not the order of PLANs.
         p = self._p_section()
         self.assertIn(
-            "параллельно",
+            "in parallel",
             p,
             "§P must state that the units' own PLANs run in parallel",
         )
@@ -116,12 +116,12 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
             "§P must name the PLAN concurrency ceiling 'plan_cap'",
         )
         self.assertIn(
-            "а не про их последовательность",
+            "not about their sequence",
             p,
             "§P must state that the barrier is about readiness, not PLAN order",
         )
         self.assertIn(
-            "одним блоком",
+            "as one block",
             p,
             "§P must say the PLAN dispatches go out in one batch, not one by one",
         )
@@ -131,22 +131,22 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         # resolved by clustering, and a sequential chain in one group is normal.
         p = self._p_section()
         self.assertIn(
-            "не фиксирует расписание",
+            "does not fix the schedule",
             p,
             "§P must state that a parallel PLAN does not fix the schedule",
         )
         self.assertIn(
-            "пересекающ",
+            "overlap",
             p.lower(),
             "§P must state that intersecting footprints are resolved by clustering",
         )
         self.assertIn(
-            "одну группу",
+            "one group",
             p,
             "§P must state that overlapping units land in one group",
         )
         self.assertIn(
-            "заявляет",
+            "declares",
             p,
             "§P must state that a PLAN declares the footprint instead of reserving it",
         )
@@ -156,56 +156,56 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         # parallel planning must not be blocked by it.
         p = self._p_section()
         self.assertIn(
-            "резервац",
+            "reservation",
             p.lower(),
             "§P must keep the footprint reservation concept",
         )
         self.assertIn(
-            "не блокировк",
+            "not a lock",
             p.lower(),
             "§P must say the reservation is a claim, not a lock",
         )
         self.assertNotIn(
-            "ничего не бронирует",
+            "reserves nothing",
             p.lower(),
             "§P must not deny the reservation: clustering relies on it",
         )
 
     def test_status_writes_are_serialized_not_single_owner(self):
         # One writer at a time, but the physical write belongs to pdca-executor
-        # (§Статус), not to the primary directly.
+        # (§Collection status), not to the primary directly.
         p = self._p_section()
-        self.assertIn("сериализуется", p, "§P must say the status writes are serialized")
+        self.assertIn("serialized", p, "§P must say the status writes are serialized")
         self.assertIn(
             "pdca-executor",
             p,
             "§P must name pdca-executor as the physical writer of the status file",
         )
-        self.assertIn("§Статус", p, "§P must defer the write ownership to §Статус")
+        self.assertIn("§Collection status", p, "§P must defer the write ownership to §Collection status")
         self.assertNotIn(
-            "пишет один владелец",
+            "a single owner writes",
             p,
             "§P must not claim the primary is the only writer",
         )
 
     def test_parameters_declare_plan_concurrency(self):
-        params = _plain(_section(self.skill, "## Параметры", "## Связь с базовым PDCA"))
-        self.assertTrue(params, "SKILL.md §Параметры section not found")
+        params = _plain(_section(self.skill, "## Parameters", "## Relation to the base PDCA"))
+        self.assertTrue(params, "SKILL.md §Parameters section not found")
         self.assertIn(
-            "Потолок параллелизма PLAN",
+            "PLAN parallelism ceiling",
             params,
-            "§Параметры must declare a separate PLAN concurrency cap",
+            "§Parameters must declare a separate PLAN concurrency cap",
         )
-        self.assertIn("plan_cap", params, "§Параметры must name 'plan_cap'")
+        self.assertIn("plan_cap", params, "§Parameters must name 'plan_cap'")
         self.assertIn(
-            "лейнов",
+            "lanes",
             params,
-            "§Параметры must keep the lane cap distinct from the PLAN cap",
+            "§Parameters must keep the lane cap distinct from the PLAN cap",
         )
         self.assertIn(
-            "хоста",
+            "host",
             params,
-            "§Параметры must bound plan_cap by the host's real parallelism",
+            "§Parameters must bound plan_cap by the host's real parallelism",
         )
 
     def test_plan_state_values_declared(self):
@@ -228,23 +228,23 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         )
 
     def test_lane_section_resumes_saved_plan_not_fresh_full_plan(self):
-        lane = _plain(_section(self.skill, "## Лейн", "## Git-модель"))
-        self.assertTrue(lane, "SKILL.md §Лейн (## Лейн) section not found")
-        self.assertIn("PLAN", lane, "§Лейн no longer refers to PLAN")
+        lane = _plain(_section(self.skill, "## Lane", "## Git model"))
+        self.assertTrue(lane, "SKILL.md §Lane (## Lane) section not found")
+        self.assertIn("PLAN", lane, "§Lane no longer refers to PLAN")
         self.assertRegex(
             lane,
-            re.compile(r"сохранённ"),
-            "§Лейн must resume the already-done PLAN via 'сохранённ...' wording",
+            re.compile(r"saved"),
+            "§Lane must resume the already-done PLAN via 'saved ...' wording",
         )
 
     def test_status_section_records_plan_handoff_fields(self):
-        status = _plain(_section(self.skill, "## Статус коллекции", "## Отчёт"))
-        self.assertTrue(status, "SKILL.md §Статус коллекции section not found")
+        status = _plain(_section(self.skill, "## Collection status", "## Report"))
+        self.assertTrue(status, "SKILL.md §Collection status section not found")
         for field in ("plan_state", "cycle_id", "selected_variant"):
-            self.assertIn(field, status, f"§Статус must record {field!r}")
+            self.assertIn(field, status, f"§Collection status must record {field!r}")
         self.assertTrue(
-            "plan_revision" in status or "вектор ревизий plan" in status.lower(),
-            "§Статус must record 'plan_revision' r (or 'вектор ревизий PLAN')",
+            "plan_revision" in status or "plan revision vector" in status.lower(),
+            "§Collection status must record 'plan_revision' r (or the 'PLAN revision vector')",
         )
 
     def test_skill_still_forbids_automatic_recluster(self):
@@ -255,16 +255,16 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         self.assertIn("rerun", low, "collection SKILL lost the no-rerun token")
         self.assertRegex(
             low,
-            re.compile(r"автоматическ\w*\s+(rerun|remerge|recluster|reset|revert)"),
+            re.compile(r"automatic\w*\s+(rerun|remerge|recluster|reset|revert)"),
             "collection SKILL must still forbid automatic "
             "rerun/remerge/recluster/reset/revert",
         )
 
 
 class StepPlanApprovalContractTest(unittest.TestCase):
-    """SKILL.md §Лейн: the normal-mode step-PLAN approval gate (AC06).
+    """SKILL.md §Lane: the normal-mode step-PLAN approval gate (AC06).
 
-    Guards the rule written in §"Драйвер лейна и кампания": every real step runs its
+    Guards the rule written in §"Lane driver and campaign": every real step runs its
     own full PLAN of its variant before DO, and in normal mode that plan is approved
     per the active contract through a *durable* pending approval ref while the current
     unit takes ``disposition=paused``; the step brief neither replaces the PLAN nor
@@ -277,28 +277,28 @@ class StepPlanApprovalContractTest(unittest.TestCase):
 
     def test_normal_mode_step_plan_approval_is_durable_and_pauses_the_unit(self):
         """AC06: normal-mode step gate = durable pending approval ref + paused unit + brief ≠ PLAN."""
-        lane = _plain(_section(self.skill, "## Лейн", "## Неактуальный"))
-        self.assertTrue(lane, "SKILL.md §Лейн (## Лейн) section not found")
+        lane = _plain(_section(self.skill, "## Lane", "## Stale PLAN"))
+        self.assertTrue(lane, "SKILL.md §Lane (## Lane) section not found")
         # (a) normal mode ties the step PLAN approval to a *durable* pending ref
         self.assertRegex(
             lane,
             re.compile(r"normal mode.{0,400}?durable\s+pending\s+approval\s+ref", re.I),
-            "§Лейн must state that in normal mode the step PLAN approval is recorded "
+            "§Lane must state that in normal mode the step PLAN approval is recorded "
             "as a durable pending approval ref (got: %r)" % lane[:600],
         )
         # (b) the current unit is paused for the duration of that approval
         self.assertRegex(
             lane,
             re.compile(r"pending\s+approval\s+ref.{0,200}?disposition=paused", re.I),
-            "§Лейн must state that the current unit gets disposition=paused at the "
+            "§Lane must state that the current unit gets disposition=paused at the "
             "step approval gate (got: %r)" % lane[:600],
         )
         # (c) the step brief is not the step's PLAN
         self.assertRegex(
             lane,
-            re.compile(r"бриф\w*\s+шага\s+plan\s+не\s+подменя", re.I),
-            "§Лейн must state explicitly that the step brief does not replace the "
-            "step's PLAN ('Бриф шага PLAN не подменяет')",
+            re.compile(r"step\s+brief\s+does\s+not\s+replace\s+the\s+plan", re.I),
+            "§Lane must state explicitly that the step brief does not replace the "
+            "step's PLAN ('The step brief does not replace the PLAN')",
         )
 
 
@@ -313,7 +313,7 @@ def _windows(text: str, token: str, radius: int) -> list[str]:
 # A barrier may not demand a runtime status: readiness is a persisted field, not a
 # live `Status: running` mirror.
 _RUNTIME_STATUS_REQUIREMENT = re.compile(
-    r"(?i)(требует|обязателен).{0,80}(Status:\s*running|runtime-статус)"
+    r"(?i)(requires?|mandatory).{0,80}(Status:\s*running|runtime status)"
 )
 
 
@@ -360,9 +360,9 @@ class CollectionUnitPreparationBarrierTest(unittest.TestCase):
         )
         self.assertTrue(state, "SKILL.md has no 'preparation_state' statement")
         self.assertTrue(
-            "не является" in state or "не равно" in state,
+            "is not" in state or "does not equal" in state,
             "the 'preparation_state' paragraph must state that readiness ('ready') "
-            "is not completion (needs 'не является' or 'не равно'): "
+            "is not completion (needs 'is not' or 'does not equal'): "
             f"{state!r}",
         )
 
@@ -370,9 +370,9 @@ class CollectionUnitPreparationBarrierTest(unittest.TestCase):
         refs = _windows(self.plain, "preparation_ref", 200)
         self.assertTrue(refs, "SKILL.md has no 'preparation_ref' field")
         self.assertTrue(
-            any("единственн" in window for window in refs),
+            any("single" in window for window in refs),
             "SKILL.md must call 'preparation_ref' the single authoritative binding "
-            f"(stem 'единственн' within 200 chars): {refs!r}",
+            f"(stem 'single' within 200 chars): {refs!r}",
         )
 
     def test_unit_disposition_values_are_declared(self):
@@ -449,7 +449,7 @@ class StandaloneVariantCollectionHandoffTest(unittest.TestCase):
                     f"context",
                 )
                 self.assertTrue(
-                    "немедленн" in low or "immediately" in low,
+                    "immediately" in low,
                     f"{name}: lost the standalone-autonomous immediate-start token",
                 )
 
@@ -478,7 +478,7 @@ class CollectionPlanGapTest(unittest.TestCase):
 
     def test_unplannable_unit_is_a_gap_without_a_ready_placeholder(self):
         barrier = _plain(
-            _section(self.skill, "3. **ALL-barrier.**", "4. **Кластеризация")
+            _section(self.skill, "3. **ALL-barrier.**", "4. **Clustering")
         )
         self.assertTrue(barrier, "SKILL.md §P.3 ALL-barrier not found")
         self.assertIn(
@@ -487,17 +487,17 @@ class CollectionPlanGapTest(unittest.TestCase):
             "§P.3 must call a unit without a meaningful plan a 'gap'",
         )
         self.assertIn(
-            "не помечается ready-placeholder'ом",
+            "is not marked with a ready placeholder",
             barrier,
             "§P.3 must forbid a 'ready' placeholder for a unit whose plan is impossible",
         )
         self.assertIn(
-            "барьер не пройден",
+            "the barrier is not passed",
             barrier,
             "§P.3 must state that the barrier is not passed while the gap stands",
         )
         self.assertIn(
-            "ранний DO запрещён",
+            "early DO is forbidden",
             barrier,
             "§P.3 must forbid an early DO while the barrier is open",
         )
@@ -506,58 +506,58 @@ class CollectionPlanGapTest(unittest.TestCase):
         d = _plain(_section(self.skill, "### D —", "### C —"))
         self.assertTrue(d, "SKILL.md §D section not found")
         self.assertIn(
-            "только после ALL-barrier",
+            "only after the ALL-barrier",
             d,
             "§D must allocate lanes only after the ALL-barrier",
         )
         self.assertIn(
-            "До этого шага их нет",
+            "Before that step they do not exist",
             d,
             "§D must state that no lane exists before the barrier",
         )
 
     def test_gap_stands_for_campaign_preparation_too(self):
-        windows = _windows(self.plain, "Единица без осмысленного плана", 260)
+        windows = _windows(self.plain, "A unit without a meaningful plan", 260)
         self.assertTrue(
             windows,
             "SKILL.md lacks the shared gap sentence for both execution kinds",
         )
         window = windows[0]
         self.assertIn(
-            "каркаса",
+            "frame",
             window,
             "the shared gap sentence must cover a campaign whose frame is not ready",
         )
         self.assertIn(
-            "ни один лейн",
+            "not a single lane",
             window,
             "the shared gap sentence must state that no lane is allocated before the barrier",
         )
         self.assertIn(
-            "для обоих видов",
+            "for both kinds",
             window,
             "the shared gap sentence must bind both execution kinds",
         )
 
     def test_reentry_requires_evidence_or_a_new_oracle(self):
-        windows = _windows(self.plain, "обязательный вход собственного PLAN", 400)
+        windows = _windows(self.plain, "mandatory input of the own PLAN", 400)
         self.assertTrue(
             windows,
             "SKILL.md must make the previous terminal reason a required PLAN input",
         )
         window = windows[0]
         self.assertIn(
-            "доказательство теперь получаемо",
+            "the evidence is now obtainable",
             window,
             "re-entry must prove the failed evidence is now obtainable",
         )
         self.assertIn(
-            "переопределяет оракул",
+            "redefines the oracle",
             window,
             "re-entry must either prove the evidence or re-scope the oracle",
         )
         self.assertIn(
-            "иначе задача остаётся gap'ом",
+            "otherwise the task stays a gap",
             window,
             "a silent re-run of the same criterion must leave the unit a gap",
         )
@@ -577,7 +577,7 @@ class CollectionUnitKindOwnershipTest(unittest.TestCase):
         windows = [
             window
             for window in _windows(p, "execution_kind", 320)
-            if "решает PLAN коллекции" in window
+            if "decided by the collection PLAN" in window
         ]
         self.assertTrue(
             windows,
@@ -587,9 +587,9 @@ class CollectionUnitKindOwnershipTest(unittest.TestCase):
         window = windows[0]
         for token in (
             "pdca-planner",
-            "до per-kind dispatch",
-            "передаёт готовое значение",
-            "не выводит его из текста задачи",
+            "before the per-kind dispatch",
+            "passes the ready value",
+            "does not infer it from the task text",
         ):
             with self.subTest(token=token):
                 self.assertIn(
@@ -614,13 +614,13 @@ class CollectionUnitKindOwnershipTest(unittest.TestCase):
                 )
 
     def test_unknown_execution_kind_fails_closed(self):
-        windows = _windows(self.plain, "legacy-файлы", 280)
+        windows = _windows(self.plain, "legacy files", 280)
         self.assertTrue(windows, "SKILL.md lost the legacy `execution_kind` rule")
         window = windows[0]
         for token in (
-            "неизвестное значение execution_kind",
+            "unknown execution_kind value",
             "fail closed",
-            "а не догадка",
+            "not a guess",
         ):
             with self.subTest(token=token):
                 self.assertIn(
@@ -637,21 +637,21 @@ class CollectionPostBarrierUnitTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
         cls.revision = _plain(
-            _section(cls.skill, "## Неактуальный PLAN", "### Резервация поверхности")
+            _section(cls.skill, "## Stale PLAN", "### Surface reservation")
         )
 
     def test_new_campaign_after_the_barrier_needs_explicit_replan(self):
         self.assertTrue(
             self.revision,
-            "SKILL.md §Неактуальный PLAN и пересмотр расписания not found",
+            "SKILL.md §Stale PLAN and schedule revision not found",
         )
         for token in (
-            "Новая кампания или новая единица после барьера",
-            "не меняет DAG молча",
-            "явный collection replan/reapprove",
-            "в normal mode — пользователь",
-            "Старые identity, статусы и evidence сохраняются",
-            "автоматического recluster нет",
+            "A new campaign or a new unit after the barrier",
+            "does not mutate the DAG silently",
+            "explicit collection replan/reapprove",
+            "in normal mode — the user",
+            "The old identities, statuses and evidence are preserved",
+            "there is no automatic recluster",
         ):
             with self.subTest(token=token):
                 self.assertIn(
@@ -662,22 +662,22 @@ class CollectionPostBarrierUnitTest(unittest.TestCase):
 
     def test_schedule_revision_window_is_before_lanes_only(self):
         self.assertIn(
-            "Изменение до старта лейнов",
+            "A change before the lanes start",
             self.revision,
             "the pre-lane revision window must stay named",
         )
         self.assertIn(
-            "единственное разрешённое окно пересмотра",
+            "the only allowed revision window",
             self.revision,
             "the pre-lane window must stay the only allowed schedule revision",
         )
         self.assertIn(
-            "После старта лейнов",
+            "After the lanes start",
             self.revision,
             "the post-lane prohibition must stay named",
         )
         self.assertIn(
-            "запрещены",
+            "forbidden",
             self.revision,
             "automatic rerun/remerge/recluster must stay forbidden after lanes start",
         )

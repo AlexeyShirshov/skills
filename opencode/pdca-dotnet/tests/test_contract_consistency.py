@@ -850,15 +850,15 @@ class CrossArtifactLabelGuardTest(unittest.TestCase):
         self.assertIn("предусловие", self._edge("e_do_replan")["label"])
 
     def test_gen_pdca_labels_revision_scoped(self):
-        for token in ("CHECK(r)", "n+1", "r+1", "повтор"):
+        for token in ("CHECK(r)", "n+1", "r+1", "repeat"):
             self.assertIn(token, self.gen, f"gen_pdca.py missing {token!r}")
         for stale in ("3-я итерация", "тот же дефект ×2", "разные — ×3"):
             self.assertNotIn(stale, self.gen, f"gen_pdca.py stale {stale!r}")
 
     def test_gen_pdca_preserves_replan_and_do_plan_edges(self):
         # No topology redesign: the CHECK → PLAN and DO → PLAN returns remain.
-        self.assertIn("неверный план", self.gen)
-        self.assertIn("новое предусловие/блокер", self.gen)
+        self.assertIn("wrong plan", self.gen)
+        self.assertIn("new precondition/blocker", self.gen)
 
     # --- README concise summary (host README — gated) ----------------------
 

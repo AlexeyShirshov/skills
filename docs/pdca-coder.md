@@ -29,10 +29,9 @@ verification, lose state, or pass off identical retries as progress.
 
 ## Launching: through the umbrella or by name
 
-The phrases "по циклу", "через PDCA", "по pdca" go to the family entry point `pdca-entry`, which
-routes a code task here; naming `pdca-coder` explicitly bypasses the umbrella. The phrase
-"по pdca-dotnet" selects a related but separate skill with .NET specifics and .NET gates — that is
-not `pdca-coder`.
+The phrases "by the cycle", "via PDCA", "run PDCA" go to the family entry point `pdca-entry`, which
+routes a code task here; naming `pdca-coder` explicitly bypasses the umbrella. Naming `pdca-dotnet`
+selects a related but separate skill with .NET specifics and .NET gates — that is not `pdca-coder`.
 
 There are two modes. In **normal** mode the cycle is interactive. First the plan is written into the
 status file on disk (the source of truth on the cycle), then the orchestrator states that the plan
@@ -199,7 +198,7 @@ not proof.
 
 ## Where to go next
 
-If the task is an engineering one with a verifiable result, start with the phrase "по циклу" and let
+If the task is an engineering one with a verifiable result, start with the phrase "by the cycle" and let
 PLAN formulate the criteria before anything is written. If the task is purely .NET/C#, see the
 related [`pdca-dotnet`](pdca-dotnet.md); if the result is not about code, the family has the
 domain-neutral [`pdca`](pdca.md); if there are many independent tasks — [`pdca-collection`](pdca-collection.md).

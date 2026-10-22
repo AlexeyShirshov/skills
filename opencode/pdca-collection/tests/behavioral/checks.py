@@ -131,7 +131,13 @@ def task_statuses(status_text: str) -> dict[str, str]:
 
 def is_unset(value: str) -> bool:
     lowered = (value or "").strip().lower()
-    return lowered in DASHES or "not allocated" in lowered or "не аллоцирован" in lowered
+    # The legacy RU status wording is still tolerated: a cell written before the
+    # contract became English must read as "unset" too (the escape keeps this file ASCII).
+    return (
+        lowered in DASHES
+        or "not allocated" in lowered
+        or "\u043d\u0435 \u0430\u043b\u043b\u043e\u0446\u0438\u0440\u043e\u0432\u0430\u043d" in lowered
+    )
 
 
 _BARRIER_VERDICT = re.compile(r"all-barrier[^\n:]*:\s*\**\s*(pass|fail)\b", re.IGNORECASE)

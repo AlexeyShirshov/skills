@@ -139,7 +139,7 @@ Incremental — **одна** проверяемая цель/метрика; с�
 после старта контракта повторной маршрутизации нет: loop-back'и (DO → PLAN, CHECK → DO)
 принадлежат выбранному контракту. `execution_kind` — не `selected_variant`: форма исполнения
 единицы не является вариантом цикла, и наоборот
-(`opencode/pdca-collection/SKILL.md` §Единицы коллекции и форма исполнения;
+(`opencode/pdca-collection/SKILL.md` §Collection units and the execution form;
 `opencode/pdca-entry/SKILL.md` §Composition: form of execution vs. cycle variant).
 
 **Кто выбирает вариант.** Есть три пути.
@@ -1327,7 +1327,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - `pdca` — назначение и доменная нейтральность → `opencode/pdca/SKILL.md:11-14`
 - `pdca-coder` — назначение/стек-агностичность → `opencode/pdca-coder/SKILL.md:11-15`
 - `pdca-dotnet` — .NET-таргет → `opencode/pdca-dotnet/SKILL.md:11-13`
-- `pdca-collection` — роль и выбор варианта по задаче → `opencode/pdca-collection/SKILL.md §Роль`
+- `pdca-collection` — роль и выбор варианта по задаче → `opencode/pdca-collection/SKILL.md §Role`
 
 **Роли и полномочия**
 - host requirements, таблица ролей/fallback → `opencode/pdca/SKILL.md §Host requirements (roles → agents)`;
@@ -1391,7 +1391,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - `pdca_evidence.py`: `generate`/`lint`, замороженное синтетическое дерево, двустороннее покрытие → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
 
 **pdca-collection**
-- роль/вариант → `opencode/pdca-collection/SKILL.md §Роль`; P → `:49-105`; D/merge → `:107-155`;
+- роль/вариант → `opencode/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
   C → `:157-218`; A → `:220-233`; лейн/`incomplete` → `:235-282`;
   git-модель → `:306-336`; сбой → `:338-350`; статус → `:352-393`;
   параметры cap=4 → `:402-413`; fallback → `:439-448`

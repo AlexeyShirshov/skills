@@ -80,12 +80,12 @@ The family consists of exactly **five skills**; `pdca-orchestrator` is not a six
 
 | Skill | What for | How it is invoked | File (repo) |
 |---|---|---|---|
-| `pdca-entry` | Single entry point (umbrella): classifies a task and hands it to one contract below | "по циклу", "через PDCA", "by the cycle", "via PDCA", `pdca-entry` | `opencode/pdca-entry/SKILL.md` |
+| `pdca-entry` | Single entry point (umbrella): classifies a task and hands it to one contract below | "by the cycle", "via PDCA", "run PDCA", `pdca-entry` | `opencode/pdca-entry/SKILL.md` |
 | `pdca` | A domain-neutral contract for a task with a verifiable result | **Explicitly by name**: `skill pdca` / `@pdca` | `opencode/pdca/SKILL.md` |
 | `pdca-coder` | Software-engineering tasks of any stack: code, tests, documentation, refactoring, configuration | Explicit ID (`@pdca-coder`), or the entry routes other code here | `opencode/pdca-coder/SKILL.md` |
 | `pdca-dotnet` | The same, but with .NET/C# specifics and .NET gates | Explicit ID (`@pdca-dotnet`), or the entry routes .NET/C# work here | `opencode/pdca-dotnet/SKILL.md` |
 | `pdca-collection` | A batch of independent tasks split into parallel group lanes | Explicit ID (`@pdca-collection`), or the entry routes a known list here | `opencode/pdca-collection/SKILL.md` |
-| `pdca-incremental` | One goal without a mandatory whole-volume plan (per-task plans may be ready): a chain of steps, each next one from the previous accepted measurement | "инкрементами", "маленькими шагами", "нет плана на весь объём", "каждый следующий шаг из предыдущего", `pdca-incremental` | `opencode/pdca-incremental/SKILL.md` |
+| `pdca-incremental` | One goal without a mandatory whole-volume plan (per-task plans may be ready): a chain of steps, each next one from the previous accepted measurement | "in small increments", "no plan for the whole volume", "each next step from the previous one", `pdca-incremental` | `opencode/pdca-incremental/SKILL.md` |
 
 `pdca-entry` is the **only skill advertised to the model**; the five contracts set
 `metadata.opencode/autoinvoke: false` and are loaded by an explicit ID or by the entry's handoff.
@@ -109,12 +109,12 @@ incremental → .NET → other code → neutral), no sixth contract is added, an
 after a contract starts: loop-backs (DO → PLAN, CHECK → DO) belong to the chosen contract.
 `execution_kind` is not `selected_variant`: a unit's form of execution is not a cycle variant, and a
 variant is not a form of execution
-(`opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения`;
+(`opencode/pdca-collection/SKILL.md §Collection units and the execution form`;
 `opencode/pdca-entry/SKILL.md §Composition: form of execution vs. cycle variant`).
 
 **Who chooses the variant.** There are three paths.
 
-- **The umbrella.** A request phrased "по циклу"/"через PDCA" without naming a contract goes to
+- **The umbrella.** A request phrased "by the cycle"/"via PDCA" without naming a contract goes to
   `pdca-entry`, which applies its routing table (collection → incremental → .NET → other code →
   neutral) and hands off.
 - **A direct invocation.** The user names the skill they need by name — and from then on the cycle
@@ -1236,7 +1236,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 - `pdca` — its purpose and domain neutrality → `opencode/pdca/SKILL.md:11-14`
 - `pdca-coder` — its purpose/stack-agnosticism → `opencode/pdca-coder/SKILL.md:11-15`
 - `pdca-dotnet` — the .NET target → `opencode/pdca-dotnet/SKILL.md:11-13`
-- `pdca-collection` — its role and the per-task variant choice → `opencode/pdca-collection/SKILL.md §Роль`
+- `pdca-collection` — its role and the per-task variant choice → `opencode/pdca-collection/SKILL.md §Role`
 
 **Roles and authorities**
 - host requirements, the role table/fallback → `opencode/pdca/SKILL.md §Host requirements (roles → agents)`;
@@ -1300,7 +1300,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 - `pdca_evidence.py`: `generate`/`lint`, the frozen synthetic tree, the two-way coverage → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
 
 **pdca-collection**
-- the role/variant → `opencode/pdca-collection/SKILL.md §Роль`; P → `:49-105`; D/merge → `:107-155`;
+- the role/variant → `opencode/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
   C → `:157-218`; A → `:220-233`; the lane/`incomplete` → `:235-282`;
   the git model → `:306-336`; failure → `:338-350`; the status → `:352-393`;
   the parameters cap=4 → `:402-413`; the fallback → `:439-448`

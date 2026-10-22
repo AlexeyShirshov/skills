@@ -90,7 +90,7 @@ explicitly (`skill pdca-dotnet`, `@pdca-dotnet`) or when the entry hands off.
 
 Invoke a skill by name, e.g. in an opencode session:
 
-- `pdca-entry` — "by the cycle" / "via PDCA" / "по циклу": the umbrella that routes the task to
+- `pdca-entry` — "by the cycle" / "via PDCA": the umbrella that routes the task to
   one contract below (an explicitly named contract bypasses it).
 - `pdca` — only when explicitly named (domain-neutral cycle).
 - `pdca-coder` — explicitly, for code tasks of any stack.

@@ -20,7 +20,7 @@ by the orchestrator, returns via `REPAIR→C full-verification`, and re-gathers 
 missing report through a `C→C re-gather` self-loop.
 
 v3 (user hierarchy, supersedes the below-C card): the corrective `REPAIR · PDCA`
-is a standalone **peer column** between `C · CHECK` and `E · ЭСКАЛАЦИЯ` -- same
+is a standalone **peer column** between `C · CHECK` and `E · ESCALATE` -- same
 header/frame baseline as the other phases -- wired directly to the top
 orchestrator band by its own real dispatch (down) and result (up) bus arrows.
 It is *not* a card below `C`, and `C` never launches it directly; the
@@ -399,11 +399,11 @@ def main_peer_repair_problems(assets: dict[str, str]) -> list[str]:
 
         # 2. visible card: named PDCA, composite composition badge, named caller
         rtext = group_visible_text(repair)
-        if "PDCA исправления" not in rtext:
-            problems.append(f"{theme}: REPAIR has no visible 'PDCA исправления' card")
-        if "составной" not in _texts_with_class(repair, "bm"):
-            problems.append(f"{theme}: REPAIR card has no visible 'составной' badge")
-        if "оркестратор" not in rtext.lower():
+        if "Corrective PDCA" not in rtext:
+            problems.append(f"{theme}: REPAIR has no visible 'Corrective PDCA' card")
+        if "composite" not in _texts_with_class(repair, "bm"):
+            problems.append(f"{theme}: REPAIR card has no visible 'composite' badge")
+        if "orchestrator" not in rtext.lower():
             problems.append(f"{theme}: REPAIR does not visibly name the orchestrator")
 
         # 3. second row: each corrective child hangs under its OWN parent, not
@@ -487,7 +487,7 @@ def main_peer_repair_problems(assets: dict[str, str]) -> list[str]:
         if c_col is not None:
             if any(g.get("data-main-recovery") for g in c_col.iter()):
                 problems.append(f"{theme}: corrective-pdca still nested in C")
-            if "PDCA исправления" in group_visible_text(c_col):
+            if "Corrective PDCA" in group_visible_text(c_col):
                 problems.append(f"{theme}: C column still carries a below-C PDCA card")
     return problems
 
@@ -566,7 +566,7 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                     for e in _iter_local(root, "text")
                     if e.get("class") == "nt"
                 )
-                self.assertIn("не дефект", notes)
+                self.assertIn("not a defect", notes)
                 self.assertIn("re-gather", notes)
                 # a missing report is re-gathered, never routed into repair
                 self.assertNotIn(("C", "REPAIR", "re-gather"), triples)
@@ -586,15 +586,15 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 self.assertIn("medium", col_text)
                 # the four generic mandatory-check cards survive (task-typed,
                 # not tied to any single technology) ...
-                for needle in ("проверк", "тест", "производительн", "review"):
+                for needle in ("check", "test", "perform", "review"):
                     self.assertIn(needle, col_text)
                 self.assertEqual(
                     4,
                     _texts_with_class(col, "bm").count("cheap"),
                     "column C must carry exactly four cheap measurement badges",
                 )
-                # ... the contradictory generic "Верификация · coder" card is gone
-                self.assertNotIn("верификация", col_text)
+                # ... the contradictory generic "Verification · coder" card is gone
+                self.assertNotIn("verification", col_text)
                 # the medium verdict is an always-run card with a visible badge
                 verdict = [
                     g
@@ -606,7 +606,7 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 self.assertEqual("pdca-check", vg.get("data-role"))
                 self.assertEqual("medium", vg.get("data-tier"))
                 vtext = group_visible_text(vg).lower()
-                self.assertIn("вердикт", vtext)
+                self.assertIn("verdict", vtext)
                 self.assertIn("pdca-check", vtext)
                 self.assertIn("pass", vtext)
                 self.assertIn("fail", vtext)
@@ -686,9 +686,9 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                     assert c_head is not None and p_head is not None
                     self.assertGreater(_fnum(c_head, "y"), _fnum(p_head, "y"))
                 # visible named PDCA card: composite composition badge + caller
-                self.assertIn("PDCA исправления", group_visible_text(repair))
-                self.assertIn("составной", _texts_with_class(repair, "bm"))
-                self.assertIn("оркестратор", group_visible_text(repair).lower())
+                self.assertIn("Corrective PDCA", group_visible_text(repair))
+                self.assertIn("composite", _texts_with_class(repair, "bm"))
+                self.assertIn("orchestrator", group_visible_text(repair).lower())
                 # parent->child connector: C->REPAIR dispatch + REPAIR->C return
                 h_top = _fnum(r_head, "y")
                 disp = _single_bus_route(root, "C", "REPAIR", "dispatch")
@@ -715,7 +715,7 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 self.assertFalse(
                     any(g.get("data-main-recovery") for g in c_col.iter())
                 )
-                self.assertNotIn("PDCA исправления", group_visible_text(c_col))
+                self.assertNotIn("Corrective PDCA", group_visible_text(c_col))
 
     # --- preserved contract ---------------------------------------------
 
@@ -862,7 +862,7 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 self.assertIn("incomplete", low)
                 # merge readiness is terminality; only successful (done) tips
                 # merge and incomplete tips are skipped -- shown locally
-                self.assertRegex(low, r"skip|пропуск|только\s+done")
+                self.assertRegex(low, r"skip|only\s+done")
                 # a real visible shape backs the marker
                 self.assertTrue(any(_local(c.tag) == "rect" for c in barrier))
 
@@ -922,18 +922,18 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                     self.assertIn(tier, model_low)
                 # the composition marker is never an enumerated model tier
                 self.assertNotIn("mixed", model_low)
-                self.assertNotIn("составн", model_low)
-                self.assertNotIn("композиц", model_low)
-                self.assertIn("ступени модели", model_low)
+                self.assertNotIn("composite", model_low)
+                self.assertNotIn("composition", model_low)
+                self.assertIn("model tiers", model_low)
                 # the composition group is visibly labelled as composition
                 self.assertTrue(
-                    "композиц" in comp_low or "составн" in comp_low,
+                    "composition" in comp_low,
                     f"composition legend not labelled as composition: {comp_low!r}",
                 )
                 self.assertIn("pdca", comp_low)
-                self.assertNotIn("ступень", comp_low)
+                self.assertNotIn("tier", comp_low)
                 # the purple composition marker survives (non-tier wording)
-                self.assertIn("составной", comp_low)
+                self.assertIn("composite", comp_low)
                 for key in ("model-tiers", "composition"):
                     self.assertTrue(
                         any(_local(c.tag) == "rect" for c in legends[key]),
@@ -994,16 +994,16 @@ MERGE_GRAPH_EDGE_COUNT = 14
 
 # Tolerant condition/event-word families: the contract fixes the semantics, the
 # implementation owns the exact prose.
-_DO_MERGE_COND = re.compile(r"терминал|all[- _]?lanes|≥\s*2|>=\s*2", re.I)
-_DO_C_COND = re.compile(r"одн[аоыу]|single|1\s*групп|без\s*merge|no\s*merge", re.I)
-_MERGE_C_COND = re.compile(r"интеграц|integration|готов|заверш|merged?", re.I)
-_MERGE_ESC_COND = re.compile(r"конфликт|conflict", re.I)
-_ESC_MERGE_COND = re.compile(r"реш|перестав|reorder|совет|advice|заключ", re.I)
-_INITIAL_EVENT = re.compile(r"все\s+групп|терминал|all[- _]?lanes|готов", re.I)
+_DO_MERGE_COND = re.compile(r"terminal|all[- _]?lanes|≥\s*2|>=\s*2", re.I)
+_DO_C_COND = re.compile(r"one\s+group|single|no\s*merge", re.I)
+_MERGE_C_COND = re.compile(r"integrat|complete|merged?", re.I)
+_MERGE_ESC_COND = re.compile(r"conflict", re.I)
+_ESC_MERGE_COND = re.compile(r"resolv|reorder|advice|decision", re.I)
+_INITIAL_EVENT = re.compile(r"all\s+groups|terminal|all[- _]?lanes|ready", re.I)
 _RETRY_EVENT = re.compile(
-    r"повтор|возобнов|re-?merge|retry|ретра|после\s+escalate|после\s+эскалац", re.I
+    r"re-?merge|retry|after\s+escalate", re.I
 )
-_DECISION_EVENT = re.compile(r"решен|решени|decision|совет|заключ", re.I)
+_DECISION_EVENT = re.compile(r"decision|advice", re.I)
 
 
 def _arrow_polyline_points(group: ET.Element) -> list[list[tuple[float, float]]]:
@@ -1040,10 +1040,10 @@ def _skill_section(text: str, start_marker: str, end_marker: str) -> str:
 
 def _strong_is_advisory(low: str) -> bool:
     """True when an escalate/strong mention is windowed with a negated edit/spawn."""
-    for m in re.finditer(r"escalate|strong|эскалац", low):
+    for m in re.finditer(r"escalate|strong", low):
         window = low[max(0, m.start() - 260): m.end() + 260]
-        if re.search(r"\bне\b", window) and re.search(
-            r"правит|edit|write|запуска|исполн|спавн|spawn|меня", window
+        if re.search(r"\b(?:not|never|no)\b", window) and re.search(
+            r"edit|write|run|spawn|execut|chang", window
         ):
             return True
     return False
@@ -1065,7 +1065,7 @@ class MergeRetryContractTest(unittest.TestCase):
         # distinct as visible labelled entries -- initial all-lanes-terminal and
         # the post-escalate retry (the partial/incomplete return is removed).
         initial = ("DO", "MERGE", "≥2 · all-lanes-terminal")
-        retry = ("ESCALATE", "MERGE", "решено/переставить/пометить incomplete")
+        retry = ("ESCALATE", "MERGE", "resolved/reorder/mark incomplete")
         for theme, stem in THEME_STEMS.items():
             with self.subTest(theme=theme):
                 root = parse_svg(self.assets[stem + ".svg"])
@@ -1120,7 +1120,7 @@ class MergeRetryContractTest(unittest.TestCase):
 
     def test_main_escalate_returns_to_merge_through_the_orchestrator(self):
         # User model: ESCALATE is a corrective block placed directly under MERGE,
-        # wired by a parent->child dispatch (`merge-конфликт`) and a returning
+        # wired by a parent->child dispatch (`merge-conflict`) and a returning
         # result (the retry decision).  The retry stays orchestrator-mediated:
         # that is carried by data-dispatched-by, not by the orchestrator band.
         for theme, stem in THEME_STEMS.items():
@@ -1231,7 +1231,7 @@ class MergeRetryContractTest(unittest.TestCase):
                 self.assertEqual(
                     {
                         ("DO", "MERGE", "≥2 · all-lanes-terminal"),
-                        ("ESCALATE", "MERGE", "решено/переставить/пометить incomplete"),
+                        ("ESCALATE", "MERGE", "resolved/reorder/mark incomplete"),
                     },
                     incoming,
                     f"{theme}: MERGE incoming edges changed: {sorted(incoming)}",
@@ -1244,17 +1244,17 @@ class MergeRetryContractTest(unittest.TestCase):
                     g
                     for g in dispatch_event_entries(root)["MERGE"]
                     if _entry_triple(g)
-                    == ("ESCALATE", "MERGE", "решено/переставить/пометить incomplete")
+                    == ("ESCALATE", "MERGE", "resolved/reorder/mark incomplete")
                 )
                 esc_label = group_visible_text(retry_entry)
                 self.assertRegex(
                     esc_label,
-                    r"повтор|ре-?мерж|re-?merge|retry",
+                    r"re-?merge|retry",
                     f"{theme}: ESCALATE->MERGE label lost the retry wording",
                 )
                 self.assertRegex(
                     esc_label,
-                    r"incomplete|пропуск|skip",
+                    r"incomplete|skip",
                     f"{theme}: ESCALATE->MERGE label does not cover the incomplete skip",
                 )
 
@@ -1268,17 +1268,17 @@ class MergeRetryContractTest(unittest.TestCase):
         # match the normative prose, not its markdown emphasis formatting
         section = section.replace("**", "").replace("`", "")
         problems = []
-        if not re.search(r"escalat|эскалац", section, re.I):
+        if not re.search(r"escalat", section, re.I):
             problems.append("§D does not name the escalate decision")
         if not re.search(r"pdca-executor", section, re.I):
             problems.append("§D does not name coder as the merge executor")
-        if not re.search(r"оркестратор|orchestrator", section, re.I):
+        if not re.search(r"orchestrator", section, re.I):
             problems.append("§D does not route the retry through the orchestrator")
-        if not re.search(r"повтор|возобнов|re-?merge|remerge|retry|ретра", section, re.I):
+        if not re.search(r"re-?merge|remerge|retry|repeated", section, re.I):
             problems.append("§D has no repeated-merge (retry) instruction")
-        if not re.search(r"остальн|очередн|pending|другие\s+групп", section, re.I):
+        if not re.search(r"remaining|pending|other\s+groups", section, re.I):
             problems.append("§D does not continue with the remaining/pending groups")
-        if not re.search(r"полн\w*\s+(check|c\b|верификац)", section, re.I):
+        if not re.search(r"full\w*\s+(check|c\b|verification)", section, re.I):
             problems.append("§D does not return to the full C after the retry")
         self.assertEqual([], problems, f"{SKILL_PATH}: " + "; ".join(problems))
         self.assertTrue(
@@ -1299,7 +1299,7 @@ class MergeRetryContractTest(unittest.TestCase):
 #     as metadata attributes;
 #   * the human label for an edge triple is central/shared -- where the lower
 #     graph already shows it, the main entry must show the same string;
-#   * `D · ПОДГОТОВКА` and `ЛЕЙН` are merged into ONE composite `DO` peer column
+#   * `D · PREPARATION` and `LANE` are merged into ONE composite `DO` peer column
 #     (single `P -> DO` input); the lower graph keeps one `DO` node and never a
 #     `C -> DO` edge;
 #   * `P` has no invented `re-plan` event (there is no such lower edge).
@@ -1328,22 +1328,22 @@ for _main, _lower in MAIN_TO_LOWER.items():
 # only edge whose target is not a peer block (`A -> EXIT finalized`) are not
 # incoming main events.
 EXPECTED_INCOMING = {
-    "P": {("START", "P", "старт")},
-    "DO": {("P", "DO", "группы")},
+    "P": {("START", "P", "start")},
+    "DO": {("P", "DO", "groups")},
     "MERGE": {
         ("DO", "MERGE", "≥2 · all-lanes-terminal"),
-        ("ESCALATE", "MERGE", "решено/переставить/пометить incomplete"),
+        ("ESCALATE", "MERGE", "resolved/reorder/mark incomplete"),
     },
     "C": {
-        ("DO", "C", "одна группа · без merge"),
-        ("MERGE", "C", "интеграция завершена"),
+        ("DO", "C", "one group · no merge"),
+        ("MERGE", "C", "integration complete"),
         ("REPAIR", "C", "full-verification"),
         ("C", "C", "re-gather"),
     },
     "REPAIR": {("C", "REPAIR", "FAIL")},
     "E": {
-        ("MERGE", "ESCALATE", "merge-конфликт"),
-        ("REPAIR", "ESCALATE", "повтор дефекта после 1 фикса"),
+        ("MERGE", "ESCALATE", "merge-conflict"),
+        ("REPAIR", "ESCALATE", "same defect after 1 fix"),
     },
     "A": {("C", "A", "PASS")},
 }
@@ -1356,26 +1356,26 @@ EXPECTED_INCOMING = {
 # explicit that only a REAL defect opens the corrective PDCA, never re-gather).
 CHECK_FAIL_CAPTION = "CHECK fail · real defect"
 SHARED_LABELS = {
-    ("DO", "C", "одна группа · без merge"): "одна группа: без MERGE",
+    ("DO", "C", "one group · no merge"): "one group: no MERGE",
     ("C", "REPAIR", "FAIL"): CHECK_FAIL_CAPTION,
     ("REPAIR", "C", "full-verification"): "REPAIR completed",
     ("C", "C", "re-gather"): "re-gather: blocked",
-    ("MERGE", "ESCALATE", "merge-конфликт"): "MERGE fail",
-    ("ESCALATE", "MERGE", "решено/переставить/пометить incomplete"):
-        "ESCALATE: повтор MERGE или incomplete skip",
+    ("MERGE", "ESCALATE", "merge-conflict"): "MERGE fail",
+    ("ESCALATE", "MERGE", "resolved/reorder/mark incomplete"):
+        "ESCALATE: re-merge or incomplete skip",
 }
 
 # Semantic fallback for triples the lower graph does not label visibly.
 ENTRY_SEMANTICS = {
-    ("START", "P", "старт"): re.compile(r"старт|start", re.I),
-    ("P", "DO", "группы"): re.compile(r"групп|group", re.I),
+    ("START", "P", "start"): re.compile(r"start", re.I),
+    ("P", "DO", "groups"): re.compile(r"group", re.I),
     ("DO", "MERGE", "≥2 · all-lanes-terminal"): re.compile(
-        r"терминал|all[- _]?lanes|≥\s*2|групп|barrier", re.I
+        r"terminal|all[- _]?lanes|≥\s*2|group|barrier", re.I
     ),
-    ("MERGE", "C", "интеграция завершена"): re.compile(
-        r"интеграц|integration|заверш|готов", re.I
+    ("MERGE", "C", "integration complete"): re.compile(
+        r"integrat|complete|ready", re.I
     ),
-    ("C", "A", "PASS"): re.compile(r"pass|успех|gate", re.I),
+    ("C", "A", "PASS"): re.compile(r"pass|success|gate", re.I),
 }
 
 
@@ -1616,8 +1616,8 @@ def dispatch_bus_problems(assets: dict[str, str]) -> list[str]:
 
 
 _FORBIDDEN_EVENT_TEXT = {
-    "P": re.compile(r"ре-?план|re-?plan", re.I),
-    "C": re.compile(r"лейны\s+стоп", re.I),
+    "P": re.compile(r"re-?plan", re.I),
+    "C": re.compile(r"lanes\s+stop", re.I),
 }
 
 
@@ -1694,12 +1694,12 @@ def composite_do_problems(assets: dict[str, str]) -> list[str]:
 def do_lane_subblock_problems(assets: dict[str, str]) -> list[str]:
     """DO: 3 top-level cards + 3 nested lane sub-blocks shifted right + loop label."""
     problems: list[str] = []
-    top_titles = ("Worktree + ветки", "Запуск лейнов", "Лейн · группа")
+    top_titles = ("Worktree + branches", "Lane launch", "Lane · group")
     child_titles = (
-        "Ветка задачи",
-        "pdca-цикл · continue from saved PLAN",
+        "Task branch",
+        "pdca cycle · continue from saved PLAN",
         "DO→CHECK→ACT",
-        "Коммит · если разрешён автокоммит",
+        "Commit · if autocommit is allowed",
     )
     expected_titles = set(top_titles + child_titles)
     for theme, stem in THEME_STEMS.items():
@@ -1727,8 +1727,8 @@ def do_lane_subblock_problems(assets: dict[str, str]) -> list[str]:
                 f"{theme}: DO has {len(title_x)} card titles, expected "
                 f"{len(expected_titles)}"
             )
-        if "Следующая" in title_x:
-            problems.append(f"{theme}: removed DO card 'Следующая' still rendered")
+        if "Next" in title_x:
+            problems.append(f"{theme}: removed DO card 'Next' still rendered")
         top_x = {title_x[t] for t in top_titles}
         child_x = {title_x[t] for t in child_titles}
         if len(top_x) != 1:
@@ -1742,7 +1742,7 @@ def do_lane_subblock_problems(assets: dict[str, str]) -> list[str]:
             )
         loop = any(
             _local(e.tag) == "text"
-            and (e.text or "").strip() == "следующая задача"
+            and (e.text or "").strip() == "next task"
             for e in col.iter()
         )
         if not loop:
@@ -1751,10 +1751,10 @@ def do_lane_subblock_problems(assets: dict[str, str]) -> list[str]:
         # wording must not reappear
         if any(
             _local(e.tag) == "text"
-            and "ветка группы" in (e.text or "")
+            and "group branch" in (e.text or "")
             for e in col.iter()
         ):
-            problems.append(f"{theme}: stale 'ветка группы' DO loop label present")
+            problems.append(f"{theme}: stale 'group branch' DO loop label present")
     return problems
 
 
@@ -1880,7 +1880,7 @@ class DispatchLabelConsistencyTest(unittest.TestCase):
 #     while the `full-verification` condition metadata is unchanged;
 #   * the strong block is named the exact uppercase word "ESCALATE" in the master
 #     E phase header and on the lower state-graph node (both one line), while the
-#     descriptive Russian phrase "Разрешение конфликтов слияния" is rendered on
+#     descriptive phrase "Merge conflict resolution" is rendered on
 #     the body card and the orchestrator band input; the internal `ESCALATE` id
 #     and the `strong` tier are kept; the legend agent id remains lowercase
 #     `pdca-escalate` (a different, untouched token);
@@ -1899,7 +1899,7 @@ class DispatchLabelConsistencyTest(unittest.TestCase):
 
 ESCALATE_LABEL = "ESCALATE"
 # Descriptive name restored on the body card and the band input.
-ESCALATE_BODY_NAME = "Разрешение конфликтов слияния"
+ESCALATE_BODY_NAME = "Merge conflict resolution"
 REPAIR_COMPLETED_CAPTION = "REPAIR completed"
 # 2026-10-02 user correction: the MAIN C column no longer renders the visible
 # owner label under its header; the lower state-graph `C` node keeps its owner
@@ -2213,11 +2213,11 @@ class DiagramCaptionPolishTest(unittest.TestCase):
         # not the raw `condition`.  (The label equals the condition today, so only
         # this mutation can distinguish source from value.)
         source = GEN.read_text(encoding="utf-8")
-        old = '("MERGE", "ESCALATE", "merge-конфликт"): "MERGE fail"'
+        old = '("MERGE", "ESCALATE", "merge-conflict"): "MERGE fail"'
         self.assertIn(old, source, "MERGE->ESCALATE EDGE_LABELS literal not found")
         mutated = source.replace(
             old,
-            '("MERGE", "ESCALATE", "merge-конфликт"): "SENTINEL-CANONICAL"',
+            '("MERGE", "ESCALATE", "merge-conflict"): "SENTINEL-CANONICAL"',
             1,
         )
         self.assertNotEqual(source, mutated)
@@ -2256,7 +2256,7 @@ class DiagramCaptionPolishTest(unittest.TestCase):
                     if e.get("class") == "nt"
                 ]
                 self.assertTrue(
-                    any(n.startswith("Лейн (work stream)") for n in notes),
+                    any(n.startswith("Lane (work stream)") for n in notes),
                     f"{theme}: lane definition note missing (nt notes={notes!r})",
                 )
 
@@ -2267,7 +2267,7 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 # These prove the DOCUMENTED collection policy, not a live collection run, and
 # they are section-scoped semantic invariants (not whole-file keyword soup):
 #   * a definitively incomplete task STOPS its whole group; remaining pending
-#     tasks become `incomplete` with reason "группа остановлена", never a task
+#     tasks become `incomplete` with reason "the group is stopped", never a task
 #     or group `blocked` status (blocked stays a parent-verification state);
 #   * other groups continue under their own lane;
 #   * a single-group collection creates no worktree/group/task branches and no
@@ -2280,6 +2280,31 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 #     (a project overlay, or an explicit user request); the
 #     skill grants no universal right and does not widen global AGENTS.md.
 # ---------------------------------------------------------------------------
+
+
+# The deployed runner prompt (`config/agents/pdca-orchestrator.md`) mirrors §Lane of this
+# contract.  The in-repo asset is English, but a deploy may still carry the earlier RU
+# wording of that mirror, so every host assertion below accepts either form.  The RU
+# alternatives are written with `\u` escapes on purpose: this file stays ASCII-only.
+_RU_HOST = {
+    "final": "\u043e\u043a\u043e\u043d\u0447\u0430\u0442\u0435\u043b\u044c\u043d",
+    "stops_whole_group": (
+        "\u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u0432\u0441\u044e \u0433\u0440\u0443\u043f\u043f\u0443"
+    ),
+    "reason": (
+        "\u0433\u0440\u0443\u043f\u043f\u0430 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0430"
+    ),
+    "remaining": "\u043e\u0441\u0442\u0430\u0432\u0448\u0438\u0435\u0441\u044f",
+    "blocked_status": (
+        "\u0441\u0442\u0430\u0442\u0443\u0441\u0430 blocked \u0443 \u0437\u0430\u0434\u0430\u0447/\u0433\u0440\u0443\u043f\u043f \u043d\u0435\u0442"
+    ),
+    "other_groups": (
+        "\u0434\u0440\u0443\u0433\u0438\u0435 \u0433\u0440\u0443\u043f\u043f\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436"
+    ),
+    "single_group": (
+        "\u0432\u0435\u0442\u043a\u0438/worktree \u0433\u0440\u0443\u043f\u043f\u044b \u0438 \u0437\u0430\u0434\u0430\u0447 \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u044e\u0442\u0441\u044f"
+    ),
+}
 
 
 class CollectionContractSemanticsTest(unittest.TestCase):
@@ -2301,52 +2326,80 @@ class CollectionContractSemanticsTest(unittest.TestCase):
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_definitive_incomplete_stops_whole_group(self):
-        lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
-        self.assertTrue(lane_sec, "SKILL §Лейн not found")
+        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
+        self.assertTrue(lane_sec, "SKILL §Lane not found")
         self.assertRegex(
             lane_sec,
-            r"окончательн\w+ incomplete задачи останавливает всю группу",
+            r"final incomplete of a task stops the whole group",
         )
         self.assertRegex(
             lane_sec,
-            r"оставш\w+ pending задачи группы помечаются incomplete",
+            r"remaining pending tasks of the group are marked incomplete",
         )
-        self.assertIn("группа остановлена", lane_sec)
-        self.assertRegex(lane_sec, r"не исполняются")
-        # pdca-orchestrator.md mirrors the same rule
+        self.assertIn("the group is stopped", lane_sec)
+        self.assertRegex(lane_sec, r"not executed")
+        # pdca-orchestrator.md mirrors the same rule (RU or EN deploy wording)
         lane = self._plain(self.lane)
-        self.assertRegex(
-            lane,
-            re.compile(r"окончательн\w+ incomplete.*останавливает всю группу", re.I),
+        lane_low = lane.lower()
+        self.assertTrue(
+            (
+                _RU_HOST["final"] in lane_low
+                and _RU_HOST["stops_whole_group"] in lane_low
+            )
+            or (
+                "final incomplete" in lane
+                and "stops the whole group" in lane
+            ),
+            "pdca-orchestrator.md does not mirror the group-stop rule",
         )
-        self.assertIn("группа остановлена", lane)
+        self.assertTrue(
+            _RU_HOST["reason"] in lane_low or "the group is stopped" in lane,
+            "pdca-orchestrator.md lost the explicit group-stop reason",
+        )
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_remaining_tasks_incomplete_reason_not_blocked(self):
         lane = self._plain(self.lane)
-        m = re.search(r"оставшиеся[^.]*?incomplete[^.]*?»", lane, re.I)
-        self.assertIsNotNone(m, "pdca-orchestrator.md lost the remaining-tasks sentence")
-        assert m is not None
-        sentence = m.group(0)
-        self.assertIn("группа остановлена", sentence)
+        sentence = next(
+            (
+                part
+                for part in re.findall(r"[^.]*?incomplete[^.]*", lane)
+                if _RU_HOST["remaining"] in part or "remaining" in part
+            ),
+            None,
+        )
+        self.assertIsNotNone(
+            sentence, "pdca-orchestrator.md lost the remaining-tasks sentence"
+        )
+        assert sentence is not None
+        self.assertTrue(
+            _RU_HOST["reason"] in sentence or "the group is stopped" in sentence,
+            "pdca-orchestrator.md lost the explicit stop reason of the remaining tasks",
+        )
         self.assertNotIn("blocked", sentence)
         # pdca-orchestrator.md states explicitly that task/group `blocked` does not exist
-        self.assertRegex(lane, r"статуса blocked у задач/групп нет")
-        # SKILL §Лейн: `blocked` stays only the parent-verification state
-        lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
-        self.assertRegex(lane_sec, r"статуса blocked у задач/групп нет")
+        self.assertTrue(
+            _RU_HOST["blocked_status"] in lane
+            or "no blocked status for tasks/groups" in lane,
+            "pdca-orchestrator.md must state that `blocked` is not a task/group status",
+        )
+        # SKILL §Lane: `blocked` stays only the parent-verification state
+        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
+        self.assertRegex(lane_sec, r"status blocked does not exist for tasks/groups")
         self.assertRegex(
-            lane_sec, r"blocked остаётся только состоянием родительской верификации"
+            lane_sec, r"blocked remains only a state of the parent verification"
         )
 
     @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_other_groups_continue(self):
-        lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
-        self.assertRegex(lane_sec, r"другие группы продолжают")
-        fail = self._skill_plain("## Сбой (failure semantics)", "## Статус коллекции")
-        self.assertIn("другие группы продолжают", fail)
-        self.assertRegex(
-            self._plain(self.lane), re.compile(r"другие группы продолж", re.I)
+        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
+        self.assertRegex(lane_sec, r"other groups continue")
+        fail = self._skill_plain("## Failure (semantics)", "## Collection status")
+        self.assertIn("other groups continue", fail)
+        host = self._plain(self.lane).lower()
+        self.assertTrue(
+            _RU_HOST["other_groups"] in host or "other groups continue" in host,
+            "pdca-orchestrator.md lost the other-groups-continue rule",
         )
 
     # --- single-group degradation ----------------------------------------
@@ -2358,17 +2411,19 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         for sec in (p, d):
             self.assertRegex(
                 sec,
-                re.compile(r"одн\w+ группа|если группа одна|при одной группе", re.I),
+                re.compile(r"one group|single group", re.I),
             )
         self.assertRegex(
-            p, re.compile(r"worktree и ветк\w+.*не создаются", re.I)
+            p, re.compile(r"no worktree and no group branch are created", re.I)
         )
-        self.assertRegex(p, r"merge --no-ff не нужен")
-        self.assertRegex(d, re.compile(r"worktree и ветки .*не создаются", re.I))
+        self.assertRegex(p, r"merge --no-ff is not needed")
+        self.assertRegex(d, re.compile(r"no worktree and no branches .*are created", re.I))
         self.assertRegex(d, r"merge")
-        self.assertRegex(
-            self._plain(self.lane),
-            r"в режиме одной группы ветки/worktree группы и задач не создаются",
+        host = self._plain(self.lane)
+        self.assertTrue(
+            _RU_HOST["single_group"] in host
+            or "branches and worktrees are not created" in host,
+            "pdca-orchestrator.md lost the single-group branch/worktree exemption",
         )
 
     # --- the status file is the only progress mirror ----------------------
@@ -2376,95 +2431,95 @@ class CollectionContractSemanticsTest(unittest.TestCase):
     def test_progress_mirror_is_the_status_file_only(self):
         p = self._skill_plain("### P —", "### D —")
         # no separate sidebar todo: the host may not provide a todo tool
-        self.assertIn("Отдельного туду в сайдбаре нет", p)
-        self.assertIn("хост может не давать todo-инструмента", p)
-        self.assertIn("второе зеркало только порождает расхождение", p)
+        self.assertIn("There is no separate sidebar todo", p)
+        self.assertIn("the host may not provide a todo tool", p)
+        self.assertIn("a second mirror only produces divergence", p)
         # the collection status file is updated in the same turn and reconciled
-        self.assertIn("в том же такте, что и событие", p)
-        self.assertIn("Перед диспетчеризацией сверяйся с файлом статуса", p)
-        self.assertIn("после компакции состояние восстанавливается из него", p)
+        self.assertIn("in the same tick as the event", p)
+        self.assertIn("Before dispatching, check the status file", p)
+        self.assertIn("after compaction the state is restored from it", p)
         # groups and tasks live in the status file tables, not a sidebar list
-        status = self._skill_plain("## Статус коллекции", "## Отчёт")
-        self.assertIn("таблицу групп", status)
-        self.assertIn("таблицу задач", status)
+        status = self._skill_plain("## Collection status", "## Report")
+        self.assertIn("table of groups", status)
+        self.assertIn("table of tasks", status)
 
     # --- merge policy -----------------------------------------------------
 
     def test_merge_only_done_never_incomplete_tip(self):
         d = self._skill_plain("### D —", "### C —")
-        self.assertRegex(d, r"только для групп done")
-        self.assertRegex(d, r"incomplete-группа не мержится никогда")
-        self.assertRegex(d, r"даже если")
-        status = self._skill_plain("## Статус коллекции", "## Отчёт")
-        self.assertRegex(status, r"incomplete никогда не merged")
-        self.assertRegex(status, r"incomplete.*не мержится")
+        self.assertRegex(d, r"only for the done groups")
+        self.assertRegex(d, r"[Aa]n incomplete group is never merged")
+        self.assertRegex(d, r"even if")
+        status = self._skill_plain("## Collection status", "## Report")
+        self.assertRegex(status, r"incomplete is never merged")
+        self.assertRegex(status, r"incomplete.*not merged")
 
     # --- incomplete results survive cleanup -------------------------------
 
     def test_incomplete_results_preserved_through_cleanup(self):
-        a = self._skill_plain("### A —", "## Лейн")
-        self.assertRegex(a, r"сносит только одноразовые")
-        self.assertRegex(a, r"incomplete-групп не удаляются никогда")
+        a = self._skill_plain("### A —", "## Lane")
+        self.assertRegex(a, r"removes only disposable")
+        self.assertRegex(a, r"incomplete groups are never deleted")
         self.assertRegex(a, r"patch")
         self.assertRegex(a, r"refs")
-        self.assertRegex(a, r"нельзя удалять")
+        self.assertRegex(a, r"must not be deleted")
         # single-group: earlier commits stay in the current branch, no rollback
         p = self._skill_plain("### P —", "### D —")
-        self.assertRegex(p, r"incomplete.*коммиты.*остаются.*без авто-отката")
-        fail = self._skill_plain("## Сбой (failure semantics)", "## Статус коллекции")
-        self.assertRegex(fail, r"результаты сохраняются")
-        self.assertRegex(fail, r"refs/ветки/коммиты \+ patch")
+        self.assertRegex(p, r"incomplete.*commits.*stay.*no automatic rollback")
+        fail = self._skill_plain("## Failure (semantics)", "## Collection status")
+        self.assertRegex(fail, r"the results are preserved")
+        self.assertRegex(fail, r"refs/branches/commits \+ the patch")
 
     # --- explicit authorized autocommit is an overlay, not universal ------
 
     def test_explicit_autocommit_overlay_not_universal(self):
-        header = self._skill_plain("## Роль", "## Коллекция")
-        self.assertRegex(header, r"явно разрешённый автокоммит")
-        self.assertRegex(header, r"проектный overlay")
-        self.assertRegex(header, r"конкретного проекта")
+        header = self._skill_plain("## Role", "## Collection")
+        self.assertRegex(header, r"explicitly authorized autocommit")
+        self.assertRegex(header, r"project overlay")
+        self.assertRegex(header, r"particular project")
         self.assertRegex(
             header,
-            r"сам скилл .{0,40}универсального права на коммит/merge не даёт",
+            r"skill itself grants no universal right to commit/merge",
         )
-        self.assertRegex(header, r"глобальные AGENTS\.md не расширяет")
-        self.assertRegex(header, re.compile(r"без разрешения", re.I))
-        params = self._skill_plain("## Параметры", "## Связь с базовым PDCA")
-        self.assertRegex(params, r"проектный overlay или явный запрос пользователя")
-        self.assertRegex(params, r"сам скилл права не даёт")
+        self.assertRegex(header, r"does not extend the global AGENTS\.md")
+        self.assertRegex(header, re.compile(r"without authorization", re.I))
+        params = self._skill_plain("## Parameters", "## Relation to the base PDCA")
+        self.assertRegex(params, r"project overlay or an explicit user request")
+        self.assertRegex(params, r"skill itself grants no right")
 
     # --- stack-neutral: per-task variant, no hard pdca-dotnet dependency -----
 
     def test_collection_is_stack_neutral_with_per_task_variant(self):
         # The collection must not require .NET: the cycle variant is chosen per
         # task, so both code contracts are named and the base stays generic.
-        header = self._skill_plain("## Роль", "## Коллекция")
-        self.assertRegex(header, re.compile(r"вариант цикла выбирается на задачу", re.I))
+        header = self._skill_plain("## Role", "## Collection")
+        self.assertRegex(header, re.compile(r"the cycle variant is chosen per task", re.I))
         self.assertIn("pdca-dotnet", header)
         self.assertIn("pdca-coder", header)
         self.assertRegex(
             header,
-            re.compile(r"\.NET/C#\s*→\s*pdca-dotnet, другой код\s*→\s*pdca-coder"),
+            re.compile(r"\.NET/C#\s*→\s*pdca-dotnet, other code\s*→\s*pdca-coder"),
         )
-        lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
-        self.assertRegex(lane_sec, re.compile(r"выбранн\w+ для задачи варианта", re.I))
+        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
+        self.assertRegex(lane_sec, re.compile(r"variant chosen for the task", re.I))
         self.assertIn("pdca-coder", lane_sec)
         self.assertIn("pdca-dotnet", lane_sec)
-        conn = self._skill_plain("## Связь с базовым PDCA", "## Fallback")
-        self.assertTrue(conn, "SKILL §Связь с базовым PDCA not found")
-        self.assertRegex(conn, re.compile(r"стек-нейтрален", re.I))
+        conn = self._skill_plain("## Relation to the base PDCA", "## Fallback")
+        self.assertTrue(conn, "SKILL §Relation to the base PDCA not found")
+        self.assertRegex(conn, re.compile(r"stack-neutral", re.I))
         self.assertIn("pdca-coder", conn)
 
     # --- the branch chain is per task, not per group ----------------------
 
     def test_branch_chain_is_per_task_not_group(self):
-        lane_sec = self._skill_plain("## Лейн (work stream)", "## Git-модель")
+        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
         self.assertRegex(
             lane_sec,
-            r"ветка collection/<id>/task-<g>-<k> от закоммиченного tip предыдущей",
+            r"branch collection/<id>/task-<g>-<k> from the committed tip of the previous",
         )
-        git = self._skill_plain("## Git-модель", "## Сбой")
-        self.assertRegex(git, r"цепочка веток задач")
-        self.assertRegex(git, r"следующая ветвится от tip предыдущей")
+        git = self._skill_plain("## Git model", "## Failure (semantics)")
+        self.assertRegex(git, r"chain of task branches")
+        self.assertRegex(git, r"next one branches from the tip of the previous")
 
     # --- group status enum: the exact original 5 values, `merged` included -
 
@@ -2474,7 +2529,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         # `done` -> `merged` status transition.  It must NOT be renamed/relocated
         # into a separate "merge-disposition" field, and `skipped` is not a group
         # status value at all (only an integration note).
-        skill_status = _skill_section(self.skill, "## Статус коллекции", "## Отчёт")
+        skill_status = _skill_section(self.skill, "## Collection status", "## Report")
         skill_enum = re.search(
             r"\(`pending`\s*\|\s*`in-progress`\s*\|\s*`done`\s*\|\s*"
             r"`incomplete`\s*\|\s*`merged`\)",
@@ -2482,17 +2537,18 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         )
         self.assertIsNotNone(
             skill_enum,
-            "SKILL §Статус must carry the exact 5-value group enum including `merged`",
+            "SKILL §Collection status must carry the exact 5-value group enum "
+            "including `merged`",
         )
         assert skill_enum is not None
         self.assertNotIn("skipped", skill_enum.group(0))
         # the representation is unchanged: no "merge-disposition" field anywhere
         self.assertNotIn("merge-disposition", self.skill)
         status_plain = self._plain(skill_status)
-        self.assertRegex(status_plain, r"переход только done → merged")
-        self.assertRegex(status_plain, r"incomplete никогда не merged")
+        self.assertRegex(status_plain, r"transition is only done → merged")
+        self.assertRegex(status_plain, r"incomplete is never merged")
         self.assertRegex(
-            status_plain, r"skipped — примечание интеграции .*не статус группы"
+            status_plain, r"skipped is an integration note .*not a group status"
         )
 
         # the scenario matrix enumerates the same exact 5-value group enum
@@ -2528,21 +2584,21 @@ class CollectionContractSemanticsTest(unittest.TestCase):
             "replacement for the group enum)",
         )
         # the pause is derived from the lane, and adds no new statuses
-        self.assertIn("производн", skill,
-                      "SKILL.md must say the pause is derived (stem 'производн')")
-        self.assertIn("новых статусов", skill,
+        self.assertIn("derived", skill,
+                      "SKILL.md must say the pause is derived (stem 'derived')")
+        self.assertIn("no new task/group statuses", skill,
                       "SKILL.md must say no new statuses are introduced")
         # negative: `blocked` is never (re)defined as a task/group status; a
-        # negated mention ("статуса `blocked` ... нет") is the required wording,
+        # negated mention ("the status `blocked` does not exist") is the required wording,
         # not a definition.
         for line in self.skill.splitlines():
-            m = re.search(r"(?i)статус[а-я]*\s+`?`?blocked`?`?", line)
+            m = re.search(r"(?i)status\w*\s+`?blocked`?", line)
             if not m:
                 continue
             tail = line[m.end(): m.end() + 60].lower()
             with self.subTest(line=line.strip()[:80]):
                 self.assertTrue(
-                    re.search(r"нет|не\s+является|не\s+существует|запрещ|отсутству", tail),
+                    re.search(r"no\b|not\b|never|forbidden|absent", tail),
                     "a status definition of `blocked` appeared for tasks/groups: "
                     f"{line!r}",
                 )
@@ -2561,12 +2617,12 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         self.assertIn("checkpoint", skill,
                       "SKILL.md lacks the recovery checkpoint (paired with the "
                       "explicit final disposition)")
-        self.assertIn("явн", skill,
+        self.assertIn("explicit", skill,
                       "SKILL.md must require an explicit final disposition "
-                      "(stem 'явн')")
-        self.assertIn("только принятый", skill,
+                      "(stem 'explicit')")
+        self.assertIn("only by an accepted", skill,
                       "SKILL.md must state that only an accepted `met` closes "
-                      "work ('только принятый')")
+                      "work ('only an accepted')")
         self.assertIn("met", skill)
 
 
@@ -2705,7 +2761,7 @@ def _data_step_values(root: ET.Element) -> set[str]:
     }
 
 
-_P_TO_DO_READY = re.compile(r"all\s+plans|планы\s+готовы", re.I)
+_P_TO_DO_READY = re.compile(r"all\s+plans|plans\s+ready", re.I)
 
 
 class CollectionPlanBarrierDiagramTest(unittest.TestCase):

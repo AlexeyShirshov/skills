@@ -558,7 +558,7 @@ class GeneratedDiagramTest(unittest.TestCase):
             root = ET.fromstring(self.runs[0][svg])
             texts = " ".join(el.text or "" for el in root.iter() if el.tag.endswith("text"))
             with self.subTest(svg=svg):
-                for token in ("не исчерпан", "исчерпан r", "r+1", "tradeoff"):
+                for token in ("not exhausted", "r exhausted", "r+1", "trade-off"):
                     self.assertIn(token, texts)
 
     def test_html_inlines_paired_svg_module_for_module(self):

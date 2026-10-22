@@ -26,10 +26,10 @@ HAND_FILES = (
     "pdca-coder-hand-dark.svg",
     "pdca-coder-hand-dark.html",
 )
-LENS_LABEL = "pdca-scout + доменные линзы"
-DOCS_LABEL = "README · документация"
-LIGHT_TITLE = "pdca-coder — ручная раскладка"
-DARK_TITLE = "pdca-coder — ручная раскладка (тёмная тема)"
+LENS_LABEL = "pdca-scout + domain lenses"
+DOCS_LABEL = "README · documentation"
+LIGHT_TITLE = "pdca-coder — hand layout"
+DARK_TITLE = "pdca-coder — hand layout (dark theme)"
 
 
 def read(path: Path) -> str:

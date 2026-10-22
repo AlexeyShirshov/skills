@@ -432,7 +432,7 @@ Changed files) и готовое **сообщение для следующей 
 | Утверждение | Источник |
 |---|---|
 | .NET-вариант — тот же контракт, инструменты заменяемы | `opencode/pdca-dotnet/SKILL.md:11-13` |
-| Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `opencode/pdca-collection/SKILL.md §Роль` |
+| Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `opencode/pdca-collection/SKILL.md §Role` |
 | Явный триггер и разведение скиллов; «правка без цикла — напрямую» | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
 | Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
 | `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `opencode/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
@@ -446,7 +446,7 @@ Changed files) и готовое **сообщение для следующей 
 | Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `opencode/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
 | Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `opencode/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `opencode/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
-| Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
+| Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
 | Гейты качества: ноль предупреждений; покрытие/ветки/мутации/CRAP; безопасность прогонов тестов | `opencode/pdca-dotnet/SKILL.md §Coder editing discipline (applying fixes) · §Test strategy (PLAN → TEST) · §Test run safety (memory + streaming) — every phase · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | `dotnet-*`-линзы PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md §Delegation by phase · §PLAN: design checklist (generic) · §CHECK: audit checklist (generic) · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | Запрет 4-й попытки, эскалация по счётчику, роутинг решения | `opencode/pdca-dotnet/SKILL.md §State machine · §Escalation (pdca-escalate)` |

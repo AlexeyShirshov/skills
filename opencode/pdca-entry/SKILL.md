@@ -1,6 +1,6 @@
 ---
 name: pdca-entry
-description: "Single entry point (umbrella) for the PDCA skill family: classifies a task and hands it to exactly one contract — pdca-collection for a batch of independent tasks («список задач», «milestone»; parallel when footprints allow), pdca-incremental for a long-running campaign without a whole-volume plan («инкрементами», «маленькими шагами», «двигаемся к цели»), pdca-dotnet for .NET/C#, pdca-coder for other code, pdca otherwise. Invoke when the user asks to run a task \"by the cycle\", \"via PDCA\", \"по циклу\", \"через PDCA\", \"запусти PDCA\", or names pdca-entry; the other contracts are loaded only by explicit ID. Not for ordinary tasks."
+description: "Single entry point (umbrella) for the PDCA skill family: classifies a task and hands it to exactly one contract — pdca-collection for a batch of independent tasks (a task list, a milestone; parallel when footprints allow), pdca-incremental for a long-running campaign without a whole-volume plan (moving a goal forward in small increments), pdca-dotnet for .NET/C#, pdca-coder for other code, pdca otherwise. Invoke when the user asks to run a task \"by the cycle\", \"via PDCA\", \"run PDCA\", or names pdca-entry; the other contracts are loaded only by explicit ID. Not for ordinary tasks."
 ---
 
 # PDCA entry: the family umbrella
@@ -32,7 +32,7 @@ cycle (rows 3–5), not a campaign. Do not choose incremental merely because a b
 because all tasks share one footprint, or because a single goal's work is listed.
 
 **Size alone is not a signal.** A large but plannable task is one cycle. The campaign criteria are
-canonical in `pdca-incremental` §«Когда выбирать»: the goal is checkable, the path is unknown,
+canonical in `pdca-incremental` §When to choose: the goal is checkable, the path is unknown,
 the steps are information-dependent, and a whole-volume plan would be a stub.
 
 ### Composition: form of execution vs. cycle variant

@@ -1,6 +1,6 @@
 """Run the executable git-model check inside ``unittest discover``.
 
-``git-model-sim.sh`` encodes SKILL.md §«Git-модель» on throwaway temp
+``git-model-sim.sh`` encodes SKILL.md §Git model on throwaway temp
 repositories (branch chain, fast-forwarded group branch, ``merge --no-ff`` of
 completed groups, conflict detection, single-group isolation, ``incomplete``
 group preserved but never merged).  This wrapper only shells out to it, so the
@@ -85,9 +85,9 @@ def _statements(text: str) -> list[str]:
 def _outer_commit_prohibitions(text: str) -> list[str]:
     """Statements that read `Commit policy: none` as a ban on the outer commit.
 
-    Only a *non-negated* ``запрещ...`` counts: ``не запрещает`` is the wording the
+    Only a *non-negated* ``forbid...`` counts: ``does not forbid`` is the wording the
     contract is expected to use (the policy does not forbid the collection's own
-    outer commit). ``не разреш...`` is always a prohibition.
+    outer commit). ``not allowed`` is always a prohibition.
     """
     hits: list[str] = []
     for statement in _statements(text):
@@ -95,17 +95,17 @@ def _outer_commit_prohibitions(text: str) -> list[str]:
             continue
         if not re.search(r"(?i)commit", statement):
             continue
-        for ban in re.finditer(r"(?i)(запрещ\w*|не\s+разреш\w*)", statement):
+        for ban in re.finditer(r"(?i)(forbid\w*|not\s+allowed)", statement):
             before = statement[max(0, ban.start() - 12):ban.start()].lower()
-            if re.search(r"(?<!\w)не\s*$", before):
-                continue  # "не запрещает" — the allowed wording
+            if re.search(r"(?:\bnot|\bno)\s*$", before):
+                continue  # "does not forbid" — the allowed wording
             hits.append(statement)
             break
     return hits
 
 
 class GitModelContractTextTest(unittest.TestCase):
-    """SKILL.md §Git-модель: `Commit policy: none` is not a ban on the outer commit."""
+    """SKILL.md §Git model: `Commit policy: none` is not a ban on the outer commit."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -123,9 +123,9 @@ class GitModelContractTextTest(unittest.TestCase):
             for m in re.finditer(r"Commit policy: none", self.plain)
         ]
         self.assertTrue(
-            any(re.search(r"(?i)commit", w) and "внешн" in w for w in windows),
+            any(re.search(r"(?i)commit", w) and "external" in w for w in windows),
             "SKILL.md must scope `Commit policy: none` to external work "
-            f"(stem 'внешн' near 'commit'): {windows!r}",
+            f"(stem 'external' near 'commit'): {windows!r}",
         )
 
     def test_commit_policy_none_does_not_forbid_the_outer_commit(self):
@@ -136,8 +136,8 @@ class GitModelContractTextTest(unittest.TestCase):
             "commit-policy scope)",
         )
         self.assertTrue(
-            "блокер" in self.plain or "blocker" in self.plain,
-            "SKILL.md must name a `блокер`/`blocker` instead of an outer-commit ban",
+            "blocker" in self.plain,
+            "SKILL.md must name a `blocker` instead of an outer-commit ban",
         )
         self.assertEqual(
             [],

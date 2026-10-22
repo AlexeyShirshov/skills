@@ -35,53 +35,53 @@ TIER_MODEL = {"cheap": "cheap", "medium": "medium", "strong": "strong"}
 
 BLOCKS = {
     "B": [
-        ("Цель + рецепт", "pdca-planner · read-only · фиксация", "medium"),
-        ("Baseline", "pdca-executor · edit/bash · тот же рецепт", "cheap"),
-        ("Флор · target", "pdca-planner · baseline + флор", "medium"),
-        ("Статус-файл", "primary · status-only · один файл", "cheap"),
+        ("Goal + recipe", "pdca-planner · read-only · fixation", "medium"),
+        ("Baseline", "pdca-executor · edit/bash · recipe", "cheap"),
+        ("Floor · target", "pdca-planner · baseline + floor", "medium"),
+        ("Status file", "primary · status-only · one file", "cheap"),
     ],
     "P": [
-        ("Discover · карта", "pdca-scout · разрыв + deferred · read-only", "cheap"),
-        ("Ranked seed", "pdca-scout · факты, не решение", "cheap"),
-        ("Brief · 6 блоков", "pdca-planner · read-only", "medium"),
-        ("Acceptance · targets", "pdca-planner · флор · скоуп", "medium"),
+        ("Discover · gap map", "pdca-scout · gap + deferred · read-only", "cheap"),
+        ("Ranked seed", "pdca-scout · facts, not a decision", "cheap"),
+        ("Brief · six blocks", "pdca-planner · read-only", "medium"),
+        ("Acceptance · targets", "pdca-planner · floor · scope", "medium"),
     ],
     "S": [
-        ("P · PLAN", "pdca-planner · план шага · ревизия r", "medium"),
-        ("D · DO", "pdca-executor · edit/bash · факты", "cheap"),
+        ("P · PLAN", "pdca-planner · step plan · rev r", "medium"),
+        ("D · DO", "pdca-executor · edit/bash · facts", "cheap"),
         ("C · CHECK", "pdca-check · read-only · evidence", "medium"),
-        ("A · ACT", "pdca-executor · статус/доки", "cheap"),
-        ("Тип шага", "increment · repair · verify", "medium"),
+        ("A · ACT", "pdca-executor · status/docs", "cheap"),
+        ("Step kind", "increment · repair · verify", "medium"),
     ],
     "A": [
-        ("Вердикт", "pdca-check · read-only · по строкам", "medium"),
-        ("Число", "один прогон · красное в архив", "cheap"),
-        ("Строка шага", "primary · запись в статус-файл", "cheap"),
+        ("Verdict", "pdca-check · read-only · by rows", "medium"),
+        ("Number", "one run · red is archived", "cheap"),
+        ("Step row", "primary · status-file write", "cheap"),
     ],
     "R": [
-        ("Цель?", "pdca-planner · read-only · предикат", "medium"),
-        ("Остаток", "доказать числами · блокер", "medium"),
-        ("Next seed", "pdca-planner · read-only · следующий шаг", "medium"),
-        ("Маршрут", "next · repair · verify", "medium"),
+        ("Goal?", "pdca-planner · predicate", "medium"),
+        ("Remainder", "prove with numbers · blocker", "medium"),
+        ("Next seed", "pdca-planner · the next step", "medium"),
+        ("Route", "next · repair · verify", "medium"),
     ],
     "X": [
-        ("met", "единственный успех", "cheap"),
-        ("unreachable", "остаток доказан числами", "cheap"),
-        ("blocked/stopped", "точка продолжения в статус-файле", "cheap"),
+        ("met", "the only success", "cheap"),
+        ("unreachable", "the remainder proven by numbers", "cheap"),
+        ("blocked/stopped", "resume point in the status file", "cheap"),
     ],
 }
 
 # orchestrator inputs, per phase
 INPUTS = [
-    "BOOTSTRAP ← «старт кампании» · «новая цель»",
-    "PLAN ← «baseline принят» · «next seed»",
-    "STEP ← «brief утверждён» · «реплан r+1»",
-    "ACCEPT ← «шаг закрыт»",
-    "DECIDE ← «замер принят»",
-    "STOP ← «met» · «unreachable» · «blocked» · «stopped»",
+    'BOOTSTRAP ← "campaign start" · "new goal"',
+    'PLAN ← "baseline accepted" · "next seed"',
+    'STEP ← "brief approved" · "replan r+1"',
+    'ACCEPT ← "step closed"',
+    'DECIDE ← "measurement accepted"',
+    'STOP ← "met" · "unreachable" · "blocked" · "stopped"',
 ]
-DISPATCH = {"B": "старт", "P": "план готов",
-            "S": "шаг закрыт", "A": "замер принят", "R": "решение", "X": "остановка"}
+DISPATCH = {"B": "start", "P": "plan ready",
+            "S": "step closed", "A": "measurement accepted", "R": "decision", "X": "stop"}
 
 # campaign state graph
 STC = {"START": None, "BOOT": "#0e7490", "PLAN": "#2563eb",
@@ -203,7 +203,7 @@ def render(P):
     # ---- orchestrator band ----
     s.append(f'<rect x="{M}" y="{ORB_Y}" width="{W - 2 * M}" height="{ORB_H}" rx="10" class="band"/>')
     s.append(f'<text x="{M + 18}" y="{ORB_Y + 24}" class="bt">'
-             'Оркестратор · cheap — кампания: primary · шаг: pdca-orchestrator</text>')
+             'Orchestrator · cheap — campaign: primary · step: pdca-orchestrator</text>')
     split = (len(INPUTS) + 1) // 2
     for gi in range(2):
         gx = M + 18 if gi == 0 else M + 18 + (W - 2 * M) / 2
@@ -243,8 +243,8 @@ def render(P):
 
     # ---- tier legend ----
     legend = [
-        ("#0d9488", "дешёвая ступень", "cheap", "primary · pdca-scout · pdca-executor · orchestrator"),
-        ("#4f46e5", "средняя ступень", "medium", "pdca-planner · pdca-check"),
+        ("#0d9488", "cheap tier", "cheap", "primary · pdca-scout · pdca-executor · orchestrator"),
+        ("#4f46e5", "medium tier", "medium", "pdca-planner · pdca-check"),
     ]
     iw = (W - 2 * M) / 2
     for i, (col, title, model, roles) in enumerate(legend):
@@ -264,8 +264,8 @@ def render(P):
         s.append(f'<text x="{lx + 22 + mw + 10}" y="{LEG_Y + 23}" class="ls">{esc(roles)}</text>')
         if i == len(legend) - 1:
             s.append(f'<text x="{W / 2}" y="{LEG_Y + 44}" class="ls" text-anchor="middle">'
-                     'strong · pdca-escalate — не роль кампании: вызывается внутри STEP по триггерам, '
-                     'кампания получает результат</text>')
+                     'strong · pdca-escalate — not a campaign role: called inside STEP by triggers, '
+                     'the campaign receives the result</text>')
 
     # ---- campaign state graph (20 % narrower than the canvas content) ----
     NH, NW = 44, 120
@@ -274,7 +274,7 @@ def render(P):
     graph_x = M + (W - 2 * M - graph_w) / 2
     gap = (graph_w - NW) / (len(order) - 1)
     stx = {name: graph_x + i * gap for i, name in enumerate(order)}
-    s.append(f'<text x="{graph_x}" y="{SG_TITLE_Y}" class="lt">Граф кампании</text>')
+    s.append(f'<text x="{graph_x}" y="{SG_TITLE_Y}" class="lt">Campaign graph</text>')
     stc = {k: (v or P["state_neutral"]) for k, v in STC.items()}
     for name in order:
         x = stx[name]
@@ -285,11 +285,11 @@ def render(P):
                  f'text-anchor="middle">{esc(name)}</text>')
     _y = R1_TOP + NH / 2
     edges = [
-        ("start_boot", "START", "BOOT", "старт"),
-        ("boot_plan", "BOOT", "PLAN", "рецепт"),
+        ("start_boot", "START", "BOOT", "start"),
+        ("boot_plan", "BOOT", "PLAN", "recipe"),
         ("plan_step", "PLAN", "STEP", "brief"),
-        ("step_acc", "STEP", "ACC", "закрыт"),
-        ("acc_dec", "ACC", "DEC", "принято"),
+        ("step_acc", "STEP", "ACC", "closed"),
+        ("acc_dec", "ACC", "DEC", "accepted"),
     ]
     for eid, a, b, lab in edges:
         x1, x2 = stx[a] + NW, stx[b]
@@ -301,7 +301,7 @@ def render(P):
              f'fill="none" stroke="{P["arrow"]}" stroke-dasharray="5 4" marker-end="url(#arrow)" '
              f'data-edge-id="decide_plan"/>')
     s.append(label((stx["PLAN"] + stx["DEC"]) / 2 + NW / 2, R1_TOP - 52,
-                   "next step · baseline = принято", P["label"]))
+                   "next step · baseline = accepted", P["label"]))
     # repair: a failed increment re-runs the same target, it is not the next step.
     # Routed below the row so it reads separately from the defining DEC -> PLAN edge.
     rx1 = stx["DEC"]
@@ -325,7 +325,7 @@ def render(P):
                    "met · unreachable · blocked · stopped", P["label"], "end"))
     # verify is an optional integrated gate, not a second increment
     s.append(label(graph_x, R2_TOP + NH + 24,
-                   "verify — опциональный интегральный gate: target = gate, baseline не двигает",
+                   "verify — optional integrated gate: target = gate, does not move the baseline",
                    P["label"], "start"))
 
     s.append("</svg>")
@@ -333,7 +333,7 @@ def render(P):
 
 
 def htmlwrap(P, title, svg):
-    return ('<!doctype html><html lang="ru"><meta charset="utf-8">'
+    return ('<!doctype html><html lang="en"><meta charset="utf-8">'
             f'<title>{esc(title)}</title>'
             f'<style>body{{margin:0;background:{P["bg"]};font-family:Segoe UI,system-ui,sans-serif}}'
             f'.card{{background:{P["card"]};border-radius:12px;margin:20px;padding:12px;'
@@ -342,8 +342,8 @@ def htmlwrap(P, title, svg):
 
 
 VARIANTS = [
-    ("light", "incremental-hand", "pdca-incremental — кампания шагами"),
-    ("dark", "incremental-hand-dark", "pdca-incremental — кампания шагами (тёмная тема)"),
+    ("light", "incremental-hand", "pdca-incremental — campaign in steps"),
+    ("dark", "incremental-hand-dark", "pdca-incremental — campaign in steps (dark theme)"),
 ]
 
 rendered = {}

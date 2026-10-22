@@ -7,545 +7,580 @@ disable-model-invocation: true
 ---
 # Skill: pdca-incremental
 
-# Инкрементальная кампания
+# Incremental campaign
 
-## Роль
+## Role
 
-Ты ведёшь **кампанию** — цепочку полных PDCA-циклов, у которой есть одна проверяемая
-цель, но **нет обязательного плана на весь объём**. План есть только на текущий шаг;
-следующий шаг выбирается по результату предыдущего. Планы отдельных задач могут быть
-готовы заранее («прожарены») — кампания не собирает из них общий DAG и не обязана
-выполнять их в заранее объявленном порядке.
+You drive a **campaign** — a chain of full PDCA cycles that has one verifiable goal but
+**no mandatory plan for the whole volume**. A plan exists only for the current step; the
+next step is chosen from the result of the previous one. Plans of individual tasks may
+already be ready ("grilled") — the campaign does not assemble a common DAG out of them and
+is not obliged to execute them in a pre-declared order.
 
-**Это не отказ от декомпозиции, а другой её момент.** Коллекция делает декомпозицию
-входом: список задач и их footprint'ы известны до старта. Incremental делает её выходом:
-шаг — это и есть декомпозиция, выбранная после предыдущего замера. Для метрики с
-движущимся множеством непокрытых ветвей второй порядок честнее.
+**This is not a rejection of decomposition but a different moment of it.** A collection
+makes decomposition an input: the list of tasks and their footprints are known before the
+start. Incremental makes it an output: the step *is* the decomposition chosen after the
+previous measurement. For a metric with a moving set of uncovered branches the second
+order is more honest.
 
-**Критерий выбора — цель, а не форма списка.** Известный пакет задач с **независимыми
-целями** — это `pdca-collection`, даже если он идёт одним лейном или все задачи делят один
-footprint. Одна **общая** цель с неизвестным, информационно зависимым путём — эта кампания,
-даже если список задач известен заранее. Параллелизм не является ни условием входа в
-коллекцию, ни признаком кампании.
+**The selection criterion is the goal, not the shape of the list.** A known batch of tasks
+with **independent goals** is `pdca-collection`, even if it runs as one lane or all tasks
+share one footprint. One **shared** goal with an unknown, information-dependent path is
+this campaign, even if the task list is known in advance. Parallelism is neither a
+condition of entry into a collection nor a sign of a campaign.
 
-Это **не вариант цикла** и не замена базового контракта. Машина состояний, гейты,
-роли, счётчики `N`/`r`/`n` и loop-back берутся из базы без изменений. Кампания
-добавляет только то, чего нет у одиночного цикла:
+This is **not a cycle variant** and not a replacement for the base contract. The state
+machine, gates, roles, `N`/`r`/`n` counters and loop-back are taken from the base
+unchanged. The campaign adds only what the single cycle lacks:
 
-- **единицу инкремента** (что считается одним шагом и когда он принят);
-- **цепочку baseline** (шаг N+1 не стартует без принятого числа шага N);
-- **статус-файл кампании** (один файл на все шаги);
-- **правила остановки** (цель достигнута / остаток доказанно недостижим / блокер);
-- **два неинкрементальных типа шага** — `repair` (починка непринятого шага) и
-  `verify` (интегральный гейт без прироста).
+- **the increment unit** (what counts as one step and when it is accepted);
+- **the baseline chain** (step N+1 does not start without the accepted number of step N);
+- **the campaign status file** (one file for all steps);
+- **stop rules** (the goal is reached / the remainder is provably unreachable / a blocker);
+- **two non-incremental step kinds** — `repair` (fixing a non-accepted step) and
+  `verify` (an integrated gate that adds no gain).
 
-Один шаг = один полный цикл: PLAN → DO → CHECK → ACT. Шаг исполняет
-`pdca-orchestrator`, но вариант шага определяет кампания: `.NET/C#` → `pdca-dotnet`,
-другой код → `pdca-coder`, иначе → `pdca`, и передаёт его драйверу как
-`selected_variant`. Драйвер не классифицирует задачу и не выбирает вариант сам.
-Кампания вариант не подменяет.
+One step = one full cycle: PLAN → DO → CHECK → ACT. The step is executed by
+`pdca-orchestrator`, but the campaign determines the step's variant: `.NET/C#` →
+`pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`, and passes it to the driver
+as `selected_variant`. The driver does not classify the task and does not choose the
+variant itself. The campaign does not substitute the variant.
 
-**Кампания может быть единицей коллекции.** Тогда её форма исполнения —
-`execution_kind=campaign`, и ведёт её collection lane driver (`pdca-orchestrator`,
-`mode=collection-lane`), а не primary кампании: отдельного агента кампании нет и новый
-уровень `Task` не появляется. Такая кампания остаётся кампанией — один шаг за раз, один
-зачётный замер на шаг, своя цепочка baseline и свои правила остановки; коллекция не даёт
-ей ни параллельных шагов, ни зачёта числа без ACCEPT. Standalone-модель не меняется:
-кампанию ведёт дешёвый primary, а шаг он делегирует step-оркестратору — по одному вызову
-на шаг.
+**A campaign can be a collection unit.** Then its execution form is
+`execution_kind=campaign`, and it is led by the collection lane driver
+(`pdca-orchestrator`, `mode=collection-lane`), not by the campaign's primary: there is no
+separate campaign agent and no new `Task` level appears. Such a campaign stays a campaign —
+one step at a time, one credited measurement per step, its own baseline chain and its own
+stop rules; the collection gives it neither parallel steps nor credit for a number without
+ACCEPT. The standalone model does not change: a cheap primary leads the campaign, and it
+delegates the step to the step orchestrator — one call per step.
 
-## Роли, тиры и полномочия
+## Roles, tiers and authority
 
-Блоки кампании — не анонимные шаги: у каждого есть роль-владелец, тир и полномочия.
-Скилл называет **роли**; хост связывает их с агентами и моделями через `agent`-блок
-профиля, в скилле нет ни одного model id. Тиры кампании: **cheap** — исполнение и
-факты, **medium** — решения и вердикт. **strong** (`pdca-escalate`) — не роль кампании:
-его вызывает вариант цикла внутри шага по своим триггерам, кампания получает только
-результат.
+The campaign blocks are not anonymous steps: each has an owning role, a tier and
+authority. The skill names **roles**; the host binds them to agents and models through the
+profile's `agent` block, there is not a single model id in the skill. Campaign tiers:
+**cheap** — execution and facts, **medium** — decisions and the verdict. **strong**
+(`pdca-escalate`) is not a campaign role: it is called by the cycle variant inside a step
+by its own triggers, the campaign receives only the result.
 
-| блок | роль | агент | тир | полномочия | выход |
+| block | role | agent | tier | authority | output |
 | --- | --- | --- | --- | --- | --- |
-| BOOTSTRAP — решение | PLAN | `pdca-planner` | medium | read-only, без делегирования | цель, рецепт, единица, флор, target |
-| BOOTSTRAP — baseline | DO | `pdca-executor` | cheap | edit/bash только в разрешённой поверхности | точная дробь baseline |
-| DISCOVER | GATHER | `pdca-scout` | cheap | read-only: код, артефакты замера, git | карта разрыва, ranked seed |
-| BRIEF | PLAN | `pdca-planner` | medium | read-only, без делегирования | шесть блоков задания |
-| STEP N | RUNNER | `pdca-orchestrator` | cheap | dispatch-only: edit/bash запрещены; в standalone — только шаг, в collection-режиме (`mode=collection-lane`) этот же RUNNER ведёт кампанию и текущий цикл inline, без отдельного агента и нового уровня `Task`, при тех же тире и полномочиях; внутри — роли варианта (pdca-planner/pdca-check — medium, pdca-executor — cheap, pdca-escalate — strong по триггерам) | отчёт шага + evidence |
-| ACCEPT | CHECK | `pdca-check` | medium | read-only + evidence-артефакты шага | вердикт по строкам, принятое число |
-| DECIDE | PLAN | `pdca-planner` | medium | read-only | next seed, перераспределение или рекомендация стопа |
-| ACT/STOP | DO + primary | `pdca-executor` + primary | cheap | primary задаёт семантику записи; `pdca-executor` выполняет физическую запись статуса и git-команды | закрытая запись кампании |
+| BOOTSTRAP — decision | PLAN | `pdca-planner` | medium | read-only, no delegation | goal, recipe, unit, floor, target |
+| BOOTSTRAP — baseline | DO | `pdca-executor` | cheap | edit/bash only in the allowed surface | the exact baseline fraction |
+| DISCOVER | GATHER | `pdca-scout` | cheap | read-only: code, measurement artifacts, git | gap map, ranked seed |
+| BRIEF | PLAN | `pdca-planner` | medium | read-only, no delegation | six blocks of the step brief |
+| STEP N | RUNNER | `pdca-orchestrator` | cheap | dispatch-only: edit/bash forbidden; in standalone — the step only, in collection mode (`mode=collection-lane`) the same RUNNER leads the campaign and the current cycle inline, without a separate agent and a new `Task` level, under the same tiers and authority; inside — the variant's roles (pdca-planner/pdca-check — medium, pdca-executor — cheap, pdca-escalate — strong by triggers) | step report + evidence |
+| ACCEPT | CHECK | `pdca-check` | medium | read-only + the step's evidence artifacts | verdict by rows, the accepted number |
+| DECIDE | PLAN | `pdca-planner` | medium | read-only | next seed, redistribution or a stop recommendation |
+| ACT/STOP | DO + primary | `pdca-executor` + primary | cheap | the primary sets the semantics of the write; `pdca-executor` performs the physical status write and the git commands | the closed campaign record |
 
-Правила полномочий:
+Authority rules:
 
-- **Кампанию ведёт primary на cheap-тире** (в collection-режиме — collection lane driver,
-  §Роль). Он диспетчеризует роли и **владеет семантическим состоянием** кампании: какие
-  строки/поля/решения должны быть записаны. Физическую запись статус-файла и любые
-  `bash`/git-команды выполняет `pdca-executor` по явному диспетчу; primary не пишет файлы и
-  не запускает команды. Он не принимает решения за pdca-planner/pdca-check.
-- **primary не правит продукт и ничего не коммитит сам.** Его единственный предмет — решение
-  о содержимом статуса кампании; запись и commit-команды — у `pdca-executor`.
-- **pdca-planner не исполняет и не делегирует.** Его выход — решение, а не дифф.
-- **check не правит и не принимает по рассказу.** Вердикт выносится по evidence шага.
-- **pdca-scout не рекомендует.** Он приносит факты; ранжирование целей — за pdca-planner.
-- **orchestrator не пишет код.** Внутри шага он только маршрутизирует роли.
-- **`pdca-escalate` только решает и живёт внутри шага.** Strong, read-only; кампания его не
-  вызывает — только получает результат; решение исполняет `pdca-executor`, маршрут держит
-  orchestrator.
-- Отсутствие роли — resource blocker; flat-primary fallback разрешён только по правилам
-  базы и помечается `Notice:`.
+- **The campaign is led by the primary on the cheap tier** (in collection mode — the
+  collection lane driver, §Role). It dispatches the roles and **owns the semantic state**
+  of the campaign: which rows/fields/decisions must be written. The physical write of the
+  status file and any `bash`/git commands are performed by `pdca-executor` on explicit
+  dispatch; the primary does not write files and does not run commands. It does not decide
+  on behalf of pdca-planner/pdca-check.
+- **The primary does not edit the product and does not commit anything itself.** Its only
+  subject is the decision about the content of the campaign status; the write and the
+  commit commands belong to `pdca-executor`.
+- **pdca-planner neither executes nor delegates.** Its output is a decision, not a diff.
+- **check does not edit and does not accept on a story.** The verdict is made on the
+  step's evidence.
+- **pdca-scout does not recommend.** It brings facts; ranking the goals is pdca-planner's
+  job.
+- **The orchestrator does not write code.** Inside a step it only routes the roles.
+- **`pdca-escalate` only decides and lives inside the step.** Strong, read-only; the
+  campaign does not call it — it only receives the result; `pdca-executor` executes the
+  decision, the orchestrator holds the route.
+- A missing role is a resource blocker; the flat-primary fallback is allowed only by the
+  base rules and is marked `Notice:`.
 
-Тир — свойство роли, а не модели: хост вправе переопределить привязку, но не полномочия.
+A tier is a property of the role, not of the model: the host may override the binding, but
+not the authority.
 
-**Setup.** Агентов-ролей берут из семейства (`assets/agents/*.md` варианта цикла — `pdca` /
-`pdca-coder` / `pdca-dotnet`), драйвер `pdca-orchestrator` лежит в `assets/agents/` этого скилла;
-ему нужны разрешённая вложенная делегация и права на диспетчеризацию у дешёвого primary.
-Полный чек-лист — `docs/install.md` в репозитории скиллов.
+**Setup.** The role agents are taken from the family (`assets/agents/*.md` of the cycle
+variant — `pdca` / `pdca-coder` / `pdca-dotnet`), the `pdca-orchestrator` driver lives in
+this skill's `assets/agents/`; it needs allowed nested delegation and dispatch rights on
+the cheap primary. The full checklist is `docs/install.md` in the skills repository.
 
-## Когда выбирать
+## When to choose
 
-- Цель проверяема (число, множество, бинарный предикат), но **путь неизвестен**:
-  какие файлы/узлы дадут прирост, видно только после замера.
-- Шаги **информационно зависимы**: выбор цели шага N+1 опирается на результат шага N.
-- Полный план на весь объём был бы планом-заглушкой, а фиксированный DAG мешал бы
-  перераспределять работу, когда шаг не добрал.
-- Работа длинная: один цикл не покроет объём, а дробить на «мини-циклы» без
-  общего статус-файла и правил приёмки — значит терять состояние.
-- Или есть очередь прожаренных задач, но они служат **одной общей цели/метрике**, и порядок/
-  состав зависит от предыдущего замера: каждая задача становится шагом. Если у задач
-  **свои независимые цели**, это пакет — `pdca-collection`, даже когда он идёт одним лейном.
+- The goal is verifiable (a number, a set, a binary predicate), but **the path is
+  unknown**: which files/nodes will give the gain is visible only after a measurement.
+- The steps are **information-dependent**: the choice of the goal of step N+1 relies on
+  the result of step N.
+- A full plan for the whole volume would be a placeholder plan, and a fixed DAG would
+  hinder redistributing the work when a step fell short.
+- The work is long: one cycle will not cover the volume, and splitting into "mini-cycles"
+  without a common status file and acceptance rules means losing state.
+- Or there is a queue of grilled tasks, but they serve **one shared goal/metric**, and the
+  order/composition depends on the previous measurement: each task becomes a step. If the
+  tasks have **their own independent goals**, this is a batch — `pdca-collection`, even
+  when it runs as one lane.
 
-**Не выбирать:**
+**Do not choose it:**
 
-| ситуация | что использовать |
+| situation | what to use |
 | --- | --- |
-| план на весь объём известен и это одна задача | один цикл (`pdca-coder`/`pdca-dotnet`/`pdca`) |
-| известен список задач с **независимыми целями** (у каждой свой goal/приёмка) | `pdca-collection` — даже при одном footprint/одном лейне и без гарантии параллелизма |
-| известен список, но все задачи служат **одной общей цели/метрике**, а путь информационно зависим | эта кампания (шаг = задача) |
-| обычная задача без кампании | базовый цикл |
-| цель не проверяема | сначала PLAN/`brainstorming`, не кампания |
+| the plan for the whole volume is known and this is one task | one cycle (`pdca-coder`/`pdca-dotnet`/`pdca`) |
+| a known list of tasks with **independent goals** (each with its own goal/acceptance) | `pdca-collection` — even with one footprint/one lane and without a guarantee of parallelism |
+| the list is known, but all tasks serve **one shared goal/metric**, and the path is information-dependent | this campaign (a step = a task) |
+| an ordinary task without a campaign | the base cycle |
+| the goal is not verifiable | first PLAN/`brainstorming`, not a campaign |
 
-**`pdca-collection` — не альтернатива, а сосед.** У коллекции вход — известный список
-задач с независимыми целями и ALL-barrier: настоящий PLAN каждой задачи **до** первого DO.
-Параллелизм — свойство расписания, а не условие входа: если footprint один, хост даёт один
-лейн (`cap = 1`) или задачи делят ресурс, коллекция штатно деградирует к одному
-последовательному лейну, но контракт и per-task приёмка остаются коллекционными.
-Инкрементальная кампания выбирается по **другому** признаку: одна общая проверяемая
-цель/метрика, а путь к ней неизвестен и информационно зависим — следующий шаг выбирается
-после предыдущего замера. Общая цель и общий footprint сами по себе не делают пакет
-кампанией, если у задач независимые цели; и наоборот, известный список не делает проект
-коллекцией, если все задачи — шаги одной метрики. Если список рождается по ходу — эта
-кампания.
+**`pdca-collection` is a neighbour, not an alternative.** The collection's input is a known
+list of tasks with independent goals and an ALL-barrier: a real PLAN of every task
+**before** the first DO. Parallelism is a property of the schedule, not a condition of
+entry: if the footprint is one, the host gives one lane (`cap = 1`) or the tasks share a
+resource, the collection degrades to one sequential lane as designed, but the contract and
+the per-task acceptance stay collection-owned. An incremental campaign is chosen by a
+**different** sign: one shared verifiable goal/metric, while the path to it is unknown and
+information-dependent — the next step is chosen after the previous measurement. A shared
+goal and a shared footprint do not by themselves make a batch a campaign if the tasks have
+independent goals; conversely, a known list does not make the project a collection if all
+tasks are steps of one metric. If the list is born along the way — this is the campaign.
 
-## Инварианты кампании
+## Campaign invariants
 
-1. **Цель и рецепт замера фиксируются на старте.** Предикат цели, единица измерения,
-   знаменатель, фильтры исключений и пороги записываются в статус-файл дословно.
-   Смена **цели, рецепта, порога или флора** по ходу — не «уточнение», а **новая кампания с
-   новым baseline**; старые immutable-ревизии и принятые числа сохраняются, backfill запрещён.
-2. **Единица инкремента одна на всю кампанию.** «Один шаг = один принятый прирост»
-   (а не «один файл», «одна проверка» или «один день»). Внутри шага работа дробится на
-   кластеры, но шаг принимается целиком.
-3. **Флор инкремента (floor).** Минимальный прирост, ради которого вообще стоит платить за
-   полный цикл (замер, evidence, ревью). Флор задаётся на старте; цель шага =
-   принятый baseline + флор. Флор — нижняя граница, не потолок.
-4. **Цепочка baseline.** Вход шага N+1 — **принятое** число шага N, а не прогноз,
-   не промежуточный результат и не «примерно столько же». Нет принятого числа — нет
-   следующего шага.
-5. **Один зачётный замер на шаг.** Ровно один валидный результат по рецепту; провальный
-   результат не повторяют «на удачу». Замена допустима только при объективной
-   невалидности (среда, инструментация), архивируется и не выбирается по принципу
-   «где число красивее».
-6. **Цели открываются, а не планируются заранее.** На шаге N+1 сначала собирается
-   свежая карта разрыва (что осталось, что стало достижимо), затем отбираются цели по
-   ожидаемому выходу с учётом блокеров, отложенного реестра и защищённых участков.
-   Готовый список прожаренных задач — очередь кандидатов, а не план кампании: каждая
-   цель всё равно проходит discovery и свой PLAN, а порядок может измениться после
-   принятого замера.
-7. **Состояние переезжает.** Отложенный реестр с триггерами, blocked arms, открытые
-   тикеты, защищённые/чужие изменения и бюджеты живут в статус-файле и передаются
-   каждому следующему шагу. «Забыли» — не статус.
-8. **Консервативный зачёт.** Чужие и защищённые изменения исключаются из прироста;
-   дрейф знаменателя объясняется отдельно; прогноз никогда не пишется в графу
-   «измерено».
-9. **Порог не двигается.** Нельзя закрыть кампанию снижением порога, сменой фильтра,
-   удалением проверок, расширением бюджета пропусков или переводом работы в единицы, которые
-   не считаются рецептом.
-10. **Один шаг за раз.** Параллельные инкременты ломают цепочку: они стартуют от одной
-    карты разрыва, дублируют цели и делают неприменимым «шаг N+1 от числа шага N».
-    Кампания всегда занимает один лейн — и standalone, и как единица коллекции.
-11. **Коммит — только принятого шага и только по разрешению.** Автокоммит не является
-    правом скилла: его даёт проектный overlay или явный запрос пользователя; политика
-    фиксируется в статусе (`Commit policy: auto | none`). При `auto` после принятия шага
-    коммитятся только его пути (`git add <paths>`, не `-A`), сообщение называет кампанию
-    и шаг, tip входит в evidence шага. `push` — никогда. При `none` коммитов нет; цепочка
-    baseline живёт на числах и замороженном дереве, а не на коммитах. `none` относится
-    к промежуточным step-коммитам кампании и не запрещает внешний outer completion commit
-    коллекции; завершение кампании и финализация единицы — разные события.
-12. **Пауза — не финал, а композиция не даёт прав.** `blocked`, `stopped` и `unreachable`
-    с допустимым следующим target в неизменной цели/границах — checkpoint:
-    `disposition=paused`, единица остаётся `in-progress`, а не закрывается. `done`
-    единице даёт только принятый `met` с явным `disposition=finalized`. Финальный
-    неуспех требует явного финального неуспешного disposition и из паузы не выводится.
-    Кампания внутри коллекции не получает дополнительных прав: ни коммитов сверх
-    политики, ни обхода гейтов, ни параллельных шагов. Шаг кампании — только цикл
-    семейства; рекурсия (кампания в кампании, коллекция внутри кампании) запрещена.
+1. **The goal and the measurement recipe are fixed at the start.** The goal predicate, the
+   unit of measurement, the denominator, the exclusion filters and the thresholds are
+   written into the status file verbatim. A change of the **goal, recipe, threshold or
+   floor** along the way is not a "refinement" but **a new campaign with a new baseline**;
+   the old immutable revisions and accepted numbers are kept, backfill is forbidden.
+2. **The increment unit is one for the whole campaign.** "One step = one accepted gain"
+   (not "one file", "one check" or "one day"). Inside a step the work is split into
+   clusters, but the step is accepted as a whole.
+3. **The increment floor.** The minimum gain that is worth paying for a full cycle at all
+   (measurement, evidence, review). The floor is set at the start; the step target =
+   accepted baseline + floor. The floor is a lower bound, not a ceiling.
+4. **The baseline chain.** The input of step N+1 is the **accepted** number of step N, not
+   a forecast, not an intermediate result and not "about the same". No accepted number —
+   no next step.
+5. **One credited measurement per step.** Exactly one valid result by the recipe; a failed
+   result is not repeated "for luck". A replacement is allowed only for objective
+   invalidity (environment, instrumentation), is archived and is not chosen by "where the
+   number looks nicer".
+6. **Goals are discovered, not planned in advance.** On step N+1 a fresh gap map is
+   assembled first (what remains, what became reachable), then goals are selected by
+   expected yield taking blockers, the deferred register and protected areas into account.
+   A ready list of grilled tasks is a queue of candidates, not a campaign plan: every goal
+   still goes through discovery and its own PLAN, and the order may change after an
+   accepted measurement.
+7. **State carries over.** The deferred register with triggers, blocked arms, open tickets,
+   protected/foreign changes and budgets live in the status file and are passed to every
+   next step. "We forgot" is not a status.
+8. **Conservative accounting.** Foreign and protected changes are excluded from the gain;
+   denominator drift is explained separately; a forecast is never written into the
+   "measured" column.
+9. **The threshold does not move.** A campaign cannot be closed by lowering the threshold,
+   changing the filter, deleting checks, widening the skip budget or converting the work
+   into units that the recipe does not count.
+10. **One step at a time.** Parallel increments break the chain: they start from one gap
+    map, duplicate goals and make "step N+1 from the number of step N" inapplicable. A
+    campaign always occupies one lane — both standalone and as a collection unit.
+11. **Only an accepted step is committed, and only with permission.** Auto-commit is not a
+    right of the skill: it is granted by a project overlay or an explicit user request; the
+    policy is fixed in the status (`Commit policy: auto | none`). Under `auto`, after a
+    step is accepted only its paths are committed (`git add <paths>`, not `-A`), the
+    message names the campaign and the step, and the tip is part of the step's evidence.
+    `push` — never. Under `none` there are no commits; the baseline chain lives on numbers
+    and the frozen tree, not on commits. `none` refers to the campaign's intermediate
+    step commits and does not forbid the collection's external outer completion commit;
+    campaign completion and unit finalization are different events.
+12. **A pause is not final, and composition grants no rights.** `blocked`, `stopped` and
+    `unreachable` with an allowed next target within an unchanged goal/bounds is a
+    checkpoint: `disposition=paused`, the unit stays `in-progress` and is not closed.
+    Only an accepted `met` with an explicit `disposition=finalized` gives the unit `done`.
+    A final failure requires an explicit final unsuccessful disposition and is not derived
+    from a pause. A campaign inside a collection gains no extra rights: no commits beyond
+    the policy, no gate bypass, no parallel steps. A campaign step is only a family cycle;
+    recursion (a campaign in a campaign, a collection inside a campaign) is forbidden.
 
-## Статус-файл кампании
+## Campaign status file
 
-Единственный источник состояния — **один** статус-файл кампании (в nextorm —
-`.pdca/status/<campaign>.md`; иначе — конвенция проекта), и он хранит **только runtime**:
-`Status`, append-only таблицу шагов, `Current step`, ревизию/попытку, seed, deferred,
-blockers, baseline evidence refs, checkpoint паузы, pending approval ref, commit policy и stop
-verdict. Отдельного
-todo нет. Обновляй его в том же такте, что и событие; после компакции состояние
-восстанавливается из него, а не из памяти.
+The single source of state is **one** campaign status file (in nextorm —
+`.pdca/status/<campaign>.md`; otherwise — the project convention), and it stores **runtime
+only**: `Status`, the append-only step table, `Current step`, the revision/attempt, the
+seed, deferred, blockers, baseline evidence refs, the pause checkpoint, the pending
+approval ref, the commit policy and the stop verdict. There is no separate todo. Update it
+in the same beat as the event; after compaction the state is restored from it, not from
+memory.
 
-Каркас кампании (preparation document) сюда **не копируется**: статус хранит
-`preparation_ref` как ссылку на immutable-ревизию каркаса. Семантику записи определяет
-primary (standalone) или collection lane driver; физическую запись выполняет
-`pdca-executor` по явному диспетчу.
+The campaign charter (preparation document) is **not copied** here: the status keeps
+`preparation_ref` as a reference to the immutable revision of the charter. The write
+semantics are set by the primary (standalone) or the collection lane driver; the physical
+write is performed by `pdca-executor` on explicit dispatch.
 
-Runtime-статус отделён от готовности (`preparation_state`/`preparation_ref`): готовность не
-является ни runtime `Status`, ни завершением кампании; она фиксируется на барьере, а
-runtime-статус создаётся только baseline bootstrap. Per-unit `disposition`
-(`active` | `paused` | `finalized`) живёт в записи единицы
-коллекции; пауза — не финал, а checkpoint, который пишется сюда. Уровни состояния не
-вкладываются: шаг кампании — только цикл семейства, рекурсия (кампания в кампании, коллекция
-внутри кампании) запрещена. `execution_kind` — поле единицы коллекции, а не кампании.
+The runtime status is separated from readiness (`preparation_state`/`preparation_ref`):
+readiness is not the runtime `Status` and not campaign completion; it is fixed at the
+barrier, and the runtime status is created only by the baseline bootstrap. The per-unit
+`disposition` (`active` | `paused` | `finalized`) lives in the collection unit record; a
+pause is not final but a checkpoint, which is written here. The state levels do not nest:
+a campaign step is only a family cycle. Recursion is forbidden: a campaign in a campaign,
+a collection inside a campaign. `execution_kind` is a field of the collection unit, not of
+the campaign.
 
-Обязательные блоки:
+Required blocks:
 
 ```text
 # <campaign>
 Status: running | met | unreachable | blocked | stopped
-Goal: <проверяемый предикат>
-Recipe: <единица, знаменатель, фильтры, порог — дословно>
-Allowed surface: <что кампании разрешено менять — подмножество поверхности единицы>
-Floor: <флор инкремента>   Target: <baseline + floor>
-Preparation ref: <preparation_ref@r<k> — только ссылка, без копии каркаса>
-Commit policy: none | auto (<кто разрешил: overlay / явный запрос>)
+Goal: <verifiable predicate>
+Recipe: <unit, denominator, filters, threshold — verbatim>
+Allowed surface: <what the campaign may change — a subset of the unit surface>
+Floor: <increment floor>   Target: <baseline + floor>
+Preparation ref: <preparation_ref@r<k> — a reference only, no charter copy>
+Commit policy: none | auto (<who allowed it: overlay / explicit request>)
 
 | step | kind | parent | baseline | target | accepted | delta | verdict | commit | evidence |
-| 1    | increment | —  | ...      | ...    | ...      | ...   | met     | <sha или —> | ... |
-| 2    | repair    | 1  | ...      | тот же | ...      | ...   | met     | <sha или —> | ... |
+| 1    | increment | —  | ...      | ...    | ...      | ...   | met     | <sha or —> | ... |
+| 2    | repair    | 1  | ...      | the same | ...    | ...   | met     | <sha or —> | ... |
 | 3    | verify    | —  | —        | gate   | pass     | —     | —       | —      | ...      |
 
 Current step: N   Cycle: <id>   Plan revision: rN   Contract: rvN   Attempt: n/3
-Baseline evidence: <пути к снятому baseline и evidence принятых шагов>
-Next-step seed: <кластеры-кандидаты и почему они следующие>
-Deferred: <строка → причина → триггер переоткрытия>
-Blockers: <тикет/условие → какие цели закрыты>
-Protected/foreign: <пути/хеши, что исключено из зачёта>
-Tickets: <номера>
-Checkpoint: <причина паузы, последнее принятое число, точка resume — или —>
-Pending approval: <durable ref → cycle N / plan revision r / criteria set — или —>
-Stop verdict: <пусто, пока running>
+Baseline evidence: <paths to the captured baseline and the evidence of accepted steps>
+Next-step seed: <candidate clusters and why they are next>
+Deferred: <row → reason → reopening trigger>
+Blockers: <ticket/condition → which goals are closed>
+Protected/foreign: <paths/hashes excluded from the credit>
+Tickets: <numbers>
+Checkpoint: <pause reason, last accepted number, resume point — or —>
+Pending approval: <durable ref → cycle N / plan revision r / criteria set — or —>
+Stop verdict: <empty while running>
 ```
 
-`kind` — `increment` (обычный шаг), `repair` (починка непринятого шага, `parent` = N)
-или `verify` (интегральный гейт без прироста). `parent` заполняется только у `repair`.
-`Current step` — конкретный шаг (`cycle_id`, ревизия, попытка), а не среднее по кампании.
+`kind` — `increment` (an ordinary step), `repair` (fixing a non-accepted step, `parent` = N)
+or `verify` (an integrated gate that adds no gain). `parent` is filled only for `repair`.
+`Current step` is a concrete step (`cycle_id`, revision, attempt), not an average over the
+campaign.
 
-Правила статус-файла:
+Status-file rules:
 
-- таблица шагов — **append-only**: принятые строки не переписываются;
-- `Next-step seed` — гипотеза, а не план: следующий шаг всё равно проходит свой PLAN;
-- при расхождении статуса и evidence приоритет у evidence, а расхождение фиксируется;
-- `Preparation ref` — единственный указатель на каркас; сам каркас здесь не копируется, и
-  прежние ревизии не переписываются;
-- `Commit policy: none` означает отсутствие промежуточных step-коммитов и не запрещает
-  внешний outer completion commit коллекции;
-- `Checkpoint` пишется при паузе и не переписывает append-only историю; пауза не сбрасывает
-  счётчики и не является финальным исходом.
+- the step table is **append-only**: accepted rows are not rewritten;
+- `Next-step seed` is a hypothesis, not a plan: the next step still goes through its own
+  PLAN;
+- when the status and the evidence diverge, the evidence wins, and the divergence is
+  recorded;
+- `Preparation ref` is the only pointer to the charter; the charter itself is not copied
+  here, and previous revisions are not rewritten;
+- `Commit policy: none` means there are no intermediate step commits and does not forbid
+  the collection's external outer completion commit;
+- `Checkpoint` is written on a pause and does not rewrite the append-only history; a pause
+  does not reset the counters and is not a final outcome.
 
-## Цикл кампании
+## Campaign cycle
 
-**PLAN кампании — одна фаза с двумя владельцами.** `pdca-scout` собирает факты
-(Discovery), `pdca-planner` принимает решение (Brief). Они разделены артефактом и
-полномочиями, но не фазой: в PDCA это P, а не отдельный D.
+**The campaign PLAN is one phase with two owners.** `pdca-scout` gathers the facts
+(Discovery), `pdca-planner` makes the decision (Brief). They are separated by the artifact
+and by authority, but not by phase: in PDCA this is P, not a separate D.
 
-### 0. Bootstrap (один раз) — pdca-planner + pdca-executor
+### 0. Bootstrap (once) — pdca-planner + pdca-executor
 
-Владельцы: `pdca-planner` принимает решения, `pdca-executor` снимает baseline исполнением и
-персистит запись.
+Owners: `pdca-planner` makes the decisions, `pdca-executor` captures the baseline by
+execution and persists the record.
 
-Bootstrap разделяет **три операции**, которые не подменяют друг друга:
+Bootstrap separates **three operations** that do not substitute for each other:
 
-1. **Preparation record** — до/на барьере коллекции, по явному диспетчу: preparation document
-   (каркас), `preparation_state`, `preparation_ref`, план, refs и статус коллекции. Это запись
-   подготовки: цель не измеряется, продукт не меняется, runtime-статус не создаётся.
-2. **Baseline bootstrap** — после ALL-barrier и до первого step DO, выделенным
-   `pdca-executor`: снимается baseline по рецепту, создаются baseline evidence и runtime-статус
-   кампании `Status: running`, который ссылается на `preparation_ref`. `campaign_ref` до
-   bootstrap может отсутствовать и обязателен после него. Baseline bootstrap — не шаг: он не
-   расходует шаг и не зачитывается как прирост, продукт не меняет и каркас не копирует.
-3. **Change-producing DO** — только после baseline и собственного PLAN шага; он и меняет
-   продукт/артефакты шага.
+1. **Preparation record** — before/at the collection barrier, on explicit dispatch: the
+   preparation document (charter), `preparation_state`, `preparation_ref`, the plan, refs
+   and the collection status. This is the preparation write: the goal is not measured, the
+   product does not change, no runtime status is created.
+2. **Baseline bootstrap** — after the ALL-barrier and before the first step DO, by a
+   dedicated `pdca-executor`: the baseline is captured by the recipe, the baseline evidence
+   and the campaign runtime status `Status: running` are created, referencing
+   `preparation_ref`. `campaign_ref` may be absent before the bootstrap and is mandatory
+   after it. The baseline bootstrap is not a step: it does not consume a step and is not
+   credited as a gain, it does not change the product and does not copy the charter.
+3. **Change-producing DO** — only after the baseline and the step's own PLAN; it is what
+   changes the product/the step's artifacts.
 
-Порядок и содержание:
+The order and the content:
 
-1. Сформулируй цель как предикат и рецепт замера; проверь, что порог и фильтры
-   зафиксированы в репозитории, а не «на глаз».
-2. Сними baseline тем же рецептом, которым будешь принимать шаги. Запиши точную дробь и
-   путь к baseline evidence.
-3. Определи единицу инкремента и флор; посчитай `target = baseline + floor`.
-4. Зафиксируй разрешённую поверхность правок (подмножество поверхности единицы) и
-   защищённые/чужие участки.
-5. Собери **короткий список кандидатов** на первый шаг — не план на весь объём.
-6. Создай runtime-статус кампании со ссылкой на `preparation_ref`.
-7. Bootstrap не занимает второй лейн: кампания однопоточна — один шаг за раз, один лейн.
+1. Formulate the goal as a predicate and the measurement recipe; check that the threshold
+   and the filters are fixed in the repository, not "by eye".
+2. Capture the baseline with the same recipe you will use to accept steps. Record the exact
+   fraction and the path to the baseline evidence.
+3. Define the increment unit and the floor; compute `target = baseline + floor`.
+4. Fix the allowed surface of edits (a subset of the unit surface) and the
+   protected/foreign areas.
+5. Assemble a **short list of candidates** for the first step — not a plan for the whole
+   volume.
+6. Create the campaign runtime status with a reference to `preparation_ref`.
+7. Bootstrap does not take a second lane: the campaign is single-threaded — one step at a
+   time, one lane.
 
-Если bootstrap показывает, что рецепт неприменим, цель недостижима в границах или поверхность
-недостаточна, — это возврат в `pdca-planner` и действующий апрув, а не тихий backfill
-критериев.
+If the bootstrap shows that the recipe is inapplicable, the goal is unreachable within the
+bounds or the surface is insufficient, this is a return to `pdca-planner` and the active
+approval, not a silent backfill of the criteria.
 
-### 1. Discovery (перед каждым шагом)
+### 1. Discovery (before every step)
 
-Владелец: `pdca-scout` (cheap, read-only). Он приносит факты, но не ранжирует решение за
-pdca-planner и не пишет задание.
+Owner: `pdca-scout` (cheap, read-only). It brings facts, but does not rank the decision for
+pdca-planner and does not write the brief.
 
-Собери свежую карту разрыва от последнего принятого числа и ranked-список целей:
-ожидаемый выход, публичный маршрут достижимости, блокеры, уже закрытые семьи,
-отложенные строки с наступившим триггером. Результат — `Next-step seed` в статусе.
-Discovery не является PLAN шага: он поставляет факты, решение принимает PLAN цикла.
+Assemble a fresh gap map from the last accepted number and a ranked list of goals: expected
+yield, the public reachability route, blockers, already closed families, deferred rows whose
+trigger has fired. The result is the `Next-step seed` in the status. Discovery is not the
+step's PLAN: it supplies facts, the cycle's PLAN makes the decision.
 
-### 2. Brief шага — pdca-planner
+### 2. Step brief — pdca-planner
 
-Владелец: `pdca-planner` (medium, read-only). Discovery поставляет факты, brief собирает он;
-primary только передаёт готовый brief оркестратору.
+Owner: `pdca-planner` (medium, read-only). Discovery supplies the facts, it assembles the
+brief; the primary only passes the finished brief to the orchestrator.
 
-Передай `pdca-orchestrator` ровно шесть блоков (это проверенный минимум, которого
-хватает, чтобы шаг не переоткрывал закрытое):
+Pass `pdca-orchestrator` exactly six blocks (this is the proven minimum that is enough for
+a step not to reopen what is closed):
 
 ```text
-1. GOAL: предикат кампании + место шага в цепочке (baseline → target).
-2. CURRENT STATE: точные числа, состав последнего принятого замера, бюджеты.
-3. HARD CONSTRAINTS: пороги, разрешённая поверхность, protected, политика коммитов
-   (`Commit policy` из статуса: при `auto` — только принятый шаг и только его пути;
-   `push` запрещён всегда), что считается валидным замером.
-4. SCOPE: что исполняется, чем проверяется, обязательные контроли, рецепт замера.
-5. ACCEPTANCE: флор шага, один зачётный замер, что считается провалом (включая
-   подмену числа прогнозом и дрейф знаменателя).
-6. TARGETS: seed-кластеры с `file:line`/узлами и оценками; явно — что в этот шаг
-   не входит.
+1. GOAL: the campaign predicate + the step's place in the chain (baseline → target).
+2. CURRENT STATE: the exact numbers, the composition of the last accepted measurement,
+   the budgets.
+3. HARD CONSTRAINTS: thresholds, the allowed surface, protected, the commit policy
+   (`Commit policy` from the status: under `auto` — only the accepted step and only its
+   paths; `push` is forbidden always), what counts as a valid measurement.
+4. SCOPE: what is executed, what verifies it, the mandatory controls, the measurement
+   recipe.
+5. ACCEPTANCE: the step floor, one credited measurement, what counts as a failure
+   (including substituting a forecast for the number and denominator drift).
+6. TARGETS: the seed clusters with `file:line`/nodes and estimates; explicitly — what is
+   not part of this step.
 ```
 
-Шесть — нижняя граница, а не формат: каждый блок закрывает свой тип провала (дрейф цели,
-план по стейл-числам, подмена порога, не тот скоуп, самооценка, расползание). Остальное
-уже задано базовым контрактом; детали плана — решение pdca-planner, а не брифа. Проектный
-оверлей может расширять блоки, но не сокращать.
+Six is a lower bound, not a format: each block closes its own failure type (goal drift, a
+plan built on stale numbers, threshold substitution, the wrong scope, self-assessment,
+sprawl). The rest is already given by the base contract; the plan's details are
+pdca-planner's decision, not the brief's. A project overlay may extend the blocks, but not
+shorten them.
 
-### 3. Исполнение шага
+### 3. Step execution
 
-Шаг проходит полный цикл своего варианта: PLAN (ревизия `r`, контракт `rv`) → DO →
-CHECK → ACT. Кампания не вмешивается в его гейты и не принимает число за CHECK.
-Если шаг не добрал флор — это loop-back **внутри шага** (новая ревизия плана), а не
-«следующий шаг с недобором». Красный замер сохраняется. Исчерпание ревизий и попыток
-идет по базовому контракту: эскалация или остановка с записанным остатком, а не тихий
-переход к следующему шагу.
+A step goes through the full cycle of its variant: PLAN (revision `r`, contract `rv`) → DO
+→ CHECK → ACT. The campaign does not interfere with its gates and does not accept a number
+in place of CHECK. If the step falls short of the floor, this is a loop-back **inside the
+step** (a new plan revision), not "a next step with a shortfall". A red measurement is
+kept. Exhausting revisions and attempts follows the base contract: escalation or a stop
+with the recorded remainder, not a silent move to the next step.
 
-**В collection-лейне цикл шага ведёт тот же драйвер.** Тот же `pdca-orchestrator`
-(`mode=collection-lane`) проходит цикл шага inline в собственной сессии лейна — без
-отдельного агента и без дополнительного уровня `Task`. Перед DO шаг проходит свой полный
-PLAN своего варианта; `selected_variant` шага конкретен для этого шага и берётся из
-durable-записи (каркас/статус), а не выбирается раннером.
+**In the collection lane the same driver leads the step cycle.** The same
+`pdca-orchestrator` (`mode=collection-lane`) runs the step cycle inline in the lane's own
+session — without a separate agent and without an extra `Task` level. Before DO the step
+goes through a full PLAN of its variant; the step's `selected_variant` is concrete for this
+step and is taken from the durable record (charter/status), not chosen by the runner.
 
-**Normal mode: апрув шага — durable, а не чат.** Драйвер может провести PLAN шага, но не
-получает пользовательский апрув и не начинает gated DO. `pdca-executor` пишет durable pending
-approval ref, привязанный к точным `task`/`cycle_id`, `cycle N`, plan revision `r` и набору
-критериев шага (`N` сам по себе не глобально уникален), а драйвер возвращает checkpoint
-родителю/дешёвому primary. Primary спрашивает пользователя; при явном апруве `pdca-executor`
-записывает approval против того же ref, и resume **сначала проверяет применимость** сохранённого
-плана к фактическому состоянию через роли (`pdca-scout` — факты, `pdca-planner` — решение): если
-план применим, продолжается **тот же** шаг без нового PLAN и без нового шага; если план устарел,
-`pdca-planner` делает настоящую ревизию по базовым правилам, и на неё нужен **свежий** апрув —
-старый approval её не авторизует. Approval-resume не делает безусловный replan и не создаёт новый
-шаг. До апрува кампания — checkpoint (`Checkpoint` в статусе), а не `met`/`incomplete`; компакция
-безопасна, потому что ref и запись durable. Autonomous mode не изобретает внешний апрув: пока он
-не получен — это блокер/STOP, а не тихий проход.
+**Normal mode: the step approval is durable, not a chat.** The driver may run the step's
+PLAN, but it does not obtain the user's approval and does not start a gated DO.
+`pdca-executor` writes the durable pending approval ref bound to the exact
+`task`/`cycle_id`, `cycle N`, plan revision `r` and the step's criteria set (`N` alone is
+not globally unique), and the driver returns a checkpoint to the parent/cheap primary.
+The primary asks the user; on an explicit approval `pdca-executor` records the approval
+against the same ref, and resume **first checks the applicability** of the saved plan to
+the actual state through the roles (`pdca-scout` — facts, `pdca-planner` — decision): if
+the plan is applicable, **the same** step continues without a new PLAN and without a new
+step; if the plan is stale, `pdca-planner` makes a real revision by the base rules, and it
+needs a **fresh** approval — the old approval does not authorize it. Approval-resume does
+not do an unconditional replan and does not create a new step. Until the approval the
+campaign is a checkpoint (`Checkpoint` in the status), not `met`/`incomplete`; compaction
+is safe because the ref and the record are durable. Autonomous mode does not invent an
+external approval: until it is obtained this is a blocker/STOP, not a silent pass.
 
-### 3.1. Типы шагов: increment, repair, verify
+### 3.1. Step kinds: increment, repair, verify
 
-`increment` — обычный шаг: новый прирост от принятого baseline. Baseline и число кампании
-двигает только **принятый шаг** — `increment` или принятый `repair`, и ровно один раз;
-`verify` baseline не двигает.
+`increment` — an ordinary step: a new gain from the accepted baseline. Only an **accepted
+step** moves the baseline and the campaign number — `increment` or an accepted `repair`,
+and exactly once; `verify` does not move the baseline.
 
-`repair` — новый цикл на **тот же** target после того, как `increment` закрыт `not accepted`
-(внутренний `incomplete`/STOP; исчерпаны ревизии/попытки или нужен другой подход).
-Это не ревизия внутри шага: ревизия
-`r+1` остаётся в том же цикле и не создаёт строку, `repair` создаёт новую строку с
-`parent = N`. Правила:
+`repair` — a new cycle on **the same** target after `increment` was closed `not accepted`
+(an internal `incomplete`/STOP; revisions/attempts exhausted or a different approach is
+needed). This is not a revision inside the step: revision `r+1` stays in the same cycle and
+does not create a row, `repair` creates a new row with `parent = N`. Rules:
 
-- тот же target, тот же рецепт и порог; смена цели/рецепта/порога/флора — новая кампания
-  (инварианты 1 и 9);
-- старый `increment` остаётся `not accepted` и не переписывается; красный замер сохраняется;
-- **принятый `repair` двигает baseline от последнего принятого baseline, и только один раз:**
-  следующий шаг стартует от последнего **принятого** baseline; `repair` добавляет свой принятый
-  delta к этому baseline, а не к непринятому числу исходного increment. Исходный increment не
-  получает ACCEPT и его delta не зачитывается; общий прирост считается один раз — по принятому
-  `repair`;
-- `verify` baseline не двигает;
-- один `repair` на провальный шаг; повторный провал — `pdca-escalate` или `unreachable`,
-  а не второй `repair`;
-- повтор того же дефекта после одного фикса — `pdca-escalate` до второго фикса, даже если
-  локальный CHECK прошёл.
+- the same target, the same recipe and threshold; a change of the goal/recipe/threshold/
+  floor is a new campaign (invariants 1 and 9);
+- the old `increment` stays `not accepted` and is not rewritten; the red measurement is
+  kept;
+- **an accepted `repair` moves the baseline from the last accepted baseline, and only
+  once:** the next step starts from the last **accepted** baseline; `repair` adds its
+  accepted delta to that baseline, not to the non-accepted number of the original
+  increment. The original increment does not get ACCEPT and its delta is not credited; the
+  total gain is counted once — by the accepted `repair`;
+- `verify` does not move the baseline;
+- one `repair` per failed step; a repeated failure is `pdca-escalate` or `unreachable`, not
+  a second `repair`;
+- a recurrence of the same defect after one fix is `pdca-escalate` before the second fix,
+  even if the local CHECK passed.
 
-`verify` — интегральный гейт кампании, аналог collection C, но не отдельный контракт:
-не даёт прироста, не двигает baseline, в таблице `target = gate`, `accepted = pass/fail`.
-Он гоняет полный гейт кампании (build, тесты, coverage, docs — что объявлено в
-definition of done) на текущем принятом состоянии. Место фиксируется на bootstrap:
-финал кампании или каждые K шагов. Провал `verify` открывает `repair` затронутых целей
-или `blocked`; снижать порог нельзя. `verify` не заменяет ACCEPT шага: числа шагов
-остаются источником истины.
+`verify` — the campaign's integrated gate, the analogue of collection C, but not a separate
+contract: it gives no gain, does not move the baseline, in the table `target = gate`,
+`accepted = pass/fail`. It runs the full campaign gate (build, tests, coverage, docs —
+whatever the definition of done declares) on the current accepted state. Its place is fixed
+at bootstrap: the campaign's end or every K steps. A `verify` failure opens `repair` of the
+affected goals or `blocked`; lowering the threshold is not allowed. `verify` does not
+replace the step's ACCEPT: the step numbers stay the source of truth.
 
-### 4. Приёмка и перенос состояния
+### 4. Acceptance and state carry-over
 
-Владелец вердикта: `pdca-check` (medium, read-only + evidence шага); семантику записи статуса
-определяет primary, физическую запись выполняет `pdca-executor`.
+The verdict owner: `pdca-check` (medium, read-only + the step's evidence); the write
+semantics of the status are set by the primary, the physical write is performed by
+`pdca-executor`.
 
-1. Возьми вердикт CHECK шага и зачётный замер по рецепту.
-2. Допиши строку в таблицу шагов. **Baseline шага N+1 = последний принятый baseline + delta
-   принятого шага**; `repair` двигает его от последнего **принятого** baseline, а не от
-   непринятого increment; `verify` baseline не меняет. При `Commit policy: auto` после
-   принятия закоммить **только пути шага** (`git add <paths>`, не `-A`) и запиши tip в
-   колонку `commit`; `push` — никогда. Если коммит не разрешён или не удался — запиши
-   `no commit` и причину: принятое число и baseline от этого не меняются (они живут в
-   замере, а не в коммите).
-3. Перенеси в статус: новые тикеты, blocked arms, отложенные строки с триггерами,
-   изменения protected/знаменателя.
-4. Запиши `Next-step seed` и переходи к решению об остановке.
+1. Take the step's CHECK verdict and the credited measurement by the recipe.
+2. Append the row to the step table. **Baseline of step N+1 = the last accepted baseline +
+   the delta of the accepted step**; `repair` moves it from the last **accepted** baseline,
+   not from the non-accepted increment; `verify` does not change the baseline. Under
+   `Commit policy: auto`, after acceptance commit **only the step's paths** (`git add
+   <paths>`, not `-A`) and record the tip in the `commit` column; `push` — never. If the
+   commit is not allowed or failed, record `no commit` and the reason: the accepted number
+   and the baseline do not change because of it (they live in the measurement, not in the
+   commit).
+3. Carry into the status: new tickets, blocked arms, deferred rows with triggers,
+   protected/denominator changes.
+4. Write the `Next-step seed` and move to the stop decision.
 
-**ACCEPT и DECIDE не сливаются.** ACCEPT — это CHECK шага: независимый вердикт по
-evidence и принятое число. DECIDE — это ACT кампании: маршрут (следующий шаг,
-перераспределение, стоп). Слить их — значит позволить проверяющему выбирать маршрут и
-смешать «шаг не принят» с «шаг принят, но кампания остановлена». Между ними
-фиксируется принятое число, от которого считается следующий шаг.
+**ACCEPT and DECIDE do not merge.** ACCEPT is the step's CHECK: an independent verdict on
+the evidence and the accepted number. DECIDE is the campaign's ACT: the route (the next
+step, redistribution, stop). Merging them means letting the reviewer choose the route and
+mixing "the step is not accepted" with "the step is accepted but the campaign is stopped".
+Between them the accepted number is fixed, and the next step is counted from it.
 
-**Маршрут после шага (DECIDE).** `accepted` → `next` (новый target) или `verify`, если
-подошёл объявленный чекпойнт. `not accepted`, но цель ещё достижима → `repair`
-(`parent = N`). `not accepted` и цель доказанно недостижима → `unreachable` с evidence,
-затем `next` target (если кампания допускает независимые цели) или `stop`. Внешний
-блокер → `blocked` с перечнем закрытых целей. Провал шага **никогда** не закрывает
-остальные шаги автоматически: group-stop в кампании нет, blast radius = один шаг.
+**The route after a step (DECIDE).** `accepted` → `next` (a new target) or `verify`, if a
+declared checkpoint has arrived. `not accepted` but the goal is still reachable → `repair`
+(`parent = N`). `not accepted` and the goal is provably unreachable → `unreachable` with
+evidence, then `next` target (if the campaign allows independent goals) or `stop`. An
+external blocker → `blocked` with a list of the closed goals. A failed step **never**
+closes the remaining steps automatically: there is no group-stop in a campaign, the blast
+radius = one step.
 
-### 5. Решение об остановке
+### 5. Stop decision
 
-Владелец решения: `pdca-planner` (medium); семантику записи в статусе кампании задаёт primary,
-физическую запись выполняет `pdca-executor`.
+The decision owner: `pdca-planner` (medium); the write semantics in the campaign status are
+set by the primary, the physical write is performed by `pdca-executor`.
 
-| условие | статус | что записать |
+| condition | status | what to record |
 | --- | --- | --- |
-| предикат цели истинен на **принятом** замере, и все **due** обязательные `verify` (финальный и периодические) прошли на текущем принятом snapshot | `met` | финальное число, остаток, evidence |
-| остаток доказанно недостижим | `unreachable` | по каждому кластеру: почему, чем доказано, куда перераспределён |
-| внешний блокер (тикет, среда, доступ) | `blocked` | блокер и какие цели он закрывает |
-| бюджет/лимит/остановка пользователем | `stopped` | что сделано, что осталось, с чего продолжить |
+| the goal predicate is true on the **accepted** measurement, and all **due** mandatory `verify` runs (final and periodic) passed on the current accepted snapshot | `met` | the final number, the remainder, the evidence |
+| the remainder is provably unreachable | `unreachable` | per cluster: why, how it was proven, where it was redistributed |
+| an external blocker (ticket, environment, access) | `blocked` | the blocker and which goals it closes |
+| a budget/limit/user stop | `stopped` | what is done, what remains, where to continue from |
 
-`met` — единственный успех. Он требует **обоих** условий: принятого замера, который
-удовлетворяет предикату, **и** прохождения всех обязательных на этот момент `verify` на том
-же принятом snapshot; частичная проверка или `verify`, обещанный позже, `met` не даёт.
-`verify`, который не был due, не блокирует `met`, но финальный `verify` (если он объявлен)
-обязателен. Если **baseline уже удовлетворяет цели** на bootstrap, фиктивный increment не
-создаётся. Если объявлен обязательный `verify`, он прогоняется на этом snapshot; `met` возможен
-только после того, как цель принята независимым `pdca-check` по критериям цели **и** все due
-гейты/`verify` прошли. Без обязательного `verify` baseline принимает тот же независимый
-`pdca-check` против критериев цели (не self-accept со стороны DO или оркестратора), после чего
-ставится `met`. Красный `verify` идёт обычным маршрутом `repair`/`blocked`; `unreachable`
-ставится только когда `pdca-planner` доказал недостижимость числами, а не автоматически из
-красного `verify`. `unreachable` — не
-«почти получилось»: остаток должен быть доказан числами (например, цель требует правки
-продукта или недоступного источника), а не объявлен по усталости. При `blocked`/`stopped`
-цепочка не притворяется закрытой: следующая сессия продолжает с последнего принятого числа.
+`met` — the only success. It requires **both** conditions: an accepted measurement that
+satisfies the predicate **and** all mandatory `verify` runs due at that moment passing on
+the same accepted snapshot; a partial check or a `verify` promised for later does not give
+`met`. A `verify` that was not due does not block `met`, but the final `verify` (if
+declared) is mandatory. If the **baseline already satisfies the goal** at bootstrap, no
+dummy increment is created. If a mandatory `verify` is declared, it runs on that snapshot;
+`met` is possible only after the goal is accepted by an independent `pdca-check` against
+the goal criteria **and** all due gates/`verify` have passed. Without a mandatory `verify`,
+the baseline is accepted by the same independent `pdca-check` against the goal criteria
+(not self-accept by DO or the orchestrator), after which `met` is set. A red `verify`
+follows the ordinary `repair`/`blocked` route; `unreachable` is set only when
+`pdca-planner` has proven unreachability with numbers, not automatically from a red
+`verify`. `unreachable` is not "almost made it": the remainder must be proven with numbers
+(for example, the goal requires a product change or an unavailable source), not declared
+out of fatigue. Under `blocked`/`stopped` the chain does not pretend to be closed: the next
+session continues from the last accepted number.
 
-**Явный disposition вместо автоматического закрытия.** `blocked`, `stopped` и
-`unreachable` с допустимым следующим target в неизменной цели/границах — checkpoint:
-`disposition=paused`, единица остаётся `in-progress`, а `Checkpoint` в статусе называет
-причину, последнее принятое число и точку resume. Resume явный: пауза снимается
-действующим контрактным триггером или решением пользователя, автоматического
-бесконечного retry нет. Финальный `incomplete` (и запускаемый им существующий group-stop
-коллекции) требует явного финального неуспешного disposition и из паузы не выводится.
-Пауза не сбрасывает `N`/`r`/`n` и не даёт попыток сверх базового контракта.
+**An explicit disposition instead of automatic closure.** `blocked`, `stopped` and
+`unreachable` with an allowed next target within an unchanged goal/bounds is a checkpoint:
+`disposition=paused`, the unit stays `in-progress`, and the `Checkpoint` in the status
+names the reason, the last accepted number and the resume point. Resume is explicit: the
+pause is lifted by an active contract trigger or a user decision, there is no automatic
+infinite retry. A final `incomplete` (and the collection group-stop it triggers, where one
+exists) requires an explicit final unsuccessful disposition and is not derived from a
+pause. A pause does not reset `N`/`r`/`n` and grants no attempts beyond the base contract.
 
-### 6. Сайзинг последнего шага
+### 6. Sizing the last step
 
-Когда остаток до цели сравним с флором (≲ 2×floor), шаг планируется **на весь остаток**,
-а не на очередной флор. Если он не добрал — либо одна ревизия внутри шага, либо ещё один
-шаг, но цель шага остаётся остатком, а не «флор, потому что так проще».
+When the remainder to the goal is comparable to the floor (≲ 2×floor), the step is planned
+**for the whole remainder**, not for the next floor. If it fell short — either one revision
+inside the step or one more step, but the step target stays the remainder, not "the floor,
+because it is easier".
 
-## Экономика
+## Economics
 
-- Флор существует потому, что у шага есть фиксированная цена: полный замер, evidence,
-  ревью, обновление статус-файла. Шаг дешевле этой цены не окупается.
-- Слишком крупный шаг тоже плох: его PLAN пишется вслепую, а провал дороже. Ориентир —
-  шаг, который реально добрать за одну-две ревизии плана.
-- Число шагов не планируется. Оно получается из остатка и фактических дельт; «десять
-  шагов» — следствие, а не цель.
-- Оценки целей дисконтируются и никогда не пишутся как результат.
-- `repair` и `verify` — тоже шаги и стоят полного цикла; поэтому `repair` ограничен
-  одним на провальный шаг, а `verify` ставится на объявленные чекпойнты, а не после
-  каждого шага.
+- The floor exists because a step has a fixed price: a full measurement, evidence, review,
+  a status-file update. A step cheaper than that price does not pay off.
+- An oversized step is bad too: its PLAN is written blind, and a failure costs more. The
+  guideline is a step that can realistically be brought home in one or two plan revisions.
+- The number of steps is not planned. It follows from the remainder and the actual deltas;
+  "ten steps" is a consequence, not a goal.
+- Goal estimates are discounted and never written as a result.
+- `repair` and `verify` are steps too and cost a full cycle; that is why `repair` is
+  limited to one per failed step, and `verify` is placed at the declared checkpoints, not
+  after every step.
 
-## Красные флаги (самопроверка)
+## Red flags (self-check)
 
-- Пишу в «измерено» прогноз или промежуточный результат.
-- Повторяю провальный замер, чтобы получить число получше.
-- Меняю порог/знаменатель/фильтр, чтобы «дожать» кампанию.
-- Запускаю два инкремента параллельно «для скорости».
-- Начинаю шаг без принятого числа предыдущего.
-- Теряю отложенную строку или блокер между шагами.
-- Закрепляю сломанное поведение проверкой как ожидаемое вместо тикета.
-- Объявляю `met` по частичной проверке, а не по зачётному замороженному состоянию.
-- Останавливаюсь без статуса и без остатка.
-- Открываю `repair` без нового плана или с тем же подходом.
-- Делаю второй `repair` на тот же шаг без `pdca-escalate`.
-- Использую `verify` как замену ACCEPT шага.
-- После провала шага закрываю кампанию, не разобрав маршрут (`repair` / `next` / `stop`).
-- Веду десять прожаренных задач как один batch без per-step ACCEPT.
+- I write a forecast or an intermediate result into "measured".
+- I repeat a failed measurement to get a nicer number.
+- I change the threshold/denominator/filter to "push the campaign through".
+- I run two increments in parallel "for speed".
+- I start a step without the previous one's accepted number.
+- I lose a deferred row or a blocker between steps.
+- I pin broken behaviour with a check as expected instead of a ticket.
+- I declare `met` on a partial check, not on the credited frozen state.
+- I stop without a status and without a remainder.
+- I open `repair` without a new plan or with the same approach.
+- I do a second `repair` on the same step without `pdca-escalate`.
+- I use `verify` as a replacement for the step's ACCEPT.
+- After a failed step I close the campaign without working out the route (`repair` / `next` /
+  `stop`).
+- I run ten grilled tasks as one batch without a per-step ACCEPT.
 
-## Восстановление после компакции
+## Recovery after compaction
 
-1. Прочитай статус-файл кампании — таблицу шагов (`kind`/`parent`) и последний принятый baseline.
-2. Проверь, что evidence последнего шага на месте; числа бери только оттуда.
-3. Если evidence нет — шаг не принят: повтори замер по рецепту, не восстанавливай
-   число по памяти.
-4. Продолжай с `Next-step seed`; discovery пересобери, если карта могла устареть.
+1. Read the campaign status file — the step table (`kind`/`parent`) and the last accepted
+   baseline.
+2. Check that the evidence of the last step is in place; take numbers only from there.
+3. If there is no evidence, the step is not accepted: repeat the measurement by the recipe,
+   do not restore the number from memory.
+4. Continue from the `Next-step seed`; re-assemble discovery if the map may be stale.
 
-## Автономный режим
+## Autonomous mode
 
-**Standalone.** Дешёвый primary **делегирует один шаг** субагенту `pdca-orchestrator` и передаёт бриф
-шага; оркестратор проходит цикл целиком и возвращает сжатый отчёт. Primary не правит
-файлы, не выполняет команды, не принимает число за CHECK и не задаёт вопросы пользователю;
-он **задаёт семантику** обновления статуса кампании, а физическую запись и (при
-`Commit policy: auto`) git-коммит принятого шага выполняет `pdca-executor` (только пути шага;
-`push` — никогда). Затем primary запускает следующий шаг и пересказывает результат. Между
-шагами паузы на апрув нет — цикл кампании продолжается, пока не сработает условие остановки.
+**Standalone.** The cheap primary **delegates one step** to the `pdca-orchestrator`
+subagent and passes the step brief; the orchestrator runs the whole cycle and returns a
+compact report. The primary does not edit files, does not run commands, does not accept a
+number in place of CHECK and does not ask the user questions; it **sets the semantics** of
+the campaign status update, while the physical write and (under `Commit policy: auto`) the
+git commit of the accepted step are performed by `pdca-executor` (the step's paths only;
+`push` — never). Then the primary starts the next step and retells the result. Between
+steps there is no pause for approval — the campaign cycle continues until a stop condition
+fires.
 
-**Collection-lane.** Когда кампания — единица коллекции, шаги ведёт collection lane
-driver (`mode=collection-lane`) inline под коллекционным расписанием: он же проходит
-цикл шага и не требует второго вызова на шаг. Primary коллекции не становится
-исполнителем кампании — он ведёт статус коллекции, а не шаг. Пауза и остановка здесь
-durable: они пишутся в статус кампании и в per-unit `disposition`, переживают смену
-сессии и снимаются только явным resume; автоматической докачки после паузы нет.
+**Collection-lane.** When the campaign is a collection unit, the steps are led by the
+collection lane driver (`mode=collection-lane`) inline under the collection schedule: it
+runs the step cycle itself and needs no second call per step. The collection primary does
+not become the campaign's executor — it drives the collection status, not the step. Pause
+and stop here are durable: they are written into the campaign status and into the per-unit
+`disposition`, survive a session change and are lifted only by an explicit resume; there is
+no automatic catch-up after a pause.
 
-Если `pdca-orchestrator` недоступен (нет агента, вложенная делегация запрещена или
-вложенную делегацию) — flat-primary ведёт шаг сам по базовому контракту, помечает это
-строкой `Notice:` и записывает причину; запрет хоста не обходится.
+If `pdca-orchestrator` is unavailable (no agent, nested delegation forbidden or nested
+delegation) — the flat primary leads the step itself by the base contract, marks it with a
+`Notice:` line and records the reason; a host prohibition is not bypassed.
 
-## Связь с семейством
+## Relation to the family
 
-| скилл | вход | форма |
+| skill | input | form |
 | --- | --- | --- |
-| `pdca` | одна задача | базовый цикл |
-| `pdca-coder` / `pdca-dotnet` | одна задача, код/.NET | вариант цикла |
-| `pdca-collection` | известный список задач с **независимыми целями** (параллелизм — свойство расписания, не условие входа) | per-task PLAN, группы/лейны, worktree, merge (одна группа — без git-интеграции) |
-| **`pdca-incremental`** | одна цель; известный или открываемый замером список | последовательная цепочка циклов, один статус-файл, шаги `increment`/`repair`/`verify` |
+| `pdca` | one task | the base cycle |
+| `pdca-coder` / `pdca-dotnet` | one task, code/.NET | a cycle variant |
+| `pdca-collection` | a known list of tasks with **independent goals** (parallelism is a property of the schedule, not a condition of entry) | per-task PLAN, groups/lanes, worktree, merge (one group — without git integration) |
+| **`pdca-incremental`** | one goal; a list known or discovered by measurement | a sequential chain of cycles, one status file, steps `increment`/`repair`/`verify` |
 
-Капабилити-preflight, ровно один flat fallback с `Notice:` и durable-причиной, resource stop при
-недоступной обязательной роли и fail closed при недоступном контракте описаны один раз в
-`pdca-collection/SKILL.md` §Fallback и действуют для кампании в лейне коллекции без отдельного
-механизма. Хостовые числа не выдумываются: настроенное значение глубины вложенной делегации —
-факт конфигурации, а не доказательство того, что установленная сборка проходит
-`primary → driver → escalate → scout`; установленный `pdca-orchestrator` сверяется с каноническим
-ассетом и проверяется по действующим правам. Medium/strong primary цикл не запускает и не
-диспетчеризует: он делает явный handoff дешёвому primary с сохранением ссылок.
+The capability preflight, exactly one flat fallback with `Notice:` and a durable reason, the
+resource stop when a mandatory role is unavailable and fail closed when the contract is
+unavailable are described once in `pdca-collection/SKILL.md` §Fallback and apply to a
+campaign in a collection lane without a separate mechanism. Host numbers are not invented:
+the configured nested-delegation depth is a configuration fact, not proof that the installed
+build passes `primary → driver → escalate → scout`; the installed `pdca-orchestrator` is
+compared against the canonical asset and checked against the effective permissions. A
+medium/strong primary does not start and does not dispatch a cycle: it makes an explicit
+handoff to the cheap primary with the references preserved.
 
-Полный текст базового контракта не дублируется: см. `pdca/SKILL.md` (и вариант
-`pdca-coder`/`pdca-dotnet`). Разбор реального кейса — `docs/ru/pdca-incremental.md`, §5.
+The full text of the base contract is not duplicated: see `pdca/SKILL.md` (and the
+`pdca-coder`/`pdca-dotnet` variant). A real case walkthrough is in
+`docs/ru/pdca-incremental.md`, §5.

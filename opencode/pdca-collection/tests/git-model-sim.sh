@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deterministic check of the pdca-collection git model (SKILL.md §«Git-модель»):
+# Deterministic check of the pdca-collection git model (SKILL.md §Git model):
 #   - per-task branch chain inside a group, auto-commit per task
 #   - group branch fast-forwarded to the last task tip
 #   - `git merge --no-ff` of each group branch into the current branch

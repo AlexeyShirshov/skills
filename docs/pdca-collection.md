@@ -37,10 +37,10 @@ the collection either: the right answer is to report that there is nothing to do
 ## 2. Launching
 
 The skill is invoked **explicitly by name** — `pdca-collection` — or by the phrase triggers that
-describe precisely batch work: "**список задач**", "**milestone**" / "**милстоун**", "**параллельные
-группы**" — they are listed in the skill's description; the separation from the single cycle ("по
-циклу" without qualification leads into `pdca-coder`) is set by the host rule `AGENTS.md` of the
-`opencode-config` repository, which is not part of this repository. The input is a list of tasks
+describe precisely batch work: "**a task list**", "**a milestone**", "**parallel groups**" — they
+are listed in the skill's description; the separation from the single cycle ("by the cycle" without
+qualification leads into `pdca-coder`) is set by the host rule `AGENTS.md` of the `opencode-config`
+repository, which is not part of this repository. The input is a list of tasks
 **in any form**: no strict format is required, because splitting into groups is the collection
 PLAN's job — and that only after each task has had its own PLAN, not yours.
 
@@ -273,7 +273,7 @@ PLAN → DO → CHECK → ACT of its variant, with `plan_state` and `selected_va
 an incremental campaign with its own goal, frame, runtime status and steps, with **no** unit-level
 `selected_variant` and no "campaign domain". `execution_kind` and `selected_variant` are different
 fields: the collection PLAN (`pdca-planner`) decides the form, the runner only reads the ready value
-(`opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения`). A step of a campaign is
+(`opencode/pdca-collection/SKILL.md §Collection units and the execution form`). A step of a campaign is
 only a cycle of the family: neither "a campaign in a campaign" nor "a collection inside a campaign"
 (nor a collection inside a collection) is expressible.
 
@@ -286,7 +286,7 @@ absent before the baseline bootstrap and is mandatory after it; it is not a poin
 does not replace `preparation_ref`. The barrier needs no baseline evidence, no `running` runtime
 status, no future step plans, no future step variants and no number of steps; before the barrier no
 lane is allocated for either kind
-(`opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация`).
+(`opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering`).
 
 **Baseline bootstrap happens after the barrier.** A dedicated `pdca-executor` creates the baseline
 evidence by the frame's recipe and the campaign runtime status `Status: running`, mentioning
@@ -300,12 +300,12 @@ revision, updates `preparation_ref` and keeps the previous one. Changing the **g
 recipe, threshold or floor** is not a revision: it is a **new campaign with a new baseline** and a
 new frame/unit, even when the collection id stays. Silent weakening and backfill of accepted
 criteria are forbidden; old immutable revisions are never rewritten
-(`opencode/pdca-incremental/SKILL.md §Статус-файл кампании`).
+(`opencode/pdca-incremental/SKILL.md §Campaign status file`).
 
 **Readiness is not completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
 `started`: the unit stays `pending` and never becomes `done` because the frame is ready. Only an
 accepted `met` with an explicit `disposition=finalized` gives `done`
-(`opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании`).
+(`opencode/pdca-collection/SKILL.md §A.1 Routing campaign outcomes`).
 
 **Pause is not final.** `blocked`, `stopped` and `unreachable` with an admissible next target within
 an unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays `in-progress`,
@@ -314,20 +314,20 @@ remaining `pending` units of the group are marked `incomplete` and are not execu
 explicit final unsuccessful disposition and is not derived from a pause. There is no endless
 automatic retry; pause and resume do not reset `N`/`r`/`n`; a paused lane does not advance its
 group's dependent chain, while the other groups continue; the success criteria are never changed
-silently (`opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании`).
+silently (`opencode/pdca-collection/SKILL.md §A.1 Routing campaign outcomes`).
 
 **Disposition, and the derived lane pause.**
 `disposition` (`active` | `paused` | `finalized`) is a per-unit field, not a task or group status.
 The lane pause is **derived** from the current unit's `disposition=paused` and is not stored as a
 separate authoritative lane field; no new status value is introduced, and `blocked` stays a state of
-the common verification (`opencode/pdca-collection/SKILL.md §Пауза лейна`).
+the common verification (`opencode/pdca-collection/SKILL.md §Lane pause`).
 
 **Three separate state spaces.** Unit readiness (`plan_state` / `preparation_state`), the campaign
 runtime status (`Status`) and the per-unit `disposition` are different things, each with its own file
 and its own identifiers: the collection status, the preparation document, the campaign runtime status
 and the step's own cycle status. The semantics of a record belong to the primary/`pdca-planner`; the
 physical write is done by `pdca-executor` on an explicit dispatch
-(`opencode/pdca-collection/SKILL.md §Статус коллекции`).
+(`opencode/pdca-collection/SKILL.md §Collection status`).
 
 **The surface belongs to the collection.** The planned footprint is a **conservative reservation of
 the allowed surface for the whole task**, not a forecast of the exact edits and not the union of the
@@ -337,7 +337,7 @@ Expanding the reservation or the surface after the barrier is a stop/reapproval:
 renegotiation by the collection's `pdca-planner` (in normal mode — the user), taking the already
 started lanes and the already accepted results into account, with no automatic
 `recluster`/`remerge`/`reset`/`revert`
-(`opencode/pdca-collection/SKILL.md §Резервация поверхности и её расширение`).
+(`opencode/pdca-collection/SKILL.md §Surface reservation and its extension`).
 
 **The driver is the same cheap runner.** In a collection the campaign is led by the existing
 `pdca-orchestrator` in `mode=collection-lane`: it receives the unit's `execution_kind`, the loaded
@@ -358,7 +358,7 @@ applicable plan continues the **same** step; a stale plan gets a genuine planner
 **fresh approval**, which the stale approval never authorizes. Approval resume does not
 unconditionally replan or add a step; the unit is `disposition=paused` / `in-progress` while
 waiting, not `done`/`incomplete`, and compaction is safe
-(`opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane) · §Approval protocol (normal mode)`).
+(`opencode/pdca-collection/SKILL.md §Lane driver and campaign (mode=collection-lane) · §Approval protocol (normal mode)`).
 
 **Completion and commits stay on the collection's level.** The campaign's acceptance (`met`) and the
 collection's common verification are different events: a campaign's success does not replace the
@@ -366,7 +366,7 @@ common CHECK on the integrated tree. The external commit/branch lifecycle of a u
 collection; `Commit policy: none` means no intermediate step commits and does not forbid the outer
 completion commit, and an explicit no-commit restriction that conflicts with the mandatory git model
 is a preflight blocker before the lanes are allocated
-(`opencode/pdca-collection/SKILL.md §Git-модель`).
+(`opencode/pdca-collection/SKILL.md §Git model`).
 
 **Preflight and fallback.** Before lanes are allocated and before a campaign starts in its lane, the
 host's observable capability is checked: the mandatory roles and contracts, nested delegation for the
@@ -408,25 +408,25 @@ precedence.
 
 | Claim in the article | Source |
 | --- | --- |
-| The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md §Роль` |
-| Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md §Роль` |
-| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
-| P: the status file as the only progress mirror (per-group and per-task tables), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
-| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md §D — инфраструктура, трекинг, merge` |
-| C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md §C — верификация (стандартный CHECK)` |
-| A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `opencode/pdca-collection/SKILL.md §A — завершение` |
-| The lane: task branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `opencode/pdca-collection/SKILL.md §Лейн (work stream)` |
-| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md §Неактуальный PLAN и пересмотр расписания` |
-| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md §Git-модель` |
-| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md §Сбой (failure semantics) · §Статус коллекции` |
-| Parameters: `cap = 4` for lanes, `plan_cap = 4` for the PLAN phase, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Отчёт · §Параметры` |
-| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md §Связь с базовым PDCA · §Fallback` |
-| Composition: the two execution forms (`execution_kind` ≠ `selected_variant`), the recursion ban, the form decided by the collection PLAN | `opencode/pdca-collection/SKILL.md §Единицы коллекции и форма исполнения` |
-| The barrier by unit kind, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация · §A.1 Маршрутизация исходов кампании`; `opencode/pdca-incremental/SKILL.md §Статус-файл кампании` |
-| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-unit `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `opencode/pdca-collection/SKILL.md §A.1 Маршрутизация исходов кампании · §Пауза лейна · §Статус коллекции` |
-| The collection-lane driver (the same `pdca-orchestrator`, the campaign inline, one lane) and the step's PLAN/approval | `opencode/pdca-collection/SKILL.md §Драйвер лейна и кампания (mode=collection-lane)` |
-| Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `opencode/pdca-collection/SKILL.md §Резервация поверхности и её расширение` |
-| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `opencode/pdca-collection/SKILL.md §Git-модель` |
+| The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md §Role` |
+| Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md §Role` |
+| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
+| P: the status file as the only progress mirror (per-group and per-task tables), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
+| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
+| C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md §C — verification (the standard CHECK)` |
+| A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `opencode/pdca-collection/SKILL.md §A — completion` |
+| The lane: task branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `opencode/pdca-collection/SKILL.md §Lane (work stream)` |
+| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md §Stale PLAN and schedule revision` |
+| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md §Git model` |
+| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md §Failure (semantics) · §Collection status` |
+| Parameters: `cap = 4` for lanes, `plan_cap = 4` for the PLAN phase, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
+| The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md §Relation to the base PDCA · §Fallback` |
+| Composition: the two execution forms (`execution_kind` ≠ `selected_variant`), the recursion ban, the form decided by the collection PLAN | `opencode/pdca-collection/SKILL.md §Collection units and the execution form` |
+| The barrier by unit kind, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering · §A.1 Routing campaign outcomes`; `opencode/pdca-incremental/SKILL.md §Campaign status file` |
+| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-unit `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `opencode/pdca-collection/SKILL.md §A.1 Routing campaign outcomes · §Lane pause · §Collection status` |
+| The collection-lane driver (the same `pdca-orchestrator`, the campaign inline, one lane) and the step's PLAN/approval | `opencode/pdca-collection/SKILL.md §Lane driver and campaign (mode=collection-lane)` |
+| Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `opencode/pdca-collection/SKILL.md §Surface reservation and its extension` |
+| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `opencode/pdca-collection/SKILL.md §Git model` |
 | Preflight and the single fallback (`Notice:` + durable reason, resource stop, fail closed) | `opencode/pdca-collection/SKILL.md §Fallback` |
 | The role tiers (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `opencode/pdca-collection/assets/diagram/gen_collection.py:800-803` |
 | The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the universal variant (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents) · §Orchestrator role · §State machine · §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §Frozen evidence manifest · §CHECK: audit checklist (generic)` (for .NET, the identical base `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents) · §Orchestrator role · §State machine · §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §Reviewer evidence pack (independent CHECK over full bodies)`); `opencode/pdca/SKILL.md §Host requirements (roles → agents), :22-36` |

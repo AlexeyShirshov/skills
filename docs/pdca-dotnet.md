@@ -17,10 +17,10 @@ the task is C#/.NET code with real acceptance criteria: a behaviour change, a ne
 bug fix, performance, a public API. For unrelated tasks (text, a config of another stack) it is
 overkill.
 
-## 2. Launching: "по pdca-dotnet"
+## 2. Launching: `pdca-dotnet`
 
-This skill's trigger is **explicit**: the phrase "по pdca-dotnet" (that phrase is what selects the
-.NET variant). The generic phrases "по циклу"/"через PDCA" go to `pdca-entry`, which routes .NET/C#
+This skill's trigger is **explicit**: naming `pdca-dotnet` (the explicit id is what selects the
+.NET variant). The generic phrases "by the cycle"/"via PDCA" go to `pdca-entry`, which routes .NET/C#
 work here; naming another contract explicitly bypasses the umbrella. The variant for a task is
 chosen by the dispatching skill (`pdca-entry`, or the collection/campaign per task/step) and
 passed to the driver as `selected_variant`; the driver never classifies. The logic "`.NET/C#` →
@@ -407,7 +407,7 @@ The article's normative claims were reconciled with the repository's current fil
 | Claim | Source |
 |---|---|
 | The .NET variant is the same contract, the tools are replaceable | `opencode/pdca-dotnet/SKILL.md:11-13` |
-| The variant per task (`.NET/C#` → `pdca-dotnet`) and the identity of the `pdca-coder`/`pdca-dotnet` base | `opencode/pdca-collection/SKILL.md §Роль` |
+| The variant per task (`.NET/C#` → `pdca-dotnet`) and the identity of the `pdca-coder`/`pdca-dotnet` base | `opencode/pdca-collection/SKILL.md §Role` |
 | The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
 | Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
 | `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `opencode/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
@@ -421,7 +421,7 @@ The article's normative claims were reconciled with the repository's current fil
 | The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `opencode/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
 | The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `opencode/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `opencode/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
-| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — собственные PLAN задач, барьер, кластеризация` |
+| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
 | Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `opencode/pdca-dotnet/SKILL.md §Coder editing discipline (applying fixes) · §Test strategy (PLAN → TEST) · §Test run safety (memory + streaming) — every phase · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | The `dotnet-*` lenses of PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md §Delegation by phase · §PLAN: design checklist (generic) · §CHECK: audit checklist (generic) · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | The ban on a 4th attempt, escalation by counter, decision routing | `opencode/pdca-dotnet/SKILL.md §State machine · §Escalation (pdca-escalate)` |

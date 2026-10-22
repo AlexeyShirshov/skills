@@ -34,21 +34,21 @@ FILES = (
     "incremental-contract-dark.svg",
     "incremental-state-dark.svg",
 )
-LIGHT_TITLE = "pdca-incremental — кампания шагами"
-DARK_TITLE = "pdca-incremental — кампания шагами (тёмная тема)"
+LIGHT_TITLE = "pdca-incremental — campaign in steps"
+DARK_TITLE = "pdca-incremental — campaign in steps (dark theme)"
 LABELS = (
     "BOOTSTRAP", "PLAN", "STEP N", "ACCEPT", "DECIDE", "STOP",
-    "Discover · карта", "Brief · 6 блоков",
+    "Discover · gap map", "Brief · six blocks",
     "P · PLAN", "D · DO", "C · CHECK", "A · ACT",
-    "Тип шага", "increment · repair · verify",
-    "Маршрут", "next · repair · verify",
-    "next step · baseline = принято", "repair · parent N",
-    "verify — опциональный интегральный gate",
+    "Step kind", "increment · repair · verify",
+    "Route", "next · repair · verify",
+    "next step · baseline = accepted", "repair · parent N",
+    "verify — optional integrated gate",
     "met · unreachable · blocked · stopped",
-    "Оркестратор · cheap", "pdca-planner · read-only", "pdca-executor · edit/bash",
-    "pdca-scout · факты, не решение", "pdca-check · read-only · evidence", "primary · status-only",
-    "дешёвая ступень", "средняя ступень", "pdca-check · medium",
-    "strong · pdca-escalate — не роль кампании",
+    "Orchestrator · cheap", "pdca-planner · read-only", "pdca-executor · edit/bash",
+    "pdca-scout · facts, not a decision", "pdca-check · read-only · evidence", "primary · status-only",
+    "cheap tier", "medium tier", "pdca-check · medium",
+    "strong · pdca-escalate — not a campaign role",
 )
 BAD_TOKENS = ("nextorm", "dot" + "net", "python")
 

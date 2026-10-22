@@ -58,7 +58,7 @@ class FrontmatterTest(unittest.TestCase):
         for name in FAMILY:
             with self.subTest(contract=name):
                 self.assertIn(name, description)
-        for phrase in ("by the cycle", "via PDCA", "по циклу", "через PDCA"):
+        for phrase in ("by the cycle", "via PDCA", "run PDCA"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, description)
 
@@ -99,8 +99,7 @@ class AutoinvokeTest(unittest.TestCase):
 
     def test_entry_catches_the_former_phrase_triggers(self):
         description = frontmatter(SKILL)["description"]
-        for phrase in ("список задач", "milestone", "инкрементами",
-                       "маленькими шагами", "по циклу"):
+        for phrase in ("task list", "milestone", "increments", "campaign"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, description)
 
@@ -311,14 +310,14 @@ class ArtifactsTest(unittest.TestCase):
 class CampaignCriteriaTest(unittest.TestCase):
     """The entry delegates campaign criteria instead of restating them.
 
-    The canonical discriminator lives in ``pdca-incremental`` §«Когда выбирать»;
+    The canonical discriminator lives in ``pdca-incremental`` §When to choose;
     the entry only points at it and states who decides a unit's form.
     """
 
     def test_campaign_criteria_are_delegated_to_incremental(self):
         text = norm(read(SKILL))
         self.assertIn(
-            "canonical in `pdca-incremental` §«Когда выбирать»",
+            "canonical in `pdca-incremental` §When to choose",
             text,
             "the entry must point at the canonical campaign criteria instead of "
             "restating them",

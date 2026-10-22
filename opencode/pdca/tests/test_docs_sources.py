@@ -164,13 +164,13 @@ class CompositionDocsTest(unittest.TestCase):
 # contract inputs (e.g. `.NET/C#` → `pdca-dotnet`) are outside these slices by design.
 COMPOSITION_SECTIONS = {
     "opencode/pdca-collection/SKILL.md": (
-        ("###", "Единицы коллекции и форма исполнения"),
-        ("###", "P — собственные PLAN задач, барьер, кластеризация"),
-        ("###", "Резервация поверхности и её расширение"),
+        ("###", "Collection units and the execution form"),
+        ("###", "P — per-task PLANs, the barrier, clustering"),
+        ("###", "Surface reservation and its extension"),
     ),
     "opencode/pdca-incremental/SKILL.md": (
-        ("##", "Инварианты кампании"),
-        ("##", "Статус-файл кампании"),
+        ("##", "Campaign invariants"),
+        ("##", "Campaign status file"),
         ("###", "0. Bootstrap"),
     ),
     "opencode/pdca/assets/agents/pdca-orchestrator.md": (
@@ -179,6 +179,11 @@ COMPOSITION_SECTIONS = {
         ("##", "Input 2"),
         ("##", "Input 3"),
     ),
+}
+# The RU side of the composition documentation stays Russian by design (`docs/ru` is not
+# translated), so the domain-neutral vocabulary is still checked in Russian there.
+RU_COMPOSITION_SECTIONS = {
+    "docs/ru/pdca-collection.md": (("##", "7. Композиция"),),
 }
 RU_VOCABULARY = ("цель", "свидетельств", "критери", "поверхност", "зависимост", "ресурс")
 EN_VOCABULARY = ("goal", "evidence", "criteria", "surface", "dependencies", "resources")
@@ -219,9 +224,10 @@ class CompositionDomainNeutralityTest(unittest.TestCase):
         en_tokens: set[str] = set()
         for rel, sections in COMPOSITION_SECTIONS.items():
             text = read(REPO / rel)
-            is_runner = rel.endswith("pdca-orchestrator.md")
-            vocabulary = EN_VOCABULARY if is_runner else RU_VOCABULARY
-            seen = en_tokens if is_runner else ru_tokens
+            # Every contract and the runner now speak the EN vocabulary; the RU side of
+            # the composition documentation is checked separately below.
+            vocabulary = EN_VOCABULARY
+            seen = en_tokens
             for hashes, title in sections:
                 body = heading_slice(text, hashes, title)
                 if not body:
@@ -239,6 +245,25 @@ class CompositionDomainNeutralityTest(unittest.TestCase):
                             % (rel, token, title, body[:offset].count("\n") + 1)
                         )
                 seen.update(token for token in vocabulary if token in low)
+        for rel, sections in RU_COMPOSITION_SECTIONS.items():
+            text = read(REPO / rel)
+            for hashes, title in sections:
+                body = heading_slice(text, hashes, title)
+                if not body:
+                    problems.append(
+                        "%s: composition heading %s %r not found — the guard cannot "
+                        "silently skip a missing section" % (rel, hashes, title)
+                    )
+                    continue
+                low = body.lower()
+                for token in DOMAIN_TOKENS:
+                    if token.lower() in low:
+                        offset = low.index(token.lower())
+                        problems.append(
+                            "%s: domain example %r inside §%s (slice line %d)"
+                            % (rel, token, title, body[:offset].count("\n") + 1)
+                        )
+                ru_tokens.update(token for token in RU_VOCABULARY if token in low)
         self.assertEqual([], problems, "\n".join(problems))
         self.assertGreaterEqual(
             len(ru_tokens),

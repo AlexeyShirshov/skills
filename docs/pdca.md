@@ -35,7 +35,7 @@ collection parent as a `plan_handoff` — same task, same `N`/`r`/`n`, DO does n
 
 ## How to launch it: explicitly, or through the umbrella
 
-`pdca` has **no phrase trigger of its own**. The phrases "by the cycle", "via PDCA", "по циклу"
+`pdca` has **no phrase trigger of its own**. The phrases "by the cycle", "via PDCA", "run PDCA"
 belong to the family entry point `pdca-entry`, which classifies the task and routes it — to
 `pdca-dotnet`, `pdca-coder`, `pdca-collection`, `pdca-incremental`, or here (the neutral default for
 a non-code task with a verifiable result). Calling `skill pdca` explicitly bypasses the umbrella.

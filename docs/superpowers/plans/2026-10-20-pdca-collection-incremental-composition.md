@@ -109,7 +109,7 @@ python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
 
 ## 3. Артефакт подготовки, ревизии, поверхность и раздельные состояния
 
-**Зависимости:** задачи 1, 2. **Files:** `opencode/pdca-collection/SKILL.md` (§§ `Роль`, `Коллекция (P / D / C / A)`, `Лейн`, `Статус коллекции`, `Fallback`), `opencode/pdca-incremental/SKILL.md` (§§ `Статус-файл кампании`, `Цикл кампании` → `0. Bootstrap`), тесты из задачи 2.
+**Зависимости:** задачи 1, 2. **Files:** `opencode/pdca-collection/SKILL.md` (§§ `Роль`, `Коллекция (P / D / C / A)`, `Лейн`, `Статус коллекции`, `Fallback`), `opencode/pdca-incremental/SKILL.md` (§§ `Campaign status file`, `Campaign cycle` → `0. Bootstrap`), тесты из задачи 2.
 
 **Action.**
 
@@ -167,7 +167,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 
 ## 5. Incremental-контракт: две модели, resume, пауза, git
 
-**Зависимости:** задачи 3, 4. **Files:** `opencode/pdca-incremental/SKILL.md` — точечно §§ `Роль`, `Роли, тиры и полномочия` (строка `STEP N | RUNNER | pdca-orchestrator`), `Автономный режим`; по смыслу §§ `Инварианты кампании`, `Статус-файл кампании`, `Цикл кампании` → `0. Bootstrap`, `3. Исполнение шага` (фактические заголовки проверить в файле, не выдумывать), `5. Решение об остановке`; тест `opencode/pdca-incremental/tests/test_contract.py`.
+**Зависимости:** задачи 3, 4. **Files:** `opencode/pdca-incremental/SKILL.md` — точечно §§ `Role`, `Roles, tiers and authority` (строка `STEP N | RUNNER | pdca-orchestrator`), `Autonomous mode`; по смыслу §§ `Campaign invariants`, `Campaign status file`, `Campaign cycle` → `0. Bootstrap`, `3. Step execution` (фактические заголовки проверить в файле, не выдумывать), `5. Stop decision`; тест `opencode/pdca-incremental/tests/test_contract.py`.
 
 **Action.**
 
@@ -195,7 +195,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 
 ## 6. Capability, fallback и host-документация
 
-**Зависимости:** задачи 1, 4. **Files:** `docs/install.md`, `docs/ru/install.md`, `docs/install-prompt.md`; соответствующий текст preflight/fallback — в `opencode/pdca-collection/SKILL.md` (§`Fallback`) и `opencode/pdca-incremental/SKILL.md` (§`Связь с семейством`/fallback-часть, фактический заголовок проверить).
+**Зависимости:** задачи 1, 4. **Files:** `docs/install.md`, `docs/ru/install.md`, `docs/install-prompt.md`; соответствующий текст preflight/fallback — в `opencode/pdca-collection/SKILL.md` (§`Fallback`) и `opencode/pdca-incremental/SKILL.md` (§`Relation to the family`/fallback-часть, фактический заголовок проверить).
 
 **Action.**
 

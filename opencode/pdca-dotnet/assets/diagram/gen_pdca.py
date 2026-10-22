@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Hand-laid-out SVG for the pdca-dotnet workflow:
-#   orchestrator band on top with per-phase inputs; columns P/D/C/Безопасность/
-#   Эскалация/STOP/A; every phase returns control to the orchestrator.
+#   orchestrator band on top with per-phase inputs; columns P/D/C/Security/
+#   Escalation/STOP/A; every phase returns control to the orchestrator.
 # Renders two artefacts: light (pdca-hand.*) and dark (pdca-hand-dark.*).
 import html
 import os
@@ -27,95 +27,95 @@ BOX_H, BOX_STEP = 50, 62
 
 COLOR = {"P": "#2563eb", "D": "#7c3aed", "C": "#d97706", "SEC": "#be123c",
          "E": "#b91c1c", "S": "#b91c1c", "A": "#059669"}
-NAME = {"P": "P · PLAN", "D": "D · DO", "C": "C · CHECK", "SEC": "CHECK · security (поток)",
-        "E": "ЭСКАЛАЦИЯ", "S": "STOP", "A": "A · ACT"}
+NAME = {"P": "P · PLAN", "D": "D · DO", "C": "C · CHECK", "SEC": "CHECK · security (stream)",
+        "E": "ESCALATION", "S": "STOP", "A": "A · ACT"}
 TIER_COLOR = {"weak": "#0d9488", "medium": "#4f46e5", "strong": "#ea580c"}
 TIER_MODEL = {"weak": "cheap", "medium": "medium", "strong": "strong"}
 
 BLOCKS = {
     "P": [
-        ("PLAN", "старт · дизайн", "medium"),
-        ("Сбор · gather", "pdca-scout + dotnet-* · 6 линз", "weak"),
-        ("Decide · pdca-planner", "fix / defer · декомпозиция", "medium"),
-        ("Критерии · цель", "goal · приёмка (+негатив)", "medium"),
-        ("Задачи · риски", "шаги · без TBD", "medium"),
-        ("Тесты · Доки", "стратегия · план", "medium"),
-        ("Перф-решение", "мерить? · чем · baseline", "medium"),
-        ("Разведка (spike)", "нужен ли? · чем · PoC", "medium"),
-        ("Юнит-режим", "послед. · дерево · worktrees", "medium"),
-        ("Контракт vN", "evidence · row ID · rv", "medium"),
+        ("PLAN", "start · design", "medium"),
+        ("Gather", "pdca-scout + dotnet-* (6 lenses)", "weak"),
+        ("Decide · pdca-planner", "fix / defer · decomposition", "medium"),
+        ("Criteria · goal", "goal · acceptance (+negative)", "medium"),
+        ("Tasks · risks", "steps · no TBD", "medium"),
+        ("Tests · docs", "strategy · plan", "medium"),
+        ("Perf decision", "measure? · tool · baseline", "medium"),
+        ("Spike", "needed? · tool · PoC", "medium"),
+        ("Unit mode", "sequence · tree · worktrees", "medium"),
+        ("Contract vN", "evidence · row ID · rv", "medium"),
     ],
     "D": [
-        ("DO", "журнал · план до апрува", "weak"),
-        ("Test scope", "структурир. · affected subset", "medium"),
-        ("Brief-гейт", "validate_inner_loop · fail-closed", "weak"),
-        ("Код", "из плана", "weak"),
-        ("Тесты", "из плана", "weak"),
-        ("Доки · проза", "README · DocFX", "weak"),
-        ("DO ledger", "evidence по row ID/rv", "weak"),
-        ("Build-гейт", "0 warnings · TreatWarningsAsErrors", "weak"),
+        ("DO", "journal · plan until approval", "weak"),
+        ("Test scope", "structured · affected subset", "medium"),
+        ("Brief gate", "validate_inner_loop · fail-closed", "weak"),
+        ("Code", "from the plan", "weak"),
+        ("Tests", "from the plan", "weak"),
+        ("Docs · prose", "README · DocFX", "weak"),
+        ("DO ledger", "evidence by row ID/rv", "weak"),
+        ("Build gate", "0 warnings · TreatWarningsAsErrors", "weak"),
     ],
     "C": [
-        ("CHECK · gather", "форк 4 потоков + security", "weak"),
-        ("Аудит кода", "сбор · кандидаты", "weak"),
-        ("Линза тестов", "прогон · покрытие", "weak"),
-        ("Линза доков", "проза + XML-doc", "weak"),
-        ("Линза перфа", "замер → суждение", "weak"),
-        ("Покрытие", "≥ порога · branch · Stryker.NET", "weak"),
+        ("CHECK · gather", "fork 4 streams + security", "weak"),
+        ("Code audit", "collect · candidates", "weak"),
+        ("Test lens", "run · coverage", "weak"),
+        ("Docs lens", "prose + XML-doc", "weak"),
+        ("Perf lens", "measure → judgment", "weak"),
+        ("Coverage", "≥ threshold · Stryker.NET", "weak"),
     ],
     "SEC": [
-        ("Аудит · security", "read-only · без pdca-scout", "medium"),
-        ("Скаут · опц.", "факты вне diff · если нужно", "weak"),
+        ("Security audit", "read-only · no pdca-scout", "medium"),
+        ("Scout · opt.", "facts outside diff · if needed", "weak"),
     ],
     "E": [
-        ("Скаут", "факты · file:line · до pdca-escalate", "weak"),
-        ("Т1 · неоднознач.", "критерий неясен", "strong"),
-        ("Т2 · счётчик", "повтор / 3-й CHECK(r)", "strong"),
-        ("Т3 · trade-off", "арх/API · hard security", "strong"),
-        ("Т4 · risky-diff", "приёмка до ACT", "strong"),
-        ("Т5 · low-conf", "PLAN / классификация DO", "strong"),
-        ("Решение", "→ pdca-planner · pdca-executor · STOP", "strong"),
+        ("Scout", "facts · file:line · pre-escalate", "weak"),
+        ("T1 · ambiguity", "criterion unclear", "strong"),
+        ("T2 · counter", "repeat / 3rd CHECK(r)", "strong"),
+        ("T3 · trade-off", "arch/API · hard security", "strong"),
+        ("T4 · risky-diff", "acceptance before ACT", "strong"),
+        ("T5 · low-conf", "PLAN / DO classification", "strong"),
+        ("Decision", "→ pdca-planner · executor · STOP", "strong"),
     ],
     "S": [
-        ("Терминал", "нет выполнимого PLAN r+1", "weak"),
-        ("Normal", "спросить пользователя", "weak"),
-        ("Autonomous", "записанный STOP · без вопроса", "weak"),
+        ("Terminal", "no doable PLAN r+1", "weak"),
+        ("Normal", "ask the user", "weak"),
+        ("Autonomous", "recorded STOP · no prompt", "weak"),
     ],
     "A": [
-        ("ACT", "закрытие цикла", "weak"),
-        ("Урок", "→ memory", "weak"),
-        ("Правила", "AGENTS.md · оверлей", "weak"),
-        ("Статус-файл", "финализация · source of truth", "weak"),
-        ("Отчёт", "закрыто / осталось / блокеры", "weak"),
-        ("Сообщение", "commit advice · manual", "weak"),
-        ("Handoff", "→ EXIT · цикл N+1", "weak"),
+        ("ACT", "cycle close-out", "weak"),
+        ("Lesson", "→ memory", "weak"),
+        ("Rules", "AGENTS.md · overlay", "weak"),
+        ("Status file", "finalization · source of truth", "weak"),
+        ("Report", "closed / left / blockers", "weak"),
+        ("Message", "commit advice · manual", "weak"),
+        ("Handoff", "→ EXIT · cycle N+1", "weak"),
     ],
 }
 
 # post-fan sequential steps (after the parallel streams)
 TAIL = {"D": [
-    ("XML-doc", "после кода · если требует проект", "weak"),
-    ("Сборка · тесты", "build-гейт · unit-луп", "weak"),
-    ("Интеграц. тесты", "граница DO → CHECK", "weak"),
-    ("Report-гейт", "validate_inner_loop · fail-closed", "weak"),
+    ("XML-doc", "after code · if the project requires", "weak"),
+    ("Build · tests", "build gate · unit loop", "weak"),
+    ("Integr. tests", "DO → CHECK boundary", "weak"),
+    ("Report gate", "validate_inner_loop · fail-closed", "weak"),
 ], "C": [
-    ("Completeness", "evidence contract · перед PASS", "medium"),
-    ("Триаж · вердикт", "агрегат потоков → pass/fail", "medium"),
+    ("Completeness", "evidence contract · before PASS", "medium"),
+    ("Triage · verdict", "stream aggregate → pass/fail", "medium"),
 ]}
 
 # orchestrator inputs, per phase
 INPUTS = [
-    "PLAN ← «старт» · «реплан от pdca-check/DO» · «цикл N+1 от ACT»",
-    "DO ← «план готов · апрув/сразу» · «фикс дефекта от pdca-check (вкл. security)» · «фикс от pdca-escalate при r не исчерпан»",
-    "CHECK ← «потоки закрыты»",
-    "CHECK · security ← «условно: auth / секреты / ввод / crypto» · «отчёт → CHECK»",
-    "ACT ← «pdca-check pass»",
-    "ЭСКАЛАЦИЯ ← «Т1 неоднозначность» · «Т2 счётчик» · «Т3 trade-off» · «Т4 risky-diff» · «Т5 low-confidence»",
-    "STOP ← «нет выполнимого PLAN r+1»",
+    "PLAN ← “start” · “replan from pdca-check/DO” · “cycle N+1 from ACT”",
+    "DO ← “plan ready · approval/instant” · “defect fix from pdca-check (incl. security)” · “fix from pdca-escalate while r not exhausted”",
+    "CHECK ← “streams closed”",
+    "CHECK · security ← “if: auth / secrets / input / crypto” · “report → CHECK”",
+    "ACT ← “pdca-check pass”",
+    "ESCALATION ← “T1 ambiguity” · “T2 counter” · “T3 trade-off” · “T4 risky-diff” · “T5 low-confidence”",
+    "STOP ← “no doable PLAN r+1”",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "старт\nреплан pdca-check/DO\nцикл N+1", "D": "план готов · апрув/сразу\nфикс от pdca-check (с security)\nфикс от pdca-escalate (r активен)", "C": "потоки закрыты",
-            "SEC": "из CHECK · условно\nauth/секр/ввод/crypto\nсбор (gather)\nотчёт → CHECK", "E": "Т1 неоднозначность\nТ2 счётчик · 3-й CHECK(r)\nТ3 trade-off · Т4 risky-diff\nТ5 low-confidence", "S": "нет плана r+1", "A": "pdca-check pass"}
+DISPATCH = {"P": "start\nreplan: pdca-check/DO\ncycle N+1", "D": "plan ready · approval/instant\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
+            "SEC": "from CHECK · if\nauth/secrets/input/crypto\ngather (facts)\nreport → CHECK", "E": "T1 ambiguity\nT2 counter · 3rd CHECK(r)\nT3 trade-off · T4 risky-diff\nT5 low-confidence", "S": "no plan r+1", "A": "pdca-check pass"}
 
 # per-phase state-graph node colors (shared by both themes)
 STC = {"START": None, "PLAN": "#2563eb", "DO": "#7c3aed", "CHECK": "#d97706",
@@ -222,7 +222,7 @@ def render(P, title):
              '</style>')
 
     s.append(f'<rect x="{M}" y="{ORB_Y}" width="{W-M-M}" height="{ORB_H}" rx="10" class="band"/>')
-    s.append(f'<text x="{M+18}" y="{ORB_Y+24}" class="bt">Оркестратор · cheap — normal: primary · autonomous: pdca-orchestrator</text>')
+    s.append(f'<text x="{M+18}" y="{ORB_Y+24}" class="bt">Orchestrator · cheap — normal: primary · autonomous: pdca-orchestrator</text>')
     _cw = W - 2 * M
     _col2 = M + 18 + _cw / 2
     for _i, _t in enumerate(INPUTS):
@@ -300,9 +300,9 @@ def render(P, title):
             s.append(poly([(xc + 16, SPINE_Y), (xc + 16, ORB_B)], edge_id=f"return_{c.lower()}"))
 
     legend = [
-        ("#0d9488", "дешёвая ступень", "cheap", "оркестрация · pdca-scout · pdca-executor · CHECK gather"),
-        ("#4f46e5", "средняя ступень", "medium", "pdca-planner · pdca-check · pdca-security-auditor"),
-        ("#ea580c", "дорогая ступень", "strong", "pdca-escalate"),
+        ("#0d9488", "cheap tier", "cheap", "orchestration · pdca-scout · pdca-executor · CHECK gather"),
+        ("#4f46e5", "medium tier", "medium", "pdca-planner · pdca-check · pdca-security-auditor"),
+        ("#ea580c", "strong tier", "strong", "pdca-escalate"),
     ]
     ly = LEG_Y
     _iw = (W - 2 * M) / 3
@@ -321,7 +321,7 @@ def render(P, title):
         s.append(f'<text x="{_x+22+_mw+10}" y="{ly+23}" class="ls">{esc(_roles)}</text>')
 
     # ---- state graph (below the legend) ----
-    s.append(f'<text x="{M}" y="{SG_TITLE_Y}" class="lt">Граф состояний цикла</text>')
+    s.append(f'<text x="{M}" y="{SG_TITLE_Y}" class="lt">The cycle state graph</text>')
     NH, NW = 44, 160
     stx = {"START": 24, "PLAN": 295, "DO": 566, "CHECK": 837, "ACT": 1108, "EXIT": 1379}
     neutral = P["state_neutral"]
@@ -330,30 +330,30 @@ def render(P, title):
         s.append(f'<rect x="{_v}" y="{R1_TOP}" width="{NW}" height="{NH}" rx="10" fill="{stc[_k]}" fill-opacity="0.08" stroke="{stc[_k]}" stroke-width="1.6" data-node-id="{_k}"/>')
         s.append(f'<text x="{_v+NW/2}" y="{R1_TOP+NH/2+5}" class="st" fill="{stc[_k]}" text-anchor="middle">{esc(_k)}</text>')
     _y = R1_TOP + NH / 2
-    for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", "старт"),
+    for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", "start"),
                                ("plan_do", "PLAN", "DO", None),
-                               ("do_check", "DO", "CHECK", "потоки закрыты"),
+                               ("do_check", "DO", "CHECK", "streams closed"),
                                ("check_act", "CHECK", "ACT", "pass"),
-                               ("act_exit", "ACT", "EXIT", "закрыто")]:
+                               ("act_exit", "ACT", "EXIT", "closed")]:
         _x1, _x2 = stx[_a] + NW, stx[_b]
         s.append(poly([(_x1, _y), (_x2, _y)], edge_id=_eid))
         if _eid == "plan_do":
             # stacked in the narrow PLAN→DO gap so the line never overflows the nodes
-            for _k, _ln in enumerate(("апрув (normal)", "сразу (авто)", "n=1/3")):
+            for _k, _ln in enumerate(("approval (normal)", "instant (auto)", "n=1/3")):
                 s.append(label((_x1 + _x2) / 2, _y - 23 + _k * 11, _ln, P["label"]))
         else:
             s.append(label((_x1 + _x2) / 2, _y - 7, _lab, P["label"]))
     # next cycle: ACT opens a new cycle N+1 (distinct from the terminal act_exit)
     s.append(f'<path d="M1188,{R1_TOP} C1188,{R1_TOP-36} 375,{R1_TOP-36} 375,{R1_TOP}" fill="none" stroke="{P["arrow"]}" stroke-dasharray="5 4" marker-end="url(#arrow)" data-edge-id="act_plan"/>')
-    s.append(label(781, R1_TOP - 40, "следующий цикл · N+1", P["label"]))
+    s.append(label(781, R1_TOP - 40, "next cycle · N+1", P["label"]))
     # loop-backs taken before ACT
     s.append(f'<path d="M606,{R1_TOP} C606,{R1_TOP-68} 420,{R1_TOP-68} 420,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="do_plan_blocker"/>')
-    s.append(label(513, R1_TOP - 72, "новое предусловие/блокер", P["label"]))
+    s.append(label(513, R1_TOP - 72, "new precondition/blocker", P["label"]))
     s.append(f'<path d="M880,{R1_TOP} C880,{R1_TOP-100} 686,{R1_TOP-100} 686,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="check_do_defect"/>')
-    s.append(label(786, R1_TOP - 104, "дефект · n+1 (до 3)", P["label"]))
+    s.append(label(786, R1_TOP - 104, "defect · n+1 (max 3)", P["label"]))
     s.append(f'<path d="M950,{R1_TOP} C950,{R1_TOP-132} 415,{R1_TOP-132} 415,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="check_plan_replan"/>')
-    s.append(label(683, R1_TOP - 136, "неверный план · r+1 при ревизии", P["label"]))
-    for _nid, _x, _t, _c, _d in [("sec_check", 837, "поток CHECK", "#be123c", True),
+    s.append(label(683, R1_TOP - 136, "wrong plan · r+1 on revision", P["label"]))
+    for _nid, _x, _t, _c, _d in [("sec_check", 837, "CHECK stream", "#be123c", True),
                                  ("escalate", 1100, "ESCALATE", "#b91c1c", False),
                                  ("stop", 1360, "STOP", "#b91c1c", False)]:
         _da = ' stroke-dasharray="5 4"' if _d else ''
@@ -362,37 +362,37 @@ def render(P, title):
     _y2 = R2_TOP + NH / 2
     # conditional parallel CHECK stream: CHECK forks, stream reports back into CHECK triage
     s.append(poly([(917, R1_BOT), (917, R2_TOP)], "#be123c", dash="5 4", edge_id="check_security"))
-    s.append(label(907, (R1_BOT + R2_TOP) / 2 - 6, "условно · auth/секр/ввод/crypto", "#be123c", "end"))
+    s.append(label(907, (R1_BOT + R2_TOP) / 2 - 6, "if · auth/secrets/input/crypto", "#be123c", "end"))
     s.append(poly([(937, R2_TOP), (937, R1_BOT)], "#be123c", edge_id="security_check_report"))
-    s.append(label(947, (R1_BOT + R2_TOP) / 2 + 6, "отчёт → CHECK", "#be123c", "start"))
+    s.append(label(947, (R1_BOT + R2_TOP) / 2 + 6, "report → CHECK", "#be123c", "start"))
     # CHECK verdict (all streams aggregated) triggers escalation on repeat / 3rd fail(r)
     s.append(poly([(960, R1_BOT), (960, R1_BOT + 30), (1180, R1_BOT + 30), (1180, R2_TOP)], edge_id="check_escalate_trigger"))
-    s.append(label(1070, R1_BOT + 22, "триггеры pdca-escalate (Т1–Т5)", P["label"]))
+    s.append(label(1070, R1_BOT + 22, "pdca-escalate triggers (T1–T5)", P["label"]))
     # ONLY a hard security tradeoff escalates directly (no ordinary security fail bypass)
     s.append(poly([(997, _y2), (1100, _y2)], "#b91c1c", edge_id="security_escalate_tradeoff"))
-    s.append(label(1048, _y2 - 7, "жёсткий tradeoff", P["label"]))
+    s.append(label(1048, _y2 - 7, "hard trade-off", P["label"]))
     # pdca-escalate decides; cheap dispatcher routes: no actionable r+1 -> STOP
     s.append(poly([(1260, _y2), (1360, _y2)], "#b91c1c", edge_id="escalate_stop"))
-    s.append(label(1310, _y2 - 7, "нет плана r+1", P["label"]))
+    s.append(label(1310, _y2 - 7, "no plan r+1", P["label"]))
     # pdca-escalate decision -> DO while r not exhausted (current plan)
     s.append(poly([(1160, R2_BOT), (1160, M4), (646, M4), (646, R1_BOT)], edge_id="escalate_do_nonexhausted"))
-    s.append(label(850, M4 - 8, "решение · r не исчерпан → DO", P["label"]))
+    s.append(label(850, M4 - 8, "decision · r not exhausted → DO", P["label"]))
     # pdca-escalate decision -> genuine PLAN r+1 only when exhausted; never a 4th DO
     _m4 = M4 + 14
     s.append(poly([(1200, R2_BOT), (1200, _m4), (375, _m4), (375, R1_BOT)], edge_id="escalate_plan_exhausted"))
-    s.append(label(760, _m4 + 13, "исчерпан r → PLAN r+1", P["label"]))
+    s.append(label(760, _m4 + 13, "r exhausted → PLAN r+1", P["label"]))
     # arrow-type legend (mirrors the universal diagram)
     _fin = M4 + 44
-    s.append(label(24, _fin, "сплошная стрелка — переход", P["sub"], "start"))
-    s.append(label(300, _fin, "дуга — loop-back до ACT", P["sub"], "start"))
-    s.append(label(620, _fin, "пунктир — следующий цикл", P["sub"], "start"))
-    s.append(label(900, _fin, "нижний ряд — эскалация и STOP", P["sub"], "start"))
+    s.append(label(24, _fin, "plain arrow — a transition", P["sub"], "start"))
+    s.append(label(300, _fin, "arc — loop-back before ACT", P["sub"], "start"))
+    s.append(label(620, _fin, "dashed — next cycle", P["sub"], "start"))
+    s.append(label(900, _fin, "bottom row — escalation and STOP", P["sub"], "start"))
     s.append('</svg>')
     return "\n".join(s)
 
 
 def htmlwrap(P, title, svg):
-    return ('<!doctype html><html lang="ru"><meta charset="utf-8">'
+    return ('<!doctype html><html lang="en"><meta charset="utf-8">'
             f'<title>{esc(title)}</title>'
             f'<style>body{{margin:0;background:{P["bg"]};font-family:Segoe UI,system-ui,sans-serif}}'
             f'.card{{background:{P["card"]};border-radius:12px;margin:20px;padding:12px;box-shadow:{P["shadow"]};overflow:auto}}</style>'
@@ -400,8 +400,8 @@ def htmlwrap(P, title, svg):
 
 
 VARIANTS = [
-    ("light", "pdca-hand", "pdca-dotnet — ручная раскладка"),
-    ("dark", "pdca-hand-dark", "pdca-dotnet — ручная раскладка (тёмная тема)"),
+    ("light", "pdca-hand", "pdca-dotnet — hand layout"),
+    ("dark", "pdca-hand-dark", "pdca-dotnet — hand layout (dark theme)"),
 ]
 
 for theme, stem, title in VARIANTS:

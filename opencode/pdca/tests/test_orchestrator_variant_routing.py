@@ -127,12 +127,12 @@ class EntryOwnsRoutingTest(unittest.TestCase):
 class DispatchingSkillsChooseTest(unittest.TestCase):
     def test_collection_chooses_and_passes_the_variant(self):
         text = norm(read(SKILLS / "pdca-collection/SKILL.md"))
-        self.assertIn("вариант определяет коллекция", text)
+        self.assertIn("the collection decides the variant", text)
         self.assertIn("selected_variant", text)
 
     def test_incremental_chooses_and_passes_the_variant(self):
         text = norm(read(SKILLS / "pdca-incremental/SKILL.md"))
-        self.assertIn("вариант шага определяет кампания", text)
+        self.assertIn("the campaign determines the step's variant", text)
         self.assertIn("selected_variant", text)
 
     def test_each_cycle_contract_names_itself_in_the_handoff(self):
