@@ -517,26 +517,48 @@ class ContractConsistencyTest(unittest.TestCase):
         # dispatch rule is owned centrally by config/AGENTS.md and the pdca-dotnet
         # SKILL, not by the architect prompt. Assertions keep the architect identity
         # and pin the rule where it now lives (full normalized clauses, not mere
-        # keyword co-occurrence).
-        raw = read(CONFIG_AGENTS / "architect.md")
-        body = norm(between(raw, "# architect", "## Скиллы"))
+        # keyword co-occurrence). The host briefs are being translated, so the
+        # section marker and the expected wording are taken from the body itself.
+        architect = CONFIG_AGENTS / "architect.md"
+        raw = read(architect)
+        en = is_en(architect)
+        body = norm(between(raw, "# architect", "## Skills" if en else "## Скиллы"))
         self.assertTrue(body, "architect body not found")
-        self.assertNotIn("внутри pdca ты", body.lower())
-        self.assertNotIn("вне pdca", body.lower())
-        self.assertNotIn("диспетчер, не автор плана", body.lower())
+        # No PDCA-specific role and no dispatcher wording in either language.
+        self.assertNotRegex(
+            body.lower(),
+            r"inside pdca|внутри pdca|outside pdca|вне pdca"
+            r"|dispatcher, not the plan author|диспетчер, не автор плана"
+            r"|dispatcher|диспетчер",
+        )
         # Meaningful universal statements from the body (not permission allow-list).
-        self.assertIn("решающий primary medium", body.lower())
-        self.assertIn("только scout (cheap-тир)", body.lower())
-        self.assertIn("только coder (cheap-тир)", body.lower())
+        self.assertIn(
+            "deciding medium-tier primary" if en else "решающий primary medium",
+            body.lower(),
+        )
+        self.assertIn(
+            "scout only (cheap tier)" if en else "только scout (cheap-тир)",
+            body.lower(),
+        )
+        self.assertIn(
+            "coder only (cheap tier)" if en else "только coder (cheap-тир)",
+            body.lower(),
+        )
         self.assertIn("brainstorming", body.lower())
         # The cheap-only exclusion and the no-widen rule are authoritative centrally
         # (config/AGENTS.md tier routing) — they must not be restored into the
-        # architect prose.
+        # architect prose. The central file may be RU or EN.
         central = norm(read(CONFIG / "AGENTS.md")).lower()
-        self.assertIn("cheap-оркестратор", central)
-        self.assertIn("medium/strong primary", central)
-        self.assertIn("цикл не диспетчеризует", central)
-        self.assertIn("права дорогих ролей не расширяются", central)
+        for alternatives in (
+            ("cheap-оркестратор", "cheap orchestrator"),
+            ("medium/strong primary",),
+            ("цикл не диспетчеризует", "does not dispatch the cycle"),
+            ("права дорогих ролей не расширяются", "rights of expensive roles are never widened"),
+        ):
+            self.assertTrue(
+                any(a in central for a in alternatives),
+                "config/AGENTS.md: none of %r found" % (alternatives,),
+            )
 
     def test_skill_owns_cheap_only_orchestration_architect_excluded(self):
         # The SKILL owns cheap-only orchestration; architect is excluded, never an

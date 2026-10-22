@@ -962,6 +962,10 @@ class _CoderParityMixin:
     is present, that it sits between the Evidence and Git bullets, and that it
     encodes the key concepts with wording-robust RU+EN regexes.  It never
     executes an agent or the cycle.
+
+    Each entry is a tuple of accepted wordings: the host briefs are being
+    translated to EN, so the language of a body is taken from its content (the
+    first accepted anchor actually present) rather than from the path.
     """
 
     # Stable bold prefixes introduced by D3 (RU and EN wording).
@@ -974,17 +978,26 @@ class _CoderParityMixin:
             path: path.read_text(encoding="utf-8") for path in cls.ANCHORS
         }
 
+    def _present(self, text, path, table, what):
+        """Return the first accepted wording from ``table[path]`` found in ``text``."""
+        for variant in table[path]:
+            if variant in text:
+                return variant
+        self.fail(
+            "%s missing in %s: none of %r" % (what, path, table[path])
+        )
+
     def _bullet(self, text, path):
         """Return the inner-loop bullet text from its anchor to the next item."""
-        anchor = self.ANCHORS[path]
+        anchor = self._present(text, path, self.ANCHORS, "inner-loop bullet anchor")
         rest = text[text.index(anchor):]
         match = re.search(r"\n(?=- \*\*|#{1,6}\s)", rest)
         return rest[: match.start()] if match else rest
 
     def assert_parity(self, texts):
         """Assert both bodies carry the anchor, concepts and Evidence→Git order."""
-        for path, anchor in self.ANCHORS.items():
-            self.assertIn(anchor, texts[path])
+        for path in self.ANCHORS:
+            self._present(texts[path], path, self.ANCHORS, "inner-loop bullet anchor")
         for path in self.ANCHORS:
             bullet = self._bullet(texts[path], path).lower()
             # affected subset (RU поднабор/затронут / EN affected/subset)
@@ -1002,8 +1015,12 @@ class _CoderParityMixin:
             self.assertRegex(bullet, r"journal|журнал")
         for path in self.ANCHORS:
             text = texts[path]
-            evidence = text.index(self.EVIDENCE[path])
-            anchor = text.index(self.ANCHORS[path])
+            evidence = text.index(
+                self._present(text, path, self.EVIDENCE, "evidence bullet")
+            )
+            anchor = text.index(
+                self._present(text, path, self.ANCHORS, "inner-loop bullet anchor")
+            )
             git = text.index("**Git.**")
             self.assertLess(evidence, anchor)
             self.assertLess(anchor, git)
@@ -1035,18 +1052,25 @@ class CoderParityTests(_CoderParityMixin, unittest.TestCase):
     ``HostCoderParityTests`` below.
     """
 
-    ANCHORS = {EN_CODER: "**Inner loop"}
-    EVIDENCE = {EN_CODER: "Evidence, not claims"}
+    ANCHORS = {EN_CODER: ("**Inner loop",)}
+    EVIDENCE = {EN_CODER: ("Evidence, not claims",)}
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class HostCoderParityTests(_CoderParityMixin, unittest.TestCase):
-    """D3 guards: both coder bodies (EN asset + RU host brief) stay in parity."""
+    """D3 guards: both coder bodies (EN asset + host brief) stay in parity.
 
-    ANCHORS = {EN_CODER: "**Inner loop", RU_CODER: "**Внутренний цикл"}
+    The host `config/agents/coder.md` brief is being translated to EN, so both
+    wordings are accepted and the body's language is read from its content.
+    """
+
+    ANCHORS = {
+        EN_CODER: ("**Inner loop", "**Внутренний цикл"),
+        RU_CODER: ("**Inner loop", "**Внутренний цикл"),
+    }
     EVIDENCE = {
-        EN_CODER: "Evidence, not claims",
-        RU_CODER: "Доказательства, а не заявления",
+        EN_CODER: ("Evidence, not claims", "Доказательства, а не заявления"),
+        RU_CODER: ("Evidence, not claims", "Доказательства, а не заявления"),
     }
 
 
