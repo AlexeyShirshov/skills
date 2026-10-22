@@ -21,6 +21,7 @@ permission:
     "dotnet-*": allow
   skill:
     "*": allow
+    brainstorming: deny
 ---
 
 # pdca-orchestrator (cheap tier) — one dispatcher, two execution modes
