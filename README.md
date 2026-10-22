@@ -51,7 +51,10 @@ npx skills add AlexeyShirshov/skills@pdca-coder -g -y
 Without `-g` the CLI targets the current project.
 
 Installing a skill is only half of the setup: the cycle dispatches **subagents**, so the host needs
-the role agents and the runner `pdca-orchestrator` (both ship in the skill's `assets/agents/`),
+the role agents and the runner `pdca-orchestrator` (they ship in the skills' `assets/agents/`:
+`pdca`, `pdca-coder` and `pdca-dotnet` carry the full role set — `pdca-coder` and `pdca-dotnet`
+also ship `pdca-security-auditor` — while `pdca-entry`, `pdca-collection` and `pdca-incremental`
+carry only the runner prompt),
 nested delegation (`experimental.subagent_depth`) and `subagent` permissions. Every agent id is
 `pdca-`prefixed (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`,
 `pdca-security-auditor`, `pdca-orchestrator`), so it cannot collide with an existing
@@ -129,14 +132,16 @@ Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per p
 
 | Plugin | Description |
 | --- | --- |
+| [`opencode-git-status`](opencode/plugins/git-status) [![npm](https://img.shields.io/npm/v/opencode-git-status)](https://www.npmjs.com/package/opencode-git-status) | Git working-tree status in the OpenCode CLI sidebar footer — path, branch, ahead/behind and only the non-zero `git status --porcelain=v2` counters (staged, modified, added, deleted, untracked, conflicts, stashes) on one line, refreshed on a timer and on filesystem, git and session events without ever blocking the terminal. |
+| [`opencode-git-status-v1`](opencode/plugins/git-status-v1) [![npm](https://img.shields.io/npm/v/opencode-git-status-v1)](https://www.npmjs.com/package/opencode-git-status-v1) | The same one-line git status for **OpenCode V1** (`tui.tsx` entry) — branch, ahead/behind and porcelain-v2 counters, updated while you work. |
 | [`wsl-notify`](opencode/plugins/wsl-notify) [![npm](https://img.shields.io/npm/v/wsl-notify)](https://www.npmjs.com/package/wsl-notify) | Windows toast notifications for OpenCode — permission, question, completion and error events. Zero dependencies, one entrypoint for OpenCode V1 and V2, works from WSL (`powershell.exe` interop) and native Windows. |
 | [`opencode-roslyn`](opencode/plugins/opencode-roslyn) [![npm](https://img.shields.io/npm/v/opencode-roslyn)](https://www.npmjs.com/package/opencode-roslyn) [![NuGet](https://img.shields.io/nuget/v/opencode-roslyn)](https://www.nuget.org/packages/opencode-roslyn) | C# semantic analysis for OpenCode V2 — the `roslyn` tool answers structure/types/symbols/members/refs/callers/implementations/rename through the `roslynq` CLI (Roslyn + `MSBuildWorkspace`), with permissions, progress and cancellation. V2 has no LSP runtime yet; this is the semantic answer in the meantime. |
 | [`opencode-sidebar-plugins`](opencode/plugins/sidebar-plugins) [![npm](https://img.shields.io/npm/v/opencode-sidebar-plugins)](https://www.npmjs.com/package/opencode-sidebar-plugins) | A `Plugins` section in the OpenCode V2 CLI sidebar — every loaded plugin and, by default, only those that actually reach the model context (prompt, tools, agents, skills). Classifies built-ins from their registrations, scans local and package plugin sources, and refuses to guess when a package entry cannot be resolved. |
 | [`zen-failover`](opencode/plugins/zen-failover) | Server failover for subscription providers: on an exhausted quota it moves every agent, the default model and the active session to the fallback (`ChatGPT` → the same model on Console, `Go` → direct DeepSeek), probes the plan once a minute, and restores the original bindings as soon as the subscription answers again. Transient per-minute `429`s are retried, not degraded. |
 
 Install the published package in `opencode.json(c)` (`plugins` on V2, `plugin` on V1), or copy a plugin's
-`index.js` into `<config>/plugins/` and let opencode discover it locally. See each plugin's README for
-options and requirements.
+entry file (`index.js`, or `tui.tsx` for the sidebar/TUI plugins) into `<config>/plugins/` and let
+opencode discover it locally. See each plugin's README for options and requirements.
 
 ## License
 
