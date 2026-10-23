@@ -1,0 +1,38 @@
+{
+  "task": "T904",
+  "plan_r": 1,
+  "commands": [
+    {
+      "id": "SHELL_STRING",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["dotnet test tests/Proj/Proj.csproj --filter SampleTests"],
+      "expected": "green",
+      "timeout_s": 600
+    },
+    {
+      "id": "SHELL_WRAPPER",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["bash", "-c", "dotnet test tests/Proj/Proj.csproj"],
+      "expected": "green",
+      "timeout_s": 600
+    },
+    {
+      "id": "REDIRECT",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["dotnet", "test", "tests/Proj/Proj.csproj", "2>&1"],
+      "expected": "green",
+      "timeout_s": 600
+    },
+    {
+      "id": "PLACEHOLDER",
+      "phase": "inner",
+      "kind": "build",
+      "argv": ["dotnet", "build", "$PROJ"],
+      "expected": "green",
+      "timeout_s": 600
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "task": "T901",
+  "plan_r": 1,
+  "host_budget": {"max_lanes": 1},
+  "commands": [
+    {
+      "id": "RED",
+      "phase": "boundary",
+      "kind": "integration",
+      "argv": ["dotnet", "run", "--project", "tests/Proj/Proj.csproj", "--", "-method", "Does_Thing"],
+      "expected": "green",
+      "min_selected": 0,
+      "timeout_s": 600
+    }
+  ]
+}

@@ -151,7 +151,9 @@ Progress is recorded in one place:
 - **Plan revision `r`** — starts at 1 and grows only when `pdca-planner` **actually issued a revised plan**
   (a new `P:` from CHECK → PLAN / DO → PLAN). A rejected candidate or a clarification with the plan
   unchanged is **not** a revision: no bump, no attempt reset. The outgoing failed attempt is recorded
-  before the plan is replaced. No cap on revisions.
+  before the plan is replaced. No cap on revisions, but gate 1 fixes a **stop-loss budget**
+  (maximum revisions, wall clock, measurement time); its exhaustion routes to
+  `pdca-escalate`/STOP, never to an unplanned extra attempt.
 - **`iteration n/3`** — execution attempts for the current revision `r`: `PLAN(r) → DO` starts at 1;
   `CHECK → DO` increments. After the **third failed CHECK of the same revision** → `pdca-escalate` before a
   fourth (there is no 4th). `DO → PLAN`/`CHECK → PLAN` do **not** consume the next revision's attempts;
@@ -1024,7 +1026,9 @@ Every contract row must contain:
 checks. Planned artifact locations are expectations, not evidence. Do not fabricate future
 test symbols or `file:line`; use verified existing references or explicitly planned sources.
 PLAN must also pin a finite CHECK re-gather budget and its owner, and the frozen evidence
-manifest path, in the status file.
+manifest path, in the status file. Every plan carries a **`PLAN-LINT`** row: the
+`plan_lint.py check` receipt (path + exit `0`) proving the frozen commands passed the plan command
+contract before gate 1 (§Plan command contract → "Machine projection").
 
 **Default evidence dir (defined by the skill, not by overlays or agent settings):**
 `.pdca/<task>/rv<k>/` — `<task>` = `D<issue>` or a kebab-slug, `<k>` = contract
@@ -1161,6 +1165,114 @@ PLAN explicitly supersedes the previous contract revision, retains existing row 
 for new variants, and preserves all still-required acceptance obligations. Completing evidence
 does not itself revise the contract. Contract supersession does not supersede DO work or discard
 unfinished acceptance criteria; existing plan-revision and attempt rules remain unchanged.
+
+### Plan command contract (PLAN close)
+
+Every command the plan freezes is validated before gate 1 — by `pdca-executor`, against the real
+environment, with the result recorded. A plan whose decisive command cannot produce a valid result
+is not `ready`:
+
+- **selector resolves** to at least one target in the declared scope — a short or ambiguous
+  identifier is rejected even when the runner accepts it and exits `0`;
+- **argv survives the harness** — expanded form, no shell alias, no unexpanded placeholder;
+- **phase and scope are legal** — an inner-phase command is not a boundary sweep; scope matches
+  the declared budget (affected projects, not the whole solution on a constrained host);
+- **expected outcome is declared** — `green`, `expected-negative` or `informational`.
+
+A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises. It is never absorbed as
+a recorded exception or a substituted command.
+
+#### Machine projection: `commands.json` + `plan_lint.py`
+
+The prose command block is not machine-checkable, so PLAN also emits a **projection** at
+`<evidence-dir>/inputs/commands.json` (same attempt child as the contract): `task`, `plan_r`, optional
+`checkout`, `evidence_root`, `host_budget`, `integration_boundary_runs`, optional `units`, and one
+object per command — `id`, `phase`, `kind`, `argv[]`, `cwd`, `env`, `expected`,
+`expected_identity`, `min_selected`, `log`, `timeout_s`, `covers`, and for mutation a
+`harness_probe` or a declared `fallback`.
+
+`pdca-executor` stages `plan_lint.py` into `.pdca/scripts/` (byte-identical, §Skill workspace of the
+base contract) and runs it **before gate 1** and **again on DO entry** after re-anchoring:
+
+- `python3 .pdca/scripts/plan_lint.py check --repo <checkout> --commands <projection>
+  --receipt <evidence-dir>/plan-lint.json`
+  — static: schema, argv shape (array, no shell wrapper/operator/placeholder), phase and scope
+  legality, solution-build scope against `host_budget`, selector resolution against the project
+  sources (fully-qualified `-class`/`-method`; an exact `FullyQualifiedName=` without a namespace
+  is rejected), expected outcome, evidence binding to the linted checkout, unit coverage;
+- `python3 .pdca/scripts/plan_lint.py probe --repo <checkout> --commands <projection>` —
+  additionally runs each `harness_probe` (allow-list: `dotnet`, `git`, `python3`; timeout-bounded;
+  never the planned command).
+
+Exit codes are `0` ok, `2` violation, `1` usage/operational — the same convention as
+`pdca_evidence.py`. A nonzero `check` **is** a gate-1 failure; the receipt is the evidence row
+`PLAN-LINT` (path + exit). The lint proves the command is well-formed and resolvable; it does not
+prove the row passes — that stays with CHECK. Selector resolution reads project sources, not a
+built assembly, so a source-level false negative is possible and is recorded as a warning, not a
+pass.
+
+### Vacuous and expected-negative runs
+
+Zero selected targets, zero executed cases or an empty result set is a **failed** run whatever the
+exit status; exit `0` does not turn it green. Every decisive run names its minimum selected count.
+A negative arm is declared `expected-negative` with the exact expected failure identity and is
+`met` on that observed outcome; it is never silently repeated until it turns green, and a
+"final run must be green" rule cannot override it.
+
+### Recorded exceptions: catalog and repetition threshold
+
+Accepted exceptions come only from the fixed catalog — `environment/infrastructure`,
+`tooling incompatibility`, `scope/resource policy`, `historical provenance` — each with the failure
+and the recovery/substitute logged, the affected row and an evidence pointer. A class appearing in
+**three or more units of one campaign** is a **systemic defect**: file it once and fix the
+mechanism instead of recording a fourth exception. A PASS introduces no new class;
+`pass-with-recorded-exceptions` is diagnostic, not the default.
+
+### Re-anchoring at DO entry
+
+Before the first edit, re-resolve every planned anchor: **cosmetic drift** (same identity, moved
+line/declaration) is a `Notice` with old→new pointers and no revision; **semantic drift** (changed
+footprint, symbol, contract or behavior) is a DO → PLAN return. Stale anchors may not execute.
+
+### Proportional planning and stop-loss
+
+Plan depth follows risk: a compact plan for a small known change, the full contract and variant
+matrix for a wide blast radius or an unproven mechanism. An unproven mechanism gets a **bounded
+probe** (one question, one observable answer, fixed budget) before the acceptance contract, and a
+measured result that cannot reach the target STOPs with the gap — it does not buy another revision.
+
+**One evidence location binding.** Evidence paths resolve in the same checkout the checks run in;
+a secondary checkout is the binding root and the evidence is mirrored there at the identical
+relative path. A manifest whose tree cannot be recomputed from its own `base_ref` is invalid.
+
+### .NET command canonical forms (frozen; do not reinvent per plan)
+
+- **Builds** — affected project(s) and their dependencies, sequentially. A solution/root build is
+  allowed only when the plan proves the host can carry it (memory budget, lane count) and the phase
+  permits it; it is never an unexamined default.
+- **Selectors** — fully-qualified `-class`/`-method` names. A short name that selects zero cases is
+  rejected: `0 selected` is failure, not green. Runner exit codes are pinned (`0` success, `2`
+  executed-case failure); a red arm's non-zero exit is recorded against its declared identity.
+- **Integration** — one container-backed boundary lane under the shared lease, the provider
+  connection environment set, no provider-skip opt-out enabled, skip budget applied only to the
+  complete sweep (never to a class-filtered log). A transport/resource timeout gets one sanctioned
+  rerun; two consecutive same-class infra failures escalate.
+- **Mutation** — probe the harness before planning a mutation run. A broken runner mode or absent
+  provider config is a tooling incompatibility: the controlled-mutant fallback (inject the change,
+  kill the mutant, observe the intended assertion) is planned **up front**. No score is claimed
+  from a run that did not execute.
+- **Documentation** — EN/RU pairs move together; verify byte-level line endings (CRLF preserved),
+  EN↔RU section parity, and the absence of links into internal specs. A doc-only deviation is still
+  a deviation: fix it in DO/CHECK, never in ACT.
+
+### Evidence helper discipline
+
+- The runner summary is the source of truth for counts (total/selected/passed/failed/skipped);
+  parse it into the journal, never infer success from an exit code alone.
+- Capture the expanded argv and the real exit code per run; a log without them is not evidence.
+- The manifest's `tree` is the frozen synthetic tree from `base_ref` + `footprint` + `exclusions`;
+  `lint --repo <checkout>` names the checkout the checks actually ran in, and evidence is mirrored
+  at the same repo-relative path when a secondary checkout is used.
 
 ### Reviewer evidence pack (independent CHECK over full bodies)
 

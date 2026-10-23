@@ -75,7 +75,7 @@ cp -r opencode/pdca* ~/.config/opencode/skills/
 пак.
 
 Хелперы из `scripts/` установленного скилла — **источник** рантайм-копий (например
-`pdca_cost.py`, `validate_inner_loop.py`, `pdca_evidence.py`). Перед первым запуском хелпера
+`pdca_cost.py`, `validate_inner_loop.py`, `pdca_evidence.py`, `plan_lint.py`). Перед первым запуском хелпера
 `pdca-executor` кладёт их в `.pdca/scripts/` проекта байт-в-байт копиями, и каждая команда идёт от
 корня проекта (`python3 .pdca/scripts/<helper>.py …`); из установленного каталога скилла хелпер не
 запускается никогда. Сам workspace `.pdca/` цикл создаёт в проекте, где идёт. `tests/` и

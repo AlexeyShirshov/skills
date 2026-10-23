@@ -1,0 +1,43 @@
+{
+  "task": "T900",
+  "plan_r": 1,
+  "checkout": "__REPO__",
+  "evidence_root": ".pdca/T900/rv1",
+  "host_budget": {"max_lanes": 1, "max_solution_builds": 0},
+  "integration_boundary_runs": 1,
+  "units": ["D1", "D2"],
+  "commands": [
+    {
+      "id": "BUILD",
+      "phase": "inner",
+      "kind": "build",
+      "argv": ["dotnet", "build", "tests/Proj/Proj.csproj", "-c", "Debug"],
+      "expected": "green",
+      "timeout_s": 600,
+      "covers": ["D1"]
+    },
+    {
+      "id": "UNIT",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["dotnet", "test", "tests/Proj", "-c", "Debug", "--filter", "FullyQualifiedName~SampleTests"],
+      "expected": "green",
+      "min_selected": 1,
+      "log": ".pdca/T900/rv1/attempts/c1-r1-n1/unit.log",
+      "timeout_s": 600,
+      "covers": ["D1"]
+    },
+    {
+      "id": "RED",
+      "phase": "boundary",
+      "kind": "integration",
+      "argv": ["dotnet", "run", "--project", "tests/Proj", "-c", "Debug", "--", "-class", "Proj.Tests.SampleTests"],
+      "expected": "expected-negative",
+      "expected_identity": "assertion failure in Does_Thing",
+      "min_selected": 1,
+      "log": ".pdca/T900/rv1/attempts/c1-r1-n1/red.log",
+      "timeout_s": 600,
+      "covers": ["D2"]
+    }
+  ]
+}

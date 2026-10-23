@@ -152,7 +152,9 @@ Progress is recorded in one place:
 - **Plan revision `r`** — starts at 1 and grows only when `pdca-planner` **actually issued a revised plan**
   (a new `P:` from CHECK → PLAN / DO → PLAN). A rejected candidate or a clarification with the plan
   unchanged is **not** a revision: no bump, no attempt reset. The outgoing failed attempt is recorded
-  before the plan is replaced. No cap on revisions.
+  before the plan is replaced. No cap on revisions, but gate 1 fixes a **stop-loss budget**
+  (maximum revisions, wall clock, measurement time); its exhaustion routes to
+  `pdca-escalate`/STOP, never to an unplanned extra attempt.
 - **`iteration n/3`** — execution attempts for the current revision `r`: `PLAN(r) → DO` starts at 1;
   `CHECK → DO` increments. After the **third failed CHECK of the same revision** → `pdca-escalate` before a
   fourth (there is no 4th). `DO → PLAN`/`CHECK → PLAN` do **not** consume the next revision's attempts;
@@ -997,6 +999,56 @@ manifests are retained. `rv` changes only with the criteria/contract, not with a
 under the same criteria. The `.pdca/` root is fixed (§Skill workspace in the base `pdca` contract) —
 the plan chooses `<task>` and `rv`, an overlay never relocates the root. The check role's scoped
 `read` grants it generically, so the concrete path is defined only here.
+
+### Plan command contract (PLAN close)
+
+Every command the plan freezes is validated before gate 1 — by `pdca-executor`, against the real
+environment, with the result recorded. A plan whose decisive command cannot produce a valid result
+is not `ready`:
+
+- **selector resolves** to at least one target in the declared scope — a short or ambiguous
+  identifier is rejected even when the tool accepts it and exits `0`;
+- **argv survives the harness** — expanded form, no shell alias, no unexpanded placeholder;
+- **phase and scope are legal** — an inner-phase command is not a boundary sweep; scope matches
+  the declared budget (affected surface, not the whole workspace on a constrained host);
+- **expected outcome is declared** — `green`, `expected-negative` or `informational`.
+
+A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises. It is never absorbed as
+a recorded exception or a substituted command.
+
+### Vacuous and expected-negative runs
+
+Zero selected targets, zero executed cases or an empty result set is a **failed** run whatever
+the exit status; exit `0` does not turn it green. Every decisive run names its minimum selected
+count. A negative arm is declared `expected-negative` with the exact expected failure identity and
+is `met` on that observed outcome; it is never silently repeated until it turns green, and a
+"final run must be green" rule cannot override it.
+
+### Recorded exceptions: catalog and repetition threshold
+
+Accepted exceptions come only from the fixed catalog — `environment/infrastructure`,
+`tooling incompatibility`, `scope/resource policy`, `historical provenance` — each with the failure
+and the recovery/substitute logged, the affected row and an evidence pointer. A class appearing in
+**three or more units of one campaign** is a **systemic defect**: file it once and fix the
+mechanism instead of recording a fourth exception. A PASS introduces no new class;
+`pass-with-recorded-exceptions` is diagnostic, not the default.
+
+### Re-anchoring at DO entry
+
+Before the first edit, re-resolve every planned anchor: **cosmetic drift** (same identity, moved
+location) is a `Notice` with old→new pointers and no revision; **semantic drift** (changed
+footprint, symbol, contract or behavior) is a DO → PLAN return. Stale anchors may not execute.
+
+### Proportional planning and stop-loss
+
+Plan depth follows risk: a compact plan for a small known change, the full contract and variant
+matrix for a wide blast radius or an unproven mechanism. An unproven mechanism gets a **bounded
+probe** (one question, one observable answer, fixed budget) before the acceptance contract, and a
+measured result that cannot reach the target STOPs with the gap — it does not buy another revision.
+
+**One evidence location binding.** Evidence paths resolve in the same checkout the checks run in;
+a secondary checkout is the binding root and the evidence is mirrored there at the identical
+relative path. A manifest whose tree cannot be recomputed from its own `base_ref` is invalid.
 
 ## CHECK: audit checklist (generic)
 

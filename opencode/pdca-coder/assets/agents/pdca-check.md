@@ -85,6 +85,14 @@ any MCP and subagent dispatch are disabled for you.
    required test, unverified direct evidence, a source-copy mismatch, or a real functional/security
    variant stays on the normal fail/re-gather/STOP route, and a user-requested finite audit task
    stays **binding**.
+9. **Vacuous and expected-negative runs.** Zero selected/executed targets is a failed run whatever
+   the exit code. A negative arm declared `expected-negative` is judged on its declared failure
+   identity; a green-final rule never overrides it.
+10. **Exception discipline.** Accept an exception only from the fixed catalog
+    (`environment/infrastructure`, `tooling incompatibility`, `scope/resource policy`,
+    `historical provenance`) with its required evidence and substitute. The same class in three or
+    more units of one campaign is a **systemic defect**: demand the mechanism fix and an issue
+    instead of a fourth exception. A PASS introduces no new exception class.
 
 ## Boundaries
 

@@ -67,6 +67,15 @@ of the status/evidence/manifest files) to reconcile the contract rows.
    direct evidence, a source-copy mismatch, or a real functional/security variant stays on the
    normal fail/re-gather/STOP route, and a user-requested finite audit task stays **binding**.
 
+9. **Vacuous and expected-negative runs.** A run with zero selected targets/executed cases is a
+   failure whatever its exit status. A negative arm declared `expected-negative` is judged on its
+   declared failure identity; a green-final rule never overrides it.
+10. **Exception discipline.** Accept a recorded exception only from the fixed catalog
+    (`environment/infrastructure`, `tooling incompatibility`, `scope/resource policy`,
+    `historical provenance`) with its required evidence and substitute. The same class in three
+    or more units of one campaign is a **systemic defect** — demand the mechanism fix and an
+    issue, not a fourth exception. A PASS introduces no new exception class.
+
 ## Output contract (compact, in the language of the dialogue)
 
 - **Verdict:** pass / fail.

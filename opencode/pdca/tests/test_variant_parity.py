@@ -70,6 +70,8 @@ DOTNET_ONLY_SECTIONS = (
     "### Execution journal and the unit/integration policy",
     "### DO brief: mandatory `test scope`",
     "### Test run safety (memory + streaming) — every phase",
+    "### .NET command canonical forms (frozen; do not reinvent per plan)",
+    "### Evidence helper discipline",
 )
 
 # Rules that must hold in BOTH variants.  Each anchor is a phrase that is unique
@@ -95,6 +97,11 @@ SHARED_RULES = {
     "status file lifetime": "Lifetime — a durable handoff and record, never deleted",
     "handoff carries pointers only": "no code or diffs — only pointers and the goal",
     "parallel units are disjoint": "units do not share mutable files or a shared contract",
+    "plan command contract": "selector resolves to at least one target in the declared scope",
+    "vacuous run is a failure": "Zero selected targets, zero executed cases or an empty result set is a failed run",
+    "exception repetition is systemic": "three or more units of one campaign is a systemic defect",
+    "re-anchor drift classes": "cosmetic drift",
+    "stop-loss budget": "gate 1 fixes a stop-loss budget",
 }
 
 

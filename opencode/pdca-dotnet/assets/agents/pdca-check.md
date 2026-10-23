@@ -85,6 +85,15 @@ any MCP and subagent dispatch are disabled for you.
    obligations cannot be waived. If the gather budget is exhausted, report open row IDs and follow
    existing blocker/escalation rules. No PASS while a **binding/applicable** required row is open;
    no new phase, silent contract weakening, or priority downgrade.
+9. **Vacuous and expected-negative runs.** Zero selected/executed cases is a failed run whatever the
+   exit code. A negative arm declared `expected-negative` is judged on its declared failure identity;
+   a green-final rule never overrides it.
+10. **Exception discipline.** Accept an exception only from the fixed catalog
+    (`environment/infrastructure`, `tooling incompatibility`, `scope/resource policy`,
+    `historical provenance`) with its required evidence and substitute. The same class in three or
+    more units of one campaign is a **systemic defect**: demand the mechanism fix and an issue
+    instead of a fourth exception. A PASS introduces no new exception class; treat
+    `pass-with-recorded-exceptions` as diagnostic, not as the normal verdict.
 
 ## Boundaries
 

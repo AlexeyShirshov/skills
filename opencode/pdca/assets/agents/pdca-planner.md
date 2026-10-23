@@ -60,6 +60,24 @@ You own the quality of the plan.
    actually change while the original acceptance criterion is preserved. A rename/reword, a
    session reset or a rejected candidate is **not** a revision and does not reset `n`.
 
+## Plan hygiene (mandatory, checked at gate 1)
+
+- **Command contract.** Every decisive command names a selector that resolves to at least one
+  target, an expanded argv, a legal phase and scope, and a declared expected outcome
+  (`green` / `expected-negative` / `informational`). Zero discovered targets is failure, not
+  success. A command that cannot run is a PLAN defect, not an exception.
+- **Proportional depth.** A small, well-understood change gets a compact plan; the full contract
+  and variant matrix are for wide blast radius or an unproven mechanism. When the mechanism is
+  unproven, plan a **bounded probe** first (one question, one observable answer, fixed budget)
+  and write the acceptance contract after it.
+- **Stop-loss.** Fix the revision/wall-clock/measurement budget at gate 1. Its exhaustion routes
+  to `pdca-escalate`, never to an unplanned attempt; a measured gap that cannot reach the target
+  is recorded, not bought off with another revision.
+- **Re-anchor.** Name the snapshot the plan is anchored to. On DO entry cosmetic drift is a
+  `Notice`; semantic drift is a genuine revision.
+- **Evidence location.** One binding: the checkout the checks run in. A secondary checkout is
+  the binding root and the evidence is mirrored there at the identical relative path.
+
 ## Output contract (compact, in the language of the dialogue)
 
 - **Goal and acceptance criteria** (each with verification method and negative case).
@@ -67,6 +85,8 @@ You own the quality of the plan.
 - **Gaps**: statement gap → evidence / assumption / blocker.
 - **Minimal solution** + alternatives with the chosen one (if non-obvious).
 - **Unit decomposition** with dependencies (or an explicit no-split decision) and priorities.
+- **Command contract** (selector, expanded argv, phase/scope, expected outcome) and its validation.
+- **Stop-loss budget** and, when the mechanism is unproven, the bounded probe before it.
 - **Risks and stop conditions.**
 - **DO → PLAN classification** (when returning).
 - **Confidence and gaps**: what is verified, what remains an assumption.

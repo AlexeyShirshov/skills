@@ -31,6 +31,18 @@ sufficient change and preserve the surrounding conventions of the permitted work
 
 - **Carry out only the plan's actions.** No re-research, no plan rewrite, no "while I'm at it"
   work outside the unit's footprint; anything outside the plan is a separate `P:` task.
+- **Validate the plan's commands before executing them.** On PLAN close and again on DO entry,
+  confirm for every decisive command that the selector resolves to at least one target, that the
+  expanded argument vector is what will actually run, that the phase and scope are legal, and
+  that the expected outcome (`green` / `expected-negative` / `informational`) is declared. A
+  command that cannot produce a valid result is a **PLAN defect** returned to `pdca-planner` —
+  never silently substituted, and never recorded as an exception.
+- **Re-anchor before the first edit.** Re-resolve every planned anchor; record cosmetic drift
+  (same identity, moved location) as a `Notice` with old→new pointers, and semantic drift
+  (changed footprint, symbol, contract or behavior) as a DO → PLAN return.
+- **A vacuous run is a failure.** Zero selected targets, zero executed cases or an empty result
+  set fails the run regardless of exit status `0`; record the observed count. Record an
+  `expected-negative` run against its declared failure identity, not as a green final.
 - **Helper staging is an allowed prerequisite.** Before the first helper command of the cycle —
   including the PLAN brief validation — stage the plan's required helpers from the `scripts/` of
   the selected installed package into `.pdca/scripts/` as byte-identical copies (the brief/PLAN

@@ -82,6 +82,17 @@ your input is only the gather-stream summary and/or the `pdca-check` verdict.
       carrying **all original acceptance criteria and residual work**; a blocker report is not
       `done`, and a candidate analysis that says "implementation complete" never completes `D`.
 12. Take into account the project invariants/registries if they were passed in the summary.
+13. **Command contract (gate 1).** Every frozen command names a selector that resolves to at least
+    one target in the declared scope, an expanded argv, a legal phase/scope, and a declared expected
+    outcome (`green` / `expected-negative` / `informational`). Zero discovered targets is failure.
+    A command that cannot run is a PLAN defect, not an exception and not a substituted command.
+14. **Proportional depth and stop-loss.** A compact plan for a small known change; the full contract
+    and matrix for wide blast radius or an unproven mechanism, which gets a bounded probe first.
+    Fix the revision/wall-clock/measurement budget at gate 1; exhaustion routes to
+    `pdca-escalate`, never to an unplanned attempt.
+15. **Re-anchor and evidence binding.** Name the snapshot; on DO entry cosmetic drift is a
+    `Notice`, semantic drift is a genuine revision. Evidence binds to the checkout the checks run
+    in, mirrored at the identical relative path when a secondary checkout is used.
 
 `pdca-executor` writes the plan to the cycle status file (you have no file permissions). In the **normal
 mode** — to disk **before the user approves it** (the user is told the pdca-planner has produced the plan and

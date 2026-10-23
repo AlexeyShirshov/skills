@@ -395,7 +395,8 @@ templates that reference them
 ([`pdca-planner.md`](../opencode/pdca-dotnet/assets/agents/pdca-planner.md),
 [`check.md`](../opencode/pdca-dotnet/assets/agents/pdca-check.md)) and the compact implementation of
 the gate —
-[`scripts/validate_inner_loop.py`](../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
+[`scripts/validate_inner_loop.py`](../opencode/pdca-dotnet/scripts/validate_inner_loop.py);
+the static command-contract lint — [`scripts/plan_lint.py`](../opencode/pdca-dotnet/scripts/plan_lint.py).
 An overview of the whole family is in [`docs/pdca-guide.md`](pdca-guide.md).
 
 ## Sources

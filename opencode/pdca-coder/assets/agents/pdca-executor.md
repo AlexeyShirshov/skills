@@ -43,6 +43,13 @@ sufficient edits.
   acceptance criteria and residual work**.
 - **Evidence, not claims.** For every build/test run report the exit code, the key numbers
   (passed/failed/skipped, warnings, coverage) and the path to the full log.
+- **Validate the command contract before running it.** The selector resolves to at least one target,
+  the argv is the expanded one, the phase/scope is legal, and the expected outcome is declared. A
+  command that cannot produce a valid result goes back to `pdca-planner`; never substitute silently.
+- **A vacuous run is a failure.** Zero selected/executed targets fails the run regardless of exit
+  `0`; record the observed count. Record an `expected-negative` run against its declared identity.
+- **Re-anchor before the first edit.** Cosmetic drift is a `Notice`; semantic drift is a DO → PLAN
+  return.
 - **Git.** No commits and no push unless the brief explicitly says so. Exception: in a PDCA worktree
   sub-task, commit to its own unit branch inside that worktree as the brief instructs; never push.
 

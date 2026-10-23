@@ -76,7 +76,7 @@ in a custom `skills` source; if the family lives there, add the six ids to that 
 
 The helpers under the installed skill's `scripts/` are the **source** of the runtime copies — the
 package you installed determines which ones exist (`pdca` and `pdca-coder` ship `pdca_cost.py`;
-`pdca-dotnet` also ships `validate_inner_loop.py` and `pdca_evidence.py`). Before the first helper run,
+`pdca-dotnet` also ships `validate_inner_loop.py`, `pdca_evidence.py` and `plan_lint.py`). Before the first helper run,
 `pdca-executor` stages them into the project's `.pdca/scripts/` as byte-identical copies, and every
 command runs from the project root (`python3 .pdca/scripts/<helper>.py …`); a helper is never
 executed from the installed skill directory. The `.pdca/` workspace itself is created by the cycle in

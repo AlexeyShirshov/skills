@@ -90,6 +90,21 @@ your input is only the gather-stream summary and/or the `pdca-check` verdict.
       carrying **all original acceptance criteria and residual work**; a blocker report is not
       `done`, and a candidate analysis that says "implementation complete" never completes `D`.
 11. Take into account the project invariants/registries if they were passed in the summary.
+12. **Command contract (gate 1).** Every frozen command names a selector that resolves to at least
+    one case in the declared scope (fully-qualified `-class`/`-method`), an expanded argv, a legal
+    phase/scope (affected projects, not the solution on a constrained host), and a declared expected
+    outcome (`green` / `expected-negative` / `informational`). Zero selected cases is failure. A
+    command that cannot run is a PLAN defect, not an exception and not a substituted command.
+13. **Proportional depth and stop-loss.** A compact plan for a small known change; the full contract
+    and matrix for wide blast radius or an unproven mechanism. An unproven mechanism gets a bounded
+    probe before the acceptance contract. Fix the revision/wall-clock/measurement budget at gate 1;
+    exhaustion routes to `pdca-escalate`, never to an unplanned attempt.
+14. **Mutation and docs harnesses are probed, not assumed.** Plan a mutation recipe only after its
+    harness is shown to run; if the runner mode or provider config is unsupported, plan the
+    controlled-mutant fallback up front. EN/RU docs move together with a CRLF check.
+15. **Re-anchor.** Name the snapshot; on DO entry cosmetic drift is a `Notice`, semantic drift is a
+    genuine revision. Evidence binds to the checkout the checks run in (`--repo <checkout>`,
+    mirrored at the identical relative path).
 
 `pdca-executor` writes the plan to the cycle status file (you have no file permissions). In the **normal
 mode** — to disk **before the user approves it** (the user is told the pdca-planner has produced the plan and

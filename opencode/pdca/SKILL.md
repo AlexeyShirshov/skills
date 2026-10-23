@@ -140,7 +140,9 @@ Progress is recorded in one place:
 - **Plan revision `r`** — starts at 1 and grows only when `pdca-planner` **actually issued a
   revised plan** (a new `P:` from CHECK → PLAN / DO → PLAN). A rejected candidate or a
   clarification with the plan unchanged is **not** a revision: no bump, no attempt reset. The
-  outgoing failed attempt is recorded before the plan is replaced. No cap on revisions.
+  outgoing failed attempt is recorded before the plan is replaced. No cap on revisions, but
+  gate 1 fixes a **stop-loss budget** (maximum revisions, wall clock, measurement time); its
+  exhaustion routes to `pdca-escalate`/STOP, never to an unplanned extra attempt.
 - **`iteration n/3`** — execution attempts for the current revision `r`: `PLAN(r) → DO`
   starts at 1; `CHECK → DO` increments. After the **third failed CHECK of the same revision**
   → `pdca-escalate` before a fourth (there is no 4th). `DO → PLAN`/`CHECK → PLAN` do **not**
@@ -193,8 +195,9 @@ bad plan found by review is a CHECK → PLAN).
    goal/expected result; constraints; assumptions; acceptance criteria **each with a
    verification method**; decomposition into units with dependencies **or** an explicit
    decision not to split a simple task; means and access; risks and stop conditions. Plus:
-   **the plan written to the status file by `pdca-executor`** (last step of PLAN) **and, in
-   normal mode, the user's approval of the plan** — the orchestrator tells the user that the
+   **the plan written to the status file by `pdca-executor`** (last step of PLAN), **every
+   command frozen by the plan validated against the environment** (§Plan command contract),
+   **and, in normal mode, the user's approval of the plan** — the orchestrator tells the user that the
    pdca-planner has produced the plan and written it to the status file, asks them to read it and
    approve it, and starts implementation only after that approval — except in autonomous
    mode, where no approval is required and DO starts right after PLAN. The orchestrator only
@@ -361,6 +364,87 @@ required criterion), not with an implementation fix under the same criteria. The
 fixed (§Skill workspace), the plan chooses `<task>` and `rv` (the status dir is `.pdca/status/`,
 §Durable status). The check role's scoped `read` grants `.pdca/**` generically, so the concrete path
 is defined only here.
+
+### Plan command contract (PLAN close)
+
+Every command or invocation the plan freezes is **validated before gate 1** — by
+`pdca-executor`, against the actual environment, with the result recorded in the status file.
+A plan whose decisive command cannot produce a valid result is **not `ready`**:
+
+- **selector resolves** — the identifier names at least one target inside the declared scope; a
+  short or ambiguous identifier is rejected even when the tool accepts it and exits `0`;
+- **argument vector survives the harness** — quoting, separators and redirections are recorded
+  in expanded form, never as a shell alias or an unexpanded placeholder;
+- **phase is legal** — an inner-phase command is not a boundary-only sweep, and a boundary-only
+  command is not planned as inner work;
+- **scope matches the declared budget** — the affected surface rather than the whole workspace
+  when the host cannot carry the whole workspace;
+- **expected outcome is declared** — `green`, `expected-negative`, or `informational`; "green
+  unless it happens to be red" is not a declaration.
+
+A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises the plan. It is never
+absorbed as a recorded exception, a substituted command or a `Notice`.
+
+### Vacuous and expected-negative runs
+
+A run that discovers or selects **zero** targets is a **failed** run, whatever its exit status.
+Exit `0` with zero selected targets, zero executed cases or an empty result set is **not**
+evidence of success: the executor records the observed count and the run is re-planned. Every
+decisive run names its minimum selected count.
+
+A decisive negative arm is declared `expected-negative` in the contract together with the exact
+expected failure identity (the status/message and the target it belongs to). Such a run is `met`
+on its observed expected outcome; a "final run must be green" rule cannot override it, a negative
+run is never silently repeated until it turns green, and a negative run without the declared
+identity is a failure.
+
+### Recorded exceptions: catalog and repetition threshold
+
+A verdict may accept a recorded exception only from a fixed catalog, each with a required shape:
+
+- **environment/infrastructure** — the failure and the recovery, both logged, plus the affected
+  command;
+- **tooling incompatibility** — the tool's own error output and the supported substitute that was
+  actually used;
+- **scope/resource policy** — the authority that imposed the limit and the command it affects;
+- **historical provenance** — the artifact identity and why it cannot be re-executed.
+
+Every exception names its class, the affected row, the evidence pointer and the substitute.
+A class that appears in **three or more units of one campaign** is a **systemic defect**: it is
+filed once as its own issue and the mechanism is fixed, instead of a fourth exception being
+recorded. A PASS introduces no new exception class; `pass-with-recorded-exceptions` is a
+diagnostic verdict, never the default.
+
+### Re-anchoring at DO entry
+
+A plan written against an earlier snapshot drifts when sibling work lands. On DO entry, before
+the first edit, `pdca-executor` re-resolves every planned anchor and records the result:
+
+- **cosmetic drift** — line numbers or moved declarations with the same identity → a `Notice`
+  with the old→new pointers; no revision;
+- **semantic drift** — changed footprint, contract, symbol or behavior → DO → PLAN, a genuine
+  revision.
+
+A plan may not execute stale anchors, and cosmetic drift may not manufacture a revision.
+
+### Proportional planning and stop-loss
+
+PLAN depth follows risk, not ceremony: a small, well-understood change gets a compact plan; the
+full contract, the variant matrix and the measurement budget belong to a change whose mechanism
+is unproven or whose blast radius is wide.
+
+For a measurable target whose mechanism is **not yet demonstrated**, PLAN first authorises a
+**bounded probe** — one question, one observable answer, a fixed budget — and writes the
+acceptance contract only afterwards. A campaign whose measured result cannot reach the target
+STOPs with the measured gap; it does not buy another revision hoping for a different number.
+
+### One evidence location binding
+
+The evidence root and every manifest path are resolved **in the same checkout the checks run
+in**. When the work happens in a secondary checkout, that checkout is the binding root: the
+helper's repository argument names it and the evidence appears at the identical
+repository-relative path there. There is no second "main-tree" form: a manifest whose tree cannot
+be recomputed from its own `base_ref` is invalid, not an exception.
 
 ## Normal and autonomous modes
 

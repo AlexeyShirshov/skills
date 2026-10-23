@@ -288,3 +288,83 @@ preserved; the disposition path does not apply to it.
 **Required outcome:** no file/status/artifact/historical verdict of #232 is rewritten; there is no
 new hashing/provenance graph; the canonical (`assets/agents/**`) role rules are consistent; the result distinguishes a diagnostic note from an actual mandatory unmet.
 **Operative sources:** `assets/agents/pdca-check.md` — the "binding/applicable" item.
+
+## Retro hardening (13–23 October 2026, `nextorm`)
+
+Added after ten days of runs: about half of the accepted units needed a replan, and most replans
+were plan-contract defects rather than product defects; two thirds of acceptances carried recorded
+exceptions. Presence scenarios only; the behavioural run is a separate step.
+
+### R1. A selector matches nothing and exits `0`
+
+**Input:** a frozen command with a short/ambiguous selector; the runner accepts it, selects zero
+cases and exits `0`.
+**Required outcome:** the run is **failed**, not green; `selected = 0` is recorded; the command goes
+back to PLAN as a contract defect — no exception, no substituted command.
+**Operative sources:** SKILL §Plan command contract; §Vacuous and expected-negative runs; the
+executor's "A vacuous run is a failure".
+
+### R2. A command is illegal in its phase or exceeds the host budget
+
+**Input:** a boundary-only sweep planned as inner work, or a solution build on a host that cannot
+carry it while lanes are live.
+**Required outcome:** gate 1 fails; `pdca-planner` issues r+1 with the canonical affected-project
+form. The substitution is not absorbed as a `Notice`.
+**Operative sources:** SKILL §Plan command contract; §.NET command canonical forms.
+
+### R3. The red arm is the decisive evidence
+
+**Input:** a negative/red arm is declared; the final run is red by construction.
+**Required outcome:** the row is `met` on the declared failure identity; the "final run must be
+green" rule does not apply; the negative run is not repeated until it turns green.
+**Operative sources:** SKILL §Vacuous and expected-negative runs.
+
+### R4. The same exception class appears in a third unit
+
+**Input:** three units in one campaign accept `pass-with-recorded-exceptions` of the same class
+(e.g. tooling incompatibility).
+**Required outcome:** it is a **systemic defect** and gets its own issue; a fourth exception is
+refused; PASS introduces no new class.
+**Operative sources:** SKILL §Recorded exceptions; `assets/agents/pdca-check.md` → "Exception discipline".
+
+### R5. Plan anchors drifted after a sibling merge
+
+**Input:** the plan names `file:line` from an older snapshot; a sibling task moved the lines while
+footprint, symbol and contract are unchanged.
+**Required outcome:** cosmetic drift → `Notice` with old→new pointers, no revision; semantic drift
+→ DO → PLAN and a genuine revision.
+**Operative sources:** SKILL §Re-anchoring at DO entry.
+
+### R6. The mechanism of a measurable target is unproven
+
+**Input:** a perf/behavioural target whose mechanism has not been observed.
+**Required outcome:** a bounded probe first (one question, one observable answer, fixed budget),
+then the contract; a measured result that misses the target STOPs with the gap rather than buying
+another revision.
+**Operative sources:** SKILL §Proportional planning and stop-loss.
+
+### R7. Checks run in a secondary checkout
+
+**Input:** the work happens in a secondary checkout while evidence is generated in the main tree.
+**Required outcome:** the binding root is the checkout the checks ran in; `--repo` names it and the
+evidence is mirrored at the identical repo-relative path; the "main tree" form is invalid, not an
+exception.
+**Operative sources:** SKILL §One evidence location binding.
+
+### R8. Mutation harness does not run
+
+**Input:** the runner mode or provider config rejects the mutation run (e.g. `mtp` build copy errors,
+no provider config).
+**Required outcome:** it is a tooling incompatibility; the controlled-mutant fallback is already in
+the plan, is executed, and no mutation score is claimed from a run that did not execute.
+**Operative sources:** SKILL §.NET command canonical forms → Mutation.
+
+### R9. The plan's command projection fails the machine check
+
+**Input:** `commands.json` with a short `-method`, an integration run planned as inner work, a
+root solution build on a constrained host, or an evidence path outside the binding checkout.
+**Required outcome:** `plan_lint.py check` exits `2`, prints `<id>: <field>: <message>`, writes the
+receipt, and gate 1 fails — the plan is revised, the command is not substituted. A failing
+`plan_lint.py probe` means the declared harness does not run: tooling incompatibility, not green.
+**Operative sources:** SKILL §Plan command contract → "Machine projection: `commands.json` +
+`plan_lint.py`"; the `PLAN-LINT` contract row.

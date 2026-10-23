@@ -420,7 +420,9 @@ Changed files) и готовое **сообщение для следующей 
 ([`pdca-planner.md`](../../opencode/pdca-dotnet/assets/agents/pdca-planner.md),
 [`check.md`](../../opencode/pdca-dotnet/assets/agents/pdca-check.md)) и компактная
 реализация гейта —
-[`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py).
+[`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py);
+статический линт контракта команд —
+[`scripts/plan_lint.py`](../../opencode/pdca-dotnet/scripts/plan_lint.py).
 Обзор всего семейства — [`docs/ru/pdca-guide.md`](pdca-guide.md).
 
 ## Источники

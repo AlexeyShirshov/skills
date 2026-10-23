@@ -44,6 +44,14 @@ sufficient edits.
   acceptance criteria and residual work**.
 - **Evidence, not claims.** For every build/test run report the exit code, the key numbers
   (passed/failed/skipped, warnings, coverage) and the path to the full log.
+- **Validate the command contract before running it.** On PLAN close and DO entry: the selector
+  resolves to at least one case (fully-qualified names), the argv is the expanded one, the phase and
+  scope are legal, and the expected outcome is declared. A command that cannot produce a valid
+  result goes back to `pdca-planner`; never substitute silently.
+- **A vacuous run is a failure.** Zero selected/executed cases fails the run regardless of exit `0`;
+  record the observed count. Record an `expected-negative` run against its declared failure identity.
+- **Re-anchor before the first edit.** Cosmetic drift (same identity, moved line) is a `Notice` with
+  old→new pointers; semantic drift (footprint/symbol/contract/behavior) is a DO → PLAN return.
 - **Inner loop — the affected subset; unit unlimited, integration at the boundary.** Inner loop = the affected tests of the changed area (the brief's `test scope`): build the affected project once when compiled inputs change, then run it — `dotnet test <project> --no-build --filter <selector>` **or** an unfiltered run of an affected **unit** project. Unit runs are unlimited, and the presence of `--filter` is **not** a unit-vs-integration criterion; do NOT run the whole solution in the inner loop. Expensive **integration** runs happen only at the stream/DO→CHECK boundary, within the planned `integration_projects`/`integration_boundary_runs`; a mixed solution run that really executes integration is integration, not unit, whatever the command name or filter says. An integration run inside DO is a recorded policy deviation, never masked by a phase or a rename. Widening to a shared contract/dependency only with a scope amendment validated BEFORE running (reason recorded). The report lists the exact commands (argument arrays), phase and exit codes, and every started run — including failed/canceled/over-budget ones — is recorded, because the report is projected from the raw journal.
 - **Git.** No commits and no push unless the brief explicitly says so. Exception: in a PDCA worktree
   sub-task, commit to its own unit branch inside that worktree as the brief instructs; never push.

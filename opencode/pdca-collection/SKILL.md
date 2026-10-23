@@ -150,6 +150,12 @@ replace it.
    criterion unchanged: the previous terminal cause is a mandatory input of the own PLAN,
    and `pdca-planner` either proves that the evidence is now obtainable or redefines
    the oracle; otherwise the task stays a gap (§ALL-barrier, §Stale PLAN).
+
+   **A collection is a batch, not a licence to skip plan hygiene.** The task's own PLAN
+   validates its command contract before `plan_state=ready` (selectors resolve, argv survives
+   the harness, phase/scope legal, expected outcome declared), names a stop-loss budget, and — for
+   an unproven mechanism — plans a bounded probe before the full acceptance contract. A plan whose
+   decisive command cannot run is a gap at the barrier, not a lane surprise.
 3. **ALL-barrier.** The DAG, the groups and the order are **not built** until the requirement of its kind
    is met for **every** unit (§"Barrier by unit kinds"): for `cycle` — this cycle's own genuine
    PLAN with `plan_state=ready`; for `campaign` — an approved preparation document with
@@ -168,6 +174,15 @@ replace it.
    topologically. The result is bound to the **PLAN revision vector** (which plans exactly
    were used) and recorded in the collection status file (§Collection status). Before the persistent
    binding of the schedule there is no lane allocation.
+   **Width is an objective, not a by-product.** Minimise the largest serialized group: a
+   component whose units touch disjoint file families is cut into separate groups even when one
+   lane could carry them in order. A schedule that leaves most units in one chain has degraded to
+   a single lane by construction and must be justified in the status file, not accepted silently.
+   The schedule also declares the **host budget** — available memory, measurement locks, container
+   capacity — and `cap` is derived from it (see §Parameters), never from the number of groups.
+   After the first wave the schedule is **re-examined**: a group that has lost its last writer
+   releases waiting units into a new lane through the persisted revision binding; this is a
+   schedule revision, not an automatic recluster.
    **Parallelism is not an entry condition.** If the barrier leaves one group, the host
    allows only one lane (`cap = 1`), or the tasks share a measurement resource, that is a
    normal degradation to a single lane (§Lane), not a reason to change the contract. Do not create
@@ -537,7 +552,10 @@ applicability check, not a mandatory repeated PLAN and not the driver deciding i
   in normal mode — the user) taking into account the already started lanes and the stop/scope constraints (§C,
   §Surface reservation). The old identities, statuses and evidence are preserved; there is no automatic
   `recluster`. A compatible local change goes through the existing route (PLAN revision +
-  a persisted revision binding); no new topology policy is introduced.
+  a persisted revision binding); no new topology policy is introduced. The addition also consumes
+  capacity explicitly: its queue position is recorded and it may not silently jump ahead of ready
+  units; when the milestone window is fixed, it is scheduled for the next milestone instead of
+  stretching the current one.
 
 ### Surface reservation and its extension
 
@@ -678,7 +696,7 @@ to the user.
 | Skill location | by the host's rules (see `docs/install.md`) |
 | Agent location | by the host's rules (see `docs/install.md`) |
 | PLAN parallelism ceiling | `min(#units without a ready plan/frame, plan_cap)`; `plan_cap` = 4 is a **scheduling choice of this contract**, not a host setting (the host exposes no such key); always bounded by what the host actually runs at once, and only the write of the common status is serialized |
-| Lane parallelism ceiling | `min(#groups, cap)`; `cap` = 4 is a **scheduling choice of this contract**, not a host setting; bounded by the host's observed concurrency |
+| Lane parallelism ceiling | `min(#groups, cap)`; `cap` = 4 is a **scheduling choice of this contract**, not a host setting; bounded by the host's observed concurrency **and by the declared host budget** (memory, measurement locks, container capacity) — a declared budget that cannot carry four lanes lowers `cap` and is recorded, not discovered later as timeouts |
 | Worktree directory | `<repo>-worktrees/<collection-id>/<group>` (not created with a single group) |
 | Merge | with `>=2` groups wait for **all** lanes to be terminal, then `git merge --no-ff` of **the `done` groups only** sequentially (not needed with one group); `incomplete` is not merged |
 | One group | work in the current worktree/branch; worktrees, group/task branches and the merge are not created; `incomplete` leaves the commits already made in the current branch |
