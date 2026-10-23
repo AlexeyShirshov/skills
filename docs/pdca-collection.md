@@ -109,12 +109,27 @@ previous terminal cause is a **mandatory input** to the task's own PLAN, and `pd
 that the failed evidence is now obtainable or redefines the oracle. A silent re-run of the same
 criterion is forbidden — otherwise the task again remains a gap.
 
+Plan hygiene is not skipped because planning is parallel: before `plan_state=ready`, the task's own
+PLAN validates its command contract (identifiers resolve to at least one target, argv survives the
+harness, phase/scope legal, expected outcome declared), fixes a stop-loss budget, and — for an
+unproven mechanism — plans a bounded probe before the full acceptance contract. A plan whose
+decisive command cannot run is a gap at the barrier, not a lane surprise.
+
 After the barrier, contradictions from the handoff metadata (the planned footprint, requirements on
 predecessors' results, assumptions) are validated, and `pdca-planner` builds the **DAG** — a directed
 acyclic dependency graph — and cuts it into groups. A group is a connected component or a line by
 dependencies and shared files; the **footprints of the groups do not intersect**, and inside a group
 the tasks are ordered **topologically** (those that others depend on come first). The list of
 groups, the order and the PLAN revision vector are kept in the collection status file.
+
+**Width is an objective, not a by-product.** The largest serialized group is minimised: a component
+whose units touch disjoint file families is cut into separate groups even when one lane could carry
+them in order. A schedule that leaves most units in one chain has degraded to a single lane by
+construction and is justified in the status file, not accepted silently. The schedule also declares
+the **host budget** — available memory, measurement locks, container capacity — and `cap` is derived
+from it (see Parameters), never from the number of groups. After the first wave the schedule is
+re-examined: a group that has lost its last writer releases waiting units into a new lane through the
+persisted revision binding; this is a schedule revision, not an automatic recluster.
 
 The last step of phase P is recording the schedule in the **collection status file**, and that
 file is the **only progress mirror**: there is no separate todo or sidebar mirror, since the host
@@ -140,7 +155,8 @@ launching a new PLAN).
 
 The groups run in parallel — one `pdca-orchestrator` per group, no more than **cap** at a time.
 `cap = 4` is the contract's own scheduling choice, not a host setting, and the actual ceiling is
-`min(#groups, cap)`. After each task, in
+`min(#groups, cap)`; the declared **host budget** (memory, measurement locks, container capacity)
+can lower it, and observed concurrency is an upper bound, not a promise. After each task, in
 the permitted mode, `pdca-executor` makes an **auto-commit** — and only of the task's files (`git add
 <paths>`, never `git add -A`, so as not to pick up someone else's). With one group, no worktree,
 group/task branches or merging are created: the work goes on in the current directory on the current
@@ -340,6 +356,10 @@ started lanes and the already accepted results into account, with no automatic
 `recluster`/`remerge`/`reset`/`revert`
 (`opencode/pdca-collection/SKILL.md §Surface reservation and its extension`).
 
+An accepted addition also consumes capacity: its queue position is recorded, it may not silently
+jump ahead of ready units, and when the milestone window is fixed it is scheduled for the next
+milestone instead of stretching the current one.
+
 **The driver is the same cheap runner.** In a collection the campaign is led by the existing
 `pdca-orchestrator` in `mode=collection-lane`: it receives the unit's `execution_kind`, the loaded
 campaign contract, the `preparation_ref`/`campaign_ref` and the **dispatch selection rule supplied
@@ -404,23 +424,23 @@ discovery is a safe pause before the dependent action, not a weakened gate
 ## Sources
 
 The "claim → source" map. The article's normative claims were reconciled with the repository's
-current files (commit `a58f338`); where they disagree, `opencode/pdca-collection/SKILL.md` takes
+current files (commit `8a2ee75`); where they disagree, `opencode/pdca-collection/SKILL.md` takes
 precedence.
 
 | Claim in the article | Source |
 | --- | --- |
 | The top-level role and stack-neutrality; the cycle variant is chosen per task; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `opencode/pdca-collection/SKILL.md §Role` |
 | Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `opencode/pdca-collection/SKILL.md §Role` |
-| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
+| P: each task's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle; plan hygiene (command contract, stop-loss) before `plan_state=ready` | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
 | P: the status file as the only progress mirror (per-group and per-task tables), one group → one lane, an empty input | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
-| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status | `opencode/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
+| D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status; width as a schedule objective and the host budget | `opencode/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
 | C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of a task's `incomplete` in a lane is not mixed with a STOP of a corrective task | `opencode/pdca-collection/SKILL.md §C — verification (the standard CHECK)` |
 | A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `opencode/pdca-collection/SKILL.md §A — completion` |
 | The lane: task branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `opencode/pdca-collection/SKILL.md §Lane (work stream)` |
 | A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md §Stale PLAN and schedule revision` |
 | The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md §Git model` |
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md §Failure (semantics) · §Collection status` |
-| Parameters: `cap`/`plan_cap` = 4 as the contract's scheduling choice (not a host setting), the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
+| Parameters: `cap`/`plan_cap` = 4 as the contract's scheduling choice (not a host setting), bounded by the declared host budget and observed concurrency, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md §Relation to the base PDCA · §Fallback` |
 | Composition: the two execution forms (`execution_kind` ≠ `selected_variant`), the recursion ban, the form decided by the collection PLAN | `opencode/pdca-collection/SKILL.md §Collection units and the execution form` |
 | The barrier by unit kind, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering · §A.1 Routing campaign outcomes`; `opencode/pdca-incremental/SKILL.md §Campaign status file` |

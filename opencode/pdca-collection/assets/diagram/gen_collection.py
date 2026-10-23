@@ -208,7 +208,7 @@ BLOCKS = {
     ],
     "DO": [
         ("Worktree + branches", "pdca-executor · per group", "weak"),
-        ("Lane launch", "in parallel · ≤ cap (4)", "weak"),
+        ("Lane launch", "in parallel · ≤ cap · host budget", "weak"),
         ("Lane · group", "one subagent · orchestrates, does not decide", "weak"),
         ("Task branch", "from the previous tip · pdca-executor", "weak"),
         (("pdca cycle · continue from saved PLAN", "DO→CHECK→ACT"), "hands cheap · decisions medium · escalation strong", "composite"),

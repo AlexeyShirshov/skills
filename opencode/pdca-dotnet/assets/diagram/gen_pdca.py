@@ -44,6 +44,8 @@ BLOCKS = {
         ("Spike", "needed? · tool · PoC", "medium"),
         ("Unit mode", "sequence · tree · worktrees", "medium"),
         ("Contract vN", "evidence · row ID · rv", "medium"),
+        ("Command contract", "resolve · argv · outcome", "medium"),
+        ("Stop-loss budget", "revisions · time · measurement", "medium"),
     ],
     "D": [
         ("DO", "journal · plan until approval", "weak"),
@@ -54,6 +56,7 @@ BLOCKS = {
         ("Docs · prose", "README · DocFX", "weak"),
         ("DO ledger", "evidence by row ID/rv", "weak"),
         ("Build gate", "0 warnings · TreatWarningsAsErrors", "weak"),
+        ("Anchor re-check", "drift → PLAN", "weak"),
     ],
     "C": [
         ("CHECK · gather", "fork 4 streams + security", "weak"),
@@ -62,6 +65,8 @@ BLOCKS = {
         ("Docs lens", "prose + XML-doc", "weak"),
         ("Perf lens", "measure → judgment", "weak"),
         ("Coverage", "≥ threshold · Stryker.NET", "weak"),
+        ("Zero-selection", "not success", "weak"),
+        ("Exceptions", "catalog · threshold", "medium"),
     ],
     "SEC": [
         ("Security audit", "read-only · no pdca-scout", "medium"),
@@ -114,7 +119,7 @@ INPUTS = [
     "STOP ← “no doable PLAN r+1”",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "start\nreplan: pdca-check/DO\ncycle N+1", "D": "plan ready · approval/instant\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
+DISPATCH = {"P": "start\nreplan: pdca-check/DO\ncycle N+1", "D": "plan ready · contract/approval\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
             "SEC": "from CHECK · if\nauth/secrets/input/crypto\ngather (facts)\nreport → CHECK", "E": "T1 ambiguity\nT2 counter · 3rd CHECK(r)\nT3 trade-off · T4 risky-diff\nT5 low-confidence", "S": "no plan r+1", "A": "pdca-check pass"}
 
 # per-phase state-graph node colors (shared by both themes)

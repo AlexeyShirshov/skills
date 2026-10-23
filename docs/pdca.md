@@ -105,6 +105,17 @@ decisive run is shown on the declared baseline **before gate 1**; an unprovable 
 `incomplete`/STOP is also a PLAN entry: a criterion whose evidence failed cannot be re-run
 unchanged — either show that it is now obtainable, or redefine the scope.
 
+**PLAN close.** A plan is not `ready` until its decisive commands are checked against the
+environment: every identifier resolves to at least one target in the declared scope, the argument
+vector survives the harness (no shell alias, redirection or unexpanded placeholder), the phase is
+legal (a boundary-only sweep is not planned as inner work), the scope fits the declared budget, and
+the expected outcome is declared as `green`, `expected-negative` or `informational`. A violation is
+a **plan defect**: gate 1 fails and the pdca-planner revises. Gate 1 also fixes a **stop-loss
+budget** — maximum revisions, wall clock and measurement time; its exhaustion routes to
+`pdca-escalate`/STOP, never to an unplanned extra attempt. Planning depth follows risk: a small,
+well-understood change gets a compact plan, and a measurable target whose mechanism is unproven
+first gets a bounded probe, not a full acceptance contract.
+
 **DO.** The executor does only what the plan says; a change beyond the unit is "Over-Reach" — a
 separate task. The verdict and STOP are not its own: it returns a **preliminary candidate with
 evidence**, and the candidate "the result is achieved" never closes the unit — the verdict belongs
@@ -130,8 +141,9 @@ replacement" mapping covering all the original criteria).
 
 **Five gates** permit the transitions:
 
-1. **Plan → DO:** all mandatory fields are in place, the plan is written into the status file, the
-   user **has approved the plan** — or autonomous mode.
+1. **Plan → DO:** all mandatory fields are in place, **every frozen command has passed the plan
+   command contract**, the plan is written into the status file, a **stop-loss budget** is fixed,
+   and the user **has approved the plan** — or autonomous mode.
 2. **DO → CHECK:** all active, non-superseded units are `done` with evidence.
 3. **CHECK → ACT:** all criteria are `met` on actual data, none `unmet`/`unverified`.
 4. **ACT → EXIT:** the result and the status file are finalized.
@@ -139,6 +151,20 @@ replacement" mapping covering all the original criteria).
 
 Two invariants are unbreakable: **CHECK cannot be skipped** and **the cycle cannot be closed
 without ACT**.
+
+These rules keep a green result honest. A run that selects **zero** targets is a failed run whatever
+its exit status; exit `0` with nothing selected, executed or returned is not evidence. A decisive
+negative arm is declared `expected-negative` with the exact expected failure identity and is `met`
+on that observed outcome — never silently repeated until it turns green. A verdict may accept a
+**recorded exception** only from a fixed catalog (environment/infrastructure, tooling
+incompatibility, scope/resource policy, historical provenance), each naming its class, row,
+evidence and substitute; a class appearing in **three or more units of one campaign** is a
+systemic defect, filed and fixed rather than excepted a fourth time.
+
+On DO entry the executor re-resolves every planned anchor before the first edit: **cosmetic drift**
+(moved lines or declarations with the same identity) is a `Notice`; **semantic drift** (changed
+footprint, contract, symbol or behavior) is DO → PLAN. A plan may not execute stale anchors, and
+cosmetic drift may not manufacture a revision.
 
 Progress is counted by **three counters**. `N` is the number of the task's cycle in the file name
 `.pdca/status/<task>-<N>.md`; it grows only in ACT, when the next cycle of the same task is
@@ -185,6 +211,12 @@ The exclusion never covers a failing or missing required check, unverified direc
 functional/security variant, and a finite audit task the user asked for **separately** stays
 binding. If the project has a manifest validator, it is run. By default the manifest and its logs
 live in `.pdca/<task>/rv<k>/` — next to the status directory `.pdca/status/`.
+
+**One evidence location binding** applies: the evidence root and every manifest path are resolved
+in the same checkout the checks run in. When the work happens in a secondary checkout, that
+checkout is the binding root — the helper's repository argument names it and the evidence appears
+at the identical repository-relative path there. There is no second "main-tree" form: a manifest
+whose tree cannot be recomputed from its own `base_ref` is invalid, not an exception.
 
 ## A teaching story: when the cycle stops
 
@@ -257,7 +289,7 @@ after an escalation as well.
 
 ## Sources
 
-The article's normative claims were reconciled with the repository at commit `a58f338`; where the
+The article's normative claims were reconciled with the repository at commit `8a2ee75`; where the
 article and the skill disagree, the skill file takes precedence. The "claim → source" map:
 
 | Claim | Source |
@@ -271,6 +303,7 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 | The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md §State machine` |
 | The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
 | Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md §Transition gates` |
+| The plan command contract, vacuous and `expected-negative` runs, the exception catalog, DO-entry re-anchoring, proportional planning with a stop-loss budget, and one evidence location binding | `opencode/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding` |
 | The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md §Phase contracts (generic)` |
 | The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md §Frozen evidence manifest` |
 | The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md §Normal and autonomous modes` |

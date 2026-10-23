@@ -106,6 +106,18 @@ reconnaissance and the unit execution mode. Re-entry is stipulated separately: a
 evidence failed cannot be re-run unchanged — either it is proven to be reachable now, or the
 criterion is reformulated against a reproducible oracle.
 
+**The plan close is shared with the base cycle.** Gate 1 also requires every **frozen command** to
+pass the plan command contract: the identifier resolves to at least one target in the declared
+scope, the argv survives the harness (no shell alias, redirection or unexpanded placeholder), the
+phase is legal (a boundary-only sweep is not inner work), the scope fits the declared budget, and
+the expected outcome is `green`, `expected-negative` or `informational`. A violation is a **plan
+defect**, not a runtime exception. The gate also fixes a **stop-loss budget** (revisions, wall
+clock, measurement time); a run that selects zero targets is a failure whatever its exit code, and
+a decisive negative arm is declared `expected-negative` with its exact failure identity. Recorded
+exceptions come from a fixed catalog — a class appearing in three or more units of one campaign is
+systemic. On DO entry the executor re-resolves the plan's anchors before the first edit: cosmetic
+drift is a `Notice`, semantic drift is DO → PLAN.
+
 **CHECK in two beats and parallel streams.** Verification does not mix fact gathering with
 judging. First the cheap **gathering**: the mechanics — commands through `pdca-executor` (build and lint
 clean under the project's policy), the semantics — code lenses (raw `file:line` candidates + a rule
@@ -210,7 +222,7 @@ whole family is in the guide [`docs/pdca-guide.md`](pdca-guide.md).
 ## Sources
 
 The "claim → source" map. The article's normative claims were reconciled with the current
-`opencode/pdca-coder/SKILL.md` (commit `a58f338`); where they disagree, the skill file takes
+`opencode/pdca-coder/SKILL.md` (commit `8a2ee75`); where they disagree, the skill file takes
 precedence. The paths are given from this repository; the host artifacts (`config/agents/*.md`,
 `config/profiles/*.jsonc`, `config/AGENTS.md`) are not part of it and live in a separate
 configuration repository.
@@ -227,6 +239,7 @@ configuration repository.
 | State: the status file is the source of truth and the only progress mirror | `:126-130` |
 | The three counters `N`, `r`, `n/3` | `:134-145` |
 | Gates 1–4 (PLAN → DO → CHECK → ACT) | `:190-229` |
+| The plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring and the stop-loss budget | `§Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss` |
 | The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `:179-188`, `:1181-1191` |
 | Re-entry after a terminal `incomplete`/STOP | `:715-719` |
 | The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `:427-461` |

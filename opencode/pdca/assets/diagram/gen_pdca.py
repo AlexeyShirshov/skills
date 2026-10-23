@@ -16,6 +16,7 @@ randomness, no absolute path in the output. Standard library only.
 """
 import html
 import os
+import re
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -59,18 +60,23 @@ BLOCKS = {
         ("Декомпозиция", "units · зависимости", "medium"),
         ("Средства · доступ", "чем и куда", "medium"),
         ("Риски · стоп-условия", "когда остановиться", "medium"),
+        ("Контракт команд", "резолв · argv · исход", "medium"),
+        ("Stop-loss бюджет", "ревизии · время · замер", "medium"),
     ],
     "D": [
         ("Исполнение units", "по принятому плану", "weak"),
         ("Evidence", "логи · артефакты", "weak"),
         ("Blockers", "фиксируются явно", "weak"),
         ("Unfinished", "остаётся открытым", "weak"),
+        ("Сверка якорей", "дрейф → PLAN", "weak"),
         ("Provisional-отчёт", "без вердикта · без STOP", "weak"),
     ],
     "C": [
         ("Критерии", "met | unmet | unverified", "medium"),
         ("Согласованность", "частей между собой", "medium"),
         ("Findings", "+ severity", "medium"),
+        ("Нулевой прогон", "не успех", "medium"),
+        ("Исключения", "каталог · порог", "medium"),
         ("Маршрутизация", "дефект→DO · план→PLAN", "medium"),
     ],
     "E": [
@@ -102,8 +108,8 @@ INPUTS = [
 # down-arrow (dispatch) label per column
 DISPATCH = {
     "P": "факты собраны\nреплан от CHECK",
-    "D": "план принят · апрув\nфикс дефекта · r активен",
-    "C": "все активные units done",
+    "D": "план принят · апрув\nякоря сверены",
+    "C": "все активные units done\nнулевой выбор ≠ успех",
     "E": "неоднозначность\nповтор · 3-й провал",
     "A": "все criteria met",
 }
@@ -169,12 +175,19 @@ _TR_EN = {
     "чем и куда": "with what, where",
     "Риски · стоп-условия": "Risks · stop rules",
     "когда остановиться": "when to stop",
+    "Контракт команд": "Command contract",
+    "резолв · argv · исход": "resolve · argv · outcome",
+    "Stop-loss бюджет": "Stop-loss budget",
+    "ревизии · время · замер": "revisions · time · measurement",
     # DO cards
     "Исполнение units": "Execute units",
     "по принятому плану": "per the accepted plan",
     "логи · артефакты": "logs · artifacts",
+    "Blockers": "Blockers",
     "фиксируются явно": "recorded explicitly",
     "остаётся открытым": "stays open",
+    "Сверка якорей": "Anchor re-check",
+    "дрейф → PLAN": "drift → PLAN",
     "Provisional-отчёт": "Provisional report",
     "без вердикта · без STOP": "no verdict · no STOP",
     # CHECK cards
@@ -183,6 +196,10 @@ _TR_EN = {
     "частей между собой": "of the parts",
     "Маршрутизация": "Routing",
     "дефект→DO · план→PLAN": "defect→DO · plan→PLAN",
+    "Нулевой прогон": "Zero-selection run",
+    "не успех": "not success",
+    "Исключения": "Exceptions",
+    "каталог · порог": "catalog · threshold",
     # ESCALATE cards
     "Скаут": "Scout",
     "Триггеры": "Triggers",
@@ -215,8 +232,10 @@ _TR_EN = {
     "факты собраны": "facts gathered",
     "реплан от CHECK": "replan from CHECK",
     "план принят · апрув": "plan accepted · approval",
+    "якоря сверены": "anchors re-checked",
     "фикс дефекта · r активен": "defect fix · r active",
     "все активные units done": "all active units done",
+    "нулевой выбор ≠ успех": "zero selection ≠ success",
     "неоднозначность": "ambiguity",
     "повтор · 3-й провал": "repeat · 3rd failure",
     "все criteria met": "all criteria met",
@@ -236,6 +255,7 @@ _TR_EN = {
     "сразу (авто)": "instant (auto)",
     "закрыто": "closed",
     "следующий цикл · N+1": "next cycle · N+1",
+    "контракт · апрув": "contract · approval",
     "новое предусловие": "new precondition",
     "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
     "неверный план → pdca-planner · r+1 при ревизии": "wrong plan → pdca-planner · r+1 on revision",
@@ -265,6 +285,12 @@ MAXROWS = max(len(b) for b in BLOCKS.values())
 COL_BOTTOM = COL_Y + (MAXROWS - 1) * BOX_STEP + BOX_H + 8
 LEG_Y = COL_BOTTOM + 74
 SG_TITLE_Y = LEG_Y + 56
+NH, NW = 56, 156
+R1_TOP = SG_TITLE_Y + 150
+R2_TOP = R1_TOP + 180
+M4 = R2_TOP + NH + 44
+H = M4 + 40
+STATE_TOP = SG_TITLE_Y - 18
 
 
 def esc(text):
@@ -363,12 +389,6 @@ def render(P):
             out.append(f'<text x="{cx}" y="{y + h / 2 + 16}" class="ss" fill="{color}" '
                        f'text-anchor="middle" opacity="0.8">{esc(sub)}</text>')
         return "\n".join(out)
-
-    NH, NW = 56, 156
-    R1_TOP = SG_TITLE_Y + 150
-    R2_TOP = R1_TOP + 180
-    M4 = R2_TOP + NH + 44
-    H = M4 + 40
 
     s = []
     s.append(f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
@@ -481,7 +501,7 @@ def render(P):
     # 3-iteration cap; it is stacked on short lines so it fits the 76px gap.
     for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", ["старт"]),
                                ("plan_do", "PLAN", "DO",
-                                ["апрув (normal)", "сразу (авто)", "· n=1/3"]),
+                                ["контракт · апрув", "сразу (авто)", "· n=1/3"]),
                                ("do_check", "DO", "CHECK", ["units done"]),
                                ("check_act", "CHECK", "ACT", ["criteria met"]),
                                ("act_exit", "ACT", "EXIT", ["закрыто"])]:
@@ -545,6 +565,15 @@ def htmlwrap(P, title, svg, lang="ru"):
     )
 
 
+def crop(svg: str, top: int, height: int) -> str:
+    """Re-frame the full hand SVG as a vertical excerpt (contract / state)."""
+    opening = re.match(r'<svg viewBox="0 0 \d+ \d+" width="\d+" height="\d+"', svg)
+    if not opening:
+        raise SystemExit("unexpected svg header")
+    head = '<svg viewBox="0 %d %d %d" width="%d" height="%d"' % (top, W, height, W, height)
+    return head + svg[len(opening.group(0)):]
+
+
 def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="Render the universal pdca diagram (ru/en).")
@@ -562,14 +591,24 @@ def main(argv=None):
         ("light", "pdca-hand" + suffix, titles[0]),
         ("dark", "pdca-hand-dark" + suffix, titles[1]),
     ]
+    rendered = {}
     for theme, stem, title in variants:
         palette = THEMES[theme]
         svg = render(palette)
+        rendered[theme] = svg
         with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as fh:
             fh.write(svg)
         with open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8") as fh:
             fh.write(htmlwrap(palette, title, svg, LANG))
         print("wrote %s.{svg,html}" % stem)
+    if LANG == "ru":
+        # The slide deck uses the dark diagram split into its contract and state
+        # halves; both are deterministic crops of the same rendered artifact.
+        with open(os.path.join(OUT_DIR, "pdca-contract-dark.svg"), "w", encoding="utf-8") as fh:
+            fh.write(crop(rendered["dark"], 0, STATE_TOP))
+        with open(os.path.join(OUT_DIR, "pdca-state-dark.svg"), "w", encoding="utf-8") as fh:
+            fh.write(crop(rendered["dark"], STATE_TOP, H - STATE_TOP))
+        print("wrote pdca-contract-dark.svg, pdca-state-dark.svg")
 
 
 if __name__ == "__main__":

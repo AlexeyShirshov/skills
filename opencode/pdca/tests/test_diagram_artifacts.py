@@ -250,5 +250,51 @@ class DiagramReproducibilityTest(unittest.TestCase):
         self.assertNotRegex(source, r"['\"]/home/")
 
 
+class SlideCropTest(unittest.TestCase):
+    """The deck's contract/state excerpts are deterministic crops of the hand SVG.
+
+    Both files carry the full document and differ only in the opening viewBox;
+    this guards against the excerpt drifting after a diagram regeneration and
+    against a stale copy under the slide deck's ``public/``.
+    """
+
+    CROPS = ("pdca-contract-dark.svg", "pdca-state-dark.svg")
+    SLIDES = Path(__file__).resolve().parents[3] / "docs/ru/pdca-slides/public"
+    VIEWBOX = re.compile(r'viewBox="(-?\d+) (-?\d+) (\d+) (\d+)"')
+    HAND = "pdca-hand-dark.svg"
+
+    @staticmethod
+    def body(text: str) -> str:
+        return text[text.index(">") + 1:]
+
+    def viewbox(self, name: str):
+        match = self.VIEWBOX.search(read(DIAGRAM / name))
+        self.assertIsNotNone(match, "%s has no viewBox" % name)
+        return tuple(int(part) for part in match.groups())
+
+    def test_crops_share_the_hand_body(self):
+        hand = read(DIAGRAM / self.HAND)
+        for name in self.CROPS:
+            with self.subTest(name=name):
+                self.assertEqual(self.body(hand), self.body(read(DIAGRAM / name)))
+
+    def test_crops_tile_the_hand_vertically(self):
+        _, hand_y, _, hand_h = self.viewbox(self.HAND)
+        _, c_y, _, c_h = self.viewbox("pdca-contract-dark.svg")
+        _, s_y, _, s_h = self.viewbox("pdca-state-dark.svg")
+        self.assertEqual(0, hand_y)
+        self.assertEqual(0, c_y)
+        self.assertEqual(c_h, s_y, "the state crop must start where the contract ends")
+        self.assertEqual(hand_h, c_h + s_h, "the crops must cover the whole hand canvas")
+
+    def test_slide_public_copies_are_current(self):
+        for name in self.CROPS:
+            with self.subTest(name=name):
+                self.assertEqual(
+                    (DIAGRAM / name).read_bytes(), (self.SLIDES / name).read_bytes(),
+                    "%s is stale under docs/ru/pdca-slides/public" % name,
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

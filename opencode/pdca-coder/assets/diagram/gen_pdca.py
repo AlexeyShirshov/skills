@@ -43,12 +43,15 @@ BLOCKS = {
         ("Perf decision", "measure? · tool · baseline", "medium"),
         ("Spike", "needed? · tool · PoC", "medium"),
         ("Unit mode", "sequence · tree · worktrees", "medium"),
+        ("Command contract", "resolve · argv · outcome", "medium"),
+        ("Stop-loss budget", "revisions · time · measurement", "medium"),
     ],
     "D": [
         ("DO", "journal · plan until approval", "weak"),
         ("Code", "from the plan", "weak"),
         ("Tests", "from the plan", "weak"),
         ("Docs · prose", "README · documentation", "weak"),
+        ("Re-anchor", "drift → PLAN", "weak"),
     ],
     "C": [
         ("CHECK · gather", "fork 4 streams + security", "weak"),
@@ -56,6 +59,8 @@ BLOCKS = {
         ("Test lens", "run · coverage", "weak"),
         ("Docs lens", "prose + XML-doc", "weak"),
         ("Perf lens", "measure → judgment", "weak"),
+        ("Zero run", "not success", "weak"),
+        ("Exceptions", "catalog · threshold", "medium"),
     ],
     "SEC": [
         ("Security audit", "read-only · report → CHECK", "medium"),
@@ -104,7 +109,7 @@ INPUTS = [
     "“queue empty / remainder blocked” · “iteration limit (n/3)” · “user stop”",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "start\nreplan: pdca-check\nreplan: DO", "D": "plan ready\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
+DISPATCH = {"P": "start\nreplan: pdca-check\nreplan: DO", "D": "plan ready · contract/approval\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
             "SEC": "from CHECK · if\ngather (facts)\nreport → CHECK", "E": "repeat after 1 fix\n3rd CHECK(r) failure\nhard trade-off", "S": "no plan r+1", "A": "pdca-check pass"}
 
 # per-phase state-graph node colors (shared by both themes)

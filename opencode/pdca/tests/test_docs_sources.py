@@ -110,6 +110,44 @@ class DocsSourceMapTest(unittest.TestCase):
         return anchors, numbers
 
 
+class DocsFreshnessTest(unittest.TestCase):
+    """The prose must carry the plan-close rules, not only cite their sections.
+
+    Section anchors prove the map resolves; they do not prove the article still
+    describes the contract.  These anchors are deliberately few and stable.
+    """
+
+    REQUIRED = {
+        "docs/pdca.md": (
+            "plan command contract", "stop-loss", "expected-negative",
+            "One evidence location binding",
+        ),
+        "docs/ru/pdca.md": (
+            "контракт команд", "stop-loss", "expected-negative",
+            "Единая привязка доказательств",
+        ),
+        "docs/pdca-guide.md": (
+            "plan-command validation receipt", "zero-target run",
+            "Re-anchoring at DO entry",
+        ),
+        "docs/ru/pdca-guide.md": (
+            "квитанция валидации команд", "ноль", "Re-anchor на входе",
+        ),
+        "docs/pdca-dotnet.md": ("PLAN-LINT", "commands.json"),
+        "docs/ru/pdca-dotnet.md": ("PLAN-LINT", "commands.json"),
+        "docs/ru/pdca-slides/slides.md": (
+            "stop-loss", "Re-anchor", "expected-negative",
+        ),
+    }
+
+    def test_articles_carry_the_plan_close_rules(self) -> None:
+        for rel, anchors in self.REQUIRED.items():
+            text = read(REPO / rel).lower()
+            for anchor in anchors:
+                with self.subTest(doc=rel, anchor=anchor):
+                    self.assertIn(anchor.lower(), text)
+
+
 class CompositionDocsTest(unittest.TestCase):
     """Composition is documented in both languages and install claims stay honest."""
 

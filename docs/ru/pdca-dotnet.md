@@ -151,6 +151,15 @@ receipt — квитанции, делающие удаление тяжёлог
 запланированные источники. PLAN также закрепляет **конечный бюджет re-gather**
 (досбора доказательств) в CHECK и его владельца.
 
+Рядом с контрактом доказательств PLAN замораживает **проекцию команд** `commands.json` (скилл
+§Plan command contract): задачу, ревизию плана, checkout и корень evidence, бюджет хоста,
+плановое число граничных интеграционных прогонов, опциональные unit'ы и по объекту на команду —
+id, фазу, вид, argv, cwd/env, ожидаемый исход с идентичностью отказа, минимальное число выбранных
+целей, лог, timeout, покрытие и (для mutation) harness-probe либо объявленный fallback. Исполнитель
+этапирует `plan_lint.py` и запускает `check` до гейта 1 и повторно на входе в DO; квитанция — это
+обязательная строка **`PLAN-LINT`** с exit `0`. `probe` дополнительно запускает только
+allow-listed `harness_probe`, никогда сам планируемый прогон; коды `0`/`2`/`1`.
+
 **DO ledger** — журнал фактических доказательств по ID строки и `rv`:
 проверенные тестовые символы/`file:line`, результаты, выполненные команды, exit
 codes, пути к логам и артефактам. Проваленные, не запускавшиеся, отсутствующие и
@@ -422,7 +431,10 @@ Changed files) и готовое **сообщение для следующей 
 реализация гейта —
 [`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py);
 статический линт контракта команд —
-[`scripts/plan_lint.py`](../../opencode/pdca-dotnet/scripts/plan_lint.py).
+[`scripts/plan_lint.py`](../../opencode/pdca-dotnet/scripts/plan_lint.py): `check` валидирует
+проекцию `commands.json` до гейта 1 (форма argv, фаза/масштаб, масштаб solution-build против
+бюджета хоста, резолв селекторов по исходникам проекта, ожидаемый исход, привязка evidence,
+покрытие unit'ов), а `probe` запускает только allow-listed harness-probe; коды `0`/`2`/`1`.
 Обзор всего семейства — [`docs/ru/pdca-guide.md`](pdca-guide.md).
 
 ## Источники
@@ -446,6 +458,7 @@ Changed files) и готовое **сообщение для следующей 
 | Замороженный манифест: путь, заморозка на DO → CHECK, append-only, поля, агрегация по ссылкам; схема и покрытие строк в валидаторе | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
 | Механический конвейер доказательств: `generate`/`lint`, замороженное синтетическое дерево, атомарная публикация, двустороннее покрытие `required_rows` ↔ `rows[]` в lint | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
 | Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `opencode/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
+| Контракт команд плана: проекция `commands.json`, `plan_lint.py check`/`probe`, обязательная строка `PLAN-LINT`, единая привязка evidence | `opencode/pdca-dotnet/SKILL.md §Plan command contract (PLAN close) · §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/plan_lint.py:1-70` |
 | Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `opencode/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `opencode/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
 | Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |

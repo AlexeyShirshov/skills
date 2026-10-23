@@ -142,6 +142,15 @@ test symbols or `file:line` references is forbidden — only verified existing r
 explicitly planned sources. PLAN also fixes the **final re-gather budget** (a supplementary
 evidence gathering) in CHECK and its owner.
 
+Alongside the evidence contract PLAN freezes the **command projection** `commands.json` (skill
+§Plan command contract): the task, plan revision, checkout and evidence root, host budget, the
+planned boundary integration count, optional units, and one object per command — id, phase, kind,
+argv, cwd/env, expected outcome with its failure identity, minimum selected count, log, timeout,
+coverage, and (for mutation) a harness probe or a declared fallback. The executor stages
+`plan_lint.py` and runs `check` before gate 1 and again on DO entry; the receipt is the mandatory
+**`PLAN-LINT`** row with exit `0`. `probe` additionally runs each allow-listed `harness_probe`,
+never the planned command; codes are `0`/`2`/`1`.
+
 The **DO ledger** is the log of actual evidence by row ID and `rv`: verified test symbols/
 `file:line`, results, executed commands, exit codes, paths to logs and artifacts. Failed,
 never-run, missing and blocked evidence is recorded **explicitly**. N/A is admissible only with an
@@ -396,7 +405,11 @@ templates that reference them
 [`check.md`](../opencode/pdca-dotnet/assets/agents/pdca-check.md)) and the compact implementation of
 the gate —
 [`scripts/validate_inner_loop.py`](../opencode/pdca-dotnet/scripts/validate_inner_loop.py);
-the static command-contract lint — [`scripts/plan_lint.py`](../opencode/pdca-dotnet/scripts/plan_lint.py).
+the static command-contract lint — [`scripts/plan_lint.py`](../opencode/pdca-dotnet/scripts/plan_lint.py):
+`check` validates the `commands.json` projection before gate 1 (argv shape, phase/scope,
+solution-build scope against the host budget, selector resolution against the project sources,
+expected outcome, evidence binding, unit coverage) and `probe` runs only the allow-listed harness
+probes; codes `0`/`2`/`1`.
 An overview of the whole family is in [`docs/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
@@ -420,6 +433,7 @@ The article's normative claims were reconciled with the repository's current fil
 | The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
 | The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
 | The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `opencode/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
+| The plan command contract: the `commands.json` projection, `plan_lint.py check`/`probe`, the mandatory `PLAN-LINT` row, one evidence location binding | `opencode/pdca-dotnet/SKILL.md §Plan command contract (PLAN close) · §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/plan_lint.py:1-70` |
 | The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `opencode/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `opencode/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
 | A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |

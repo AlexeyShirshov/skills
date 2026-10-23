@@ -270,9 +270,9 @@ so" but a concrete artifact: a status-file record, an exit code, a log path, a g
 
 | What | Content |
 |---|---|
-| **Entry condition** | The pdca-planner's answer contains **all the mandatory plan fields**; the plan is **written into the status file**; in normal mode the user's **approval of the plan** has been received — or we are in autonomous mode, where no approval is required and DO starts right after PLAN |
-| **Evidence** | A status file with the plan and the record `PLAN ready — awaiting user approval`; the textual plan with its fields; the user's approval (normal) |
-| **Responsible** | The pdca-planner formulates; the `pdca-executor` writes the plan into the status file; the orchestrator checks that the items are present and returns an incomplete answer to the pdca-planner |
+| **Entry condition** | The pdca-planner's answer contains **all the mandatory plan fields**; **every frozen command has passed the plan command contract** (an identifier resolves to at least one target, the argv survives the harness, the phase/scope is legal, the expected outcome is declared); a **stop-loss budget** is fixed; the plan is **written into the status file**; in normal mode the user's **approval of the plan** has been received — or we are in autonomous mode, where no approval is required and DO starts right after PLAN |
+| **Evidence** | A status file with the plan and the record `PLAN ready — awaiting user approval`; the textual plan with its fields; the **plan-command validation receipt** (in `pdca-dotnet` — the `PLAN-LINT` row with exit `0`); the stop-loss budget; the user's approval (normal) |
+| **Responsible** | The pdca-planner formulates; the `pdca-executor` validates the frozen commands and writes the plan into the status file; the orchestrator checks that the items are present and returns an incomplete answer to the pdca-planner |
 | **Permitted next step** | DO; if acceptance criteria are missing, in normal mode ask the user, in autonomous mode route through pdca-planner/pdca-escalate and STOP |
 
 The mandatory fields of a domain-neutral plan: goal/expected result; constraints; assumptions;
@@ -296,6 +296,15 @@ on performance measurement **with an argument**; the decision on reconnaissance 
 argument**; the unit execution mode (sequential / parallel in one tree / parallel in worktrees); a
 completed design checklist and a fixed choice of toolchain and lenses. A skipped or "half-closed"
 matrix fails gate 1.
+
+The plan close is checked mechanically where the variant supplies a helper. A **zero-target run** is
+a failed run whatever its exit status; a decisive negative arm is declared `expected-negative` with
+the exact expected failure identity and is `met` on that observed outcome. A verdict may accept a
+recorded exception only from a fixed catalog (environment/infrastructure, tooling incompatibility,
+scope/resource policy, historical provenance), each naming its class, row, evidence and substitute;
+a class appearing in **three or more units of one campaign** is systemic and is fixed, not excepted a
+fourth time. On DO entry the executor re-resolves the plan's anchors: **cosmetic drift** is a
+`Notice`, **semantic drift** is DO → PLAN.
 
 ### Gate 2. DO → CHECK
 
@@ -421,6 +430,11 @@ It is exactly this construction that makes "the same defect came back" a separat
 signal than "three different failures": a recurrence after one fix is no longer a hypothesis but a
 suspicion about the architecture, and there is no need to spend a second fix on it.
 
+The number of revisions has no cap, but the **stop-loss budget** fixed at gate 1 does: maximum
+revisions, wall clock and measurement time. Its exhaustion routes to escalation/STOP — never to an
+unplanned extra attempt. Planning depth is proportional to risk: a compact plan for a small,
+well-understood change; a bounded probe first when the mechanism of a measurable target is unproven.
+
 ## 7. When the plan stopped matching reality
 
 DO does not revise the plan itself. If execution hits a new precondition or a blocker, or the
@@ -457,6 +471,13 @@ And one more distinction to keep in mind: **a bad plan found during verification
 `CHECK → PLAN`**, not a reason to widen the frames on the fly. The only thing that qualifies as
 DO → PLAN is a **genuinely new** circumstance that makes the plan unexecutable. "Let us widen the
 scope while we are at it" is not a new circumstance but scope creep.
+
+**Re-anchoring at DO entry.** A plan written against an earlier snapshot drifts when sibling work
+lands. Before the first edit the executor re-resolves every planned anchor and records the result:
+**cosmetic drift** (line numbers or moved declarations with the same identity) is a `Notice` with
+old→new pointers and no revision; **semantic drift** (changed footprint, contract, symbol or
+behavior) is DO → PLAN and a genuine revision. A plan may not execute stale anchors, and cosmetic
+drift may not manufacture a revision.
 
 ## 8. Normal and autonomous
 
@@ -578,6 +599,12 @@ ships a manifest validator, it is run (row completeness + shape).
 `.pdca/status/`: `<task>` is a kebab-slug, `<k>` is the revision `rv`. It holds the frozen
 manifest, its logs and the rows' artifacts; this is a **default** that an overlay may override
 (as may the status directory).
+
+**One evidence location binding.** The evidence root and every manifest path are resolved in the
+same checkout the checks run in. If the work happens in a secondary checkout, that checkout is the
+binding root: the helper's repository argument names it and the evidence appears at the identical
+repository-relative path there. A manifest whose tree cannot be recomputed from its own `base_ref`
+is invalid, not an exception.
 
 **What the status file must contain** so that the file alone restores the picture:
 
@@ -773,6 +800,12 @@ differences are in the lenses, the thresholds and the additional gates.
   manifest atomically against a frozen synthetic tree, and `lint` recomputes that tree and checks
   `required_rows` ↔ `rows[]` both ways. CHECK runs **both** helpers on the frozen manifest; a
   non-zero exit is fail-closed.
+- **The plan-command lint.** `scripts/plan_lint.py check` validates the plan's `commands.json`
+  projection before gate 1 — argv shape, phase/scope legality, solution-build scope against the
+  declared host budget, selector resolution against the project sources, expected outcome, evidence
+  binding and unit coverage — and exits `0`/`2`/`1`. `probe` additionally runs each allow-listed
+  `harness_probe` (never the planned command). Every plan carries a **`PLAN-LINT`** row with the
+  receipt and exit `0`.
 - **Explicit execution states.** Every actually-started run is recorded regardless of outcome:
   `finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` |
   `not-started`. Exit code and selected count are nullable and are never invented for a run that did
@@ -1255,6 +1288,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 
 **Gates and escalation**
 - gates 1–5 → `opencode/pdca/SKILL.md §Transition gates`
+- the plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring, the stop-loss budget, one evidence binding → `opencode/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
 - the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md §Phase contracts (generic)`
 - re-entry after a terminal `incomplete`/STOP → `opencode/pdca/SKILL.md §Phase contracts (generic)`;
   `opencode/pdca-coder/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`
@@ -1298,6 +1332,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 - `validate_inner_loop.py`: modes/codes → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
   the manifest (`required_rows` ↔ `rows[]`) → `:1158-1226`; mode parsing → `:1241-1300`
 - `pdca_evidence.py`: `generate`/`lint`, the frozen synthetic tree, the two-way coverage → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
+- `plan_lint.py`: `check`/`probe`, exit codes, the `commands.json` projection → `opencode/pdca-dotnet/scripts/plan_lint.py:1-70`; the mandatory `PLAN-LINT` row → `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`
 
 **pdca-collection**
 - the role/variant → `opencode/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
