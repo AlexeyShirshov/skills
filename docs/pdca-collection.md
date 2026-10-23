@@ -118,7 +118,7 @@ groups, the order and the PLAN revision vector are kept in the collection status
 
 The last step of phase P is recording the schedule in the **collection status file**, and that
 file is the **only progress mirror**: there is no separate todo or sidebar mirror, since the host
-may not provide a todo tool (V2 does not), and a second mirror only creates divergence. The primary
+may not provide a todo tool , and a second mirror only creates divergence. The primary
 orchestrator updates the file in the same turn as the event, reconciles against it before
 dispatching, and restores the state from it after compaction — never from memory. The groups and
 tasks with their statuses live in the status-file tables.
@@ -138,8 +138,9 @@ task. Each task enters the lane already with its own PLAN ready: `pdca-orchestra
 plan's applicability to the current state and continues **that same** cycle from DO (without
 launching a new PLAN).
 
-The groups run in parallel — one `pdca-orchestrator` per group, no more than **cap** at a time. By
-default `cap = 4` (configurable), and the actual ceiling is `min(#groups, cap)`. After each task, in
+The groups run in parallel — one `pdca-orchestrator` per group, no more than **cap** at a time.
+`cap = 4` is the contract's own scheduling choice, not a host setting, and the actual ceiling is
+`min(#groups, cap)`. After each task, in
 the permitted mode, `pdca-executor` makes an **auto-commit** — and only of the task's files (`git add
 <paths>`, never `git add -A`, so as not to pick up someone else's). With one group, no worktree,
 group/task branches or merging are created: the work goes on in the current directory on the current
@@ -419,7 +420,7 @@ precedence.
 | A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `opencode/pdca-collection/SKILL.md §Stale PLAN and schedule revision` |
 | The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `opencode/pdca-collection/SKILL.md §Git model` |
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `opencode/pdca-collection/SKILL.md §Failure (semantics) · §Collection status` |
-| Parameters: `cap = 4` for lanes, `plan_cap = 4` for the PLAN phase, the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
+| Parameters: `cap`/`plan_cap` = 4 as the contract's scheduling choice (not a host setting), the worktree directory, the merge right | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `opencode/pdca-collection/SKILL.md §Relation to the base PDCA · §Fallback` |
 | Composition: the two execution forms (`execution_kind` ≠ `selected_variant`), the recursion ban, the form decided by the collection PLAN | `opencode/pdca-collection/SKILL.md §Collection units and the execution form` |
 | The barrier by unit kind, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering · §A.1 Routing campaign outcomes`; `opencode/pdca-incremental/SKILL.md §Campaign status file` |

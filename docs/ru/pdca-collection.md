@@ -146,8 +146,8 @@ Primary-оркестратор обновляет файл в том же так
 продолжает **тот же** цикл с DO (не запуская новый PLAN).
 
 Группы запускаются параллельно — по одному `pdca-orchestrator` на группу, не больше
-**cap** одновременно. По умолчанию `cap = 4` (настраивается), фактический потолок —
-`min(#групп, cap)`. После каждой задачи в разрешённом режиме `pdca-executor` делает **автокоммит** —
+**cap** одновременно. `cap = 4` — планировочный выбор самого контракта, а не настройка хоста;
+фактический потолок — `min(#групп, cap)`. После каждой задачи в разрешённом режиме `pdca-executor` делает **автокоммит** —
 и только файлов задачи (`git add <paths>`, никогда `git add -A`, чтобы не прихватить чужое).
 При одной группе worktree, ветки группы/задач и слияние **не создаются**: работа идёт
 в текущем каталоге на текущей ветке.
@@ -425,7 +425,7 @@ resource stop прогона; недоступный **контракт цикл
 | Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `opencode/pdca-collection/SKILL.md §Stale PLAN and schedule revision` |
 | Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `opencode/pdca-collection/SKILL.md §Git model` |
 | Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `opencode/pdca-collection/SKILL.md §Failure (semantics) · §Collection status` |
-| Параметры: `cap = 4` для лейнов, `plan_cap = 4` для фазы PLAN, worktree-каталог, merge-право | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
+| Параметры: `cap`/`plan_cap` = 4 как планировочный выбор контракта (не настройка хоста), worktree-каталог, merge-право | `opencode/pdca-collection/SKILL.md §Report · §Parameters` |
 | Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `opencode/pdca-collection/SKILL.md §Relation to the base PDCA · §Fallback` |
 | Композиция: две формы исполнения (`execution_kind` ≠ `selected_variant`), запрет рекурсии, форму решает PLAN коллекции | `opencode/pdca-collection/SKILL.md §Collection units and the execution form` |
 | Барьер по видам единиц, отдельный immutable/revisioned preparation document, `preparation_state`, единственный `preparation_ref`, `campaign_ref` optional до и обязателен после bootstrap, три операции, готовность ≠ завершение, пересогласование как новая ревизия | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering · §A.1 Routing campaign outcomes`; `opencode/pdca-incremental/SKILL.md §Campaign status file` |

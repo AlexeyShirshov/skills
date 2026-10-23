@@ -1,6 +1,6 @@
 ---
 name: pdca-dotnet
-description: "PDCA cycle for .NET/C# tasks and features: PLAN → DO → CHECK → ACT with gates, parallel DO/CHECK streams, role routing (decisions — pdca-planner, hands — pdca-executor, escalation — escalate) and an ACT handoff. Invoke ONLY when the user explicitly names `pdca-dotnet`; it covers .NET/C# work — not ordinary tasks and not another stack."
+description: "PDCA cycle for .NET/C# work: gates, parallel DO/CHECK streams, .NET toolchain and evidence rules, ACT handoff. User-invoked — runs only when the user explicitly names `pdca-dotnet`."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
@@ -14,6 +14,15 @@ it the contract does not apply: ordinary tasks are performed directly.
 **This skill targets .NET/C# repositories.** The PLAN/CHECK checklists, coverage
 thresholds and role fallbacks reference .NET tooling and `dotnet-*` subagents; for
 another stack, treat them as a template and replace the tooling.
+
+**Two published twins, one contract.** This file is the .NET/C# twin of `pdca-coder`: the same
+state machine, gates, counters, approval protocol and evidence rules. The .NET-only material is
+`### DO brief: mandatory test scope`, `### Execution journal and the unit/integration policy`,
+`### Test run safety`, `### Versioned evidence contract`, `### Reviewer evidence pack`,
+`### CHECK completeness gate` and `### ACT cleanup receipt`. Both are published **complete** because
+each is installed and invoked standalone, so a shared rule is necessarily written twice: a change to
+one is made in **both** files, and `opencode/pdca/tests/test_variant_parity.py` fails when an
+anchored rule or shared section drifts.
 
 **Models and providers live outside this skill.** The skill names only **roles**; the
 host binds them to concrete subagents and models (see §Host requirements below).
@@ -118,7 +127,8 @@ initial PLAN and any replan belong to `pdca-planner`.
   waive the gates, the no-4th rule, scope or the security constraints (§Escalation).
 - **Do not edit files or run commands** — that is `pdca-executor`'s job, including the cycle status file
   (§Cycle status file). You have the tools but do not use them in the cycle — that is the mode's point.
-- **Do not read anything yourself** — no code/diffs/logs/status/docs/MCP output. Facts come from
+- **Do not read anything yourself** (that is **Token Burn**) — no code/diffs/logs/status/docs/MCP
+  output. Facts come from
   `pdca-scout` (`file:line`), command results from `pdca-executor` (exit code, numbers, log path), judgments from
   `pdca-check`/`pdca-planner`/`pdca-escalate`. Only their compact reports enter your context, to forward.
 - Your job: drive the phases, compose briefs (what to do + the reports the subagent needs), verify the
@@ -151,7 +161,7 @@ Progress is recorded in one place:
 ### Phase progress mirror (status file only)
 
 Progress lives only in the cycle status file (§Cycle status file). There is no separate todo or
-sidebar mirror: the host may not provide a todo tool (V2 does not), and a second mirror only
+sidebar mirror: the host may not provide a todo tool, and a second mirror only
 creates divergence.
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan, escalation —
@@ -159,7 +169,7 @@ creates divergence.
    the next step; never batched.
 2. **Reconcile each turn.** Before dispatching, compare the last status recorded by `pdca-executor`
    (from its report — do not read the file) with your narrative. Divergence → fix it in the same
-   turn; the status file wins.
+   turn; the status file wins. That drift has a name — **State Rot**.
 3. **After compaction/resume** reconstruct the state from the status file (§Recovery), never from
    memory or the context retelling.
 
@@ -891,6 +901,16 @@ a missing/mismatched approval yields an **approval-needed checkpoint** — never
 fresh PLAN. This is a caller-driven handoff, not a
 standalone-autonomous pause and not a user approval: standalone normal mode still starts only after the
 user approves the plan, and standalone autonomous still starts DO immediately.
+
+**DO starts only after the user approves the plan in the normal mode**; in autonomous mode it
+starts right after PLAN (§Autonomous mode). Perform ONLY what the plan contains: a missing detail
+goes to `pdca-planner`, not a reopened design; root-cause investigation (§Debugging) and the
+plan's own spikes (§PLAN → "Prototype / reconnaissance") are allowed.
+
+**No manual agent switching.** Starting a cycle and the CHECK → PLAN / DO → PLAN returns need no
+agent switch: the cheap orchestrator forwards the request and gathered evidence to
+`pdca-planner`, which formulates the `P:` task/plan, and `pdca-executor` writes it. Both the
+initial PLAN and every replan belong to `pdca-planner` (§Orchestrator role).
 
 ### Test strategy (PLAN → TEST)
 
@@ -1629,20 +1649,6 @@ The `Status:` line always names the kept status file, including a closed flow
 - A project subagent **without an explicit model inherits the parent's model** (the orchestrator's
   model). Either pin a model for it in the agent config/profile, or embed its instructions into
   the project checklist and do not invoke the agent itself.
-
-## PLAN → DO transition (approval)
-
-DO starts only after the user approves the plan in the normal mode — the user's approval after reading the
-implementation plan; in autonomous mode (§Autonomous mode)
-right after PLAN. The plan is already on disk (last step of PLAN), so on approval perform ONLY what is
-in it: **do not repeat PLAN's research**; a missing detail goes to `pdca-planner`, not a reopened design.
-Allowed in DO: root-cause investigation (§Debugging) and the plan's own spikes (§PLAN →
-"Prototype / reconnaissance").
-
-Starting a cycle and the CHECK → PLAN / DO → PLAN returns need no manual agent switching: the cheap
-orchestrator forwards the request and gathered evidence to `pdca-planner`, which formulates the `P:`
-task/plan and `pdca-executor` writes it. Both the initial PLAN and every replan belong to `pdca-planner`, for the
-cheap orchestrator (§Orchestrator role).
 
 ## Economics
 

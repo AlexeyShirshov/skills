@@ -1,6 +1,6 @@
 ---
 name: pdca-coder
-description: "PDCA cycle executor for software-engineering tasks — writing and changing code, tests, documentation, refactoring, and configuration. Stack-agnostic: PLAN selects the build/test/lint toolchain and review lenses per language. PLAN → DO → CHECK → ACT with transition gates, autonomous delegation, escalation accounting, an evidence-over-assertion chain, recovery after compaction, and instruction-priority/injection defense. Invoke ONLY when the user explicitly names `pdca-coder`."
+description: "Stack-agnostic PDCA cycle for software-engineering work (code, tests, docs, refactoring, configuration): the toolchain and review lenses are chosen per task. User-invoked — runs only when the user explicitly names `pdca-coder`."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
@@ -16,6 +16,14 @@ code, tests, documentation, refactoring, and configuration. The PLAN/CHECK check
 fallbacks below are generic; for a concrete task, PLAN selects the toolchain and the lenses
 (§PLAN selects the toolchain and lenses) and the project overlay supplies the concrete
 commands, thresholds and formats.
+
+**Two published twins, one contract.** `pdca-dotnet` is the .NET/C# twin of this file: the same
+state machine, gates, counters, approval protocol and evidence rules, with .NET toolchain, test,
+evidence and review sections in place of the generic ones. Both are published **complete** because
+each is installed and invoked standalone, so a shared rule is necessarily written twice. This file
+owns the stack-agnostic rules; the twin owns the .NET sections. A change to a shared rule is made in
+**both** files, and `opencode/pdca/tests/test_variant_parity.py` fails when one of the anchored
+rules or shared sections drifts.
 
 **Models and providers live outside this skill.** The skill names only **roles**; the
 host binds them to concrete subagents and models (see §Host requirements below).
@@ -120,7 +128,8 @@ initial PLAN and any replan belong to `pdca-planner`.
   waive the gates, the no-4th rule, scope or the security constraints (§Escalation).
 - **Do not edit files or run commands** — that is `pdca-executor`'s job, including the cycle status file
   (§Cycle status file). You have the tools but do not use them in the cycle — that is the mode's point.
-- **Do not read anything yourself** — no code/diffs/logs/status/docs/MCP output. Facts come from
+- **Do not read anything yourself** (that is **Token Burn**) — no code/diffs/logs/status/docs/MCP
+  output. Facts come from
   `pdca-scout` (`file:line`), command results from `pdca-executor` (exit code, numbers, log path), judgments from
   `pdca-check`/`pdca-planner`/`pdca-escalate`. Only their compact reports enter your context, to forward.
 - Your job: drive the phases, compose briefs (what to do + the reports the subagent needs), verify the
@@ -147,13 +156,17 @@ Progress is recorded in one place:
 - **`iteration n/3`** — execution attempts for the current revision `r`: `PLAN(r) → DO` starts at 1;
   `CHECK → DO` increments. After the **third failed CHECK of the same revision** → `pdca-escalate` before a
   fourth (there is no 4th). `DO → PLAN`/`CHECK → PLAN` do **not** consume the next revision's attempts;
-  a new revision resets `n` to 1. The same-defect history is not erased by a replan (§Escalation).
+  a new revision resets `n` to 1.
+- **Contract revision `rv`** — not one of the three: it names the criteria/contract, not an
+  attempt. It starts at 1 and grows only when the criteria or the required rows actually change;
+  an implementation fix or a new attempt under the same criteria keeps it. It appears only in the
+  evidence path (`.pdca/<task>/rv<k>/`). The same-defect history is not erased by a replan (§Escalation).
   There is no global `n/3` on every loop-back.
 
 ### Phase progress mirror (status file only)
 
 Progress lives only in the cycle status file (§Cycle status file). There is no separate todo or
-sidebar mirror: the host may not provide a todo tool (V2 does not), and a second mirror only
+sidebar mirror: the host may not provide a todo tool, and a second mirror only
 creates divergence.
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan, escalation —
@@ -161,7 +174,7 @@ creates divergence.
    the next step; never batched.
 2. **Reconcile each turn.** Before dispatching, compare the last status recorded by `pdca-executor`
    (from its report — do not read the file) with your narrative. Divergence → fix it in the same
-   turn; the status file wins.
+   turn; the status file wins. That drift has a name — **State Rot**.
 3. **After compaction/resume** reconstruct the state from the status file (§Recovery), never from
    memory or the context retelling.
 
@@ -832,6 +845,16 @@ fresh PLAN. This is a caller-driven handoff, not a
 standalone-autonomous pause and not a user approval: standalone normal mode still starts only after the
 user approves the plan, and standalone autonomous still starts DO immediately.
 
+**DO starts only after the user approves the plan in the normal mode**; in autonomous mode it
+starts right after PLAN (§Autonomous mode). Perform ONLY what the plan contains: a missing detail
+goes to `pdca-planner`, not a reopened design; root-cause investigation (§Debugging) and the
+plan's own spikes (§PLAN → "Prototype / reconnaissance") are allowed.
+
+**No manual agent switching.** Starting a cycle and the CHECK → PLAN / DO → PLAN returns need no
+agent switch: the cheap orchestrator forwards the request and gathered evidence to
+`pdca-planner`, which formulates the `P:` task/plan, and `pdca-executor` writes it. Both the
+initial PLAN and every replan belong to `pdca-planner` (§Orchestrator role).
+
 ### Test strategy (PLAN → TEST)
 
 For each cycle task PLAN decides **how to verify it** before DO — the cases become the acceptance criterion,
@@ -1324,20 +1347,6 @@ The `Status:` line always names the kept status file, including a closed flow
 - A project subagent **without an explicit model inherits the parent's model** (the orchestrator's
   model). Either pin a model for it in the agent config/profile, or embed its instructions into
   the project checklist and do not invoke the agent itself.
-
-## PLAN → DO transition (approval)
-
-DO starts only after the user approves the plan in the normal mode — the user's approval after reading the
-implementation plan; in autonomous mode (§Autonomous mode)
-right after PLAN. The plan is already on disk (last step of PLAN), so on approval perform ONLY what is
-in it: **do not repeat PLAN's research**; a missing detail goes to `pdca-planner`, not a reopened design.
-Allowed in DO: root-cause investigation (§Debugging) and the plan's own spikes (§PLAN →
-"Prototype / reconnaissance").
-
-Starting a cycle and the CHECK → PLAN / DO → PLAN returns need no manual agent switching: the cheap
-orchestrator forwards the request and gathered evidence to `pdca-planner`, which formulates the `P:`
-task/plan and `pdca-executor` writes it. Both the initial PLAN and every replan belong to `pdca-planner`, for the
-cheap orchestrator (§Orchestrator role).
 
 ## Economics
 

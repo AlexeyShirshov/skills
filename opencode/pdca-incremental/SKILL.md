@@ -1,12 +1,10 @@
 ---
 name: pdca-incremental
-description: "Drives a long-running goal as a chain of small PDCA increments when there is no committed plan for the whole volume (per-task plans may already be grilled) and each next step is chosen after the previous accepted measurement (coverage, perf, cleanup, hardening campaigns, or a queue of pre-planned sequential tasks). Keeps one campaign status mirror, a fixed increment floor, exactly one credited measurement per step, explicit stop conditions and two non-increment step kinds — repair and verify; every increment is a full cycle delegated to pdca-orchestrator. Invoke ONLY when the user explicitly names `pdca-incremental`."
+description: "PDCA campaign: one verifiable goal whose path is unknown, advanced as a chain of small increments, each a full cycle delegated to `pdca-orchestrator`, with one status file, a fixed increment floor and exactly one credited measurement per step (plus `repair`/`verify` steps). User-invoked — runs only when the user explicitly names `pdca-incremental`."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
 ---
-# Skill: pdca-incremental
-
 # Incremental campaign
 
 ## Role
@@ -201,9 +199,9 @@ tasks are steps of one metric. If the list is born along the way — this is the
 
 ## Campaign status file
 
-The single source of state is **one** campaign status file (in nextorm —
-`.pdca/status/<campaign>.md`; otherwise — the project convention), and it stores **runtime
-only**: `Status`, the append-only step table, `Current step`, the revision/attempt, the
+The single source of state is **one** campaign status file, `.pdca/status/<campaign>.md` (the
+project may add a subdirectory or a suffix inside `.pdca/status/`, never move it out of the
+workspace root), and it stores **runtime only**: `Status`, the append-only step table, `Current step`, the revision/attempt, the
 seed, deferred, blockers, baseline evidence refs, the pause checkpoint, the pending
 approval ref, the commit policy and the stop verdict. There is no separate todo. Update it
 in the same beat as the event; after compaction the state is restored from it, not from
@@ -371,22 +369,19 @@ session — without a separate agent and without an extra `Task` level. Before D
 goes through a full PLAN of its variant; the step's `selected_variant` is concrete for this
 step and is taken from the durable record (charter/status), not chosen by the runner.
 
-**Normal mode: the step approval is durable, not a chat.** The driver may run the step's
-PLAN, but it does not obtain the user's approval and does not start a gated DO.
-`pdca-executor` writes the durable pending approval ref bound to the exact
-`task`/`cycle_id`, `cycle N`, plan revision `r` and the step's criteria set (`N` alone is
-not globally unique), and the driver returns a checkpoint to the parent/cheap primary.
-The primary asks the user; on an explicit approval `pdca-executor` records the approval
-against the same ref, and resume **first checks the applicability** of the saved plan to
-the actual state through the roles (`pdca-scout` — facts, `pdca-planner` — decision): if
-the plan is applicable, **the same** step continues without a new PLAN and without a new
-step; if the plan is stale, `pdca-planner` makes a real revision by the base rules, and it
-needs a **fresh** approval — the old approval does not authorize it. Approval-resume does
-not do an unconditional replan and does not create a new step. Until the approval the
-campaign is a checkpoint (`Checkpoint` in the status), not `met`/`incomplete`; a missing or
-mismatched approval record is an **approval-needed checkpoint**, never DO and never a fresh
-PLAN. Compaction is safe because the ref and the record are durable. Autonomous mode does not invent an
-external approval: until it is obtained this is a blocker/STOP, not a silent pass.
+**Normal mode: the step approval is durable, not a chat.** The mechanics — the pending ref,
+the recorded approval against it, the applicability check on resume, the fresh approval after a
+real revision — are stated once in the runner (`pdca-orchestrator` §Normal-mode approval
+protocol) and apply here unchanged. The campaign adds only three things:
+
+- the step does not start DO until the approval matches its ref, and until then the campaign is
+  a checkpoint (`Checkpoint` in the status), not `met`/`incomplete`; a missing or mismatched
+  record is an **approval-needed checkpoint**, never DO and never a fresh PLAN;
+- an approval-resume continues **the same** step — it does not do an unconditional replan and
+  does not open a new step; a stale plan gets a genuine revision and a **fresh** approval, and the
+  old approval does not authorize it. The applicability check decides, not the saved plan;
+- autonomous mode does not invent an external approval: until it is obtained this is a
+  blocker/STOP, not a silent pass.
 
 ### 3.1. Step kinds: increment, repair, verify
 
@@ -560,9 +555,9 @@ and stop here are durable: they are written into the campaign status and into th
 `disposition`, survive a session change and are lifted only by an explicit resume; there is
 no automatic catch-up after a pause.
 
-If `pdca-orchestrator` is unavailable (no agent, nested delegation forbidden or nested
-delegation) — the flat primary leads the step itself by the base contract, marks it with a
-`Notice:` line and records the reason; a host prohibition is not bypassed.
+If `pdca-orchestrator` is unavailable (no agent, or the host forbids nested delegation) — the
+flat primary leads the step itself by the base contract, marks it with a `Notice:` line and
+records the reason; a host prohibition is not bypassed.
 
 ## Relation to the family
 

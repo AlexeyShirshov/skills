@@ -1,6 +1,6 @@
 ---
 name: pdca
-description: "Domain-neutral PDCA cycle for decomposing and executing a task with a verifiable result: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. Invoke only when the user explicitly names the `pdca` skill — not for ordinary tasks."
+description: "Domain-neutral PDCA cycle (PLAN → DO → CHECK → ACT) for a task with a verifiable result: transition gates, evidence-based CHECK, escalation accounting, durable status and recovery. User-invoked — runs only when the user explicitly names `pdca`; ordinary tasks are done directly, and the stack-specific variants live in the family."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
@@ -74,6 +74,11 @@ field in the role markdown**. Each asset carries only a `# tier:` label
 `pdca-escalate` = strong; `pdca-orchestrator` = cheap). By default a subagent inherits the
 invoking primary's model; bind ids in the profile `agent` block for routing.
 
+**Optional roles belong to the variant.** A variant may declare extra optional roles in its own
+role table; the shared runner asset permits a superset in its dispatch allowlist, and a cycle
+dispatches only the roles its package ships — an absent optional role is unused, not a blocker.
+The base set is the table above.
+
 **Setup (once):** (1) copy `assets/agents/*.md` into the host's agents/subagent directory (the
 `pdca-*` role agents, `pdca-scout` and the runner `pdca-orchestrator`); (2) restart the host (role
 agents load at startup); (3) allow the primary to dispatch `pdca-scout`/`pdca-planner`/`pdca-check`/
@@ -108,7 +113,8 @@ to `pdca-executor` via a subagent. Both the initial PLAN and any replan belong t
   no-4th rule, scope or the authority boundaries (§Escalation).
 - **Do not edit files or run commands** — that is `pdca-executor`'s job, including the cycle
   status file (§Durable status).
-- **Do not read anything yourself** — no artefacts/diffs/logs/status files/outputs. Facts
+- **Do not read anything yourself** (that is **Token Burn**) — no artefacts/diffs/logs/status
+  files/outputs. Facts
   come from `pdca-scout` (pointers), command results from `pdca-executor` (exit status, key numbers,
   log path), judgments from `pdca-check`/`pdca-planner`/`pdca-escalate`. Only their compact
   reports enter your context, to forward.
@@ -141,11 +147,15 @@ Progress is recorded in one place:
   consume the next revision's attempts; a new revision resets `n` to 1. The same-defect
   history is not erased by a replan (§Escalation). There is no global `n/3` on every
   loop-back.
+- **Contract revision `rv`** — not one of the three: it names the criteria/contract, not an
+  attempt. It starts at 1 and grows only when the criteria or the required rows actually change;
+  an implementation fix or a new attempt under the same criteria keeps it. It appears only in the
+  evidence path (`.pdca/<task>/rv<k>/`, §Phase contracts).
 
 ### Phase progress mirror (status file only)
 
 Progress lives only in the cycle status file (§Durable status). There is no separate todo or
-sidebar mirror: the host may not provide a todo tool (V2 does not), and a second mirror only
+sidebar mirror: the host may not provide a todo tool, and a second mirror only
 creates divergence.
 
 1. **Same turn.** On every event — phase transition, loop-back, closing a `D:`, replan,
@@ -153,7 +163,7 @@ creates divergence.
    subagent dispatch of the next step; never batched.
 2. **Reconcile each turn.** Before dispatching, compare the last status recorded by
    `pdca-executor` (from its report — do not read the file) with your narrative. Divergence →
-   fix it in the same turn; the status file wins.
+   fix it in the same turn; the status file wins. That drift has a name — **State Rot**.
 3. **After compaction/resume** reconstruct the state from the status file (§Recovery after
    compaction), never from memory or the context retelling.
 
@@ -265,7 +275,8 @@ evidence.
 
 **CHECK** is independent of the author of the result; it checks **every** criterion on actual
 evidence and verifies cross-part consistency. Statuses: `met | unmet | unverified`. **The
-absence of a check is NOT a pass.** Report: verdict, a criteria matrix, findings with
+absence of a check is NOT a pass.** A verdict that rests on no numbers is **Verifier Theater**, and
+the verdict is worthless. Report: verdict, a criteria matrix, findings with
 severity, evidence pointers, and correction routing (**implementation defect → DO; wrong plan
 → PLAN**). No numbers/pointers behind a claim → the criterion is `unverified`, not `met`.
 
@@ -364,7 +375,9 @@ clarify, or rewrite the plan (via `pdca-planner`, same file by `pdca-executor`).
 
 **Durable approval protocol (caller-driven cycles, normal mode only).** In **normal mode**, when
 the cycle is run by a driver on behalf of a parent/primary, the driver may plan but **never
-obtains or assumes the approval**.
+obtains or assumes the approval**. The dispatched-cycle mechanics are stated once in the runner
+(`pdca-orchestrator` §Normal-mode approval protocol), which every package ships byte-identical; the
+paragraphs below are the base contract that runner implements.
 `pdca-executor` persists a durable **pending approval ref** binding the stable task/`cycle_id`,
 the exact cycle `N`, plan revision `r` and the acceptance-criteria set (`N` is not globally unique
 on its own); a caller-driven PLAN → DO `plan_handoff` **carries it as its pointer** and the driver
@@ -437,15 +450,16 @@ checkout — so it never collides with the project's own `scripts/` or its other
 └─ <task>/rv<k>/       # evidence: frozen manifest, logs, per-row artifacts
 ```
 
-- **Helpers.** The skill package ships its helpers under its own `scripts/` (for example
-  `scripts/pdca_cost.py`, `scripts/validate_inner_loop.py`, `scripts/pdca_evidence.py`); that is the
+- **Helpers.** Each package ships its own helpers under `scripts/`; the base ships
+  `pdca_cost.py`, and a variant may ship more (the plan stages what the selected package
+  actually contains). That directory is the
   **source**. The project keeps its runtime copies in `.pdca/scripts/` (same filenames, stdlib
   only), and every command in this contract is written from the project root:
   `python3 .pdca/scripts/<helper>.py …`. A helper is never run from the installed skill directory,
   and the project's own `scripts/` is never used for bookkeeping. Copies are byte-identical to the
   skill's version; a project fork must be declared (path + reason) in the status file.
 - **Staging is the first mechanical step.** Before the **first** helper command of a cycle —
-  including the PLAN brief validation (`.pdca/scripts/validate_inner_loop.py brief …`) —
+  including the PLAN brief validation when the selected package ships `validate_inner_loop.py` —
   `pdca-executor` stages the helpers the plan actually needs from the `scripts/` of the **selected
   installed package** (the cycle variant named by the dispatch/plan) into `.pdca/scripts/`, as
   byte-identical copies. This staging is an **explicitly allowed brief/PLAN prerequisite**: the

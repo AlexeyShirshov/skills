@@ -535,7 +535,7 @@ The cycle's progress is recorded in **one place**.
 
 **The only progress mirror.** The status file is the single place where the plan and the progress
 are recorded. There is no separate todo or sidebar mirror: the host may not provide a todo tool
-(V2 does not), and a second mirror only creates divergence. The executor writes the event in the
+, and a second mirror only creates divergence. The executor writes the event in the
 **same turn**, never running ahead; before dispatching, the orchestrator reconciles its narrative
 against the last recorded status; after compaction the state is **restored from the status file**,
 not the other way round and never from memory.
@@ -907,7 +907,7 @@ recorded in the collection status file; before that there is no lane allocation.
 
 The last step of phase P is recording the schedule in the **collection status file**, and only the
 collection's primary orchestrator writes it. That file is the **only progress mirror**: there is no
-separate todo or sidebar mirror, since the host may not provide a todo tool (V2 does not) and a
+separate todo or sidebar mirror, since the host may not provide a todo tool  and a
 second mirror only creates divergence. The group and task tables with their statuses live there;
 the orchestrator updates the file in the same turn as the event, reconciles against it before
 dispatching, and restores the state from it after compaction — never from memory.
@@ -921,8 +921,8 @@ input — report that there is nothing to do.
 
 - **A worktree per group** `<repo>-worktrees/<collection-id>/<group>` and a branch
   `collection/<id>/group-<g>` (with several groups). The `pdca-orchestrator` agents are launched in
-  parallel (one subagent per group) but no more than `cap` at a time; by default `cap = 4`
-  (configurable), and the ceiling is `min(#groups, cap)`.
+  parallel (one subagent per group) but no more than `cap` at a time; `cap = 4` is the contract's
+  own scheduling choice, not a host setting, and the ceiling is `min(#groups, cap)`.
 - **The merge barrier.** With `≥ 2` groups, merging begins only when **all** lanes are terminal
   (`done`, or `incomplete` with an explicit outcome): readiness = **terminality, not success**.
   Then `pdca-executor` sequentially runs `git merge --no-ff` **only for the `done` groups**; a successfully

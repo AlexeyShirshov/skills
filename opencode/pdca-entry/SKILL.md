@@ -23,13 +23,12 @@ verdict and do not keep a status file — the chosen contract owns all of that.
 Precedence is deliberate: a .NET campaign is still a campaign (row 2) — its per-step cycle
 picks `pdca-dotnet` inside `pdca-incremental`.
 
-**A known list alone is not a campaign, and a batch does not require parallelism.** Several
-independent goals → `pdca-collection`: it runs in parallel when ≥2 disjoint footprints exist and
-degrades to a single sequential group when they do not (one measurement host, a host lock,
-`cap = 1`). One shared goal/metric whose whole-volume plan is unknown — even across a known list —
-→ `pdca-incremental` (step = task). A single shared goal whose whole plan is already known is one
-cycle (rows 3–5), not a campaign. Do not choose incremental merely because a batch is serialized,
-because all tasks share one footprint, or because a single goal's work is listed.
+**A known list alone is not a campaign, and a batch does not require parallelism.** Independent
+goals → `pdca-collection`, which runs in parallel when ≥2 disjoint footprints exist and
+degrades to a single sequential group when they do not. One shared goal/metric whose plan is
+unknown — even across a known list — → `pdca-incremental` (step = task). A single shared goal
+whose whole plan is already known is one cycle (rows 3–5), not a campaign.
+Do not choose incremental merely because a batch is serialized.
 
 **Size alone is not a signal.** A large but plannable task is one cycle. The campaign criteria are
 canonical in `pdca-incremental` §When to choose: the goal is checkable, the path is unknown,
