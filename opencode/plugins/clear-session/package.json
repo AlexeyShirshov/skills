@@ -1,0 +1,40 @@
+{
+  "name": "opencode-clear-session",
+  "version": "1.0.0",
+  "description": "/clear for the OpenCode V2 CLI — archive the current session and start fresh instead of losing it.",
+  "type": "module",
+  "exports": {
+    "./tui": "./tui.tsx"
+  },
+  "files": [
+    "tui.tsx",
+    "clear.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-tui",
+    "tui",
+    "session",
+    "clear",
+    "archive"
+  ],
+  "license": "MIT",
+  "author": "Alexey Shirshov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexeyShirshov/skills.git",
+    "directory": "opencode/plugins/clear-session"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types test/smoke.mjs"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.1.0"
+  }
+}
