@@ -9,7 +9,9 @@ name: publish-npm
 #   npx --yes npm@latest stage list && npx --yes npm@latest stage approve <id>   # approve
 #
 # A package must already exist on npm before trusted publishing can be configured for it:
-# the first version is published once by a maintainer with `npm publish --access public`
+# the first version is published once by a maintainer as a staged publish —
+# `npx --yes npm@latest stage publish --access public`, then `npm stage approve <id>` (2FA) —
+# because the account requires proof of presence and a plain `npm publish` fails with EOTP
 # (npmjs.com → Packages → <package> → Settings → Trusted publishing → GitHub Actions, with
 #   Organization or user: AlexeyShirshov
 #   Repository:           skills
@@ -22,6 +24,8 @@ on:
     tags:
       - "opencode-roslyn-v*"
       - "opencode-sidebar-plugins-v*"
+      - "zen-failover-v*"
+      - "opencode-clear-session-v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -51,6 +55,8 @@ jobs:
           case "$TAG" in
             opencode-roslyn-v*) PACKAGE=opencode-roslyn; DIRECTORY=opencode/plugins/opencode-roslyn ;;
             opencode-sidebar-plugins-v*) PACKAGE=opencode-sidebar-plugins; DIRECTORY=opencode/plugins/sidebar-plugins ;;
+            zen-failover-v*) PACKAGE=zen-failover; DIRECTORY=opencode/plugins/zen-failover ;;
+            opencode-clear-session-v*) PACKAGE=opencode-clear-session; DIRECTORY=opencode/plugins/clear-session ;;
             *) echo "::error::unknown release tag: $TAG"; exit 1 ;;
           esac
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
@@ -92,8 +98,16 @@ jobs:
           fi
           echo "publishing $PACKAGE $HAVE"
 
+      # A full `npm test` where the suite is self-contained. zen-failover's suite is an
+      # end-to-end run against the real `opencode` binary and mock providers on localhost,
+      # so CI only parses its entrypoint.
       - name: Smoke test
+        if: needs.resolve.outputs.package != 'zen-failover'
         run: npm test
+
+      - name: Smoke test (syntax only)
+        if: needs.resolve.outputs.package == 'zen-failover'
+        run: node --check index.js
 
       # Staged publishing: the CI only *offers* the version, a maintainer approves it with 2FA
       # (`npm stage approve` or the package page on npmjs.com). That is what lets the trusted

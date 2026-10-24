@@ -1,6 +1,6 @@
 {
   "name": "opencode-clear-session",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "/clear for the OpenCode V2 CLI — archive the current session and start fresh instead of losing it.",
   "type": "module",
   "exports": {

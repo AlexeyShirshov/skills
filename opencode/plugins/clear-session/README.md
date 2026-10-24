@@ -44,23 +44,25 @@ built-in one is shown as before.
 ## Requirements
 
 - OpenCode V2 CLI (`opencode` 2.x).
-- Depends only on the host's `@opencode/plugin` TUI API; no runtime dependencies.
+- One dependency: the host's `@opencode/plugin` TUI API (declared in `dependencies`;
+  OpenCode resolves that import to its own runtime module). Nothing third-party is
+  pulled in.
 
 ## Install
 
 A **CLI-only** plugin: it runs in the terminal and has no server entrypoint. Add
-it to `cli.json` (not to `opencode.json(c)`):
+it to `cli.json` (not to `opencode.json(c)`), by package name:
+
+```jsonc title="~/.config/opencode/cli.json"
+{ "plugins": ["opencode-clear-session"] }
+```
+
+Or point at a local checkout:
 
 ```jsonc title="~/.config/opencode/cli.json"
 {
   "plugins": ["./plugins/clear-session"]
 }
-```
-
-Or, once the package is published, by name:
-
-```jsonc
-{ "plugins": ["opencode-clear-session"] }
 ```
 
 CLI-only plugins stay active when the CLI is connected to a remote server,
