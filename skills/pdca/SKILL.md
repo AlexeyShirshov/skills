@@ -64,7 +64,7 @@ A medium/strong primary still neither drives the cycle nor dispatches `pdca-orch
 | ESCALATE | `pdca-escalate` | read-only, facts via `pdca-scout` | resource blocker |
 | RUNNER | `pdca-orchestrator` | cheap dispatcher, subagent allowlist (shared) | flat cheap primary + `Notice:` |
 
-Ready-made definitions: this skill's `assets/agents/` (the four plan/do/check/escalate role
+Ready-made definitions: this skill's `assets/opencode-agents/` (the four plan/do/check/escalate role
 files, the gatherer `pdca-scout` — **not** specialized per task and the same for every cycle — and the
 RUNNER `pdca-orchestrator`). A host that already ships its own `pdca-scout` or runner may keep it —
 these copies exist so the skill is self-contained. Model bindings come from the
@@ -79,7 +79,7 @@ role table; the shared runner asset permits a superset in its dispatch allowlist
 dispatches only the roles its package ships — an absent optional role is unused, not a blocker.
 The base set is the table above.
 
-**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents/subagent directory (the
+**Setup (once):** (1) copy `assets/opencode-agents/*.md` into the host's agents/subagent directory (the
 `pdca-*` role agents, `pdca-scout` and the runner `pdca-orchestrator`); (2) restart the host (role
 agents load at startup); (3) allow the primary to dispatch `pdca-scout`/`pdca-planner`/`pdca-check`/
 `pdca-executor`/`pdca-escalate`, and `pdca-orchestrator` for autonomous delegation; (4) allow nested

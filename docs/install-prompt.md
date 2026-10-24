@@ -90,14 +90,14 @@ PROFILE=<профиль или пусто>
    - Тело скиллов должно остаться host-агностичным: не добавляй в SKILL.md пути конкретного хоста.
 
 2. Агенты-роли
-   - Скопируй $SKILLS_REPO/skills/$VARIANT/assets/agents/*.md в $AGENTS_ROOT, существующие
+   - Скопируй $SKILLS_REPO/skills/$VARIANT/assets/opencode-agents/*.md в $AGENTS_ROOT, существующие
      файлы — в бэкап.
    - Frontmatter ассетов — это нативный V1-формат OpenCode (`mode: subagent`, `permission:`):
      для OpenCode V1 копируй как есть, V2 транслирует его сам. Для claude переведи в формат
      Claude Code (`name`, `description`, `tools`; права — allowlist инструментов), для
      codex/custom — в формат хоста; тело промпта роли не меняй.
    - Убедись, что установленный pdca-orchestrator совпадает байт-в-байт с
-     $SKILLS_REPO/skills/pdca/assets/agents/pdca-orchestrator.md (тело; frontmatter мог быть
+     $SKILLS_REPO/skills/pdca/assets/opencode-agents/pdca-orchestrator.md (тело; frontmatter мог быть
      транслирован).
    - Если CONFIG_REPO задан, синхронизируй те же файлы в его каталог агентов (источник для
      будущих установок), с бэкапами.
@@ -155,7 +155,7 @@ PROFILE=<профиль или пусто>
      пробных правок, пробных задач и фиктивных шагов), доступность вложенной делегации драйверу,
      `pdca-orchestrator` как субагента, ребро `escalate → scout` и загружаемость контракта шага.
      Установленный `pdca-orchestrator` сверь с каноническим ассетом
-     `$SKILLS_REPO/skills/pdca/assets/agents/` и проверь действующие права: наблюдавшийся случай —
+     `$SKILLS_REPO/skills/pdca/assets/opencode-agents/` и проверь действующие права: наблюдавшийся случай —
      установленная копия без делегирования `pdca-scout`, что молча ломает `escalate → scout`.
      Ключа, элемента схемы или константы параллельного cap на стороне хоста в проверенном исходнике
      V2 нет — это не значит «без ограничений», значения `cap` не выдумывай.

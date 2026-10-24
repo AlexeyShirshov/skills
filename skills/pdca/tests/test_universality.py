@@ -25,7 +25,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 
 SKILL_PATH = SKILL_DIR / "SKILL.md"
-ASSET_AGENTS = SKILL_DIR / "assets/agents"
+ASSET_AGENTS = SKILL_DIR / "assets/opencode-agents"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;

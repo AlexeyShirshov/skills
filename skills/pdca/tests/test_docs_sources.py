@@ -211,7 +211,7 @@ COMPOSITION_SECTIONS = {
         ("##", "Campaign status file"),
         ("###", "0. Bootstrap"),
     ),
-    "skills/pdca/assets/agents/pdca-orchestrator.md": (
+    "skills/pdca/assets/opencode-agents/pdca-orchestrator.md": (
         ("##", "Contract"),
         ("##", "Input 1"),
         ("##", "Input 2"),

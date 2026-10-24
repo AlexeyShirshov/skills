@@ -25,15 +25,15 @@ COLLECTION = SKILLS / "pdca-collection/SKILL.md"
 BASE = SKILLS / "pdca/SKILL.md"
 CODER = SKILLS / "pdca-coder/SKILL.md"
 DOTNET = SKILLS / "pdca-dotnet/SKILL.md"
-RUNNER = SKILLS / "pdca/assets/agents/pdca-orchestrator.md"
-COLLECTION_RUNNER = SKILLS / "pdca-collection/assets/agents/pdca-orchestrator.md"
+RUNNER = SKILLS / "pdca/assets/opencode-agents/pdca-orchestrator.md"
+COLLECTION_RUNNER = SKILLS / "pdca-collection/assets/opencode-agents/pdca-orchestrator.md"
 CHECK_ASSETS = (
-    SKILLS / "pdca/assets/agents/pdca-check.md",
-    SKILLS / "pdca-coder/assets/agents/pdca-check.md",
-    SKILLS / "pdca-dotnet/assets/agents/pdca-check.md",
+    SKILLS / "pdca/assets/opencode-agents/pdca-check.md",
+    SKILLS / "pdca-coder/assets/opencode-agents/pdca-check.md",
+    SKILLS / "pdca-dotnet/assets/opencode-agents/pdca-check.md",
 )
 RUNNER_COPIES = tuple(
-    SKILLS / name / "assets/agents/pdca-orchestrator.md"
+    SKILLS / name / "assets/opencode-agents/pdca-orchestrator.md"
     for name in ("pdca", "pdca-coder", "pdca-dotnet", "pdca-entry",
                  "pdca-incremental", "pdca-collection")
 )

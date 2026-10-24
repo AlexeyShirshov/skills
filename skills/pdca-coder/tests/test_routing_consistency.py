@@ -16,7 +16,7 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL = SKILL_DIR / "SKILL.md"
-ASSET_AGENTS = SKILL_DIR / "assets/agents"
+ASSET_AGENTS = SKILL_DIR / "assets/opencode-agents"
 
 ROLE_TIER = {
     "pdca-planner": "medium",
@@ -156,7 +156,7 @@ class RunnerAssetTest(unittest.TestCase):
     """The cheap child-cycle dispatcher ships with the skill."""
 
     def test_runner_asset_is_shipped(self):
-        self.assertTrue(RUNNER_ASSET.is_file(), "assets/agents/pdca-orchestrator.md missing")
+        self.assertTrue(RUNNER_ASSET.is_file(), "assets/opencode-agents/pdca-orchestrator.md missing")
         data = frontmatter(RUNNER_ASSET)
         self.assertEqual("pdca-orchestrator", data.get("name"))
         self.assertEqual("subagent", data.get("mode"))

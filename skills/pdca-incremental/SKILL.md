@@ -99,9 +99,9 @@ Authority rules:
 A tier is a property of the role, not of the model: the host may override the binding, but
 not the authority.
 
-**Setup.** The role agents are taken from the family (`assets/agents/*.md` of the cycle
+**Setup.** The role agents are taken from the family (`assets/opencode-agents/*.md` of the cycle
 variant — `pdca` / `pdca-coder` / `pdca-dotnet`), the `pdca-orchestrator` driver lives in
-this skill's `assets/agents/`; it needs allowed nested delegation and dispatch rights on
+this skill's `assets/opencode-agents/`; it needs allowed nested delegation and dispatch rights on
 the cheap primary. The full checklist is `docs/install.md` in the skills repository.
 
 ## When to choose

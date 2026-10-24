@@ -9,7 +9,7 @@ contracts.
 
 Source of the rules (the operative norm): `skills/pdca-dotnet/SKILL.md` (§State machine,
 §Transition gates, §Orchestrator role, §Host requirements), the EN role briefs
-`skills/pdca-dotnet/assets/agents/*.md`, and the diagram sources `skills/pdca-dotnet/assets/diagram/gen_pdca.py`. The historical design
+`skills/pdca-dotnet/assets/opencode-agents/*.md`, and the diagram sources `skills/pdca-dotnet/assets/diagram/gen_pdca.py`. The historical design
 `docs/superpowers/specs/2026-10-01-pdca-consistency-design.md` is context only, not the norm (it
 allows any primary; the operative rule is cheap-only). Counters: cycle `<N>`
 (grows only in ACT), plan revision `r`, attempt `n/3` within a
@@ -35,7 +35,7 @@ Common operative base (applies to every case unless stated below):
 `skills/pdca-dotnet/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
 §Phase progress mirror, §Escalation (`pdca-escalate`) (triggers, incl. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
-§Orchestrator role; `skills/pdca-dotnet/assets/agents/*.md` (`pdca-planner`, `pdca-executor`,
+§Orchestrator role; `skills/pdca-dotnet/assets/opencode-agents/*.md` (`pdca-planner`, `pdca-executor`,
 `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`, `pdca-orchestrator`); the diagram
 labels `skills/pdca-dotnet/assets/diagram/gen_pdca.py`.
 
@@ -49,7 +49,7 @@ rejects the DO candidate, the plan **does not change**.
 resumes from the **original** `D` instead of opening a new one; the attempt counter neither grows nor
 resets (the same attempt `n`); gate 2 does not open.
 **Operative sources:** SKILL §State machine / §Transition gates (gate 2: blocker report ≠ `done`,
-rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`
+rejected candidate resumes the original `D`); `assets/opencode-agents/pdca-executor.md`
 (Unfinished work / retention); §Cycle status file.
 
 ## B1. Additive prerequisite (not a replacement)
@@ -62,7 +62,7 @@ as an in-cycle task.
 `done` — only work actually performed and accepted; the candidate analysis "implementation complete" does not
 complete `D`.
 **Operative sources:** SKILL §State machine / gate 2 / §Cycle status file (unit states, additive
-prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`.
+prerequisite); `assets/opencode-agents/pdca-planner.md`, `assets/opencode-agents/pdca-executor.md`.
 
 ## B2. Actual scope replacement
 
@@ -73,7 +73,7 @@ criteria and the remainder**; the replacement chain must resolve to active `done
 preserved criteria; `superseded` never counts as `done`; gate 2 is rejected when the mapping/replacement is
 missing, when a replacement is orphan/circular/self, or when a replacement is pending/blocked.
 **Operative sources:** SKILL §State machine / gate 2 / §Cycle status file (unit states incl.
-`superseded`, replacement chain); `assets/agents/pdca-planner.md`.
+`superseded`, replacement chain); `assets/opencode-agents/pdca-planner.md`.
 
 ## C. A real replan between revisions
 
@@ -88,7 +88,7 @@ get a 4th attempt even after `pdca-escalate`**; continuation is possible **only*
 revised plan `r+1` (actually changed tasks/dependencies/actions while the original criterion is preserved);
 a rename/reword or a session reset is **not** a new revision.
 **Operative sources:** SKILL §State machine / §Escalation (the same-defect trigger) /
-§Cycle status file; `assets/agents/pdca-planner.md`, `assets/agents/pdca-check.md`, `assets/agents/pdca-escalate.md`.
+§Cycle status file; `assets/opencode-agents/pdca-planner.md`, `assets/opencode-agents/pdca-check.md`, `assets/opencode-agents/pdca-escalate.md`.
 
 ## D. Third failed CHECK of one plan
 
@@ -99,7 +99,7 @@ there is no fourth attempt; the `DO → PLAN` itself is **not** a failed CHECK a
 the next revision's attempt.
 **Operative sources:** SKILL §State machine (`third failed CHECK of the same revision`,
 `no 4th attempt`, `PLAN(r) → DO`, `CHECK → DO`); §Red flags (revision-local 4th attempt);
-`assets/agents/pdca-check.md`, `assets/agents/pdca-escalate.md`.
+`assets/opencode-agents/pdca-check.md`, `assets/opencode-agents/pdca-escalate.md`.
 
 ## E. Unclassifiable candidate: facts, then low confidence
 
@@ -109,8 +109,8 @@ external nature of the blocker is **not established**.
 exhaustive sweep; with persistently low confidence — `pdca-escalate` under existing trigger 5
 **even without established externalness**; DO does not issue the final verdict and does not STOP.
 **Operative sources:** SKILL §Escalation (trigger 5, low confidence, without established
-externalness, provisional candidate); `assets/agents/pdca-planner.md` (item 10, four-way
-classification, insufficient evidence); `assets/agents/pdca-scout.md`.
+externalness, provisional candidate); `assets/opencode-agents/pdca-planner.md` (item 10, four-way
+classification, insufficient evidence); `assets/opencode-agents/pdca-scout.md`.
 
 ## F. Autonomous mode: no questions
 
@@ -125,7 +125,7 @@ every successful escalation, but only when the escalation does not resolve the q
 `Notice:` and a final summary are allowed; autonomy is not permission to auto-commit. In normal mode the necessary
 questions and the explicit plan approval are retained.
 **Operative sources:** SKILL §Autonomous mode, §Transition gates (gate 1: normal mode
-plan approval), §State machine; `assets/agents/pdca-planner.md` (plan-disk paragraph).
+plan approval), §State machine; `assets/opencode-agents/pdca-planner.md` (plan-disk paragraph).
 
 ## G. One aggregated active `D:` with parallel streams
 
@@ -150,7 +150,7 @@ primary outside the cycle; both the initial PLAN and every replan belong to the 
 `model:` is absent from the roles; the profiles are not edited to pick an id; `general`/`explore` are not
 bypassed; the rights of expensive roles are never widened.
 **Operative sources:** SKILL §Orchestrator role, §Host requirements (roles → agents);
-`assets/agents/*.md` (tier labels, no `model:`).
+`assets/opencode-agents/*.md` (tier labels, no `model:`).
 
 ## I. Security-conditional gather and the aggregate verdict
 
@@ -164,7 +164,7 @@ for a **hard security trade-off** only; the final verdict across all streams is 
 **Operative sources:** SKILL §Transition gates (gate 3, «every failed CHECK … triggered security
 failure»), §Parallel CHECK streams (security gather/return; any failed stream counts as a failed CHECK
 of the current revision), §Escalation (hard security trade-off, counters);
-`assets/agents/pdca-security-auditor.md`, `assets/agents/pdca-check.md`.
+`assets/opencode-agents/pdca-security-auditor.md`, `assets/opencode-agents/pdca-check.md`.
 
 ## J. The escalation decision: routing, not re-selection and no gate bypass
 
@@ -180,7 +180,7 @@ no actionable plan → **STOP** (normal mode — a question to the user; autonom
 question).
 **Operative sources:** SKILL §Orchestrator role (execute by routing, never re-decide),
 §Escalation (After the escalation …), §State machine (no 4th), §Red flags;
-`assets/agents/pdca-escalate.md`.
+`assets/opencode-agents/pdca-escalate.md`.
 
 ## K. Autonomous delegation: the primary dispatches `pdca-orchestrator`
 
@@ -193,7 +193,7 @@ no collection status file is created, the mandatory pdca-dotnet status file is w
 no questions are asked.
 **Operative sources:** SKILL §Two paths → "Two paths, one contract." / §Autonomous mode
 (Delegation) / §Host requirements (Autonomous driver; the setup allowlist includes `pdca-orchestrator`);
-`assets/agents/pdca-orchestrator.md` (input "single autonomous cycle", cycle brief → a ≤8-line summary).
+`assets/opencode-agents/pdca-orchestrator.md` (input "single autonomous cycle", cycle brief → a ≤8-line summary).
 
 ## L. Fallback: `pdca-orchestrator` unavailable
 
@@ -203,7 +203,7 @@ or `subagent_depth` < 2, or delegation is forbidden by the host.
 with the same gates); the fallback is recorded (`Notice:` in the status file); the ban on a 4th attempt, scope and
 security constraints are **not waived**; questions are still not asked.
 **Operative sources:** SKILL §Autonomous mode (Delegation: fall back to the flat primary, log
-the fallback) / §Host requirements (resource blocker); `assets/agents/pdca-orchestrator.md`.
+the fallback) / §Host requirements (resource blocker); `assets/opencode-agents/pdca-orchestrator.md`.
 
 ---
 
@@ -213,7 +213,7 @@ the fallback) / §Host requirements (resource blocker); `assets/agents/pdca-orch
 **Required outcome:** this is **not** a new revision (`r` does not grow) and **not** a reset of the attempt counter
 (`n` is not zeroed); cases A/C/D cannot be bypassed through a candidate "reopening".
 **Operative sources:** SKILL §State machine (rejected candidate not a new revision, does not
-reset the attempt counter, not erased by a replan); `assets/agents/pdca-planner.md` item 10.
+reset the attempt counter, not erased by a replan); `assets/opencode-agents/pdca-planner.md` item 10.
 
 ---
 
@@ -286,8 +286,8 @@ preserved; the disposition path does not apply to it.
 
 **Input:** checking the consequences of the edit.
 **Required outcome:** no file/status/artifact/historical verdict of #232 is rewritten; there is no
-new hashing/provenance graph; the canonical (`assets/agents/**`) role rules are consistent; the result distinguishes a diagnostic note from an actual mandatory unmet.
-**Operative sources:** `assets/agents/pdca-check.md` — the "binding/applicable" item.
+new hashing/provenance graph; the canonical (`assets/opencode-agents/**`) role rules are consistent; the result distinguishes a diagnostic note from an actual mandatory unmet.
+**Operative sources:** `assets/opencode-agents/pdca-check.md` — the "binding/applicable" item.
 
 ## Retro hardening (13–23 October 2026, `nextorm`)
 
@@ -325,7 +325,7 @@ green" rule does not apply; the negative run is not repeated until it turns gree
 (e.g. tooling incompatibility).
 **Required outcome:** it is a **systemic defect** and gets its own issue; a fourth exception is
 refused; PASS introduces no new class.
-**Operative sources:** SKILL §Recorded exceptions; `assets/agents/pdca-check.md` → "Exception discipline".
+**Operative sources:** SKILL §Recorded exceptions; `assets/opencode-agents/pdca-check.md` → "Exception discipline".
 
 ### R5. Plan anchors drifted after a sibling merge
 

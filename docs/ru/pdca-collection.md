@@ -415,7 +415,7 @@ resource stop прогона; недоступный **контракт цикл
   лейн группы), фазы P/D/C/A, статус, git-модель и семантика сбоя —
   [`skills/pdca-collection/SKILL.md`](../../skills/pdca-collection/SKILL.md). Раннер
   поставляется как
-  [`assets/agents/pdca-orchestrator.md`](../../skills/pdca-collection/assets/agents/pdca-orchestrator.md);
+  [`assets/opencode-agents/pdca-orchestrator.md`](../../skills/pdca-collection/assets/opencode-agents/pdca-orchestrator.md);
   профили и `AGENTS.md` остаются хостовыми артефактами репозитория `opencode-config`.
 - База цикла: [`skills/pdca-coder/SKILL.md`](../../skills/pdca-coder/SKILL.md) (для .NET —
   идентичная база [`skills/pdca-dotnet/SKILL.md`](../../skills/pdca-dotnet/SKILL.md)).

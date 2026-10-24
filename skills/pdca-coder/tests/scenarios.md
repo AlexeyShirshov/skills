@@ -8,7 +8,7 @@ production-автомат не создавался. Присутствие пр
 
 Источник правил (действующая норма): `skills/pdca-coder/SKILL.md` (§State machine,
 §Transition gates, §Orchestrator role, §Host requirements, §PLAN selects the toolchain and lenses),
-EN-роли `skills/pdca-coder/assets/agents/*.md` и источник
+EN-роли `skills/pdca-coder/assets/opencode-agents/*.md` и источник
 диаграммы `skills/pdca-coder/assets/diagram/gen_pdca.py`. Счётчики: цикл `<N>` (растёт
 только в ACT), ревизия плана `r`, попытка `n/3` в пределах
 ревизии; отвергнутый кандидат **без смены плана** не новая ревизия и не сбрасывает ретраи.
@@ -37,7 +37,7 @@ EN-роли `skills/pdca-coder/assets/agents/*.md` и источник
 `skills/pdca-coder/SKILL.md` — §State machine (Three counters), §Transition gates 1–4,
 §Phase progress mirror, §Escalation (`pdca-escalate`) (триггеры, в т.ч. 5), §Autonomous mode,
 §Cycle status file, §Parallel CHECK streams, §Host requirements (roles → agents),
-§Orchestrator role, §PLAN selects the toolchain and lenses; `skills/pdca-coder/assets/agents/*.md`
+§Orchestrator role, §PLAN selects the toolchain and lenses; `skills/pdca-coder/assets/opencode-agents/*.md`
 (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`,
 `pdca-orchestrator`); метки диаграммы `skills/pdca-coder/assets/diagram/pdca-coder-hand.svg`.
 
@@ -51,7 +51,7 @@ EN-роли `skills/pdca-coder/assets/agents/*.md` и источник
 возобновляется с **исходного** `D`, а не заводится новая; счётчик попыток не растёт и не
 сбрасывается (та же попытка `n`); гейт 2 не открывается.
 **Оперативные источники:** SKILL §State machine / §Transition gates (gate 2: blocker report ≠ `done`,
-rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`
+rejected candidate resumes the original `D`); `assets/opencode-agents/pdca-executor.md`
 (Unfinished work / retention); §Cycle status file.
 
 ## B1. Аддитивное предусловие (не замена)
@@ -64,7 +64,7 @@ rejected candidate resumes the original `D`); `assets/agents/pdca-executor.md`
 `done` — только фактически выполненная принятая работа; анализ кандидата «реализация завершена» не
 завершает `D`.
 **Оперативные источники:** SKILL §State machine / gate 2 / §Cycle status file (unit states, additive
-prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`.
+prerequisite); `assets/opencode-agents/pdca-planner.md`, `assets/opencode-agents/pdca-executor.md`.
 
 ## B2. Фактическая замена объёма
 
@@ -75,7 +75,7 @@ prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`
 сохранённые критерии; `superseded` никогда не считается `done`; гейт 2 отклоняется при
 отсутствующем отображении/замене, висячей/циклической/само-замене или pending/blocked замене.
 **Оперативные источники:** SKILL §State machine / gate 2 / §Cycle status file (unit states incl.
-`superseded`, replacement chain); `assets/agents/pdca-planner.md`.
+`superseded`, replacement chain); `assets/opencode-agents/pdca-planner.md`.
 
 ## C. Реальный replan между ревизиями
 
@@ -90,7 +90,7 @@ prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`
 пересмотренный план `r+1` (фактически изменённые задачи/зависимости/действия при сохранении
 исходного критерия); переименование/переформулировка или сброс сессии — **не** новая ревизия.
 **Оперативные источники:** SKILL §State machine / §Escalation (триггер про один и тот же дефект) /
-§Cycle status file; `assets/agents/pdca-planner.md`, `assets/agents/pdca-check.md`, `assets/agents/pdca-escalate.md`.
+§Cycle status file; `assets/opencode-agents/pdca-planner.md`, `assets/opencode-agents/pdca-check.md`, `assets/opencode-agents/pdca-escalate.md`.
 
 ## D. Третий провальный CHECK одного плана
 
@@ -101,7 +101,7 @@ prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`
 попытку следующей ревизии.
 **Оперативные источники:** SKILL §State machine (`third failed CHECK of the same revision`,
 `no 4th attempt`, `PLAN(r) → DO`, `CHECK → DO`); §Red flags (revision-local 4th attempt);
-`assets/agents/pdca-check.md`, `assets/agents/pdca-escalate.md`.
+`assets/opencode-agents/pdca-check.md`, `assets/opencode-agents/pdca-escalate.md`.
 
 ## E. Неклассифицируемый кандидат: факты, затем низкая уверенность
 
@@ -111,8 +111,8 @@ prerequisite); `assets/agents/pdca-planner.md`, `assets/agents/pdca-executor.md`
 исчерпывающий перебор; при стойко низкой уверенности — `pdca-escalate` по существующему триггеру 5
 **даже без доказанной внешности**; DO не выдаёт финальный вердикт и не делает STOP.
 **Оперативные источники:** SKILL §Escalation (триггер 5, low confidence, without established
-externalness, provisional candidate); `assets/agents/pdca-planner.md` (item 10, four-way
-classification, insufficient evidence); `assets/agents/pdca-scout.md`.
+externalness, provisional candidate); `assets/opencode-agents/pdca-planner.md` (item 10, four-way
+classification, insufficient evidence); `assets/opencode-agents/pdca-scout.md`.
 
 ## F. Автономный режим: без вопросов
 
@@ -127,7 +127,7 @@ actionable пересмотренный план (`r+1`) — работа про
 `Notice:` и финальный итог допустимы; автономность — не разрешение авто-коммита. В обычном режиме
 сохраняются необходимые вопросы и явный апрув плана.
 **Оперативные источники:** SKILL §Autonomous mode, §Transition gates (gate 1: normal mode
-plan approval), §State machine; `assets/agents/pdca-planner.md` (plan-disk paragraph).
+plan approval), §State machine; `assets/opencode-agents/pdca-planner.md` (plan-disk paragraph).
 
 ## G. Один агрегированный активный `D:` при параллельных потоках
 
@@ -152,7 +152,7 @@ file), §Cycle status file.
 `model:` в ролях отсутствует; профили не редактируются ради выбора id; `general`/`explore` не
 обходятся; права дорогих ролей не расширяются.
 **Оперативные источники:** SKILL §Orchestrator role, §Host requirements (roles → agents);
-`assets/agents/*.md` (tier labels, no `model:`); `config/profiles/*.jsonc` (`agent` block, только
+`assets/opencode-agents/*.md` (tier labels, no `model:`); `config/profiles/*.jsonc` (`agent` block, только
 чтение).
 
 ## I. Security-conditional gather и агрегатный вердикт
@@ -167,7 +167,7 @@ file), §Cycle status file.
 **Оперативные источники:** SKILL §Transition gates (gate 3, «every failed CHECK … triggered security
 failure»), §Parallel CHECK streams (security gather/return; any failed stream counts as a failed CHECK
 of the current revision), §Escalation (hard security trade-off, counters);
-`assets/agents/pdca-security-auditor.md`, `assets/agents/pdca-check.md`.
+`assets/opencode-agents/pdca-security-auditor.md`, `assets/opencode-agents/pdca-check.md`.
 
 ## J. Решение эскалации: роутинг, не перевыбор и без обхода гейтов
 
@@ -183,7 +183,7 @@ actionable-плана → **STOP** (обычный режим — вопрос �
 вопроса).
 **Оперативные источники:** SKILL §Orchestrator role (execute by routing, never re-decide),
 §Escalation (After the escalation …), §State machine (no 4th), §Red flags;
-`assets/agents/pdca-escalate.md`.
+`assets/opencode-agents/pdca-escalate.md`.
 
 ## K. Автономное делегирование: primary диспатчит `pdca-orchestrator`
 
@@ -196,7 +196,7 @@ references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и в�
 вопросы не задаются.
 **Оперативные источники:** SKILL §Two paths → "Two paths, one contract." / §Autonomous mode
 (Delegation) / §Host requirements (Autonomous driver; setup-allowlist включает `pdca-orchestrator`);
-`assets/agents/pdca-orchestrator.md` (вход «одиночный автономный цикл», cycle brief → сводка ≤8 строк).
+`assets/opencode-agents/pdca-orchestrator.md` (вход «одиночный автономный цикл», cycle brief → сводка ≤8 строк).
 
 ## L. Fallback: `pdca-orchestrator` недоступен
 
@@ -206,7 +206,7 @@ references); `pdca-orchestrator` проводит PLAN→DO→CHECK→ACT и в�
 с теми же гейтами); fallback зафиксирован (`Notice:` в статус-файле); запрет 4-й попытки, scope и
 security-ограничения **не отменяются**; вопросы по-прежнему не задаются.
 **Оперативные источники:** SKILL §Autonomous mode (Delegation: fall back to the flat primary, log
-the fallback) / §Host requirements (resource blocker); `assets/agents/pdca-orchestrator.md`.
+the fallback) / §Host requirements (resource blocker); `assets/opencode-agents/pdca-orchestrator.md`.
 
 ---
 
@@ -216,7 +216,7 @@ the fallback) / §Host requirements (resource blocker); `assets/agents/pdca-orch
 **Требуемый исход:** это **не** новая ревизия (`r` не растёт) и **не** сброс счётчика попыток
 (`n` не обнуляется); кейсы A/C/D не могут быть обойдены через «переоткрытие» кандидатом.
 **Оперативные источники:** SKILL §State machine (rejected candidate not a new revision, does not
-reset the attempt counter, not erased by a replan); `assets/agents/pdca-planner.md` item 10.
+reset the attempt counter, not erased by a replan); `assets/opencode-agents/pdca-planner.md` item 10.
 
 ---
 
@@ -292,5 +292,5 @@ unit/integration policy.
 
 **Вход:** проверка последствий правки.
 **Требуемый исход:** ни один файл/статус/артефакт/исторический вердикт #232 не переписан; нет
-нового hashing/provenance-графа; canonical (`assets/agents/**`) role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
-**Оперативные источники:** `assets/agents/pdca-check.md` — пункт «binding/applicable».
+нового hashing/provenance-графа; canonical (`assets/opencode-agents/**`) role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
+**Оперативные источники:** `assets/opencode-agents/pdca-check.md` — пункт «binding/applicable».

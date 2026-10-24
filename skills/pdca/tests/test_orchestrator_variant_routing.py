@@ -38,7 +38,7 @@ HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
 SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
 HOST_ORCHESTRATOR = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
 
-ORCHESTRATOR = SKILLS / "pdca/assets/agents/pdca-orchestrator.md"
+ORCHESTRATOR = SKILLS / "pdca/assets/opencode-agents/pdca-orchestrator.md"
 ENTRY = SKILLS / "pdca-entry/SKILL.md"
 CYCLE_SKILLS = ("pdca", "pdca-coder", "pdca-dotnet")
 

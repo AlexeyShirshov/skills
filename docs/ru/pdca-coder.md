@@ -70,7 +70,7 @@ CHECK (независимая проверка) → ACT (завершение) �
 
 Цикл ведёт только primary дешёвого тира — по **эффективному тиру профиля хоста**, а не по
 имени агента; средний или сильный primary цикл не дирижирует и вне цикла остаётся решающим
-primary. Готовые ассеты ролей (`assets/agents/*.md`) несут и явные права: у `pdca-scout` — bash
+primary. Готовые ассеты ролей (`assets/opencode-agents/*.md`) несут и явные права: у `pdca-scout` — bash
 только по allowlist читающих команд, у `pdca-executor` — `edit`/`bash`, у `pdca-check` — default-deny (кроме
 scoped read артефактов цикла), у `pdca-escalate` и `pdca-security-auditor` — `doom_loop: ask`.
 

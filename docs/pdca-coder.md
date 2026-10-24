@@ -66,10 +66,10 @@ cost/quality, not of authority:
 
 Only a cheap-tier primary drives the cycle — by the **host profile's effective tier**, not by the
 agent's name; a medium or strong primary does not conduct the cycle and outside the cycle remains
-the deciding primary. The ready-made role assets (`assets/agents/*.md`) carry explicit permissions
-as well: `pdca-scout` has bash only via an allowlist of read-only commands, `pdca-executor` has `edit`/`bash`,
-`pdca-check` has default-deny (except a scoped read of the cycle's artifacts), and `pdca-escalate` and
-`pdca-security-auditor` have `doom_loop: ask`.
+the deciding primary. The ready-made role assets (`assets/opencode-agents/*.md`) carry explicit
+permissions as well: `pdca-scout` has bash only via an allowlist of read-only commands,
+`pdca-executor` has `edit`/`bash`, `pdca-check` has default-deny (except a scoped read of the cycle's
+artifacts), and `pdca-escalate` and `pdca-security-auditor` have `doom_loop: ask`.
 
 Required roles are not substituted. An absent or forbidden required role is a **resource blocker**,
 not a reason to fall back to built-in `general`/`explore` or to work silently without it. A host that

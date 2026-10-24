@@ -289,8 +289,8 @@ CHECK в ревизии r1 даёт по критерию «методика в�
 |---|---|
 | `pdca` доменно-нейтрален: называет только роли и фазы; чем проверять — решает PLAN | `skills/pdca/SKILL.md:6-14` |
 | Роли, тиры, fallback; недоступная роль — resource blocker | `skills/pdca/SKILL.md §Host requirements (roles → agents)` |
-| `pdca-orchestrator` — cheap-диспетчер, а не пятый скилл (промпт поставляется как `assets/agents/pdca-orchestrator.md` в каждом скилле) | `skills/pdca/SKILL.md §Host requirements (roles → agents)` |
-| CHECK видит артефакты доказательств цикла напрямую (scoped `read`), но не продукт | `skills/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `skills/pdca/assets/agents/pdca-check.md:11-20,27-28` |
+| `pdca-orchestrator` — cheap-диспетчер, а не пятый скилл (промпт поставляется как `assets/opencode-agents/pdca-orchestrator.md` в каждом скилле) | `skills/pdca/SKILL.md §Host requirements (roles → agents)` |
+| CHECK видит артефакты доказательств цикла напрямую (scoped `read`), но не продукт | `skills/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `skills/pdca/assets/opencode-agents/pdca-check.md:11-20,27-28` |
 | Оркестратор-диспетчер; запрет саморедактирования/самочтения/самовердикта | `skills/pdca/SKILL.md §Orchestrator role` |
 | Машина состояний и ветка `DO → PLAN` | `skills/pdca/SKILL.md §State machine` |
 | Счётчики `N`, `r`, `n/3` и история дефектов | `skills/pdca/SKILL.md §State machine` |

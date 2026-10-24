@@ -673,7 +673,7 @@ also chooses the way to verify it. This skill is the "reference" for the others:
 
 The roles here have their own names: `pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout` and the `pdca-orchestrator` driver. The ready-made role definitions live in
-the skill's `assets/agents/`: they contain only a `# tier:` label and permission blocks; no `model:`
+the skill's `assets/opencode-agents/`: they contain only a `# tier:` label and permission blocks; no `model:`
 is written into a role — the ids are bound by the host profile. The `pdca-orchestrator` runner is a
 portable asset too (one identical copy in every skill of the family). The cycle's input is the doctrine "two paths, one contract": in normal mode the primary
 drives the cycle itself, dispatching subagents; in autonomous mode it delegates the whole

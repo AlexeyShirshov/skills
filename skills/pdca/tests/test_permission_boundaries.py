@@ -26,7 +26,7 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
-RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+RUNNER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;

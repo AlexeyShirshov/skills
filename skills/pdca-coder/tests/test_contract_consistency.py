@@ -85,7 +85,7 @@ def parse_frontmatter(block: str) -> dict:
 # The runner is a dispatcher: its permission block allowlists the .NET lens
 # agents it may dispatch. Exempt it from the stack-token guard; the exemption is
 # pinned to exactly this file in the test below.
-RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+RUNNER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 SCAN_EXEMPT = frozenset((RUNNER_ASSET,))
 
 

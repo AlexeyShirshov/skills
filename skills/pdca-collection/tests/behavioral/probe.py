@@ -112,7 +112,7 @@ def install() -> None:
         print(f"skill  {name} -> {target}")
     (SANDBOX_CONFIG / "agents").mkdir(parents=True, exist_ok=True)
     for name in AGENTS:
-        source = REPO_ROOT / "skills" / AGENT_SET / "assets" / "agents" / f"{name}.md"
+        source = REPO_ROOT / "skills" / AGENT_SET / "assets" / "opencode-agents" / f"{name}.md"
         shutil.copy2(source, SANDBOX_CONFIG / "agents" / f"{name}.md")
         print(f"agent  {name} -> {SANDBOX_CONFIG / 'agents' / (name + '.md')}")
 

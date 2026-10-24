@@ -29,9 +29,9 @@ CODER = FAMILY / "pdca-coder/SKILL.md"
 DOTNET = FAMILY / "pdca-dotnet/SKILL.md"
 COLLECTION = FAMILY / "pdca-collection/SKILL.md"
 
-BASE_AGENTS = FAMILY / "pdca/assets/agents"
-CODER_AGENTS = FAMILY / "pdca-coder/assets/agents"
-DOTNET_AGENTS = FAMILY / "pdca-dotnet/assets/agents"
+BASE_AGENTS = FAMILY / "pdca/assets/opencode-agents"
+CODER_AGENTS = FAMILY / "pdca-coder/assets/opencode-agents"
+DOTNET_AGENTS = FAMILY / "pdca-dotnet/assets/opencode-agents"
 
 
 def norm(text: str) -> str:

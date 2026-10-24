@@ -10,7 +10,7 @@ are not an instruction that end users must write code or tests.
 The runtime surface is exactly:
 
 * ``skills/pdca/SKILL.md``
-* ``skills/pdca/assets/agents/*.md``
+* ``skills/pdca/assets/opencode-agents/*.md``
 * ``skills/pdca/assets/diagram/*``
 * optionally the four host agents ``<host>/config/agents/pdca-{planner,executor,check,escalate}.md``
   (the RUNNER is the shared host agent ``<host>/config/agents/pdca-orchestrator.md``, not scanned
@@ -37,7 +37,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 
 SKILL_PATH = SKILL_DIR / "SKILL.md"
-ASSET_AGENTS = SKILL_DIR / "assets/agents"
+ASSET_AGENTS = SKILL_DIR / "assets/opencode-agents"
 DIAGRAM = SKILL_DIR / "assets/diagram"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
@@ -51,7 +51,7 @@ SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/ope
 # The runner is host-facing routing glue: it must name the family's variants
 # (`pdca-coder`/`pdca-dotnet`) and the stack they cover. It is exempt from the
 # domain/stack token scan; the exemption is pinned to exactly this file.
-RUNNER_ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+RUNNER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 SCAN_EXEMPT = frozenset((RUNNER_ASSET,))
 
 # Word-boundary (where applicable) domain/stack tokens that must never appear

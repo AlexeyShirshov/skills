@@ -18,12 +18,12 @@ The roles are **subagent names**. Every skill in the family is explicit about it
 
 | Skill | Roles it dispatches | Role assets shipped |
 |---|---|---|
-| `pdca-entry` | none itself — it classifies and hands off to one contract below (the contract dispatches its roles) | `assets/agents/pdca-orchestrator.md` |
-| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/agents/*.md` (6 files) |
-| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/agents/*.md` (7 files) |
-| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/agents/*.md` (7 files) |
-| `pdca-collection` | all of the above per task, plus the runner `pdca-orchestrator` | `assets/agents/pdca-orchestrator.md` |
-| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per block, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/agents/pdca-orchestrator.md` |
+| `pdca-entry` | none itself — it classifies and hands off to one contract below (the contract dispatches its roles) | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 files) |
+| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 files) |
+| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/opencode-agents/*.md` (7 files) |
+| `pdca-collection` | all of the above per task, plus the runner `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per block, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` |
 
 Every shipped agent id carries the `pdca-` prefix and is **the same across the variants**, so a
 skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
@@ -32,8 +32,8 @@ Agents carry only **identity, tier, permissions and an output contract**; decisi
 (routes, gates, checklists) lives in the skill and is loaded with it. The driver in particular
 never classifies a task — it loads the contract named in `selected_variant`.
 
-The runner **`pdca-orchestrator` ships in every skill's `assets/agents/`** (the same file, so any
-install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
+The runner **`pdca-orchestrator` ships in every skill's `assets/opencode-agents/`** (the same file,
+so any install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
 profile's effective tier, not from the agent's name. A medium or strong primary (for example
 `architect`) **does not** launch or dispatch the cycle and does not run it flat itself: it hands off
 explicitly to the cheap primary (`build` by default), preserving the task, the status file and the
@@ -85,9 +85,9 @@ development-only and not needed at runtime.
 
 ## 3. Install the role agents
 
-Agents are **host subagent definitions**. The shipped `assets/agents/*.md` carry OpenCode frontmatter
-(`mode: subagent`, `permission:`) over a portable role prompt; another host keeps the body and
-translates the frontmatter:
+Agents are **host subagent definitions**. The shipped `assets/opencode-agents/*.md` carry OpenCode
+frontmatter (`mode: subagent`, `permission:`) over a portable role prompt; another host keeps the body
+and translates the frontmatter:
 
 | Host | Agents root | Frontmatter |
 |---|---|---|
@@ -104,10 +104,10 @@ it, e.g. `.opencode/agents/team/reviewer.md` → `team/reviewer`).
 
 ```sh
 # pdca
-cp skills/pdca/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca/assets/opencode-agents/*.md ~/.config/opencode/agents/
 
 # or pdca-coder / pdca-dotnet
-cp skills/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 ```
 
 > **One variant, one asset set.** All three cycle variants ship **the same six ids**
@@ -123,7 +123,7 @@ The variants are alternatives, not layers: their role ids coincide by design, so
 always wins. A third, richer copy may already live in your config repository. Pick one source of
 truth:
 
-- **one family** — copy that skill's `assets/agents/*.md`;
+- **one family** — copy that skill's `assets/opencode-agents/*.md`;
 - **shared host set** — keep the role files in your host config repository and mirror them into the
   skill assets mechanically. The pack ships no mirroring script: if you keep one, put it in your
   config repository and make it fail in CI on drift. This is what keeps a `.NET` host from silently
@@ -135,9 +135,10 @@ a role markdown** — model ids are bound by the host profile (§8).
 ## 5. Install the runner `pdca-orchestrator`
 
 The runner is the cheap **dispatcher** that drives one child cycle, one collection group or one
-incremental step. It ships in every skill's `assets/agents/`, so step 3 copies it with the rest — do
-not write your own, and do not keep an older host copy under the same id. The `mode:`/`permission:`
-frontmatter is the legacy OpenCode adapter (V1-native; V2 translates it); other hosts reuse the body.
+incremental step. It ships in every skill's `assets/opencode-agents/`, so step 3 copies it with the
+rest — do not write your own, and do not keep an older host copy under the same id. The
+`mode:`/`permission:` frontmatter is the legacy OpenCode adapter (V1-native; V2 translates it); other
+hosts reuse the body.
 
 What it must be (the asset already encodes this — check it after installation):
 
@@ -330,8 +331,9 @@ chain (§6). No host-side parallel-cap key, schema entry or constant was found i
 source; that absence is **not** evidence of unlimited concurrency, and `cap` values are not invented
 either.
 
-The installed runner may **drift** from the canonical asset in `skills/pdca/assets/agents/`. Refresh
-it from the asset and verify its effective permissions before relying on it: an installed
+The installed runner may **drift** from the canonical asset in
+`skills/pdca/assets/opencode-agents/`. Refresh it from the asset and verify its effective permissions
+before relying on it: an installed
 `pdca-orchestrator` that does not allow delegation to `pdca-scout` is the concrete observed example,
 and it silently breaks `escalate → scout`. This is part of the checklist in §5, not something the
 repository's tests can see, and it needs no change to the rest of the host configuration.

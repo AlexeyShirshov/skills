@@ -51,7 +51,7 @@ npx skills add AlexeyShirshov/skills@pdca-coder -g -y
 Without `-g` the CLI targets the current project.
 
 Installing a skill is only half of the setup: the cycle dispatches **subagents**, so the host needs
-the role agents and the runner `pdca-orchestrator` (they ship in the skills' `assets/agents/`:
+the role agents and the runner `pdca-orchestrator` (they ship in the skills' `assets/opencode-agents/`:
 `pdca`, `pdca-coder` and `pdca-dotnet` carry the full role set — `pdca-coder` and `pdca-dotnet`
 also ship `pdca-security-auditor` — while `pdca-entry`, `pdca-collection` and `pdca-incremental`
 carry only the runner prompt),

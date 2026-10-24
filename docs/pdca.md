@@ -296,8 +296,8 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 |---|---|
 | `pdca` is domain-neutral: it names only roles and phases; what to verify with is decided by PLAN | `skills/pdca/SKILL.md:6-14` |
 | Roles, tiers, fallback; an unavailable role is a resource blocker | `skills/pdca/SKILL.md §Host requirements (roles → agents)` |
-| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/agents/pdca-orchestrator.md` in every skill | `skills/pdca/SKILL.md §Host requirements (roles → agents)`; `skills/pdca/assets/agents/pdca-orchestrator.md` |
-| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `skills/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `skills/pdca/assets/agents/pdca-check.md:11-20,27-28` |
+| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/opencode-agents/pdca-orchestrator.md` in every skill | `skills/pdca/SKILL.md §Host requirements (roles → agents)`; `skills/pdca/assets/opencode-agents/pdca-orchestrator.md` |
+| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `skills/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `skills/pdca/assets/opencode-agents/pdca-check.md:11-20,27-28` |
 | The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `skills/pdca/SKILL.md §Orchestrator role` |
 | The state machine and the `DO → PLAN` branch | `skills/pdca/SKILL.md §State machine` |
 | The counters `N`, `r`, `n/3` and the defect history | `skills/pdca/SKILL.md §State machine` |

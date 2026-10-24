@@ -18,7 +18,7 @@ REPO = Path(__file__).resolve().parents[3]
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILLS = SKILL_DIR.parent
 SKILL = SKILL_DIR / "SKILL.md"
-RUNNER = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+RUNNER = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 
 FAMILY = ("pdca", "pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental")
 CYCLE = ("pdca", "pdca-coder", "pdca-dotnet")
@@ -296,9 +296,9 @@ class ArtifactsTest(unittest.TestCase):
                 self.assertEqual(name, frontmatter(path).get("name"))
 
     def test_runner_is_shipped_and_identical_to_the_family(self):
-        self.assertTrue(RUNNER.is_file(), "assets/agents/pdca-orchestrator.md missing")
+        self.assertTrue(RUNNER.is_file(), "assets/opencode-agents/pdca-orchestrator.md missing")
         self.assertEqual("pdca-orchestrator", frontmatter(RUNNER).get("name"))
-        expected = (SKILLS / "pdca/assets/agents/pdca-orchestrator.md").read_bytes()
+        expected = (SKILLS / "pdca/assets/opencode-agents/pdca-orchestrator.md").read_bytes()
         self.assertEqual(expected, RUNNER.read_bytes(), "runner copy drifted")
 
     def test_no_model_id_anywhere_in_the_skill(self):

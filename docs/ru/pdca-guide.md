@@ -730,7 +730,7 @@ PLAN, и он же выбирает способ проверки. Этот ск
 `pdca-dotnet` сохраняют ту же базу, но достраивают её.
 
 У ролей здесь свои имена: `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`,
-`pdca-scout` и драйвер `pdca-orchestrator`. Готовые определения ролей лежат в `assets/agents/`
+`pdca-scout` и драйвер `pdca-orchestrator`. Готовые определения ролей лежат в `assets/opencode-agents/`
 скилла: там только ярлык `# tier:` и permission-блоки, `model:` в роли не пишется — id'ы
 привязывает профиль хоста. Драйвер `pdca-orchestrator` — тоже портируемый ассет (одна и та же
 копия в каждом скилле семейства). Вход цикла — доктрина

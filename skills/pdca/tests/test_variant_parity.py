@@ -31,8 +31,8 @@ FAMILY = Path(__file__).resolve().parents[2]  # the `skills/` directory
 CODER = FAMILY / "pdca-coder/SKILL.md"
 DOTNET = FAMILY / "pdca-dotnet/SKILL.md"
 
-CODER_AGENTS = FAMILY / "pdca-coder/assets/agents"
-DOTNET_AGENTS = FAMILY / "pdca-dotnet/assets/agents"
+CODER_AGENTS = FAMILY / "pdca-coder/assets/opencode-agents"
+DOTNET_AGENTS = FAMILY / "pdca-dotnet/assets/opencode-agents"
 
 # Sections that belong to the shared contract: both variants must carry them.
 # A rename that lands in one file only breaks the pairing these guards rely on.

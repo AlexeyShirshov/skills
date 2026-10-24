@@ -83,13 +83,13 @@ medium/strong primary still neither drives the cycle nor dispatches `pdca-orches
 | SECURITY | `pdca-security-auditor` | read-only, facts via `pdca-scout` (required when triggered) | resource blocker |
 | RUNNER | `pdca-orchestrator` | cheap dispatcher, subagent allowlist (shared) | flat cheap primary + `Notice:` |
 
-Ready-made definitions: this skill's `assets/agents/`. Model bindings come from the **host profile's
+Ready-made definitions: this skill's `assets/opencode-agents/`. Model bindings come from the **host profile's
 `agent` block** (or the project's host config `agent.<name>.model`) — **never a `model:` field in
 the role markdown**. Each asset carries only a `# tier:` label (`pdca-executor`/`pdca-scout` = cheap; `pdca-planner`/`pdca-check`/
 `pdca-security-auditor` = medium; `pdca-escalate` = strong). By default a subagent inherits the invoking primary's
 model (works out of the box, but on one model); bind ids in the profile `agent` block for routing.
 
-**Setup (once):** (1) copy `assets/agents/*.md` into the host's agents/subagent directory;
+**Setup (once):** (1) copy `assets/opencode-agents/*.md` into the host's agents/subagent directory;
 (2) restart the host (role agents load at startup); (3) allow the primary to dispatch
 `pdca-scout`/`pdca-planner`/`pdca-check`/`pdca-executor`/`pdca-escalate`/`pdca-security-auditor`,
 `pdca-orchestrator` (autonomous delegation), and the `dotnet-*` gather lenses + `docfx-specialist`

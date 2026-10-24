@@ -407,7 +407,7 @@ discovery is a safe pause before the dependent action, not a weakened gate
   PLAN` input, the group lane), the P/D/C/A phases, the status, the git model and the failure
   semantics —
   [`skills/pdca-collection/SKILL.md`](../skills/pdca-collection/SKILL.md). The runner ships as
-  [`assets/agents/pdca-orchestrator.md`](../skills/pdca-collection/assets/agents/pdca-orchestrator.md);
+  [`assets/opencode-agents/pdca-orchestrator.md`](../skills/pdca-collection/assets/opencode-agents/pdca-orchestrator.md);
   the profiles and `AGENTS.md` remain host artifacts of the `opencode-config` repository.
 - The cycle base: [`skills/pdca-coder/SKILL.md`](../skills/pdca-coder/SKILL.md) (for .NET, the
   identical base [`skills/pdca-dotnet/SKILL.md`](../skills/pdca-dotnet/SKILL.md)).

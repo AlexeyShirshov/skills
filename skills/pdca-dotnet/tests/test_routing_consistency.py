@@ -27,7 +27,7 @@ SKILL = SKILL_DIR / "SKILL.md"
 DIAGRAM = SKILL_DIR / "assets/diagram"
 GEN = DIAGRAM / "gen_pdca.py"
 OUTPUTS = ["pdca-hand.svg", "pdca-hand.html", "pdca-hand-dark.svg", "pdca-hand-dark.html"]
-ASSET_AGENTS = SKILL_DIR / "assets/agents"
+ASSET_AGENTS = SKILL_DIR / "assets/opencode-agents"
 TIERS = {
     "pdca-planner": "medium", "pdca-executor": "cheap", "pdca-check": "medium",
     "pdca-escalate": "strong", "pdca-scout": "cheap", "pdca-security-auditor": "medium",

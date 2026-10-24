@@ -27,7 +27,7 @@
 передаёт драйверу как `selected_variant`; драйвер не классифицирует задачу. Логика
 «`.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе → `pdca`» описана в
 `skills/pdca-entry/SKILL.md`, а сам `pdca-orchestrator` поставляется как
-`assets/agents/pdca-orchestrator.md` в каждом скилле семейства. Скилл запускается **явно** и не подменяет обычные
+`assets/opencode-agents/pdca-orchestrator.md` в каждом скилле семейства. Скилл запускается **явно** и не подменяет обычные
 задачи — правка без цикла выполняется напрямую.
 
 ## 3. Участники и тиры
@@ -426,8 +426,8 @@ Changed files) и готовое **сообщение для следующей 
 «CHECK completeness gate — mandatory evidence contract» в
 [`skills/pdca-dotnet/SKILL.md`](../../skills/pdca-dotnet/SKILL.md), а также
 ссылающиеся на них шаблоны ролей
-([`pdca-planner.md`](../../skills/pdca-dotnet/assets/agents/pdca-planner.md),
-[`check.md`](../../skills/pdca-dotnet/assets/agents/pdca-check.md)) и компактная
+([`pdca-planner.md`](../../skills/pdca-dotnet/assets/opencode-agents/pdca-planner.md),
+[`check.md`](../../skills/pdca-dotnet/assets/opencode-agents/pdca-check.md)) и компактная
 реализация гейта —
 [`scripts/validate_inner_loop.py`](../../skills/pdca-dotnet/scripts/validate_inner_loop.py);
 статический линт контракта команд —
@@ -448,8 +448,8 @@ Changed files) и готовое **сообщение для следующей 
 | .NET-вариант — тот же контракт, инструменты заменяемы | `skills/pdca-dotnet/SKILL.md:11-13` |
 | Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `skills/pdca-collection/SKILL.md §Role` |
 | Явный триггер и разведение скиллов; «правка без цикла — напрямую» | `README.md:42-48`; `skills/pdca-dotnet/SKILL.md:1-4,8-9` |
-| Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `skills/pdca-dotnet/assets/agents/*.md:5` |
-| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `skills/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `skills/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `skills/pdca-dotnet/assets/opencode-agents/*.md:5` |
+| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `skills/pdca-dotnet/assets/opencode-agents/pdca-check.md:6-22`; `skills/pdca-dotnet/assets/opencode-agents/pdca-scout.md:6-23` |
 | `pdca-security-auditor` — conditional gather, отчёт возвращается в агрегат `pdca-check` | `skills/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | Экономика по факту (стоимость/токены по фазам и тирам, без имён моделей) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
 | Обязательный `test scope` (конверт `unit`+`scope`, поля, широкие селекторы, docs-only/`rebuild`, граница) | `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope` |

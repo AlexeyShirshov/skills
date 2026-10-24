@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
-ASSET = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 FAMILY_ROLES = (
     "pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
     "pdca-scout", "pdca-security-auditor",
@@ -26,7 +26,7 @@ def read(path: Path) -> str:
 
 class RunnerAssetTest(unittest.TestCase):
     def test_runner_asset_is_shipped(self):
-        self.assertTrue(ASSET.is_file(), "assets/agents/pdca-orchestrator.md missing")
+        self.assertTrue(ASSET.is_file(), "assets/opencode-agents/pdca-orchestrator.md missing")
         raw = read(ASSET)
         self.assertRegex(raw, r"(?m)^name: pdca-orchestrator\s*$")
         self.assertRegex(raw, r"(?m)^mode: subagent\s*$")

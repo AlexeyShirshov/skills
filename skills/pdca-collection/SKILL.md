@@ -317,7 +317,7 @@ ALL-barrier and the persistent binding of the schedule (§P.3–§P.4). Before t
 ### C — verification (the standard CHECK)
 
 The common verification of a collection is the **standard CHECK of the base contract** (two ticks:
-Gather cheap → verdict `pdca-check` medium; the input and the verdict format — `../pdca-coder/assets/agents/pdca-check.md`,
+Gather cheap → verdict `pdca-check` medium; the input and the verdict format — `../pdca-coder/assets/opencode-agents/pdca-check.md`,
 the structure — `../pdca-coder/SKILL.md` §CHECK; for .NET — the identical
 `../pdca-dotnet/SKILL.md` §CHECK), and **not** a separate
 bespoke stage of the collection. When all lanes are stopped, in the main tree: all
@@ -702,8 +702,8 @@ to the user.
 | One group | work in the current worktree/branch; worktrees, group/task branches and the merge are not created; `incomplete` leaves the commits already made in the current branch |
 | Autocommit/merge right | given by a project overlay or an explicit user request; the skill itself grants no right; `>=2` groups without the right — a preflight blocker before the allocation; one group may go in the current tree without commits if allowed; push never |
 
-The roles are shipped with the family (`assets/agents/*.md` of the cycle variant), and the driver
-`pdca-orchestrator` lives in `assets/agents/` of this skill; it needs an allowed nested
+The roles are shipped with the family (`assets/opencode-agents/*.md` of the cycle variant), and the driver
+`pdca-orchestrator` lives in `assets/opencode-agents/` of this skill; it needs an allowed nested
 delegation and dispatching rights in the cheap primary (otherwise — a flat primary fallback).
 The full installation checklist — `docs/install.md` in the skills repository.
 

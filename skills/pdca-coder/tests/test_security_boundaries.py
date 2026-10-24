@@ -23,7 +23,7 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
-ASSET_AGENTS = SKILL_DIR / "assets/agents"
+ASSET_AGENTS = SKILL_DIR / "assets/opencode-agents"
 
 # Host config (agents/profiles/AGENTS.md) lives in the `opencode-config` repo, not in this one.
 # Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks; they skip by default.
@@ -294,9 +294,9 @@ class WriteProofAllowlistTest(unittest.TestCase):
     def test_installed_mirror_matches_source(self):
         # Host-parity check: the deployed copy of the skill ships with the host
         # config repo (`opencode-config`), not with this published-skills repo.
-        installed = CONFIG / "skills/pdca-coder/assets/agents"
+        installed = CONFIG / "skills/pdca-coder/assets/opencode-agents"
         if not installed.is_dir():
-            installed = Path.home() / ".config/opencode/skills/pdca-coder/assets/agents"
+            installed = Path.home() / ".config/opencode/skills/pdca-coder/assets/opencode-agents"
         if not installed.is_dir():
             self.skipTest("installed mirror not present")
         for role in READ_ONLY_ROLES:

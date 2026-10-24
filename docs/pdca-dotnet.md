@@ -26,7 +26,7 @@ chosen by the dispatching skill (`pdca-entry`, or the collection/campaign per ta
 passed to the driver as `selected_variant`; the driver never classifies. The logic "`.NET/C#` →
 `pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`" is described in
 `skills/pdca-entry/SKILL.md`, while `pdca-orchestrator` itself ships as
-`assets/agents/pdca-orchestrator.md` in every skill of the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
+`assets/opencode-agents/pdca-orchestrator.md` in every skill of the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
 edit without the cycle is performed directly.
 
 ## 3. Participants and tiers
@@ -401,8 +401,8 @@ The primary source of behaviour is the contract itself: the sections "Versioned 
 and "CHECK completeness gate — mandatory evidence contract" in
 [`skills/pdca-dotnet/SKILL.md`](../skills/pdca-dotnet/SKILL.md), as well as the role
 templates that reference them
-([`pdca-planner.md`](../skills/pdca-dotnet/assets/agents/pdca-planner.md),
-[`check.md`](../skills/pdca-dotnet/assets/agents/pdca-check.md)) and the compact implementation of
+([`pdca-planner.md`](../skills/pdca-dotnet/assets/opencode-agents/pdca-planner.md),
+[`check.md`](../skills/pdca-dotnet/assets/opencode-agents/pdca-check.md)) and the compact implementation of
 the gate —
 [`scripts/validate_inner_loop.py`](../skills/pdca-dotnet/scripts/validate_inner_loop.py);
 the static command-contract lint — [`scripts/plan_lint.py`](../skills/pdca-dotnet/scripts/plan_lint.py):
@@ -423,8 +423,8 @@ The article's normative claims were reconciled with the repository's current fil
 | The .NET variant is the same contract, the tools are replaceable | `skills/pdca-dotnet/SKILL.md:11-13` |
 | The variant per task (`.NET/C#` → `pdca-dotnet`) and the identity of the `pdca-coder`/`pdca-dotnet` base | `skills/pdca-collection/SKILL.md §Role` |
 | The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md:42-48`; `skills/pdca-dotnet/SKILL.md:1-4,8-9` |
-| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `skills/pdca-dotnet/assets/agents/*.md:5` |
-| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `skills/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `skills/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `skills/pdca-dotnet/assets/opencode-agents/*.md:5` |
+| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `skills/pdca-dotnet/assets/opencode-agents/pdca-check.md:6-22`; `skills/pdca-dotnet/assets/opencode-agents/pdca-scout.md:6-23` |
 | `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `skills/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | The economics in practice (cost/tokens by phase and tier, no model names) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
 | The mandatory `test scope` (the `unit`+`scope` envelope, fields, wide selectors, docs-only/`rebuild`, the boundary) | `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope` |

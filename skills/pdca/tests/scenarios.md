@@ -76,8 +76,8 @@ unit/integration policy.
 **Вход:** проверка последствий правки.
 **Требуемый исход:** ни один файл/статус/артефакт/исторический вердикт #232 не переписан; нет
 нового hashing/provenance-графа; хостовый бриф `config/agents/pdca-check.md` и canonical
-(`assets/agents/**`) role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
-**Оперативные источники:** `config/agents/pdca-check.md`, `assets/agents/pdca-check.md` —
+(`assets/opencode-agents/**`) role rules согласованы; результат различает diagnostic note и actual mandatory unmet.
+**Оперативные источники:** `config/agents/pdca-check.md`, `assets/opencode-agents/pdca-check.md` —
 пункт «binding/applicable».
 
 ## Ретро-харденинг (13–23 октября 2026, `nextorm`)
@@ -116,7 +116,7 @@ declared budget».
 **Требуемый исход:** класс фиксируется как **systemic defect** и заводится отдельной задачей;
 четвёртое исключение не принимается, PASS не вводит новый класс.
 **Оперативные источники:** SKILL §Recorded exceptions: catalog and repetition threshold;
-`assets/agents/pdca-check.md` → «Exception discipline».
+`assets/opencode-agents/pdca-check.md` → «Exception discipline».
 
 ### R5. Якоря плана разъехались после мержа соседней задачи
 

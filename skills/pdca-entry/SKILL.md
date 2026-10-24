@@ -76,6 +76,6 @@ cheap primary, preserving refs. There is no re-routing after the contract starts
 
 ## Host requirements
 
-The role agents are shipped by the chosen variant (`assets/agents/*.md`); this skill ships the
-runner `assets/agents/pdca-orchestrator.md` (the same file as the rest of the family). A cheap
+The role agents are shipped by the chosen variant (`assets/opencode-agents/*.md`); this skill ships the
+runner `assets/opencode-agents/pdca-orchestrator.md` (the same file as the rest of the family). A cheap
 primary drives the entry; a medium/strong primary does not dispatch the cycle.

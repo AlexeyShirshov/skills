@@ -27,11 +27,11 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 SKILL = SKILL_DIR / "SKILL.md"
-ASSET_AGENTS = SKILL_DIR / "assets/agents"
+ASSET_AGENTS = SKILL_DIR / "assets/opencode-agents"
 # The host `pdca-*` agents are the .NET-flavoured briefs, and the universal
 # skill's own assets are domain-neutral, so host body/permission parity is
 # asserted against `pdca-dotnet`'s assets (the mirror of the host briefs).
-HOST_ASSETS = REPO_ROOT / "skills/pdca-dotnet/assets/agents"
+HOST_ASSETS = REPO_ROOT / "skills/pdca-dotnet/assets/opencode-agents"
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
@@ -403,7 +403,7 @@ class RunnerAssetTest(unittest.TestCase):
     """The runner ships as a portable asset in every skill of the family."""
 
     def test_runner_asset_is_shipped_here(self):
-        self.assertTrue(RUNNER_ASSET.is_file(), "assets/agents/pdca-orchestrator.md missing")
+        self.assertTrue(RUNNER_ASSET.is_file(), "assets/opencode-agents/pdca-orchestrator.md missing")
         data = frontmatter(RUNNER_ASSET)
         self.assertEqual("pdca-orchestrator", data.get("name"))
         self.assertEqual("subagent", data.get("mode"))
@@ -430,7 +430,7 @@ class RunnerAssetTest(unittest.TestCase):
         )
 
     def test_runner_asset_is_identical_in_every_skill(self):
-        copies = {s: (REPO_ROOT / "skills" / s / "assets/agents/pdca-orchestrator.md")
+        copies = {s: (REPO_ROOT / "skills" / s / "assets/opencode-agents/pdca-orchestrator.md")
                   for s in FAMILY_SKILLS}
         expected = copies["pdca"].read_bytes()
         for skill, path in copies.items():

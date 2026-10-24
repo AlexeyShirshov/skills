@@ -599,7 +599,7 @@ class CollectionUnitKindOwnershipTest(unittest.TestCase):
                 )
 
     def test_runner_never_classifies_the_task(self):
-        runner = SKILL_DIR / "assets/agents/pdca-orchestrator.md"
+        runner = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
         text = _plain(runner.read_text(encoding="utf-8"))
         for token in (
             "never classifies the task",

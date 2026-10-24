@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[3]
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_PATH = SKILL_DIR / "SKILL.md"
 ASSET_BRIEFS = [
-    SKILL_DIR / f"assets/agents/{name}.md"
+    SKILL_DIR / f"assets/opencode-agents/{name}.md"
     for name in ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate")
 ]
 # Asset stem -> canonical contract branch, for the shared contract branches.
@@ -32,7 +32,7 @@ CANON = {
 }
 # Task 2: the seven published EN assets and the tier each must carry (no `model:`).
 PUBLISHED_ASSETS = [
-    SKILL_DIR / f"assets/agents/{name}.md"
+    SKILL_DIR / f"assets/opencode-agents/{name}.md"
     for name in ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
                  "pdca-scout", "pdca-security-auditor", "pdca-orchestrator")
 ]
@@ -776,7 +776,7 @@ class FinalFixGuardTest(unittest.TestCase):
         cls.planner_en = norm(read(ASSET_BRIEFS[0]))
         cls.coder_en = norm(read(ASSET_BRIEFS[1]))
         cls.check_en = norm(read(ASSET_BRIEFS[2]))
-        cls.scout_en = norm(read(SKILL_DIR / "assets/agents/pdca-scout.md"))
+        cls.scout_en = norm(read(SKILL_DIR / "assets/opencode-agents/pdca-scout.md"))
         cls.scenarios = read(SCENARIOS_PATH)
 
     # --- F4: additive prerequisite != replacement -------------------------

@@ -18,12 +18,12 @@
 
 | Скилл | Кого диспетчеризует | Ассеты ролей в поставке |
 |---|---|---|
-| `pdca-entry` | никого сам — классифицирует задачу и передаёт одному контракту ниже (роли диспетчеризует уже он) | `assets/agents/pdca-orchestrator.md` |
-| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/agents/*.md` (6 файлов) |
-| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/agents/*.md` (7 файлов) |
-| `pdca-dotnet` | как `pdca-coder`, плюс линзы `dotnet-*` | `assets/agents/*.md` (7 файлов) |
-| `pdca-collection` | всё вышеперечисленное по задаче, плюс драйвер `pdca-orchestrator` | `assets/agents/pdca-orchestrator.md` |
-| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` по блокам, плюс драйвер `pdca-orchestrator` (цикл шага добавляет `pdca-escalate`) | `assets/agents/pdca-orchestrator.md` |
+| `pdca-entry` | никого сам — классифицирует задачу и передаёт одному контракту ниже (роли диспетчеризует уже он) | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 файлов) |
+| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 файлов) |
+| `pdca-dotnet` | как `pdca-coder`, плюс линзы `dotnet-*` | `assets/opencode-agents/*.md` (7 файлов) |
+| `pdca-collection` | всё вышеперечисленное по задаче, плюс драйвер `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` по блокам, плюс драйвер `pdca-orchestrator` (цикл шага добавляет `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` |
 
 Все поставляемые id агентов несут префикс `pdca-` и **одинаковы во всех вариантах**: скилл никогда
 не перехватит уже существующих у хоста `planner`, `coder`, `scout`, `check` или `escalate`.
@@ -32,7 +32,7 @@
 (маршруты, гейты, чек-листы) живёт в скилле и загружается вместе с ним. Драйвер в частности
 никогда не классифицирует задачу — он загружает контракт, названный в `selected_variant`.
 
-Драйвер **`pdca-orchestrator` поставляется в `assets/agents/` каждого скилла** (один и тот же
+Драйвер **`pdca-orchestrator` поставляется в `assets/opencode-agents/` каждого скилла** (один и тот же
 файл, поэтому есть при любой установке). Любому скиллу также нужен primary на cheap-тире: тир берётся из эффективного тира профиля хоста, а не из
 имени агента. Medium/strong primary (например `architect`) цикл **не** запускает и не
 диспетчеризует и не ведёт его плоско сам: он делает явный handoff дешёвому primary (`build` по
@@ -83,7 +83,7 @@ cp -r skills/pdca* ~/.config/opencode/skills/
 
 ## 3. Поставить агентов-ролей
 
-Агенты — это **определения субагентов хоста**. Поставляемые `assets/agents/*.md` несут
+Агенты — это **определения субагентов хоста**. Поставляемые `assets/opencode-agents/*.md` несут
 OpenCode-frontmatter (`mode: subagent`, `permission:`) поверх переносимого промпта роли; другой
 хост сохраняет тело и транслирует frontmatter:
 
@@ -102,10 +102,10 @@ OpenCode находит агентов в `~/.config/opencode/agents/<name>.md` 
 
 ```sh
 # pdca
-cp skills/pdca/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca/assets/opencode-agents/*.md ~/.config/opencode/agents/
 
 # либо pdca-coder / pdca-dotnet
-cp skills/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 ```
 
 > **Один вариант — один набор ассетов.** Все три варианта цикла поставляют **одни и те же шесть
@@ -121,7 +121,7 @@ cp skills/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
 развёрнутая копия. Третья, более полная копия может уже лежать в конфиг-репозитории. Выберите один
 источник истины:
 
-- **одно семейство** — копируйте `assets/agents/*.md` этого скилла;
+- **одно семейство** — копируйте `assets/opencode-agents/*.md` этого скилла;
 - **общий набор хоста** — держите роли в конфиг-репозитории и механически зеркальте их в ассеты
   скилла. Готового sync-скрипта пак не поставляет: если он нужен, держите его в конфиг-репозитории
   и роняйте CI при расхождении. Это единственный способ не потерять молча тела `pdca-coder` на
@@ -133,7 +133,7 @@ id моделей привязывает профиль хоста (§8).
 ## 5. Поставить драйвер `pdca-orchestrator`
 
 Драйвер — дешёвый **диспетчер**, который ведёт один дочерний цикл, одну группу коллекции или один
-шаг инкрементальной кампании. Он лежит в `assets/agents/` каждого скилла, поэтому шаг 3 копирует
+шаг инкрементальной кампании. Он лежит в `assets/opencode-agents/` каждого скилла, поэтому шаг 3 копирует
 его вместе с остальными; писать своего не нужно, и не держите рядом старую хостовую копию под тем
 же id. Frontmatter (`mode:`/`permission:`) — это адаптер OpenCode; другие хосты переиспользуют
 тело.
@@ -287,7 +287,7 @@ opencode service restart
 `cap` тоже не выдумываются.
 
 Установленный драйвер может **разойтись** с каноническим ассетом в
-`skills/pdca/assets/agents/`. Обновите его из ассета и проверьте действующие права, прежде чем на
+`skills/pdca/assets/opencode-agents/`. Обновите его из ассета и проверьте действующие права, прежде чем на
 него полагаться: установленный `pdca-orchestrator`, не разрешающий делегирование `pdca-scout`, —
 конкретный наблюдавшийся пример, и он молча ломает `escalate → scout`. Это часть чек-листа §5, а не
 то, что видят тесты репозитория; остальную конфигурацию хоста менять не нужно.
