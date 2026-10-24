@@ -601,11 +601,19 @@ role); it constructs the chain:
 
 - **Re-run — `pdca-executor`:** name the proving action and have it run **again**; return the
   exit status, the key numbers and the log **path**, not the log.
-- **Facts — `pdca-scout`:** changed artefacts and what changed (pointers) — reported by a
-  non-author.
-- **Judgment — `pdca-check`:** the reports go to `pdca-check` (gates 2/3); it decides whether
-  they prove the claim. The orchestrator relays, it does not judge.
+- **Observe — `pdca-scout`, before CHECK:** a non-author observes the **actual frozen result**
+  and the verification evidence the criteria name — not the author's restatement and not a
+  parallel declaration about it. For each criterion, distinguish what was observed, what rests
+  on assumptions, and what remains unverified; bind observations to the frozen result identity,
+  and state cross-part consistency findings and verification limits. Pointers only.
+- **Judge — `pdca-check`:** the reports go to `pdca-check` (gates 2/3); it decides whether
+  they prove the claim. The orchestrator relays, it does not judge. Where the checker's scoped
+  evidence read cannot reach the actual result, the supplied independent observation must close
+  that gap; missing or inaccessible evidence stays `unverified` → **re-gather**, and the
+  checker's permissions are not widened.
 - **A report ≠ a result:** "the agent said success", "it should pass" is not evidence.
+  Successful verification establishes only what its method examined; matching result identities
+  do not establish content correctness or consistency between renderings of the same content.
 - **Slide-marker words** — "should work", "probably", "looks correct", "it's obvious", "passed
   last time" — in a report or your own text: order the run.
 - **Gates pass on facts** (fresh output, pointers, first-hand observations), not claims.
@@ -822,6 +830,12 @@ Lifecycle:
 ```text
 <UTC time> | <phase> | revision r | iteration n/3 | <event> | <evidence pointer>
 ```
+
+The first field is the **observed** time from the available tool or environment records; where no
+such record exists, mark the time unknown. The recording time is not the occurrence time: never
+invent or reorder a timestamp, never reconstruct unsupported phase history, and keep historical
+bytes as they are — a factual correction is added separately. The status file remains the
+recovery authority; the log records the observed event.
 
 Must log: `PLAN ready — awaiting user approval`; `plan approved — DO started`; each `D:` unit state change;
 each `D:` closed (exit status + log path); DO → CHECK; each CHECK report; the `pdca-check`
