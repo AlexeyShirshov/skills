@@ -3,8 +3,8 @@
 **Статус:** план утверждён к исполнению (DO — отдельный шаг; этот документ ничего не реализует и не коммитит).
 **Дата:** 2026-10-20.
 **Основание (approved design):** [`docs/superpowers/specs/2026-10-20-pdca-collection-incremental-composition-design.md`](../specs/2026-10-20-pdca-collection-incremental-composition-design.md), включая последнюю правку про `selected_variant` (§3.2, §9.2).
-**Область:** верхние контракты семейства (`opencode/pdca-entry`, `opencode/pdca-collection`, `opencode/pdca-incremental`) и общий ассет раннера `opencode/pdca/assets/agents/pdca-orchestrator.md` с его копиями; guard-тесты и двуязычные документы.
-**Не входит:** базовая машина (`opencode/pdca/SKILL.md`), доменные контракты `pdca-coder`/`pdca-dotnet`, роль-ассеты `pdca-{planner,executor,check,escalate,scout}.md`, новые роли/тиры/model id, новые статусы задач/групп, git-модель коллекции, продуктовый код.
+**Область:** верхние контракты семейства (`skills/pdca-entry`, `skills/pdca-collection`, `skills/pdca-incremental`) и общий ассет раннера `skills/pdca/assets/agents/pdca-orchestrator.md` с его копиями; guard-тесты и двуязычные документы.
+**Не входит:** базовая машина (`skills/pdca/SKILL.md`), доменные контракты `pdca-coder`/`pdca-dotnet`, роль-ассеты `pdca-{planner,executor,check,escalate,scout}.md`, новые роли/тиры/model id, новые статусы задач/групп, git-модель коллекции, продуктовый код.
 
 **Цель.** Реализовать ровно то, что зафиксировано в approved design: collection может содержать единицы-циклы (`execution_kind=cycle`) и единицы-кампании (`execution_kind=campaign`); форма исполнения отделена от `selected_variant`; барьер требует настоящий PLAN цикла либо отдельный immutable `preparation.md@r<k>` кампании; кампания в коллекции ведётся существующим `pdca-orchestrator` inline без нового агента/уровня `Task`; состояния readiness/runtime/disposition раздельны; пауза ≠ финал; права и fallback не расширяются. Дизайн переопределять нельзя: расхождение — stop и возврат к planner, а не «улучшение» по ходу.
 
@@ -23,7 +23,7 @@
 
 **Зависимости:** нет. **Владелец:** cheap executor (на стадии DO).
 
-**Files (read-only):** всё дерево; отдельно — `opencode/*/tests/`, `README.md` (раздел Tests), `.pdca/status/`.
+**Files (read-only):** всё дерево; отдельно — `skills/*/tests/`, `README.md` (раздел Tests), `.pdca/status/`.
 
 **Action.**
 
@@ -35,10 +35,10 @@
 **Commands (существующие конвенции репозитория, `README.md` §Tests):**
 
 ```sh
-python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-entry/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-entry/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-incremental/tests -p 'test_*.py' -v
 ```
 
 **Acceptance.**
@@ -55,7 +55,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 
 **Зависимости:** задача 0. **Владелец:** `pdca-scout` (read-only), сводку потребляет planner; medium primary только планирует и **не запускает PDCA-цикл**.
 
-**Files (read-only):** host-конфиг, доступный через `OPENCODE_CONFIG_REPO` (если передан) — `config/agents/`, `config/profiles/`, `config/AGENTS.md`, `config/skills-keep.txt`; `docs/install.md`, `docs/ru/install.md`, `docs/install-prompt.md`; `.pdca/status/*` (реальные persisted-файлы); `opencode/pdca/assets/agents/pdca-orchestrator.md` (§Contract, права), `opencode/pdca/tests/test_routing_consistency.py` (host-parity skip-логика).
+**Files (read-only):** host-конфиг, доступный через `OPENCODE_CONFIG_REPO` (если передан) — `config/agents/`, `config/profiles/`, `config/AGENTS.md`, `config/skills-keep.txt`; `docs/install.md`, `docs/ru/install.md`, `docs/install-prompt.md`; `.pdca/status/*` (реальные persisted-файлы); `skills/pdca/assets/agents/pdca-orchestrator.md` (§Contract, права), `skills/pdca/tests/test_routing_consistency.py` (host-parity skip-логика).
 
 **Action.** Собрать факты, ничего не записывая вне workspace и не расширяя права:
 
@@ -78,7 +78,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 
 ## 2. Регрессионные проверки контрактов (red до изменения поведения)
 
-**Зависимости:** задачи 0, 1 (схема defaulting нужна для тестов миграции). **Files (tests only):** `opencode/pdca/tests/test_orchestrator_variant_routing.py`, `opencode/pdca/tests/test_routing_consistency.py`, `opencode/pdca/tests/test_permission_boundaries.py`, `opencode/pdca-entry/tests/test_contract.py`, `opencode/pdca-collection/tests/test_plan_barrier.py`, `opencode/pdca-collection/tests/test_verification_recovery.py`, `opencode/pdca-collection/tests/test_routing_guard.py`, `opencode/pdca-collection/tests/test_git_model.py`, `opencode/pdca-collection/tests/test_orchestrator_asset.py`, `opencode/pdca-incremental/tests/test_contract.py`, `opencode/pdca-incremental/tests/test_orchestrator_asset.py`, `opencode/pdca/tests/test_docs_sources.py`.
+**Зависимости:** задачи 0, 1 (схема defaulting нужна для тестов миграции). **Files (tests only):** `skills/pdca/tests/test_orchestrator_variant_routing.py`, `skills/pdca/tests/test_routing_consistency.py`, `skills/pdca/tests/test_permission_boundaries.py`, `skills/pdca-entry/tests/test_contract.py`, `skills/pdca-collection/tests/test_plan_barrier.py`, `skills/pdca-collection/tests/test_verification_recovery.py`, `skills/pdca-collection/tests/test_routing_guard.py`, `skills/pdca-collection/tests/test_git_model.py`, `skills/pdca-collection/tests/test_orchestrator_asset.py`, `skills/pdca-incremental/tests/test_contract.py`, `skills/pdca-incremental/tests/test_orchestrator_asset.py`, `skills/pdca/tests/test_docs_sources.py`.
 
 **Action.** Расширить существующие наборы (новый suite не создавать) проверками, фиксирующими контракт **до** правок SKILL/ассета. Минимальный набор:
 
@@ -100,7 +100,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 **Command (после добавления тестов, до правок контрактов):**
 
 ```sh
-python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v
 ```
 
 **Stop/replan:** если red нельзя получить структурной проверкой без догадок о формате — сузить до проверки уже существующего инварианта и отметить это в отчёте; не ослаблять проверку, чтобы она «прошла».
@@ -109,7 +109,7 @@ python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
 
 ## 3. Артефакт подготовки, ревизии, поверхность и раздельные состояния
 
-**Зависимости:** задачи 1, 2. **Files:** `opencode/pdca-collection/SKILL.md` (§§ `Роль`, `Коллекция (P / D / C / A)`, `Лейн`, `Статус коллекции`, `Fallback`), `opencode/pdca-incremental/SKILL.md` (§§ `Campaign status file`, `Campaign cycle` → `0. Bootstrap`), тесты из задачи 2.
+**Зависимости:** задачи 1, 2. **Files:** `skills/pdca-collection/SKILL.md` (§§ `Роль`, `Коллекция (P / D / C / A)`, `Лейн`, `Статус коллекции`, `Fallback`), `skills/pdca-incremental/SKILL.md` (§§ `Campaign status file`, `Campaign cycle` → `0. Bootstrap`), тесты из задачи 2.
 
 **Action.**
 
@@ -127,7 +127,7 @@ python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
 - Ни один шаг не расширяет поверхность молча.
 - Guard-тесты задачи 2 (barrier/routing/plan) зелёные.
 
-**Command:** `python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v`.
+**Command:** `python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v`.
 
 **Stop/replan:** если реальные persisted-файлы противоречат выбранному defaulting (FG-4) — остановиться, вернуть planner'у правило чтения; не «мигрировать» чужие статус-файлы.
 
@@ -135,7 +135,7 @@ python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
 
 ## 4. Раннер: collection-lane и inline-ведение
 
-**Зависимости:** задачи 1, 3. **Files:** канонический `opencode/pdca/assets/agents/pdca-orchestrator.md`; байт-в-байт копии: `opencode/pdca-entry/assets/agents/pdca-orchestrator.md`, `opencode/pdca-coder/assets/agents/pdca-orchestrator.md`, `opencode/pdca-dotnet/assets/agents/pdca-orchestrator.md`, `opencode/pdca-collection/assets/agents/pdca-orchestrator.md`, `opencode/pdca-incremental/assets/agents/pdca-orchestrator.md`; тесты `opencode/pdca/tests/test_routing_consistency.py`, `opencode/pdca-collection/tests/test_orchestrator_asset.py`, `opencode/pdca-incremental/tests/test_orchestrator_asset.py`.
+**Зависимости:** задачи 1, 3. **Files:** канонический `skills/pdca/assets/agents/pdca-orchestrator.md`; байт-в-байт копии: `skills/pdca-entry/assets/agents/pdca-orchestrator.md`, `skills/pdca-coder/assets/agents/pdca-orchestrator.md`, `skills/pdca-dotnet/assets/agents/pdca-orchestrator.md`, `skills/pdca-collection/assets/agents/pdca-orchestrator.md`, `skills/pdca-incremental/assets/agents/pdca-orchestrator.md`; тесты `skills/pdca/tests/test_routing_consistency.py`, `skills/pdca-collection/tests/test_orchestrator_asset.py`, `skills/pdca-incremental/tests/test_orchestrator_asset.py`.
 
 **Action.**
 
@@ -156,9 +156,9 @@ python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
 **Commands:**
 
 ```sh
-python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-incremental/tests -p 'test_*.py' -v
 ```
 
 **Stop/replan:** если parity-механизм требует правки копий вручную или расхождение не устраняется одной синхронизацией — остановиться и вернуть planner'у вопрос о механизме; не оставлять частично обновлённые копии.
@@ -167,7 +167,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 
 ## 5. Incremental-контракт: две модели, resume, пауза, git
 
-**Зависимости:** задачи 3, 4. **Files:** `opencode/pdca-incremental/SKILL.md` — точечно §§ `Role`, `Roles, tiers and authority` (строка `STEP N | RUNNER | pdca-orchestrator`), `Autonomous mode`; по смыслу §§ `Campaign invariants`, `Campaign status file`, `Campaign cycle` → `0. Bootstrap`, `3. Step execution` (фактические заголовки проверить в файле, не выдумывать), `5. Stop decision`; тест `opencode/pdca-incremental/tests/test_contract.py`.
+**Зависимости:** задачи 3, 4. **Files:** `skills/pdca-incremental/SKILL.md` — точечно §§ `Role`, `Roles, tiers and authority` (строка `STEP N | RUNNER | pdca-orchestrator`), `Autonomous mode`; по смыслу §§ `Campaign invariants`, `Campaign status file`, `Campaign cycle` → `0. Bootstrap`, `3. Step execution` (фактические заголовки проверить в файле, не выдумывать), `5. Stop decision`; тест `skills/pdca-incremental/tests/test_contract.py`.
 
 **Action.**
 
@@ -187,7 +187,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 - `test_contract.py` покрывает две модели, `preparation_ref`, готовность ≠ завершение, пауза ≠ финал, per-unit disposition, commit policy, запрет рекурсии, один лейн.
 - Resume-инварианты (нет повторного зачёта принятого шага, нет обхода барьера) присутствуют и не ослаблены.
 
-**Command:** `python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -v`.
+**Command:** `python3 -m unittest discover -s skills/pdca-incremental/tests -p 'test_*.py' -v`.
 
 **Stop/replan:** если required-раздел отсутствует под ожидаемым именем — найти фактический заголовок в файле и обновить план-ссылку; не создавать параллельный раздел-дубль.
 
@@ -195,7 +195,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 
 ## 6. Capability, fallback и host-документация
 
-**Зависимости:** задачи 1, 4. **Files:** `docs/install.md`, `docs/ru/install.md`, `docs/install-prompt.md`; соответствующий текст preflight/fallback — в `opencode/pdca-collection/SKILL.md` (§`Fallback`) и `opencode/pdca-incremental/SKILL.md` (§`Relation to the family`/fallback-часть, фактический заголовок проверить).
+**Зависимости:** задачи 1, 4. **Files:** `docs/install.md`, `docs/ru/install.md`, `docs/install-prompt.md`; соответствующий текст preflight/fallback — в `skills/pdca-collection/SKILL.md` (§`Fallback`) и `skills/pdca-incremental/SKILL.md` (§`Relation to the family`/fallback-часть, фактический заголовок проверить).
 
 **Action.**
 
@@ -216,7 +216,7 @@ python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -
 **Commands:**
 
 ```sh
-python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
 ```
 
 **Stop/replan:** если FG-1 не дал семантику ключа — числовые примеры в install-документах не публикуются; вместо них — capability preflight и ссылка на проверку на живом хосте.
@@ -233,7 +233,7 @@ python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 2. Incremental: кампания как единица коллекции; две исполняющие модели; `preparation_ref` вместо копии каркаса; готовность ≠ завершение; пауза ≠ финал; вариант шага и dispatch policy. Реальный кейс из `docs/ru/pdca-incremental.md` остаётся иллюстрацией статьи и не переносится в общие правила.
 3. **EN-пара `docs/pdca-incremental.md`:** сейчас отсутствует, а design (§8.3, §9.17) требует двуязычности. Создать её как перевод/адаптацию RU-статьи в объёме затронутых разделов, без «гигантского» расширения и без переписывания несвязанных статей. Если по ходу выяснится, что EN-пара не требуется для acceptance — зафиксировать это решением planner'а, а не молчаливым пропуском.
 4. Entry: в `docs/pdca-guide.md`/`README.md` отразить, что пакет может содержать кампанию, а кампания остаётся последовательной; маршрутизация `pdca-entry` не меняет приоритеты и не добавляет шестой контракт; различать top-level вход и вложенный контекст (кампания внутри collection не ремаршрутизируется заново).
-5. Цитаты — только `opencode/<skill>/SKILL.md §Раздел`, без диапазонов строк (это проверяет `test_docs_sources.py`).
+5. Цитаты — только `skills/<skill>/SKILL.md §Раздел`, без диапазонов строк (это проверяет `test_docs_sources.py`).
 
 **Acceptance.**
 
@@ -242,7 +242,7 @@ python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 - `test_docs_sources.py` зелёный; битых §-ссылок нет.
 - Diff docs ограничен перечисленными файлами.
 
-**Command:** `python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v` (включает docs-sources).
+**Command:** `python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v` (включает docs-sources).
 
 **Stop/replan:** если перевод EN требует решения о структуре, которого нет в design, — вернуть вопрос planner'у; не изобретать новые разделы контрактов в документации.
 
@@ -255,11 +255,11 @@ python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
 **Action.** Прогнать все релевантные наборы и записать exit code + passed/failed/skipped + путь к логу:
 
 ```sh
-python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-entry/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-collection/tests -p 'test_*.py' -v
-python3 -m unittest discover -s opencode/pdca-incremental/tests -p 'test_*.py' -v
-bash opencode/pdca-collection/tests/git-model-sim.sh
+python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-entry/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca-incremental/tests -p 'test_*.py' -v
+bash skills/pdca-collection/tests/git-model-sim.sh
 ```
 
 Дополнительно:

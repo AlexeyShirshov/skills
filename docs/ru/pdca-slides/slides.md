@@ -129,7 +129,7 @@ layout: center
 
 <!--
 Полная схема: входы фаз, роли по тирам, граф состояний.
-Источник — opencode/pdca/assets/diagram/pdca-contract-dark.svg.
+Источник — skills/pdca/assets/diagram/pdca-contract-dark.svg.
 -->
 
 ---
@@ -260,7 +260,7 @@ layout: center
 
 <!--
 Схема — вырезка графа состояний из репозитория:
-opencode/pdca/assets/diagram/pdca-state-dark.svg (viewBox кадрирован по графу).
+skills/pdca/assets/diagram/pdca-state-dark.svg (viewBox кадрирован по графу).
 STOP — отдельный терминальный путь: ни «зелёный» гейт, ни успешный ACT.
 -->
 
@@ -628,5 +628,5 @@ layout: end
 </div>
 
 <div class="pt-8 text-sm opacity-60">
-Сверено с контрактами <code>opencode/pdca*</code> на <code>8a2ee75</code> (23.10.2026).
+Сверено с контрактами <code>skills/pdca*</code> на <code>8a2ee75</code> (23.10.2026).
 </div>

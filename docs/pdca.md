@@ -17,7 +17,7 @@ quality. The promise is modest: the cycle does not guarantee the right result in
 but it does not let you close work without verification, silently lose state, or pass off identical
 retries as progress.
 
-![Diagram of the domain-neutral pdca cycle: phase inputs, roles by tier, state graph](../opencode/pdca/assets/diagram/pdca-hand-dark-en.svg)
+![Diagram of the domain-neutral pdca cycle: phase inputs, roles by tier, state graph](../skills/pdca/assets/diagram/pdca-hand-dark-en.svg)
 
 `pdca` is a **domain-neutral** skill: it names only **roles** and **phases** and imposes neither
 artifacts, nor task types, nor domain examples. What the result will be — a report, a document, a
@@ -277,7 +277,7 @@ after an escalation as well.
 - A full walkthrough of the whole family — gates, counters, roles, modes, memory and evidence — is
   in the guide [`docs/pdca-guide.md`](pdca-guide.md).
 - The normative contract of the domain-neutral cycle is the skill file
-  [`opencode/pdca/SKILL.md`](../opencode/pdca/SKILL.md).
+  [`skills/pdca/SKILL.md`](../skills/pdca/SKILL.md).
 - The engineering cycle of the same core for code, tests, documentation and configuration is the
   article [`pdca-coder.md`](pdca-coder.md).
 - The .NET-specific variant with its own gates (zero warnings, coverage and mutations, a mandatory
@@ -294,20 +294,20 @@ article and the skill disagree, the skill file takes precedence. The "claim → 
 
 | Claim | Source |
 |---|---|
-| `pdca` is domain-neutral: it names only roles and phases; what to verify with is decided by PLAN | `opencode/pdca/SKILL.md:6-14` |
-| Roles, tiers, fallback; an unavailable role is a resource blocker | `opencode/pdca/SKILL.md §Host requirements (roles → agents)` |
-| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/agents/pdca-orchestrator.md` in every skill | `opencode/pdca/SKILL.md §Host requirements (roles → agents)`; `opencode/pdca/assets/agents/pdca-orchestrator.md` |
-| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `opencode/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `opencode/pdca/assets/agents/pdca-check.md:11-20,27-28` |
-| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `opencode/pdca/SKILL.md §Orchestrator role` |
-| The state machine and the `DO → PLAN` branch | `opencode/pdca/SKILL.md §State machine` |
-| The counters `N`, `r`, `n/3` and the defect history | `opencode/pdca/SKILL.md §State machine` |
-| The DO candidate → PLAN; an additive precondition vs a scope replacement | `opencode/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
-| Gates 1–5 and the STOP finalization | `opencode/pdca/SKILL.md §Transition gates` |
-| The plan command contract, vacuous and `expected-negative` runs, the exception catalog, DO-entry re-anchoring, proportional planning with a stop-loss budget, and one evidence location binding | `opencode/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding` |
-| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `opencode/pdca/SKILL.md §Phase contracts (generic)` |
-| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `opencode/pdca/SKILL.md §Frozen evidence manifest` |
-| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `opencode/pdca/SKILL.md §Normal and autonomous modes` |
-| The collection `plan_handoff` at the PLAN → DO boundary | `opencode/pdca/SKILL.md §Normal and autonomous modes` |
-| The status file as the only progress mirror, evidence, recovery | `opencode/pdca/SKILL.md §Phase progress mirror (status file only) · §Skill workspace: .pdca/ · §Durable status · §Evidence over assertion · §Recovery after compaction and drift` |
-| Escalation, triggers 1–5, the "no fourth attempt" rule | `opencode/pdca/SKILL.md §Escalation (pdca-escalate)` |
-| Limitations: permissions, instructions, injections, secrets, authorization | `opencode/pdca/SKILL.md §Generic operating constraints` |
+| `pdca` is domain-neutral: it names only roles and phases; what to verify with is decided by PLAN | `skills/pdca/SKILL.md:6-14` |
+| Roles, tiers, fallback; an unavailable role is a resource blocker | `skills/pdca/SKILL.md §Host requirements (roles → agents)` |
+| `pdca-orchestrator` is a cheap dispatcher, not a fifth skill; its prompt ships as `assets/agents/pdca-orchestrator.md` in every skill | `skills/pdca/SKILL.md §Host requirements (roles → agents)`; `skills/pdca/assets/agents/pdca-orchestrator.md` |
+| CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `skills/pdca/SKILL.md §Host requirements (roles → agents), :22-28`; `skills/pdca/assets/agents/pdca-check.md:11-20,27-28` |
+| The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `skills/pdca/SKILL.md §Orchestrator role` |
+| The state machine and the `DO → PLAN` branch | `skills/pdca/SKILL.md §State machine` |
+| The counters `N`, `r`, `n/3` and the defect history | `skills/pdca/SKILL.md §State machine` |
+| The DO candidate → PLAN; an additive precondition vs a scope replacement | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| Gates 1–5 and the STOP finalization | `skills/pdca/SKILL.md §Transition gates` |
+| The plan command contract, vacuous and `expected-negative` runs, the exception catalog, DO-entry re-anchoring, proportional planning with a stop-loss budget, and one evidence location binding | `skills/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding` |
+| The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `skills/pdca/SKILL.md §Phase contracts (generic)` |
+| The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `skills/pdca/SKILL.md §Frozen evidence manifest` |
+| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `skills/pdca/SKILL.md §Normal and autonomous modes` |
+| The collection `plan_handoff` at the PLAN → DO boundary | `skills/pdca/SKILL.md §Normal and autonomous modes` |
+| The status file as the only progress mirror, evidence, recovery | `skills/pdca/SKILL.md §Phase progress mirror (status file only) · §Skill workspace: .pdca/ · §Durable status · §Evidence over assertion · §Recovery after compaction and drift` |
+| Escalation, triggers 1–5, the "no fourth attempt" rule | `skills/pdca/SKILL.md §Escalation (pdca-escalate)` |
+| Limitations: permissions, instructions, injections, secrets, authorization | `skills/pdca/SKILL.md §Generic operating constraints` |

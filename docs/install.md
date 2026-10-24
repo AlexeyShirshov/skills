@@ -67,7 +67,7 @@ entry hands off. This is the deliberate split — the model cannot pick a contra
 From a checkout (paths are relative to the repository root):
 
 ```sh
-cp -r opencode/pdca* ~/.config/opencode/skills/
+cp -r skills/pdca* ~/.config/opencode/skills/
 ```
 
 For the PDCA family the global skills root is enough — OpenCode discovers
@@ -104,10 +104,10 @@ it, e.g. `.opencode/agents/team/reviewer.md` → `team/reviewer`).
 
 ```sh
 # pdca
-cp opencode/pdca/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca/assets/agents/*.md ~/.config/opencode/agents/
 
 # or pdca-coder / pdca-dotnet
-cp opencode/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
 ```
 
 > **One variant, one asset set.** All three cycle variants ship **the same six ids**
@@ -330,7 +330,7 @@ chain (§6). No host-side parallel-cap key, schema entry or constant was found i
 source; that absence is **not** evidence of unlimited concurrency, and `cap` values are not invented
 either.
 
-The installed runner may **drift** from the canonical asset in `opencode/pdca/assets/agents/`. Refresh
+The installed runner may **drift** from the canonical asset in `skills/pdca/assets/agents/`. Refresh
 it from the asset and verify its effective permissions before relying on it: an installed
 `pdca-orchestrator` that does not allow delegation to `pdca-scout` is the concrete observed example,
 and it silently breaks `escalate → scout`. This is part of the checklist in §5, not something the
@@ -398,5 +398,5 @@ The checklist is packaged as a copy-paste prompt: [`install-prompt.md`](install-
 `build`), and the agent performs the steps idempotently, with backups, a restart and the verification
 of §9.
 
-The skill files remain the normative source: `opencode/<skill>/SKILL.md`, section
+The skill files remain the normative source: `skills/<skill>/SKILL.md`, section
 `## Host requirements (roles → agents)`.

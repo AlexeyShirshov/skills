@@ -66,7 +66,7 @@ npx skills add AlexeyShirshov/skills@pdca-dotnet -g -y
 (пути от корня репозитория):
 
 ```sh
-cp -r opencode/pdca* ~/.config/opencode/skills/
+cp -r skills/pdca* ~/.config/opencode/skills/
 ```
 
 Для семейства PDCA глобального каталога достаточно — OpenCode сканирует
@@ -102,10 +102,10 @@ OpenCode находит агентов в `~/.config/opencode/agents/<name>.md` 
 
 ```sh
 # pdca
-cp opencode/pdca/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca/assets/agents/*.md ~/.config/opencode/agents/
 
 # либо pdca-coder / pdca-dotnet
-cp opencode/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
+cp skills/pdca-coder/assets/agents/*.md ~/.config/opencode/agents/
 ```
 
 > **Один вариант — один набор ассетов.** Все три варианта цикла поставляют **одни и те же шесть
@@ -287,7 +287,7 @@ opencode service restart
 `cap` тоже не выдумываются.
 
 Установленный драйвер может **разойтись** с каноническим ассетом в
-`opencode/pdca/assets/agents/`. Обновите его из ассета и проверьте действующие права, прежде чем на
+`skills/pdca/assets/agents/`. Обновите его из ассета и проверьте действующие права, прежде чем на
 него полагаться: установленный `pdca-orchestrator`, не разрешающий делегирование `pdca-scout`, —
 конкретный наблюдавшийся пример, и он молча ломает `escalate → scout`. Это часть чек-листа §5, а не
 то, что видят тесты репозитория; остальную конфигурацию хоста менять не нужно.
@@ -354,5 +354,5 @@ opencode service restart
 включая `HOST=opencode|claude|codex|dsh|custom` — отдайте дешёвому primary (например `build`);
 агент выполнит шаги идемпотентно, с бэкапами, перезапуском и проверкой из §9.
 
-Нормативный источник остаётся за файлами скиллов: `opencode/<skill>/SKILL.md`, раздел
+Нормативный источник остаётся за файлами скиллов: `skills/<skill>/SKILL.md`, раздел
 `## Host requirements (roles → agents)`.

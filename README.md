@@ -13,16 +13,16 @@ its copies from `.pdca/scripts/`.
 
 ## Contents
 
-Skills live under [`opencode/`](opencode/).
+Skills live under [`skills/`](skills/).
 
 | Skill | Description |
 | --- | --- |
-| [`pdca-entry`](opencode/pdca-entry) | Single entry point (umbrella) for the family: classifies a task and routes it to exactly one contract — collection, incremental, .NET, coder or the neutral cycle. |
-| [`pdca`](opencode/pdca) | Domain-neutral PDCA cycle: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. |
-| [`pdca-coder`](opencode/pdca-coder) | Stack-agnostic PDCA executor for software-engineering tasks (code, tests, docs, refactoring, config). Picks the build/test/lint toolchain per language. |
-| [`pdca-collection`](opencode/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups); a batch may contain single-cycle units and sequential incremental-campaign units. |
-| [`pdca-dotnet`](opencode/pdca-dotnet) | PDCA cycle for .NET/C# tasks: parallel DO/CHECK streams, role routing, ACT handoff. |
-| [`pdca-incremental`](opencode/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds; a campaign can also be a unit of a collection batch and then stays sequential. |
+| [`pdca-entry`](skills/pdca-entry) | Single entry point (umbrella) for the family: classifies a task and routes it to exactly one contract — collection, incremental, .NET, coder or the neutral cycle. |
+| [`pdca`](skills/pdca) | Domain-neutral PDCA cycle: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. |
+| [`pdca-coder`](skills/pdca-coder) | Stack-agnostic PDCA executor for software-engineering tasks (code, tests, docs, refactoring, config). Picks the build/test/lint toolchain per language. |
+| [`pdca-collection`](skills/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups); a batch may contain single-cycle units and sequential incremental-campaign units. |
+| [`pdca-dotnet`](skills/pdca-dotnet) | PDCA cycle for .NET/C# tasks: parallel DO/CHECK streams, role routing, ACT handoff. |
+| [`pdca-incremental`](skills/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds; a campaign can also be a unit of a collection batch and then stays sequential. |
 
 The five contracts share the same cycle: a cheap orchestrator drives roles (planner, coder,
 check, scout, escalate), every CHECK is evidence-based, and a required approval that cannot
@@ -73,15 +73,15 @@ development-only and not needed at runtime.
 Global (all projects) — the full family, `pdca-entry` included:
 
 ```sh
-cp -r opencode/pdca-entry opencode/pdca opencode/pdca-coder opencode/pdca-collection \
-  opencode/pdca-dotnet opencode/pdca-incremental ~/.config/opencode/skills/
+cp -r skills/pdca-entry skills/pdca skills/pdca-coder skills/pdca-collection \
+  skills/pdca-dotnet skills/pdca-incremental ~/.config/opencode/skills/
 ```
 
 Per project:
 
 ```sh
 mkdir -p .opencode/skills
-cp -r opencode/pdca* .opencode/skills/
+cp -r skills/pdca* .opencode/skills/
 ```
 
 Skills are discovered by the `name` field in their frontmatter. Copying all six does not change
@@ -111,7 +111,7 @@ Invoke a skill by name, e.g. in an opencode session:
 Each skill ships a `tests/` suite (plain `unittest`, standard library only). Run one skill:
 
 ```sh
-python3 -m unittest discover -s opencode/pdca/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
 ```
 
 Some checks compare the skill against host-side artifacts that live in a separate config
@@ -120,7 +120,7 @@ checks skip unless you point at that checkout:
 
 ```sh
 OPENCODE_CONFIG_REPO=/path/to/opencode-config \
-  python3 -m unittest discover -s opencode/pdca-dotnet/tests -p 'test_*.py'
+  python3 -m unittest discover -s skills/pdca-dotnet/tests -p 'test_*.py'
 ```
 
 `pdca-collection` additionally ships a dependency-free bash check of its git model (branch
@@ -129,7 +129,7 @@ incomplete group preserved but never merged) on throwaway temp repositories. `un
 runs it through `tests/test_git_model.py`; it can also be run directly:
 
 ```sh
-bash opencode/pdca-collection/tests/git-model-sim.sh
+bash skills/pdca-collection/tests/git-model-sim.sh
 ```
 
 ## Plugins
@@ -143,8 +143,8 @@ Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per p
 | [`wsl-notify`](opencode/plugins/wsl-notify) [![npm](https://img.shields.io/npm/v/wsl-notify)](https://www.npmjs.com/package/wsl-notify) | Windows toast notifications for OpenCode — permission, question, completion and error events. Zero dependencies, one entrypoint for OpenCode V1 and V2, works from WSL (`powershell.exe` interop) and native Windows. |
 | [`opencode-roslyn`](opencode/plugins/opencode-roslyn) [![npm](https://img.shields.io/npm/v/opencode-roslyn)](https://www.npmjs.com/package/opencode-roslyn) [![NuGet](https://img.shields.io/nuget/v/opencode-roslyn)](https://www.nuget.org/packages/opencode-roslyn) | C# semantic analysis for OpenCode V2 — the `roslyn` tool answers structure/types/symbols/members/refs/callers/implementations/rename through the `roslynq` CLI (Roslyn + `MSBuildWorkspace`), with permissions, progress and cancellation. V2 has no LSP runtime yet; this is the semantic answer in the meantime. |
 | [`opencode-sidebar-plugins`](opencode/plugins/sidebar-plugins) [![npm](https://img.shields.io/npm/v/opencode-sidebar-plugins)](https://www.npmjs.com/package/opencode-sidebar-plugins) | A `Plugins` section in the OpenCode V2 CLI sidebar — every loaded plugin and, by default, only those that actually reach the model context (prompt, tools, agents, skills). Classifies built-ins from their registrations, scans local and package plugin sources, and refuses to guess when a package entry cannot be resolved. |
-| [`zen-failover`](opencode/plugins/zen-failover) | Server failover for subscription providers: on an exhausted quota it moves every agent, the default model and the active session to the fallback (`ChatGPT` → the same model on Console, `Go` → direct DeepSeek), probes the plan once a minute, and restores the original bindings as soon as the subscription answers again. Transient per-minute `429`s are retried, not degraded. |
-| [`opencode-clear-session`](opencode/plugins/clear-session) | `/clear` for the OpenCode V2 CLI — archives the current session (recoverable, not deleted), closes its tab and lands on a fresh session. V2 port of the V1 TUI plugin that replaces V2's built-in `session.clear` (same `/clear`, but it does not archive) and adds `/archive`; no runtime dependencies. |
+| [`zen-failover`](opencode/plugins/zen-failover) [![npm](https://img.shields.io/npm/v/zen-failover)](https://www.npmjs.com/package/zen-failover) | Server failover for subscription providers: on an exhausted quota it moves every agent, the default model and the active session to the fallback (`ChatGPT` → the same model on Console, `Go` → direct DeepSeek), probes the plan once a minute, and restores the original bindings as soon as the subscription answers again. Transient per-minute `429`s are retried, not degraded. |
+| [`opencode-clear-session`](opencode/plugins/clear-session) [![npm](https://img.shields.io/npm/v/opencode-clear-session)](https://www.npmjs.com/package/opencode-clear-session) | `/clear` for the OpenCode V2 CLI — archives the current session (recoverable, not deleted), closes its tab and lands on a fresh session. V2 port of the V1 TUI plugin that replaces V2's built-in `session.clear` (same `/clear`, but it does not archive) and adds `/archive`; its only dependency is the host's `@opencode/plugin` API. |
 
 Install the published package in `opencode.json(c)` (`plugins` on V2, `plugin` on V1), or copy a plugin's
 entry file (`index.js`, or `tui.tsx` for the sidebar/TUI plugins) into `<config>/plugins/` and let

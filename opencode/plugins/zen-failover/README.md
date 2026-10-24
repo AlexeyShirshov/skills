@@ -77,14 +77,26 @@ Log: `/tmp/opencode/zen-failover.log` (override with `ZEN_FAILOVER_LOG`).
 
 ## Install
 
-Copy (or symlink) the plugin directory into the OpenCode config and let it
+```jsonc
+// opencode.json(c)
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["zen-failover"]
+}
+```
+
+```sh
+opencode plugin add zen-failover
+```
+
+Or copy (or symlink) the plugin directory into the OpenCode config and let it
 discover the entrypoint:
 
 ```sh
 cp -r opencode/plugins/zen-failover ~/.config/opencode/plugins/
 ```
 
-It is loaded from `~/.config/opencode/plugins/zen-failover/index.js` without a
+Then it is loaded from `~/.config/opencode/plugins/zen-failover/index.js` without a
 `plugins` entry in `opencode.json(c)`. Takes effect on the next OpenCode start
 (or plugin reload).
 

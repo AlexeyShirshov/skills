@@ -7,9 +7,9 @@
 это переживает длинную работу, компакцию контекста и сбой. Документ задуман как база для публицистических статей, поэтому он объясняет логику
 доступным языком, а не пересказывает контракты дословно.
 
-**Источник-рекорд — файлы скиллов в этом репозитории:** `opencode/pdca-entry/…`,
-`opencode/pdca/SKILL.md`, `opencode/pdca-coder/…`, `opencode/pdca-dotnet/…`,
-`opencode/pdca-collection/…`, `opencode/pdca-incremental/…`.
+**Источник-рекорд — файлы скиллов в этом репозитории:** `skills/pdca-entry/…`,
+`skills/pdca/SKILL.md`, `skills/pdca-coder/…`, `skills/pdca-dotnet/…`,
+`skills/pdca-collection/…`, `skills/pdca-incremental/…`.
 Установленные копии в `~/.config/opencode/skills/*` норму не расширяют.
 Часть ссылок указывает на **хостовые артефакты репозитория `opencode-config`
 (`config/agents/*`, `config/AGENTS.md`, `config/profiles/*.jsonc`) — в этот репозиторий они
@@ -84,12 +84,12 @@ PDCA-цикл заменяет последовательность действ
 
 | Скилл | Для чего | Как вызывается | Файл (репо) |
 |---|---|---|---|
-| `pdca-entry` | Единая входная точка (зонтик): классифицирует задачу и передаёт одному контракту ниже | «по циклу», «через PDCA», «by the cycle», «via PDCA», `pdca-entry` | `opencode/pdca-entry/SKILL.md` |
-| `pdca` | Доменно-нейтральный контракт для задачи с проверяемым результатом | **Явно по имени**: `skill pdca` / `@pdca` | `opencode/pdca/SKILL.md` |
-| `pdca-coder` | Программно-инженерные задачи любого стека: код, тесты, документация, рефакторинг, конфигурация | Явный id (`@pdca-coder`) или маршрут зонтика для другого кода | `opencode/pdca-coder/SKILL.md` |
-| `pdca-dotnet` | То же, но с .NET/C#-спецификой и `.NET`-гейтами | Явный id (`@pdca-dotnet`) или маршрут зонтика для .NET/C# | `opencode/pdca-dotnet/SKILL.md` |
-| `pdca-collection` | Пакет независимых задач, разбитый на параллельные группы-лейны | «список задач», «milestone», «милстоун», «параллельные группы», «pdca-collection» | `opencode/pdca-collection/SKILL.md` |
-| `pdca-incremental` | Одна цель без обязательного плана на весь объём (планы задач могут быть готовы): цепочка шагов, каждый следующий — от принятого замера предыдущего | «инкрементами», «маленькими шагами», «нет плана на весь объём», «каждый следующий шаг из предыдущего», «pdca-incremental» | `opencode/pdca-incremental/SKILL.md` |
+| `pdca-entry` | Единая входная точка (зонтик): классифицирует задачу и передаёт одному контракту ниже | «по циклу», «через PDCA», «by the cycle», «via PDCA», `pdca-entry` | `skills/pdca-entry/SKILL.md` |
+| `pdca` | Доменно-нейтральный контракт для задачи с проверяемым результатом | **Явно по имени**: `skill pdca` / `@pdca` | `skills/pdca/SKILL.md` |
+| `pdca-coder` | Программно-инженерные задачи любого стека: код, тесты, документация, рефакторинг, конфигурация | Явный id (`@pdca-coder`) или маршрут зонтика для другого кода | `skills/pdca-coder/SKILL.md` |
+| `pdca-dotnet` | То же, но с .NET/C#-спецификой и `.NET`-гейтами | Явный id (`@pdca-dotnet`) или маршрут зонтика для .NET/C# | `skills/pdca-dotnet/SKILL.md` |
+| `pdca-collection` | Пакет независимых задач, разбитый на параллельные группы-лейны | «список задач», «milestone», «милстоун», «параллельные группы», «pdca-collection» | `skills/pdca-collection/SKILL.md` |
+| `pdca-incremental` | Одна цель без обязательного плана на весь объём (планы задач могут быть готовы): цепочка шагов, каждый следующий — от принятого замера предыдущего | «инкрементами», «маленькими шагами», «нет плана на весь объём», «каждый следующий шаг из предыдущего», «pdca-incremental» | `skills/pdca-incremental/SKILL.md` |
 
 Модели показывается **только `pdca-entry`**; у пяти контрактов стоит
 `metadata.opencode/autoinvoke: false`, поэтому они загружаются лишь по явному id или
@@ -139,8 +139,8 @@ Incremental — **одна** проверяемая цель/метрика; с�
 после старта контракта повторной маршрутизации нет: loop-back'и (DO → PLAN, CHECK → DO)
 принадлежат выбранному контракту. `execution_kind` — не `selected_variant`: форма исполнения
 единицы не является вариантом цикла, и наоборот
-(`opencode/pdca-collection/SKILL.md` §Collection units and the execution form;
-`opencode/pdca-entry/SKILL.md` §Composition: form of execution vs. cycle variant).
+(`skills/pdca-collection/SKILL.md` §Collection units and the execution form;
+`skills/pdca-entry/SKILL.md` §Composition: form of execution vs. cycle variant).
 
 **Кто выбирает вариант.** Есть три пути.
 
@@ -1351,60 +1351,60 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 ### 14.2. Источники и соответствие
 
 Нормативные утверждения путеводителя сверены с текущими файлами репозитория (зеркало
-`pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `opencode/<skill>/SKILL.md`. Ниже — карта «тема →
+`pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `skills/<skill>/SKILL.md`. Ниже — карта «тема →
 источник» по репозиторным файлам: ссылка на скилл называет раздел
-(`opencode/<skill>/SKILL.md §Заголовок`), поэтому правки внутри скилла карту не ломают;
+(`skills/<skill>/SKILL.md §Заголовок`), поэтому правки внутри скилла карту не ломают;
 диапазоны строк остались только для короткой преамбулы до первого заголовка `##` и для
 нескилловых файлов.
 
 **Семейство и вызовы**
 - состав семейства → `README.md:13-16`; способы вызова/триггеры → `README.md:42-49`
-- `pdca` — назначение и доменная нейтральность → `opencode/pdca/SKILL.md:11-14`
-- `pdca-coder` — назначение/стек-агностичность → `opencode/pdca-coder/SKILL.md:11-15`
-- `pdca-dotnet` — .NET-таргет → `opencode/pdca-dotnet/SKILL.md:11-13`
-- `pdca-collection` — роль и выбор варианта по задаче → `opencode/pdca-collection/SKILL.md §Role`
+- `pdca` — назначение и доменная нейтральность → `skills/pdca/SKILL.md:11-14`
+- `pdca-coder` — назначение/стек-агностичность → `skills/pdca-coder/SKILL.md:11-15`
+- `pdca-dotnet` — .NET-таргет → `skills/pdca-dotnet/SKILL.md:11-13`
+- `pdca-collection` — роль и выбор варианта по задаче → `skills/pdca-collection/SKILL.md §Role`
 
 **Роли и полномочия**
-- host requirements, таблица ролей/fallback → `opencode/pdca/SKILL.md §Host requirements (roles → agents)`;
-  `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
-- ассеты ролей: только `# tier:` и permission-блоки, без `model:` → `opencode/pdca/SKILL.md §Host requirements (roles → agents)`;
-  `opencode/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
-- orchestrator role (диспетчер) → `opencode/pdca/SKILL.md §Orchestrator role`; `opencode/pdca-coder/SKILL.md §Orchestrator role`
-- `pdca-check` вправе открыть артефакты доказательств (scoped `read`) → `opencode/pdca/SKILL.md:22-28`;
-  `opencode/pdca-coder/SKILL.md §CHECK: audit checklist (generic)`; `opencode/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic)`
+- host requirements, таблица ролей/fallback → `skills/pdca/SKILL.md §Host requirements (roles → agents)`;
+  `skills/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
+- ассеты ролей: только `# tier:` и permission-блоки, без `model:` → `skills/pdca/SKILL.md §Host requirements (roles → agents)`;
+  `skills/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
+- orchestrator role (диспетчер) → `skills/pdca/SKILL.md §Orchestrator role`; `skills/pdca-coder/SKILL.md §Orchestrator role`
+- `pdca-check` вправе открыть артефакты доказательств (scoped `read`) → `skills/pdca/SKILL.md:22-28`;
+  `skills/pdca-coder/SKILL.md §CHECK: audit checklist (generic)`; `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic)`
 
 **Машина состояний, счётчики, зеркало прогресса**
-- state machine → `opencode/pdca/SKILL.md §State machine`; `opencode/pdca-coder/SKILL.md §Orchestrator role · §State machine`
-- счётчики `N/r/n` → `opencode/pdca/SKILL.md §State machine`
-- phase progress mirror → `opencode/pdca/SKILL.md §Phase progress mirror (status file only)`
-- DO → PLAN candidate (a–d) → `opencode/pdca/SKILL.md §DO → PLAN candidate`
+- state machine → `skills/pdca/SKILL.md §State machine`; `skills/pdca-coder/SKILL.md §Orchestrator role · §State machine`
+- счётчики `N/r/n` → `skills/pdca/SKILL.md §State machine`
+- phase progress mirror → `skills/pdca/SKILL.md §Phase progress mirror (status file only)`
+- DO → PLAN candidate (a–d) → `skills/pdca/SKILL.md §DO → PLAN candidate`
 
 **Гейты и эскалация**
-- гейты 1–5 → `opencode/pdca/SKILL.md §Transition gates`
-- контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO, stop-loss бюджет, единая привязка evidence → `opencode/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
-- фазовые контракты (PLAN/DO/CHECK/ACT/STOP) → `opencode/pdca/SKILL.md §Phase contracts (generic)`
-- повторный заход (re-entry) после терминального `incomplete`/STOP → `opencode/pdca/SKILL.md §Phase contracts (generic)`;
-  `opencode/pdca-coder/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`
-- режимы normal/autonomous → `opencode/pdca/SKILL.md §Normal and autonomous modes`
-- collection caller handoff (`plan_handoff`) → `opencode/pdca/SKILL.md §Normal and autonomous modes`;
-  `opencode/pdca-coder/SKILL.md §Plan approval (PLAN → DO)`
-- escalation и триггеры → `opencode/pdca/SKILL.md §Escalation (pdca-escalate)`; `opencode/pdca-coder/SKILL.md §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §PLAN selects the toolchain and lenses (per task)`
+- гейты 1–5 → `skills/pdca/SKILL.md §Transition gates`
+- контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO, stop-loss бюджет, единая привязка evidence → `skills/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
+- фазовые контракты (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
+- повторный заход (re-entry) после терминального `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
+  `skills/pdca-coder/SKILL.md §PLAN owns the quality of the plan`; `skills/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`
+- режимы normal/autonomous → `skills/pdca/SKILL.md §Normal and autonomous modes`
+- collection caller handoff (`plan_handoff`) → `skills/pdca/SKILL.md §Normal and autonomous modes`;
+  `skills/pdca-coder/SKILL.md §Plan approval (PLAN → DO)`
+- escalation и триггеры → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`; `skills/pdca-coder/SKILL.md §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §PLAN selects the toolchain and lenses (per task)`
 
 **Память, доказательства, восстановление, ACT**
-- durable status / progress log / unit states → `opencode/pdca/SKILL.md §Skill workspace: .pdca/ · §Durable status · §Cycle status file`
-- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `opencode/pdca/SKILL.md §Frozen evidence manifest`
-- evidence over assertion → `opencode/pdca/SKILL.md §Evidence over assertion`
-- recovery → `opencode/pdca/SKILL.md §Recovery after compaction and drift`
-- ACT / статус / сообщение → `opencode/pdca/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file · §Message for the next session`
+- durable status / progress log / unit states → `skills/pdca/SKILL.md §Skill workspace: .pdca/ · §Durable status · §Cycle status file`
+- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `skills/pdca/SKILL.md §Frozen evidence manifest`
+- evidence over assertion → `skills/pdca/SKILL.md §Evidence over assertion`
+- recovery → `skills/pdca/SKILL.md §Recovery after compaction and drift`
+- ACT / статус / сообщение → `skills/pdca/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file · §Message for the next session`
 
 **Ограничения, безопасность, red flags**
-- generic constraints → `opencode/pdca/SKILL.md §Generic operating constraints`
-- instruction priority / injection → `opencode/pdca-coder/SKILL.md §Evidence over assertion · §Instruction priority and injection defense`;
-  `opencode/pdca-dotnet/SKILL.md §Instruction priority and injection defense`
-- red flags / failure modes → `opencode/pdca/SKILL.md §Red flags (self-check) · §Cycle failure modes`
+- generic constraints → `skills/pdca/SKILL.md §Generic operating constraints`
+- instruction priority / injection → `skills/pdca-coder/SKILL.md §Evidence over assertion · §Instruction priority and injection defense`;
+  `skills/pdca-dotnet/SKILL.md §Instruction priority and injection defense`
+- red flags / failure modes → `skills/pdca/SKILL.md §Red flags (self-check) · §Cycle failure modes`
 
 **pdca-coder: инженерные потоки**
-- project overlay → `opencode/pdca-coder/SKILL.md:38-47`
+- project overlay → `skills/pdca-coder/SKILL.md:38-47`
 - toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
 - test strategy/variant matrix → `:832-879`; test run safety → `:881-894`; docs owners → `:896-912`
 - frozen evidence manifest + `.pdca/<task>/rv<k>/` → `:914-958`
@@ -1412,7 +1412,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - ACT → `:1137-1168`; economics → `:1313-1323`
 
 **pdca-dotnet: .NET-гейты**
-- обязательный `test scope` → `opencode/pdca-dotnet/SKILL.md §DO brief: mandatory test scope`
+- обязательный `test scope` → `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope`
 - политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1084-1122,1484-1513`
 - binding/applicability disposition → `:1058-1082,1325-1336`
 - versioned evidence contract + манифест + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
@@ -1422,13 +1422,13 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - `dotnet-*` линзы → `:397-402,715-720,1127-1136,1181-1186`
 - `pdca-security-auditor` — условный сбор, отчёт в агрегат `pdca-check` → `:1172-1179`
 - ACT → `:1362-1397`
-- `validate_inner_loop.py`: режимы/коды → `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
+- `validate_inner_loop.py`: режимы/коды → `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
   манифест (`required_rows` ↔ `rows[]`) → `:1158-1226`; разбор режимов → `:1241-1300`
-- `pdca_evidence.py`: `generate`/`lint`, замороженное синтетическое дерево, двустороннее покрытие → `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
-- `plan_lint.py`: `check`/`probe`, коды, проекция `commands.json` → `opencode/pdca-dotnet/scripts/plan_lint.py:1-70`; обязательная строка `PLAN-LINT` → `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`
+- `pdca_evidence.py`: `generate`/`lint`, замороженное синтетическое дерево, двустороннее покрытие → `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
+- `plan_lint.py`: `check`/`probe`, коды, проекция `commands.json` → `skills/pdca-dotnet/scripts/plan_lint.py:1-70`; обязательная строка `PLAN-LINT` → `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`
 
 **pdca-collection**
-- роль/вариант → `opencode/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
+- роль/вариант → `skills/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
   C → `:157-218`; A → `:220-233`; лейн/`incomplete` → `:235-282`;
   git-модель → `:306-336`; сбой → `:338-350`; статус → `:352-393`;
   параметры cap=4 → `:402-413`; fallback → `:439-448`

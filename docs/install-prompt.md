@@ -56,8 +56,8 @@ PRIMARY=<имя дешёвого primary>
 PROFILE=<профиль или пусто>
 
 0. Preflight и выбор адаптера
-   - Проверь, что $SKILLS_REPO/opencode/pdca-entry/SKILL.md и
-     $SKILLS_REPO/opencode/$VARIANT/SKILL.md существуют.
+   - Проверь, что $SKILLS_REPO/skills/pdca-entry/SKILL.md и
+     $SKILLS_REPO/skills/$VARIANT/SKILL.md существуют.
    - Разреши корни по хосту (таблица — в docs/install.md §2/§3):
      opencode : skills ~/.config/opencode/skills, agents ~/.config/opencode/agents
      claude   : skills ~/.claude/skills,           agents ~/.claude/agents
@@ -70,7 +70,7 @@ PROFILE=<профиль или пусто>
    - Покажи план изменений (каталоги и файлы) и продолжай.
 
 1. Скиллы
-   - Скопируй из $SKILLS_REPO/opencode/ в $SKILLS_ROOT каталоги целиком:
+   - Скопируй из $SKILLS_REPO/skills/ в $SKILLS_ROOT каталоги целиком:
      pdca-entry, $VARIANT, а также pdca-collection и pdca-incremental, если соответствующий
      INSTALL_* = yes. Каталог скилла — это `SKILL.md`, `assets/` и `scripts/`, если скилл их
      поставляет; `tests/` и генераторы диаграмм для рантайма не нужны. Если entry должен роутить
@@ -90,14 +90,14 @@ PROFILE=<профиль или пусто>
    - Тело скиллов должно остаться host-агностичным: не добавляй в SKILL.md пути конкретного хоста.
 
 2. Агенты-роли
-   - Скопируй $SKILLS_REPO/opencode/$VARIANT/assets/agents/*.md в $AGENTS_ROOT, существующие
+   - Скопируй $SKILLS_REPO/skills/$VARIANT/assets/agents/*.md в $AGENTS_ROOT, существующие
      файлы — в бэкап.
    - Frontmatter ассетов — это нативный V1-формат OpenCode (`mode: subagent`, `permission:`):
      для OpenCode V1 копируй как есть, V2 транслирует его сам. Для claude переведи в формат
      Claude Code (`name`, `description`, `tools`; права — allowlist инструментов), для
      codex/custom — в формат хоста; тело промпта роли не меняй.
    - Убедись, что установленный pdca-orchestrator совпадает байт-в-байт с
-     $SKILLS_REPO/opencode/pdca/assets/agents/pdca-orchestrator.md (тело; frontmatter мог быть
+     $SKILLS_REPO/skills/pdca/assets/agents/pdca-orchestrator.md (тело; frontmatter мог быть
      транслирован).
    - Если CONFIG_REPO задан, синхронизируй те же файлы в его каталог агентов (источник для
      будущих установок), с бэкапами.
@@ -155,7 +155,7 @@ PROFILE=<профиль или пусто>
      пробных правок, пробных задач и фиктивных шагов), доступность вложенной делегации драйверу,
      `pdca-orchestrator` как субагента, ребро `escalate → scout` и загружаемость контракта шага.
      Установленный `pdca-orchestrator` сверь с каноническим ассетом
-     `$SKILLS_REPO/opencode/pdca/assets/agents/` и проверь действующие права: наблюдавшийся случай —
+     `$SKILLS_REPO/skills/pdca/assets/agents/` и проверь действующие права: наблюдавшийся случай —
      установленная копия без делегирования `pdca-scout`, что молча ломает `escalate → scout`.
      Ключа, элемента схемы или константы параллельного cap на стороне хоста в проверенном исходнике
      V2 нет — это не значит «без ограничений», значения `cap` не выдумывай.

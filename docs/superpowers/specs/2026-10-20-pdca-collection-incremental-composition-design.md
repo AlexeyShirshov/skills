@@ -2,9 +2,9 @@
 
 **Статус:** design (реализация не входит в этот документ; коммитов нет).
 **Дата:** 2026-10-20.
-**Область:** верхние контракты семейства PDCA в `opencode/`
+**Область:** верхние контракты семейства PDCA в `skills/`
 (`pdca-entry`, `pdca-collection`, `pdca-incremental`) и общий ассет раннера
-`pdca-orchestrator`. Базовый цикл (`opencode/pdca/SKILL.md`) и доменные варианты
+`pdca-orchestrator`. Базовый цикл (`skills/pdca/SKILL.md`) и доменные варианты
 (`pdca-coder`, `pdca-dotnet`) не переопределяются.
 
 Документ самодостаточен: будущий исполнитель должен уметь реализовать и проверить
@@ -18,10 +18,10 @@
 входа:
 
 - **коллекция** — пакет задач с собственным настоящим PLAN каждой задачи и
-  ALL-barrier до первого DO (`opencode/pdca-collection/SKILL.md`, §«P — собственные
+  ALL-barrier до первого DO (`skills/pdca-collection/SKILL.md`, §«P — собственные
   PLAN задач, барьер, кластеризация»);
 - **кампания** — одна проверяемая цель без плана на весь объём, шаги которой
-  выбираются после принятого замера (`opencode/pdca-incremental/SKILL.md`,
+  выбираются после принятого замера (`skills/pdca-incremental/SKILL.md`,
   §«Роль», §«Инварианты кампании»).
 
 Композиция не определена. Из-за этого при реальной работе возникает один из трёх
@@ -42,8 +42,8 @@
    выполнять её очередной шаг. Выбор контракта шага делает кампания по
    установленным правилам; исполнитель цикла получает готовый `selected_variant`.
    Поэтому действующее правило фиксирует: вариант **дан**, а не выбран раннером
-   (`opencode/pdca/assets/agents/pdca-orchestrator.md`, §«Contract»;
-   `opencode/pdca/tests/test_orchestrator_variant_routing.py`).
+   (`skills/pdca/assets/agents/pdca-orchestrator.md`, §«Contract»;
+   `skills/pdca/tests/test_orchestrator_variant_routing.py`).
 
 Дизайн вводит явную композицию: **collection → (одиночный цикл | incremental
 кампания) → подходящий доменный цикл на шаг**. Он разделяет форму исполнения и
@@ -114,7 +114,7 @@
 ### Non-goals
 
 - Не менять базовую машину состояний, гейты, счётчики `N`/`r`/`n` и loop-back
-  (`opencode/pdca/SKILL.md`).
+  (`skills/pdca/SKILL.md`).
 - Не менять доменные варианты `pdca-coder`/`pdca-dotnet`; их правила остаются их
   правилами.
 - Не вводить новых ролей, тиров или model id.
@@ -257,7 +257,7 @@
 | **Standalone incremental** | cheap primary кампании | `pdca-orchestrator` как оркестратор шага, по одному шагу за вызов | нет |
 | **Campaign внутри collection** | collection lane driver (`pdca-orchestrator`, mode=collection-lane) | тот же driver ведёт текущий цикл inline | нет |
 
-В `opencode/pdca-incremental/SKILL.md` контекстные изменения нужны ровно в этих
+В `skills/pdca-incremental/SKILL.md` контекстные изменения нужны ровно в этих
 разделах (остальной текст кампании сохраняется):
 
 1. **`## Роль`** — добавить, что кампания может быть единицей коллекции, и что в
@@ -824,32 +824,32 @@ checkpoint (§6.3) и не считается финальным исходом.
 
 | Путь | Что меняется по смыслу |
 |---|---|
-| `opencode/pdca-entry/SKILL.md` | Композиция в описании маршрутизации: пакет может содержать единицы-циклы и единицы-кампании; `execution_kind` не путается с `selected_variant`; приоритеты строк не меняются; после старта контракта повторной маршрутизации нет; medium/strong primary делает явный handoff cheap primary. |
-| `opencode/pdca-collection/SKILL.md` | `execution_kind`; отдельный immutable/revisioned preparation document и единственный `preparation_ref` в unit-записи на барьере без baseline/runtime-статуса; baseline bootstrap после барьера; runtime ссылается на `preparation_ref`, не копирует каркас; консервативная резервация footprint; владение поверхностью и пересогласование; collection lane driver получает режим/вид единицы и правило диспетчеризации; `met` ≠ `preparation_state=ready`; per-unit `disposition` и производная пауза лейна; раздельные readiness/runtime/status; primary/runner — семантика, `pdca-executor` — физическая запись статуса; сохранение групповой политики; git lifecycle задачи; fallback/preflight; запрет рекурсии. |
-| `opencode/pdca-incremental/SKILL.md` | Контекстные изменения ровно в §`Role`, строке `STEP N` таблицы §`Roles, tiers and authority` и §`Autonomous mode` (две исполняющие модели, §3.5); плюс по смыслу §`Campaign invariants` (commit policy `none` не запрещает внешний commit коллекции; пауза ≠ финал), §`Campaign status file` (**`preparation_ref` как ссылка, не копия каркаса**; runtime `Status`, baseline evidence, checkpoint; физическая запись — executor), §`0. Bootstrap` (три операции §4.3), §`3. Step execution`, §`5. Stop decision` (явный disposition). Standalone-модель и resume не переобъявляются. |
-| `opencode/pdca/assets/agents/pdca-orchestrator.md` | Канонический общий ассет раннера: два режима (step orchestrator / collection-lane), inline-ведение state machine кампании и текущего цикла, загрузка контрактов, metadata через tool outputs, scoped durable read, отсутствие решений/прав, неизменяемый `selected_variant`, исполнение заданного dispatch policy, единый fail-closed. |
-| `opencode/pdca-entry/assets/agents/pdca-orchestrator.md`, `opencode/pdca-coder/assets/agents/pdca-orchestrator.md`, `opencode/pdca-dotnet/assets/agents/pdca-orchestrator.md`, `opencode/pdca-collection/assets/agents/pdca-orchestrator.md`, `opencode/pdca-incremental/assets/agents/pdca-orchestrator.md` | **Байт-в-байт копии** канонического раннера; синхронизируются во всех копиях по действующим parity guards. |
+| `skills/pdca-entry/SKILL.md` | Композиция в описании маршрутизации: пакет может содержать единицы-циклы и единицы-кампании; `execution_kind` не путается с `selected_variant`; приоритеты строк не меняются; после старта контракта повторной маршрутизации нет; medium/strong primary делает явный handoff cheap primary. |
+| `skills/pdca-collection/SKILL.md` | `execution_kind`; отдельный immutable/revisioned preparation document и единственный `preparation_ref` в unit-записи на барьере без baseline/runtime-статуса; baseline bootstrap после барьера; runtime ссылается на `preparation_ref`, не копирует каркас; консервативная резервация footprint; владение поверхностью и пересогласование; collection lane driver получает режим/вид единицы и правило диспетчеризации; `met` ≠ `preparation_state=ready`; per-unit `disposition` и производная пауза лейна; раздельные readiness/runtime/status; primary/runner — семантика, `pdca-executor` — физическая запись статуса; сохранение групповой политики; git lifecycle задачи; fallback/preflight; запрет рекурсии. |
+| `skills/pdca-incremental/SKILL.md` | Контекстные изменения ровно в §`Role`, строке `STEP N` таблицы §`Roles, tiers and authority` и §`Autonomous mode` (две исполняющие модели, §3.5); плюс по смыслу §`Campaign invariants` (commit policy `none` не запрещает внешний commit коллекции; пауза ≠ финал), §`Campaign status file` (**`preparation_ref` как ссылка, не копия каркаса**; runtime `Status`, baseline evidence, checkpoint; физическая запись — executor), §`0. Bootstrap` (три операции §4.3), §`3. Step execution`, §`5. Stop decision` (явный disposition). Standalone-модель и resume не переобъявляются. |
+| `skills/pdca/assets/agents/pdca-orchestrator.md` | Канонический общий ассет раннера: два режима (step orchestrator / collection-lane), inline-ведение state machine кампании и текущего цикла, загрузка контрактов, metadata через tool outputs, scoped durable read, отсутствие решений/прав, неизменяемый `selected_variant`, исполнение заданного dispatch policy, единый fail-closed. |
+| `skills/pdca-entry/assets/agents/pdca-orchestrator.md`, `skills/pdca-coder/assets/agents/pdca-orchestrator.md`, `skills/pdca-dotnet/assets/agents/pdca-orchestrator.md`, `skills/pdca-collection/assets/agents/pdca-orchestrator.md`, `skills/pdca-incremental/assets/agents/pdca-orchestrator.md` | **Байт-в-байт копии** канонического раннера; синхронизируются во всех копиях по действующим parity guards. |
 
-Не меняются: `opencode/pdca/SKILL.md` (база и домен-нейтральность),
-`opencode/pdca-coder/SKILL.md`, `opencode/pdca-dotnet/SKILL.md` (доменные
+Не меняются: `skills/pdca/SKILL.md` (база и домен-нейтральность),
+`skills/pdca-coder/SKILL.md`, `skills/pdca-dotnet/SKILL.md` (доменные
 контракты), роль-ассеты `pdca-{planner,executor,check,escalate,scout}.md`.
 
 ### 8.2. Тесты (реальные пути; расширять существующие наборы)
 
 | Путь | Что должен защищать |
 |---|---|
-| `opencode/pdca/tests/test_orchestrator_variant_routing.py` | Раннер не классифицирует; `selected_variant` — только вариант цикла и конкретен на шаге; dispatch policy приходит из контракта; fail closed; композиция не добавляет раннеру выбора формы исполнения. |
-| `opencode/pdca/tests/test_routing_consistency.py` | `assets/agents/pdca-orchestrator.md` идентичен во всех шести скиллах семейства; раннер остаётся dispatcher-only (deny edit/write/bash, task default deny); allowlist ролей не расширен; metadata через tool outputs и scoped read, а не read-wildcard. |
-| `opencode/pdca/tests/test_permission_boundaries.py` | Раннер не получает read/write/bash; fallback-загрузка скилла не расширяет права; отсутствие workspace discovery. |
-| `opencode/pdca-entry/tests/test_contract.py` | Таблица приоритетов не смещена; описание/хендофф отражают композицию и handoff medium/strong primary → cheap primary; раннер идентичен семейному; отсутствие `model:`. |
-| `opencode/pdca-collection/tests/test_plan_barrier.py` | Барьер принимает настоящий PLAN цикла и preparation document кампании; единственный `preparation_ref` в unit-записи; preparation ready + no runtime = barrier-ready/not started/not done; не требует baseline/runtime-статуса/планов будущих шагов; `campaign_ref` optional до bootstrap; runtime ссылается на `preparation_ref`, не копирует каркас; immutable ревизии; подготовительные записи executor разрешены, substantive bootstrap/DO — нет; ранний DO запрещён. |
-| `opencode/pdca-collection/tests/test_verification_recovery.py` | Пауза (`blocked`/`stopped`/`unreachable` с разрешённым next target) не даёт автоматический `incomplete`; per-unit `disposition` отдельно от статуса; пауза лейна производна от текущего unit и не дублируется; `incomplete` и group-stop только по явному финальному неуспешному disposition; явный resume; отсутствие новых статусов. |
-| `opencode/pdca-collection/tests/test_routing_guard.py` | Консервативная резервация footprint всей задачи (не прогноз/не первые шаги); непересечение не доказывается → сериализация; расширение → stop/reapprove без авто-recluster; владение поверхностью; кампания — не условие входа. |
-| `opencode/pdca-collection/tests/test_git_model.py` | Коллекция владеет внешним commit/branch lifecycle задачи; `Commit policy: none` шага не запрещает outer completion commit; явный no-commit конфликт с обязательной моделью — preflight blocker, не тихое переопределение. |
-| `opencode/pdca-collection/tests/test_orchestrator_asset.py` | Раннер — dispatcher-only; режим collection-lane и роли семейства на месте; новых слоёв нет. |
-| `opencode/pdca-incremental/tests/test_contract.py` | Две исполняющие модели; точные разделы `Роль`/`STEP N`/`Автономный режим`; preparation document/`preparation_ref` (ссылка, не копия); готовность ≠ завершение; пауза ≠ финал; per-unit disposition; вариант шага по содержанию; commit policy; запрет рекурсии; один лейн. |
-| `opencode/pdca-incremental/tests/test_orchestrator_asset.py` | Раннер поставляется и остаётся dispatcher-only. |
-| `opencode/pdca/tests/test_docs_sources.py` | Двуязычные пары затронутых статей существуют и согласованы; install-документы не утверждают, что голое `>= 2` гарантирует весь граф. |
+| `skills/pdca/tests/test_orchestrator_variant_routing.py` | Раннер не классифицирует; `selected_variant` — только вариант цикла и конкретен на шаге; dispatch policy приходит из контракта; fail closed; композиция не добавляет раннеру выбора формы исполнения. |
+| `skills/pdca/tests/test_routing_consistency.py` | `assets/agents/pdca-orchestrator.md` идентичен во всех шести скиллах семейства; раннер остаётся dispatcher-only (deny edit/write/bash, task default deny); allowlist ролей не расширен; metadata через tool outputs и scoped read, а не read-wildcard. |
+| `skills/pdca/tests/test_permission_boundaries.py` | Раннер не получает read/write/bash; fallback-загрузка скилла не расширяет права; отсутствие workspace discovery. |
+| `skills/pdca-entry/tests/test_contract.py` | Таблица приоритетов не смещена; описание/хендофф отражают композицию и handoff medium/strong primary → cheap primary; раннер идентичен семейному; отсутствие `model:`. |
+| `skills/pdca-collection/tests/test_plan_barrier.py` | Барьер принимает настоящий PLAN цикла и preparation document кампании; единственный `preparation_ref` в unit-записи; preparation ready + no runtime = barrier-ready/not started/not done; не требует baseline/runtime-статуса/планов будущих шагов; `campaign_ref` optional до bootstrap; runtime ссылается на `preparation_ref`, не копирует каркас; immutable ревизии; подготовительные записи executor разрешены, substantive bootstrap/DO — нет; ранний DO запрещён. |
+| `skills/pdca-collection/tests/test_verification_recovery.py` | Пауза (`blocked`/`stopped`/`unreachable` с разрешённым next target) не даёт автоматический `incomplete`; per-unit `disposition` отдельно от статуса; пауза лейна производна от текущего unit и не дублируется; `incomplete` и group-stop только по явному финальному неуспешному disposition; явный resume; отсутствие новых статусов. |
+| `skills/pdca-collection/tests/test_routing_guard.py` | Консервативная резервация footprint всей задачи (не прогноз/не первые шаги); непересечение не доказывается → сериализация; расширение → stop/reapprove без авто-recluster; владение поверхностью; кампания — не условие входа. |
+| `skills/pdca-collection/tests/test_git_model.py` | Коллекция владеет внешним commit/branch lifecycle задачи; `Commit policy: none` шага не запрещает outer completion commit; явный no-commit конфликт с обязательной моделью — preflight blocker, не тихое переопределение. |
+| `skills/pdca-collection/tests/test_orchestrator_asset.py` | Раннер — dispatcher-only; режим collection-lane и роли семейства на месте; новых слоёв нет. |
+| `skills/pdca-incremental/tests/test_contract.py` | Две исполняющие модели; точные разделы `Роль`/`STEP N`/`Автономный режим`; preparation document/`preparation_ref` (ссылка, не копия); готовность ≠ завершение; пауза ≠ финал; per-unit disposition; вариант шага по содержанию; commit policy; запрет рекурсии; один лейн. |
+| `skills/pdca-incremental/tests/test_orchestrator_asset.py` | Раннер поставляется и остаётся dispatcher-only. |
+| `skills/pdca/tests/test_docs_sources.py` | Двуязычные пары затронутых статей существуют и согласованы; install-документы не утверждают, что голое `>= 2` гарантирует весь граф. |
 
 Проверка самой реализации — это разрешённая и обязательная регрессия: guard-тесты
 читают тексты контрактов/фронтматтер и не исполняют модель. Они не являются

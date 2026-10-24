@@ -216,18 +216,18 @@ related [`pdca-dotnet`](pdca-dotnet.md); if the result is not about code, the fa
 domain-neutral [`pdca`](pdca.md); if there are many independent tasks — [`pdca-collection`](pdca-collection.md).
 The family's common mechanics — gates, the `N`/`r`/`n/3` counters, memory and evidence — are
 covered in the article about the domain-neutral [`pdca`](pdca.md); the full text of the contract
-lives in [`opencode/pdca-coder/SKILL.md`](../opencode/pdca-coder/SKILL.md), and an overview of the
+lives in [`skills/pdca-coder/SKILL.md`](../skills/pdca-coder/SKILL.md), and an overview of the
 whole family is in the guide [`docs/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 
 The "claim → source" map. The article's normative claims were reconciled with the current
-`opencode/pdca-coder/SKILL.md` (commit `8a2ee75`); where they disagree, the skill file takes
+`skills/pdca-coder/SKILL.md` (commit `8a2ee75`); where they disagree, the skill file takes
 precedence. The paths are given from this repository; the host artifacts (`config/agents/*.md`,
 `config/profiles/*.jsonc`, `config/AGENTS.md`) are not part of it and live in a separate
 configuration repository.
 
-| Claim | Source (`opencode/pdca-coder/SKILL.md`) |
+| Claim | Source (`skills/pdca-coder/SKILL.md`) |
 |---|---|
 | Stack-agnosticism: code, tests, documentation, refactoring, configuration; the choice of toolchain and lenses belongs to PLAN | `:8-15` |
 | The contract applies only with the skill loaded; a gate checks the presence of items, not their quality | `:8-9`, `:116-118` |

@@ -169,7 +169,7 @@ decides. A missing role is a resource blocker; the flat-primary fallback is mark
 
 A campaign is not only a standalone mode. It can be a **collection unit**: such a unit's execution
 form is `execution_kind=campaign`, and this field is not mixed with `selected_variant`
-(`opencode/pdca-collection/SKILL.md §Collection units and the execution form`). The form is decided by
+(`skills/pdca-collection/SKILL.md §Collection units and the execution form`). The form is decided by
 the collection PLAN (`pdca-planner`); the runner only reads the ready value and does not classify the
 task.
 
@@ -183,13 +183,13 @@ task.
 There is no separate campaign agent and no new `Task` level; the collection primary does not become the
 campaign's executor — it keeps the collection status, not the step. A collection gives the campaign
 neither parallel steps nor crediting a number without ACCEPT
-(`opencode/pdca-incremental/SKILL.md §Role`). The standalone model is unchanged.
+(`skills/pdca-incremental/SKILL.md §Role`). The standalone model is unchanged.
 
 **The variant belongs to the step, not to the campaign.** A campaign unit has no `selected_variant` of
 its own and no "campaign domain". Each step gets a concrete variant from the step's content — `.NET/C#`
 → `pdca-dotnet`, other code → `pdca-coder`, otherwise `pdca` — and it is fixed in the durable record
 (the frame/status), not chosen by the runner
-(`opencode/pdca-incremental/SKILL.md §3. Step execution`). The dispatch policy belongs to the loaded
+(`skills/pdca-incremental/SKILL.md §3. Step execution`). The dispatch policy belongs to the loaded
 campaign contract; the runner executes it and does not classify the task.
 
 **The frame is a separate artifact, not a copy in the status.** Campaign preparation lives in a
@@ -202,7 +202,7 @@ measurement; the bounds and the conservative reservation of the surface; depende
 proof of non-conflict with the schedule; promotion rules; stop rules and the bootstrap protocol;
 schedule-compatibility evidence. The campaign runtime status stores `preparation_ref` as a
 **reference**, not as a copy of the frame
-(`opencode/pdca-incremental/SKILL.md §Campaign status file`); renegotiating the goal, the criteria,
+(`skills/pdca-incremental/SKILL.md §Campaign status file`); renegotiating the goal, the criteria,
 the threshold or the stop rules creates a **new** immutable revision, updates the reference and keeps
 the previous one. A silent edit and the backfill of already accepted criteria are forbidden.
 
@@ -221,7 +221,7 @@ future step variants or a number of steps; before the barrier no lane is allocat
 **Readiness ≠ completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
 `started`: the unit stays `pending` and never becomes `done` because the frame is ready. `done` is given
 only by an accepted `met` with an explicit `disposition=finalized`
-(`opencode/pdca-collection/SKILL.md §A.1 Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §A.1 Routing campaign outcomes`).
 
 **Pause ≠ final.** `blocked`, `stopped` and `unreachable` with an admissible next target within an
 unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays `in-progress`, and
@@ -230,13 +230,13 @@ unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays
 unsuccessful disposition and is not derived from a pause. Resume is explicit; there is no automatic
 endless retry; a pause does not reset `N`/`r`/`n`, does not grant attempts beyond the base contract and
 does not advance its group's dependent chain, while the other groups continue
-(`opencode/pdca-incremental/SKILL.md §5. Stop decision`).
+(`skills/pdca-incremental/SKILL.md §5. Stop decision`).
 
 **Three different fields.** Readiness (`preparation_state`, `plan_state`), the campaign runtime status
 (`Status`) and the per-unit `disposition` (`active | paused | finalized`) are different things, and
 none of them is a task status. The lane pause is **derived** from the current unit's
 `disposition=paused` and is not stored as a separate authoritative lane field; no new task or group
-status is introduced (`opencode/pdca-collection/SKILL.md §Lane (work stream)`).
+status is introduced (`skills/pdca-collection/SKILL.md §Lane (work stream)`).
 
 **The step's PLAN and approval.** The brief neither replaces the step's PLAN nor constitutes approval.
 In normal mode every actual step passes a full PLAN of its variant and is approved under the active
@@ -247,18 +247,18 @@ contract; the approval is recorded as a durable pending approval ref, and the cu
 collection's outer completion commit: campaign completion and unit finalization are different events.
 The external commit/branch lifecycle of the unit belongs to the collection. An explicit no-commit
 restriction that conflicts with the mandatory git model is a preflight blocker before lanes are
-allocated, not a silent override of the model (`opencode/pdca-collection/SKILL.md §Git model`).
+allocated, not a silent override of the model (`skills/pdca-collection/SKILL.md §Git model`).
 
 **Recursion is forbidden.** A campaign step is only a family cycle: neither "a campaign in a campaign"
 nor "a collection inside a campaign" (nor a collection inside a collection). A campaign inside a
 collection gets no extra rights — no commits beyond the policy, no bypassing of gates, no parallel
-steps (`opencode/pdca-incremental/SKILL.md §Campaign invariants`).
+steps (`skills/pdca-incremental/SKILL.md §Campaign invariants`).
 
 ## 4. How it works
 
-![The pdca-incremental campaign graph: BOOT → PLAN → STEP → ACC → DEC, the DEC → PLAN loop "next step · baseline = accepted", the repair loop DEC → STEP "repair · parent N", a verify footnote and the DEC → STOP branch](../../opencode/pdca-incremental/assets/diagram/incremental-state-dark.svg)
+![The pdca-incremental campaign graph: BOOT → PLAN → STEP → ACC → DEC, the DEC → PLAN loop "next step · baseline = accepted", the repair loop DEC → STEP "repair · parent N", a verify footnote and the DEC → STOP branch](../../skills/pdca-incremental/assets/diagram/incremental-state-dark.svg)
 
-*Diagram: `opencode/pdca-incremental/assets/diagram/incremental-state-dark.svg`; the full layout with
+*Diagram: `skills/pdca-incremental/assets/diagram/incremental-state-dark.svg`; the full layout with
 roles and tiers is `incremental-contract-dark.svg`. The lower dashed `DEC → STEP` loop is `repair`; the
 footnote at the bottom is the optional `verify`.*
 
@@ -614,8 +614,8 @@ Case sources (the `nextorm` repository, not part of this repository): `.pdca/sta
 
 ## 7. Where to go next
 
-- The full contract — [`opencode/pdca-incremental/SKILL.md`](../opencode/pdca-incremental/SKILL.md); the
-  campaign diagram — `opencode/pdca-incremental/assets/diagram/`.
+- The full contract — [`skills/pdca-incremental/SKILL.md`](../skills/pdca-incremental/SKILL.md); the
+  campaign diagram — `skills/pdca-incremental/assets/diagram/`.
 - The cycle base — [`pdca.md`](pdca.md); the engineering variants —
   [`pdca-coder.md`](pdca-coder.md) and [`pdca-dotnet.md`](pdca-dotnet.md).
 - Batch work with independent goals — [`pdca-collection.md`](pdca-collection.md) (parallelism is a
@@ -625,26 +625,26 @@ Case sources (the `nextorm` repository, not part of this repository): `.pdca/sta
 ## Sources
 
 The "claim → source" map. Where they disagree, the contracts take precedence:
-`opencode/pdca-incremental/SKILL.md` for the campaign and `opencode/pdca-collection/SKILL.md` for
+`skills/pdca-incremental/SKILL.md` for the campaign and `skills/pdca-collection/SKILL.md` for
 collection units.
 
 | Claim in the article | Source |
 | --- | --- |
-| The campaign role, "not a cycle variant", delegating a step to `pdca-orchestrator` with the variant chosen by the campaign | `opencode/pdca-incremental/SKILL.md §Role` |
-| Roles, tiers and authority: block → role → tier → access → output; the primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate rules | `opencode/pdca-incremental/SKILL.md §Roles, tiers and authority` |
-| When to choose and the distinction from `pdca-collection` (a known list by itself does not select a collection) | `opencode/pdca-incremental/SKILL.md §When to choose` |
-| Campaign invariants: goal/recipe, unit, floor, baseline chain, one measurement, discovery, state transfer, seriality | `opencode/pdca-incremental/SKILL.md §Campaign invariants` |
-| Campaign status file: the single file, fields, append-only, evidence precedence | `opencode/pdca-incremental/SKILL.md §Campaign status file` |
-| The cycle: bootstrap, discovery, the six-block brief, the step, acceptance, stop decisions, sizing | `opencode/pdca-incremental/SKILL.md §Campaign cycle` |
-| Step kinds `increment`/`repair`/`verify` and the route after a step | `opencode/pdca-incremental/SKILL.md §3.1. Step kinds: increment, repair, verify` |
-| Brief: six blocks, why this is the minimum, what each closes and why not fewer/more | `opencode/pdca-incremental/SKILL.md §2. Step brief — pdca-planner` |
-| Floor economics and step size | `opencode/pdca-incremental/SKILL.md §Economics` |
-| Red flags and recovery after compaction | `opencode/pdca-incremental/SKILL.md §Red flags (self-check) · §Recovery after compaction` |
-| Autonomous mode and the flat-primary fallback with `Notice:` | `opencode/pdca-incremental/SKILL.md §Autonomous mode` |
-| Composition: a campaign as a collection unit, `execution_kind` vs `selected_variant`, two execution models | `opencode/pdca-collection/SKILL.md §Collection units and the execution form`; `opencode/pdca-incremental/SKILL.md §Role` |
-| The frame, `preparation_ref` as a reference (not a copy), the three operations, readiness ≠ completion | `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering`; `opencode/pdca-incremental/SKILL.md §0. Bootstrap (once) — pdca-planner + pdca-executor · §Campaign status file` |
-| Pause ≠ final, per-unit `disposition`, derived lane pause, explicit resume | `opencode/pdca-collection/SKILL.md §A.1 Routing campaign outcomes · §Lane (work stream)`; `opencode/pdca-incremental/SKILL.md §5. Stop decision` |
-| The step's variant by content; the dispatch policy belongs to the loaded contract | `opencode/pdca-incremental/SKILL.md §3. Step execution` |
-| `Commit policy: none` and the outer completion commit; a no-commit conflict is a preflight blocker | `opencode/pdca-collection/SKILL.md §Git model`; `opencode/pdca-incremental/SKILL.md §Campaign invariants` |
-| The recursion ban and "composition grants no rights" | `opencode/pdca-collection/SKILL.md §Collection units and the execution form`; `opencode/pdca-incremental/SKILL.md §Campaign invariants` |
+| The campaign role, "not a cycle variant", delegating a step to `pdca-orchestrator` with the variant chosen by the campaign | `skills/pdca-incremental/SKILL.md §Role` |
+| Roles, tiers and authority: block → role → tier → access → output; the primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate rules | `skills/pdca-incremental/SKILL.md §Roles, tiers and authority` |
+| When to choose and the distinction from `pdca-collection` (a known list by itself does not select a collection) | `skills/pdca-incremental/SKILL.md §When to choose` |
+| Campaign invariants: goal/recipe, unit, floor, baseline chain, one measurement, discovery, state transfer, seriality | `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| Campaign status file: the single file, fields, append-only, evidence precedence | `skills/pdca-incremental/SKILL.md §Campaign status file` |
+| The cycle: bootstrap, discovery, the six-block brief, the step, acceptance, stop decisions, sizing | `skills/pdca-incremental/SKILL.md §Campaign cycle` |
+| Step kinds `increment`/`repair`/`verify` and the route after a step | `skills/pdca-incremental/SKILL.md §3.1. Step kinds: increment, repair, verify` |
+| Brief: six blocks, why this is the minimum, what each closes and why not fewer/more | `skills/pdca-incremental/SKILL.md §2. Step brief — pdca-planner` |
+| Floor economics and step size | `skills/pdca-incremental/SKILL.md §Economics` |
+| Red flags and recovery after compaction | `skills/pdca-incremental/SKILL.md §Red flags (self-check) · §Recovery after compaction` |
+| Autonomous mode and the flat-primary fallback with `Notice:` | `skills/pdca-incremental/SKILL.md §Autonomous mode` |
+| Composition: a campaign as a collection unit, `execution_kind` vs `selected_variant`, two execution models | `skills/pdca-collection/SKILL.md §Collection units and the execution form`; `skills/pdca-incremental/SKILL.md §Role` |
+| The frame, `preparation_ref` as a reference (not a copy), the three operations, readiness ≠ completion | `skills/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering`; `skills/pdca-incremental/SKILL.md §0. Bootstrap (once) — pdca-planner + pdca-executor · §Campaign status file` |
+| Pause ≠ final, per-unit `disposition`, derived lane pause, explicit resume | `skills/pdca-collection/SKILL.md §A.1 Routing campaign outcomes · §Lane (work stream)`; `skills/pdca-incremental/SKILL.md §5. Stop decision` |
+| The step's variant by content; the dispatch policy belongs to the loaded contract | `skills/pdca-incremental/SKILL.md §3. Step execution` |
+| `Commit policy: none` and the outer completion commit; a no-commit conflict is a preflight blocker | `skills/pdca-collection/SKILL.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| The recursion ban and "composition grants no rights" | `skills/pdca-collection/SKILL.md §Collection units and the execution form`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | The real nextorm run: 10 steps, 64.8% → 75.49%, +4 098 branches | `.pdca/status/integration-branch-coverage-{1..10}.md` (the `nextorm` repository) |

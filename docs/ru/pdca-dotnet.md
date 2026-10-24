@@ -26,7 +26,7 @@
 выбирает диспетчеризующий скилл (`pdca-entry`, либо коллекция/кампания на задачу/шаг) и
 передаёт драйверу как `selected_variant`; драйвер не классифицирует задачу. Логика
 «`.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе → `pdca`» описана в
-`opencode/pdca-entry/SKILL.md`, а сам `pdca-orchestrator` поставляется как
+`skills/pdca-entry/SKILL.md`, а сам `pdca-orchestrator` поставляется как
 `assets/agents/pdca-orchestrator.md` в каждом скилле семейства. Скилл запускается **явно** и не подменяет обычные
 задачи — правка без цикла выполняется напрямую.
 
@@ -424,14 +424,14 @@ Changed files) и готовое **сообщение для следующей 
 но плана на весь объём нет — [`pdca-incremental.md`](pdca-incremental.md)).
 Первоисточник поведения — сам контракт: разделы «Versioned evidence contract» и
 «CHECK completeness gate — mandatory evidence contract» в
-[`opencode/pdca-dotnet/SKILL.md`](../../opencode/pdca-dotnet/SKILL.md), а также
+[`skills/pdca-dotnet/SKILL.md`](../../skills/pdca-dotnet/SKILL.md), а также
 ссылающиеся на них шаблоны ролей
-([`pdca-planner.md`](../../opencode/pdca-dotnet/assets/agents/pdca-planner.md),
-[`check.md`](../../opencode/pdca-dotnet/assets/agents/pdca-check.md)) и компактная
+([`pdca-planner.md`](../../skills/pdca-dotnet/assets/agents/pdca-planner.md),
+[`check.md`](../../skills/pdca-dotnet/assets/agents/pdca-check.md)) и компактная
 реализация гейта —
-[`scripts/validate_inner_loop.py`](../../opencode/pdca-dotnet/scripts/validate_inner_loop.py);
+[`scripts/validate_inner_loop.py`](../../skills/pdca-dotnet/scripts/validate_inner_loop.py);
 статический линт контракта команд —
-[`scripts/plan_lint.py`](../../opencode/pdca-dotnet/scripts/plan_lint.py): `check` валидирует
+[`scripts/plan_lint.py`](../../skills/pdca-dotnet/scripts/plan_lint.py): `check` валидирует
 проекцию `commands.json` до гейта 1 (форма argv, фаза/масштаб, масштаб solution-build против
 бюджета хоста, резолв селекторов по исходникам проекта, ожидаемый исход, привязка evidence,
 покрытие unit'ов), а `probe` запускает только allow-listed harness-probe; коды `0`/`2`/`1`.
@@ -440,37 +440,37 @@ Changed files) и готовое **сообщение для следующей 
 ## Источники
 
 Нормативные утверждения статьи сверены с текущими файлами репозитория (зеркало
-`pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `opencode/pdca-dotnet/SKILL.md`.
+`pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `skills/pdca-dotnet/SKILL.md`.
 Карта «утверждение → источник»:
 
 | Утверждение | Источник |
 |---|---|
-| .NET-вариант — тот же контракт, инструменты заменяемы | `opencode/pdca-dotnet/SKILL.md:11-13` |
-| Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `opencode/pdca-collection/SKILL.md §Role` |
-| Явный триггер и разведение скиллов; «правка без цикла — напрямую» | `README.md:42-48`; `opencode/pdca-dotnet/SKILL.md:1-4,8-9` |
-| Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `opencode/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `opencode/pdca-dotnet/assets/agents/*.md:5` |
-| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `opencode/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `opencode/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `opencode/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
-| `pdca-security-auditor` — conditional gather, отчёт возвращается в агрегат `pdca-check` | `opencode/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| Экономика по факту (стоимость/токены по фазам и тирам, без имён моделей) | `opencode/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
-| Обязательный `test scope` (конверт `unit`+`scope`, поля, широкие селекторы, docs-only/`rebuild`, граница) | `opencode/pdca-dotnet/SKILL.md §DO brief: mandatory test scope` |
-| Валидатор: режимы `brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`, сверка `--journal`, коды `0`/`2`/`1`, «ничего не исполняет» | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
-| Правила scope/executions: широкие селекторы, выдуманный rebuild, `selected_count ≥ 1` для finished-прогона, shell-обёртки, политика kind/phase (интеграция внутри DO, плановый граничный бюджет, `unit`-мислейбл), расширение scope, свежесть, финальный зелёный; структурные нарушения — раньше правил свежести/границы | `opencode/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
-| Замороженный манифест: путь, заморозка на DO → CHECK, append-only, поля, агрегация по ссылкам; схема и покрытие строк в валидаторе | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
-| Механический конвейер доказательств: `generate`/`lint`, замороженное синтетическое дерево, атомарная публикация, двустороннее покрытие `required_rows` ↔ `rows[]` в lint | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `opencode/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
-| Контракт команд плана: проекция `commands.json`, `plan_lint.py check`/`probe`, обязательная строка `PLAN-LINT`, единая привязка evidence | `opencode/pdca-dotnet/SKILL.md §Plan command contract (PLAN close) · §Versioned evidence contract`; `opencode/pdca-dotnet/scripts/plan_lint.py:1-70` |
-| Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `opencode/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `opencode/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
-| Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `opencode/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `opencode/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
-| Гейты качества: ноль предупреждений; покрытие/ветки/мутации/CRAP; безопасность прогонов тестов | `opencode/pdca-dotnet/SKILL.md §Coder editing discipline (applying fixes) · §Test strategy (PLAN → TEST) · §Test run safety (memory + streaming) — every phase · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| `dotnet-*`-линзы PLAN/CHECK | `opencode/pdca-dotnet/SKILL.md §Delegation by phase · §PLAN: design checklist (generic) · §CHECK: audit checklist (generic) · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| Запрет 4-й попытки, эскалация по счётчику, роутинг решения | `opencode/pdca-dotnet/SKILL.md §State machine · §Escalation (pdca-escalate)` |
-| ACT: два артефакта, порядок шагов, статус-файл сохраняется всегда; путь статус-файла, durable-состояние (`N`, `r`, `n`) и история дефектов | `opencode/pdca-dotnet/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file` |
-| Политика прогонов и журнал: unit без лимита, интеграция только на границе, плановое число граничных прогонов, явные состояния, проекция | `opencode/pdca-dotnet/SKILL.md §DO brief: mandatory test scope · §Execution journal and the unit/integration policy`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
-| Reviewer evidence pack: staged-полные тела, source-side receipt (digest/source identity/равенство содержимого), Roslyn на одном snapshot, drift ⇒ инвалидация | `opencode/pdca-dotnet/SKILL.md §Reviewer evidence pack (independent CHECK over full bodies)` |
-| Binding/applicability disposition: append-only, `diagnostic_nonbinding`, граница «не лазейка» | `opencode/pdca-dotnet/SKILL.md §Versioned evidence contract · §CHECK completeness gate — mandatory evidence contract` |
-| ACT cleanup receipt: гейт, область удаления, `cleanup`/`archived`, неизменяемый манифест | `opencode/pdca-dotnet/SKILL.md §ACT cleanup receipt (heavy staged materials)`; `opencode/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
-| Учебный сценарий: числа вымышлены; статическая матрица скилла поведение не доказывает | `opencode/pdca-dotnet/tests/scenarios.md:3-5` |
+| .NET-вариант — тот же контракт, инструменты заменяемы | `skills/pdca-dotnet/SKILL.md:11-13` |
+| Вариант по задаче (`.NET/C#` → `pdca-dotnet`) и идентичность базы `pdca-coder`/`pdca-dotnet` | `skills/pdca-collection/SKILL.md §Role` |
+| Явный триггер и разведение скиллов; «правка без цикла — напрямую» | `README.md:42-48`; `skills/pdca-dotnet/SKILL.md:1-4,8-9` |
+| Роли и тиры (`# tier:`, без `model:`); роли → агенты и фолбэки на встроенные | `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `skills/pdca-dotnet/assets/agents/*.md:5` |
+| `pdca-check` вправе открывать артефакты доказательств (не продуктовый код); `pdca-scout` — только read-only-git | `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `skills/pdca-dotnet/assets/agents/pdca-check.md:6-22`; `skills/pdca-dotnet/assets/agents/pdca-scout.md:6-23` |
+| `pdca-security-auditor` — conditional gather, отчёт возвращается в агрегат `pdca-check` | `skills/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
+| Экономика по факту (стоимость/токены по фазам и тирам, без имён моделей) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
+| Обязательный `test scope` (конверт `unit`+`scope`, поля, широкие селекторы, docs-only/`rebuild`, граница) | `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope` |
+| Валидатор: режимы `brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`, сверка `--journal`, коды `0`/`2`/`1`, «ничего не исполняет» | `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
+| Правила scope/executions: широкие селекторы, выдуманный rebuild, `selected_count ≥ 1` для finished-прогона, shell-обёртки, политика kind/phase (интеграция внутри DO, плановый граничный бюджет, `unit`-мислейбл), расширение scope, свежесть, финальный зелёный; структурные нарушения — раньше правил свежести/границы | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
+| Замороженный манифест: путь, заморозка на DO → CHECK, append-only, поля, агрегация по ссылкам; схема и покрытие строк в валидаторе | `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
+| Механический конвейер доказательств: `generate`/`lint`, замороженное синтетическое дерево, атомарная публикация, двустороннее покрытие `required_rows` ↔ `rows[]` в lint | `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`; `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
+| Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `skills/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
+| Контракт команд плана: проекция `commands.json`, `plan_lint.py check`/`probe`, обязательная строка `PLAN-LINT`, единая привязка evidence | `skills/pdca-dotnet/SKILL.md §Plan command contract (PLAN close) · §Versioned evidence contract`; `skills/pdca-dotnet/scripts/plan_lint.py:1-70` |
+| Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `skills/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
+| CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `skills/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
+| Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `skills/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `skills/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
+| Гейты качества: ноль предупреждений; покрытие/ветки/мутации/CRAP; безопасность прогонов тестов | `skills/pdca-dotnet/SKILL.md §Coder editing discipline (applying fixes) · §Test strategy (PLAN → TEST) · §Test run safety (memory + streaming) — every phase · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
+| `dotnet-*`-линзы PLAN/CHECK | `skills/pdca-dotnet/SKILL.md §Delegation by phase · §PLAN: design checklist (generic) · §CHECK: audit checklist (generic) · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
+| Запрет 4-й попытки, эскалация по счётчику, роутинг решения | `skills/pdca-dotnet/SKILL.md §State machine · §Escalation (pdca-escalate)` |
+| ACT: два артефакта, порядок шагов, статус-файл сохраняется всегда; путь статус-файла, durable-состояние (`N`, `r`, `n`) и история дефектов | `skills/pdca-dotnet/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file` |
+| Политика прогонов и журнал: unit без лимита, интеграция только на границе, плановое число граничных прогонов, явные состояния, проекция | `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope · §Execution journal and the unit/integration policy`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
+| Reviewer evidence pack: staged-полные тела, source-side receipt (digest/source identity/равенство содержимого), Roslyn на одном snapshot, drift ⇒ инвалидация | `skills/pdca-dotnet/SKILL.md §Reviewer evidence pack (independent CHECK over full bodies)` |
+| Binding/applicability disposition: append-only, `diagnostic_nonbinding`, граница «не лазейка» | `skills/pdca-dotnet/SKILL.md §Versioned evidence contract · §CHECK completeness gate — mandatory evidence contract` |
+| ACT cleanup receipt: гейт, область удаления, `cleanup`/`archived`, неизменяемый манифест | `skills/pdca-dotnet/SKILL.md §ACT cleanup receipt (heavy staged materials)`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
+| Учебный сценарий: числа вымышлены; статическая матрица скилла поведение не доказывает | `skills/pdca-dotnet/tests/scenarios.md:3-5` |
 
 Хостовые артефакты (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,
 `config/skills/…`) живут в отдельном конфиг-репозитории и здесь не поставляются: проверки

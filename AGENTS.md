@@ -1,6 +1,6 @@
 # AGENTS.md — working in the skills repository
 
-This repo is the **source of truth** for `opencode/<skill>/` and `opencode/plugins/<plugin>/`.
+This repo is the **source of truth** for `skills/<skill>/` and `opencode/plugins/<plugin>/`.
 Everything downstream is generated from it — never the other way around.
 
 ```
@@ -20,11 +20,11 @@ The host config is `~/.config/opencode`.
 
 ## Order of work
 
-1. Change `opencode/<skill>/` or `opencode/plugins/<plugin>/`.
+1. Change `skills/<skill>/` or `opencode/plugins/<plugin>/`.
 2. Test:
    ```bash
    OPENCODE_CONFIG_REPO=/home/alex/sources/opencode-config \
-     python3 -m unittest discover -s opencode/<skill>/tests -p 'test_*.py'
+     python3 -m unittest discover -s skills/<skill>/tests -p 'test_*.py'
    ```
    Some suites compare against the snapshot (`config/agents`, `config/profiles`); they are
    skipped unless `OPENCODE_CONFIG_REPO` is set.

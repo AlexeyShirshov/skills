@@ -176,7 +176,7 @@ flat-primary fallback помечается `Notice:`.
 
 Кампания — не только самостоятельный режим. Она может быть **единицей коллекции**: у такой
 единицы форма исполнения `execution_kind=campaign`, и это поле не смешивается с
-`selected_variant` (`opencode/pdca-collection/SKILL.md` §Collection units and the execution form).
+`selected_variant` (`skills/pdca-collection/SKILL.md` §Collection units and the execution form).
 Форму решает PLAN коллекции (`pdca-planner`); раннер только читает готовое значение и не
 классифицирует задачу.
 
@@ -189,14 +189,14 @@ flat-primary fallback помечается `Notice:`.
 
 Отдельного агента кампании нет и нового уровня `Task` нет; primary коллекции не становится
 исполнителем кампании — он ведёт статус коллекции, а не шаг. Коллекция не даёт кампании ни
-параллельных шагов, ни зачёта числа без ACCEPT (`opencode/pdca-incremental/SKILL.md` §Role).
+параллельных шагов, ни зачёта числа без ACCEPT (`skills/pdca-incremental/SKILL.md` §Role).
 Standalone-модель при этом не меняется.
 
 **Вариант принадлежит шагу, а не кампании.** У единицы-кампании нет собственного
 `selected_variant` и нет «домена кампании». Каждый шаг получает конкретный вариант по
 содержанию шага — `.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе `pdca` — и он
 фиксируется в durable-записи (каркас/статус), а не выбирается раннером
-(`opencode/pdca-incremental/SKILL.md` §3. Step execution). Правило диспетчеризации
+(`skills/pdca-incremental/SKILL.md` §3. Step execution). Правило диспетчеризации
 принадлежит загруженному контракту кампании: раннер его исполняет и задачу не классифицирует.
 
 **Каркас — отдельный артефакт, а не копия в статусе.** Подготовка кампании живёт в отдельном
@@ -208,7 +208,7 @@ target/floor (конкретные значения или утверждённ�
 зависимости; ресурсы и доказательство неконфликтности с расписанием; правила продвижения;
 правила остановки и протокол bootstrap; свидетельства совместимости расписания. Runtime-статус
 кампании хранит `preparation_ref` как **ссылку**, а не копию каркаса
-(`opencode/pdca-incremental/SKILL.md` §Campaign status file); пересогласование цели, критериев,
+(`skills/pdca-incremental/SKILL.md` §Campaign status file); пересогласование цели, критериев,
 порога или правил остановки создаёт **новую** immutable ревизию, обновляет ссылку и сохраняет
 прежнюю. Тихая правка и backfill уже принятых критериев запрещены.
 
@@ -227,7 +227,7 @@ target/floor (конкретные значения или утверждённ�
 **Готовность ≠ завершение.** `preparation_state=ready` без runtime — это `barrier-ready`, а не
 `started`: единица остаётся `pending` и никогда не становится `done` от готовности каркаса.
 `done` даёт только принятый `met` с явным `disposition=finalized`
-(`opencode/pdca-collection/SKILL.md` §A.1 Routing campaign outcomes).
+(`skills/pdca-collection/SKILL.md` §A.1 Routing campaign outcomes).
 
 **Пауза ≠ финал.** `blocked`, `stopped` и `unreachable` с допустимым следующим target в
 неизменной цели/границах — это checkpoint: `disposition=paused`, единица остаётся `in-progress`,
@@ -236,36 +236,36 @@ target/floor (конкретные значения или утверждённ�
 неуспешного disposition и из паузы не выводится. Resume явный; автоматической бесконечной
 докачки нет; пауза не сбрасывает `N`/`r`/`n`, не даёт попыток сверх базового контракта и не
 продвигает зависимую цепочку своей группы, остальные группы продолжают
-(`opencode/pdca-incremental/SKILL.md` §5. Stop decision).
+(`skills/pdca-incremental/SKILL.md` §5. Stop decision).
 
 **Три разных поля.** Готовность (`preparation_state`, `plan_state`), runtime-статус кампании
 (`Status`) и per-unit `disposition` (`active | paused | finalized`) — разные вещи, и ни одно из
 них не является статусом задачи. Пауза лейна **производна** от `disposition=paused` текущей
 единицы и не хранится отдельным authoritative полем лейна; новых статусов задачи/группы не
-вводится (`opencode/pdca-collection/SKILL.md` §Lane (work stream)).
+вводится (`skills/pdca-collection/SKILL.md` §Lane (work stream)).
 
 **PLAN шага и апрув.** Бриф шага не подменяет PLAN и не является апрувом. В normal mode каждый
 фактический шаг проходит полный PLAN своего варианта и утверждается по действующему active
 contract; утверждение фиксируется durable pending approval ref, а текущая единица получает
-`disposition=paused` (`opencode/pdca-collection/SKILL.md` §Lane (work stream)). В автономном
+`disposition=paused` (`skills/pdca-collection/SKILL.md` §Lane (work stream)). В автономном
 режиме кампания не изобретает апрув, которого контракт не требует.
 
 **Коммиты.** `Commit policy: none` означает отсутствие промежуточных step-коммитов и **не**
 запрещает внешний outer completion commit коллекции: завершение кампании и финализация единицы —
 разные события. Внешний commit/branch lifecycle единицы принадлежит коллекции. Явное no-commit
 ограничение, конфликтующее с обязательной git-моделью, — preflight блокер до аллокации лейнов,
-а не тихое переопределение модели (`opencode/pdca-collection/SKILL.md` §Git model).
+а не тихое переопределение модели (`skills/pdca-collection/SKILL.md` §Git model).
 
 **Рекурсия запрещена.** Шаг кампании — только цикл семейства: ни «кампании в кампании», ни
 «коллекции внутри кампании» (и коллекции внутри коллекции). Кампания внутри коллекции не
 получает дополнительных прав — ни коммитов сверх политики, ни обхода гейтов, ни параллельных
-шагов (`opencode/pdca-incremental/SKILL.md` §Campaign invariants).
+шагов (`skills/pdca-incremental/SKILL.md` §Campaign invariants).
 
 ## 4. Как это работает
 
-![Граф кампании pdca-incremental: BOOT → PLAN → STEP → ACC → DEC, петля DEC → PLAN «next step · baseline = принято», петля repair DEC → STEP «repair · parent N», сноска verify и ветка DEC → STOP](../../opencode/pdca-incremental/assets/diagram/incremental-state-dark.svg)
+![Граф кампании pdca-incremental: BOOT → PLAN → STEP → ACC → DEC, петля DEC → PLAN «next step · baseline = принято», петля repair DEC → STEP «repair · parent N», сноска verify и ветка DEC → STOP](../../skills/pdca-incremental/assets/diagram/incremental-state-dark.svg)
 
-*Схема: `opencode/pdca-incremental/assets/diagram/incremental-state-dark.svg`; полная
+*Схема: `skills/pdca-incremental/assets/diagram/incremental-state-dark.svg`; полная
 раскладка с ролями и тирами — `incremental-contract-dark.svg`. Нижняя пунктирная петля
 `DEC → STEP` — это `repair`; сноска внизу — опциональный `verify`.*
 
@@ -634,8 +634,8 @@ collection.
 
 ## 7. Куда дальше
 
-- Полный контракт — [`opencode/pdca-incremental/SKILL.md`](../../opencode/pdca-incremental/SKILL.md);
-  диаграмма кампании — `opencode/pdca-incremental/assets/diagram/`.
+- Полный контракт — [`skills/pdca-incremental/SKILL.md`](../../skills/pdca-incremental/SKILL.md);
+  диаграмма кампании — `skills/pdca-incremental/assets/diagram/`.
 - База цикла — [`pdca.md`](pdca.md); инженерные варианты —
   [`pdca-coder.md`](pdca-coder.md) и [`pdca-dotnet.md`](pdca-dotnet.md).
 - Пакетная работа с ≥2 непересекающимися footprint — [`pdca-collection.md`](pdca-collection.md).
@@ -644,26 +644,26 @@ collection.
 ## Источники
 
 Карта «утверждение → источник». При расхождении приоритет у контрактов:
-`opencode/pdca-incremental/SKILL.md` — для кампании, `opencode/pdca-collection/SKILL.md` —
+`skills/pdca-incremental/SKILL.md` — для кампании, `skills/pdca-collection/SKILL.md` —
 для единиц коллекции.
 
 | Утверждение в статье | Источник |
 | --- | --- |
-| Роль кампании, «не вариант цикла», делегирование шага `pdca-orchestrator` с выбором варианта | `opencode/pdca-incremental/SKILL.md` §Role |
-| Роли, тиры и полномочия: блок → роль → тир → доступ → выход; правила primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate | `opencode/pdca-incremental/SKILL.md` §Roles, tiers and authority |
-| Когда выбирать и разведение с `pdca-collection` (известный список сам по себе коллекцию не выбирает) | `opencode/pdca-incremental/SKILL.md` §When to choose |
-| Инварианты кампании: цель/рецепт, единица, флор, baseline-цепочка, один замер, discovery, перенос состояния, серийность | `opencode/pdca-incremental/SKILL.md` §Campaign invariants |
-| Статус-файл кампании: единственный файл, поля, append-only, приоритет evidence | `opencode/pdca-incremental/SKILL.md` §Campaign status file |
-| Цикл: bootstrap, discovery, brief из шести блоков, шаг, приёмка, решения об остановке, сайзинг | `opencode/pdca-incremental/SKILL.md` §Campaign cycle |
-| Типы шагов `increment`/`repair`/`verify` и маршрут после шага | `opencode/pdca-incremental/SKILL.md` §3.1, §4 |
-| Brief: шесть блоков, почему это минимум, что закрывает каждый и почему нельзя короче/длиннее | `opencode/pdca-incremental/SKILL.md` §2. Step brief |
-| Экономика флора и размера шага | `opencode/pdca-incremental/SKILL.md` §Economics |
-| Красные флаги и восстановление после компакции | `opencode/pdca-incremental/SKILL.md` §Red flags, §Recovery after compaction |
-| Автономный режим и flat-primary fallback с `Notice:` | `opencode/pdca-incremental/SKILL.md` §Autonomous mode |
-| Композиция: кампания как единица коллекции, `execution_kind` ≠ `selected_variant`, две исполняющие модели | `opencode/pdca-collection/SKILL.md` §Collection units and the execution form; `opencode/pdca-incremental/SKILL.md` §Role |
-| Каркас и `preparation_ref` (ссылка, не копия), три операции, готовность ≠ завершение | `opencode/pdca-collection/SKILL.md` §P — per-task PLANs, the barrier, clustering; `opencode/pdca-incremental/SKILL.md` §0. Bootstrap (once) — pdca-planner + pdca-executor, §Campaign status file |
-| Пауза ≠ финал, per-unit `disposition`, производная пауза лейна, явный resume | `opencode/pdca-collection/SKILL.md` §A.1 Routing campaign outcomes, §Lane (work stream); `opencode/pdca-incremental/SKILL.md` §5. Stop decision |
-| Вариант шага по содержанию; правило диспетчеризации принадлежит загруженному контракту | `opencode/pdca-incremental/SKILL.md` §3. Step execution |
-| `Commit policy: none` и внешний outer completion commit; no-commit конфликт — preflight блокер | `opencode/pdca-collection/SKILL.md` §Git model; `opencode/pdca-incremental/SKILL.md` §Campaign invariants |
-| Запрет рекурсии и «композиция не даёт прав» | `opencode/pdca-collection/SKILL.md` §Collection units and the execution form; `opencode/pdca-incremental/SKILL.md` §Campaign invariants |
+| Роль кампании, «не вариант цикла», делегирование шага `pdca-orchestrator` с выбором варианта | `skills/pdca-incremental/SKILL.md` §Role |
+| Роли, тиры и полномочия: блок → роль → тир → доступ → выход; правила primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate | `skills/pdca-incremental/SKILL.md` §Roles, tiers and authority |
+| Когда выбирать и разведение с `pdca-collection` (известный список сам по себе коллекцию не выбирает) | `skills/pdca-incremental/SKILL.md` §When to choose |
+| Инварианты кампании: цель/рецепт, единица, флор, baseline-цепочка, один замер, discovery, перенос состояния, серийность | `skills/pdca-incremental/SKILL.md` §Campaign invariants |
+| Статус-файл кампании: единственный файл, поля, append-only, приоритет evidence | `skills/pdca-incremental/SKILL.md` §Campaign status file |
+| Цикл: bootstrap, discovery, brief из шести блоков, шаг, приёмка, решения об остановке, сайзинг | `skills/pdca-incremental/SKILL.md` §Campaign cycle |
+| Типы шагов `increment`/`repair`/`verify` и маршрут после шага | `skills/pdca-incremental/SKILL.md` §3.1, §4 |
+| Brief: шесть блоков, почему это минимум, что закрывает каждый и почему нельзя короче/длиннее | `skills/pdca-incremental/SKILL.md` §2. Step brief |
+| Экономика флора и размера шага | `skills/pdca-incremental/SKILL.md` §Economics |
+| Красные флаги и восстановление после компакции | `skills/pdca-incremental/SKILL.md` §Red flags, §Recovery after compaction |
+| Автономный режим и flat-primary fallback с `Notice:` | `skills/pdca-incremental/SKILL.md` §Autonomous mode |
+| Композиция: кампания как единица коллекции, `execution_kind` ≠ `selected_variant`, две исполняющие модели | `skills/pdca-collection/SKILL.md` §Collection units and the execution form; `skills/pdca-incremental/SKILL.md` §Role |
+| Каркас и `preparation_ref` (ссылка, не копия), три операции, готовность ≠ завершение | `skills/pdca-collection/SKILL.md` §P — per-task PLANs, the barrier, clustering; `skills/pdca-incremental/SKILL.md` §0. Bootstrap (once) — pdca-planner + pdca-executor, §Campaign status file |
+| Пауза ≠ финал, per-unit `disposition`, производная пауза лейна, явный resume | `skills/pdca-collection/SKILL.md` §A.1 Routing campaign outcomes, §Lane (work stream); `skills/pdca-incremental/SKILL.md` §5. Stop decision |
+| Вариант шага по содержанию; правило диспетчеризации принадлежит загруженному контракту | `skills/pdca-incremental/SKILL.md` §3. Step execution |
+| `Commit policy: none` и внешний outer completion commit; no-commit конфликт — preflight блокер | `skills/pdca-collection/SKILL.md` §Git model; `skills/pdca-incremental/SKILL.md` §Campaign invariants |
+| Запрет рекурсии и «композиция не даёт прав» | `skills/pdca-collection/SKILL.md` §Collection units and the execution form; `skills/pdca-incremental/SKILL.md` §Campaign invariants |
 | Реальный прогон nextorm: 10 шагов, 64.8 % → 75.49 %, +4 098 ветвей | `.pdca/status/integration-branch-coverage-{1..10}.md` (репозиторий nextorm) |
