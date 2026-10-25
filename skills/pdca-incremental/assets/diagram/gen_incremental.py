@@ -51,18 +51,18 @@ BLOCKS = {
         ("D · DO", "pdca-executor · edit/bash · facts", "cheap"),
         ("C · CHECK", "pdca-check · read-only · evidence", "medium"),
         ("A · ACT", "pdca-executor · status/docs", "cheap"),
-        ("Step kind", "increment · repair · verify", "medium"),
+        ("Step exit", "accept · revise · new step", "medium"),
     ],
     "A": [
         ("Verdict", "pdca-check · read-only · by rows", "medium"),
         ("Number", "one run · red is archived", "cheap"),
-        ("Step row", "primary · status-file write", "cheap"),
+        ("Step row", "one writer · status write", "cheap"),
     ],
     "R": [
         ("Goal?", "pdca-planner · predicate", "medium"),
         ("Remainder", "prove with numbers · blocker", "medium"),
         ("Next seed", "pdca-planner · the next step", "medium"),
-        ("Route", "next · repair · verify", "medium"),
+        ("Route", "next · revise · stop", "medium"),
     ],
     "X": [
         ("met", "the only success", "cheap"),
@@ -203,7 +203,7 @@ def render(P):
     # ---- orchestrator band ----
     s.append(f'<rect x="{M}" y="{ORB_Y}" width="{W - 2 * M}" height="{ORB_H}" rx="10" class="band"/>')
     s.append(f'<text x="{M + 18}" y="{ORB_Y + 24}" class="bt">'
-             'Orchestrator · cheap — campaign: primary · step: pdca-orchestrator</text>')
+             'Orchestrator · cheap — cycle-control / campaign-control</text>')
     split = (len(INPUTS) + 1) // 2
     for gi in range(2):
         gx = M + 18 if gi == 0 else M + 18 + (W - 2 * M) / 2

@@ -81,7 +81,7 @@ def units(status_text: str) -> dict[str, dict[str, str]]:
     merged by unit id; a non-empty value never gets overwritten by an empty one.
     """
     out: dict[str, dict[str, str]] = {}
-    state_fields = {"execution_kind", "plan_state", "preparation_state", "preparation_ref"}
+    state_fields = {"form", "plan_state", "preparation_state", "preparation_ref"}
     for header, rows in _all_tables(status_text):
         keys = [name.lower() for name in header]
         if not state_fields & set(keys):
@@ -112,7 +112,7 @@ def task_statuses(status_text: str) -> dict[str, str]:
     out: dict[str, str] = {}
     for header, rows in _all_tables(status_text):
         keys = [name.lower() for name in header]
-        if "plan_state" not in keys and "execution_kind" not in keys:
+        if "plan_state" not in keys and "form" not in keys:
             continue
         status_key = next(
             (name for name in keys if name == "status" or name.endswith(" status")),
@@ -212,7 +212,7 @@ def find_status_file(repo: Path) -> Path | None:
 
 
 def find_preparation(repo: Path) -> Path | None:
-    matches = sorted((repo / ".pdca").glob("**/units/*/preparation.md"))
+    matches = sorted((repo / ".pdca").glob("**/items/*/preparation.md"))
     return matches[0] if matches else None
 
 
@@ -290,12 +290,33 @@ def check_gap_probe(
     return failures
 
 
+# The mandatory content of the immutable preparation document
+# (``../../references/status.md`` in ``pdca-incremental`` -> §Preparation document).
+# Matched as content stems, not as numbered headings: the old nine-point charter is
+# gone, the blocks below are what the document must still carry.
+_PREPARATION_BLOCKS = (
+    ("goal predicate", re.compile(r"(?i)goal predicate|goal:", re.I)),
+    ("measurement recipe", re.compile(r"(?i)\brecipe\b")),
+    ("increment unit", re.compile(r"(?i)increment unit", re.I)),
+    ("floor and target", re.compile(r"(?i)\bfloor\b.*\btarget\b|\btarget\b.*\bfloor\b", re.S)),
+    ("allowed surface", re.compile(r"(?i)allowed surface|reserved surface", re.I)),
+    ("protected/foreign areas", re.compile(r"(?i)protected/foreign|foreign", re.I)),
+    ("first-step candidate list", re.compile(r"(?i)candidate list", re.I)),
+    ("carrying claims", re.compile(r"(?i)carrying claims?", re.I)),
+    ("definition of done", re.compile(r"(?i)definition of done", re.I)),
+    ("budget", re.compile(r"(?i)^budget:", re.M)),
+    ("commit policy", re.compile(r"(?i)commit_policy|commit policy", re.I)),
+    ("preparation_state", re.compile(r"(?i)preparation_state", re.I)),
+    ("preparation_ref", re.compile(r"(?i)preparation_ref", re.I)),
+)
+
+
 def preparation_frame_failures(text: str) -> list[str]:
-    """The nine mandatory frame points, matched by their numbered headings."""
+    """The mandatory preparation blocks present, and no post-barrier runtime status."""
     failures: list[str] = []
-    for number in range(1, 10):
-        if f"## {number}." not in text:
-            failures.append(f"preparation document lacks frame point {number}")
+    for label, pattern in _PREPARATION_BLOCKS:
+        if not pattern.search(text):
+            failures.append(f"preparation document lacks the {label} block")
     if "status: `running`" in text.lower():
         failures.append(
             "preparation document already carries the post-barrier runtime status "
@@ -311,24 +332,32 @@ def check_campaign_probe(
     before: dict[str, str] | None = None,
     campaign_unit: str = "U1",
 ) -> list[str]:
-    """A campaign joins the batch in phase P as a prepared frame, not a planned step."""
+    """A campaign item joins the batch in phase P as a prepared charter, not a step."""
     failures: list[str] = []
     parsed = units(status_text)
     if campaign_unit not in parsed:
         return [f"unit {campaign_unit} missing from the units table"]
     record = parsed[campaign_unit]
-    if (record.get("execution_kind") or "").strip().lower() != "campaign":
+    if (record.get("form") or "").strip().lower() != "campaign":
         failures.append(
-            f"{campaign_unit} was classified as {record.get('execution_kind')!r}, "
+            f"{campaign_unit} was classified as {record.get('form')!r}, "
             "not as a campaign"
         )
     if (record.get("preparation_state") or "").strip().lower() != "ready":
         failures.append(f"{campaign_unit} preparation_state is not ready")
     if is_unset(record.get("preparation_ref", "")):
         failures.append(f"{campaign_unit} has no preparation_ref")
-    if (record.get("selected_variant") or "").strip().lower() not in DASHES:
+    item_contract = (
+        record.get("contract")
+        or record.get("contract+overlay")
+        or record.get("overlay")
+        or record.get("variant")
+        or ""
+    ).strip()
+    if item_contract.lower() not in DASHES and "step" not in item_contract.lower():
         failures.append(
-            f"{campaign_unit} carries a unit-level selected_variant, which a campaign must not have"
+            f"{campaign_unit} carries an item-level contract/overlay ({item_contract!r}), "
+            "which a campaign must not have"
         )
 
     if preparation_text is None:

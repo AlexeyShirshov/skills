@@ -45,32 +45,45 @@ of the status/evidence/manifest files) to reconcile the contract rows.
    NOT a pass** — a criterion without supporting evidence is `unverified`, never `met`.
 3. **Verify cross-part consistency** — the parts must agree with one another and with the
    verification method named in the plan.
-4. **Findings with severity** — a real defect vs noise, each with exact pointers and what to
-   correct; no invented findings outside the report.
-5. **Route corrections**: an implementation defect → DO; a wrong plan → PLAN. Rank what to
+4. **Findings with severity** — a real defect vs noise, each with exact pointers, the **carrying
+   claim ID** it touches and one status `confirmed | refuted | unverified`; what to correct. A
+   finding touching a mandatory criterion but bound to no ID counts as carrying. No invented
+   findings outside the report.
+5. **Carrying-claim veto.** A `confirmed` or `unverified` finding against a carrying claim forbids
+   PASS and final `done` at any rubric score; a rubric margin never compensates. Removing the block
+   needs one of: a fix and re-check; an objective refutation with evidence reproduced by a
+   non-author (you confirm it); or an explicit narrowing inside the original goal, recorded as
+   `limited`, not `done`. Moving the finding to "next step" does not remove the block. An
+   unsupported allegation is adjudicated, not merely deducted; an unknown claim stays non-PASS.
+6. **Route corrections**: an implementation defect → DO; a wrong plan → PLAN. Rank what to
    correct first.
-6. **Escalation counter awareness** — every failed CHECK of the current revision counts; the
+7. **Scope of this check.** A step check is local to the increment's claims and the affected
+   invariants; it does not audit the whole future project. The final check of the whole goal is
+   separate and integrated — it is not a full audit of every increment. When the candidate claims to
+   close the whole goal, one session covers the whole goal; a second isolated judge only on the
+   triggers named in the plan.
+8. **Escalation counter awareness** — every failed CHECK of the current revision counts; the
    same defect returning after one fix, or different defects after the third failed CHECK of
    revision `r`, is an escalation case (there is no 4th attempt). The supplied defect history is
    **history for the recurrence counter**, not evidence for the current verdict; the verdict
    rests only on the **full current report**.
-7. **No numbers/pointers → no pass.** A claim backed only by the author's self-report is
+9. **No numbers/pointers → no pass.** A claim backed only by the author's self-report is
    `unverified` (Verifier Theater).
-8. **Mandatory evidence completeness gate:** no PASS while a **binding/applicable** `required`
-   criterion is `open`. A retained, self-imposed extra *audit* row (a recursive historical
-   inventory, or a retrospective execution-time `committed == tested`) is never rewritten or
-   deleted: return an explicit **append instruction** for the same canonical manifest (stable row
-   ID, classification `diagnostic_nonbinding`, concrete reason/basis in the agreed scope or the
-   priority global rule) so it is excluded from the binding acceptance blockers; `pdca-executor`
-   performs the write and CHECK reconciles the durable result; **CHECK never writes**. Report binding unmet criteria and
-   audit notes **separately**. This is not a loophole: a failing/missing required check, unverified
-   direct evidence, a source-copy mismatch, or a real functional/security variant stays on the
-   normal fail/re-gather/STOP route, and a user-requested finite audit task stays **binding**.
+10. **Mandatory evidence completeness gate:** no PASS while a **binding/applicable** `required`
+    criterion is `open`. A retained, self-imposed extra *audit* row (a recursive historical
+    inventory, or a retrospective execution-time `committed == tested`) is never rewritten or
+    deleted: return an explicit **append instruction** for the same canonical manifest (stable row
+    ID, classification `diagnostic_nonbinding`, concrete reason/basis in the agreed scope or the
+    priority global rule) so it is excluded from the binding acceptance blockers; `pdca-executor`
+    performs the write and CHECK reconciles the durable result; **CHECK never writes**. Report binding unmet criteria and
+    audit notes **separately**. This is not a loophole: a failing/missing required check, unverified
+    direct evidence, a source-copy mismatch, or a real functional/security variant stays on the
+    normal fail/re-gather/STOP route, and a user-requested finite audit task stays **binding**.
 
-9. **Vacuous and expected-negative runs.** A run with zero selected targets/executed cases is a
-   failure whatever its exit status. A negative arm declared `expected-negative` is judged on its
-   declared failure identity; a green-final rule never overrides it.
-10. **Exception discipline.** Accept a recorded exception only from the fixed catalog
+11. **Vacuous and expected-negative runs.** A run with zero selected targets/executed cases is a
+    failure whatever its exit status. A negative arm declared `expected-negative` is judged on its
+    declared failure identity; a green-final rule never overrides it.
+12. **Exception discipline.** Accept a recorded exception only from the fixed catalog
     (`environment/infrastructure`, `tooling incompatibility`, `scope/resource policy`,
     `historical provenance`) with its required evidence and substitute. The same class in three
     or more units of one campaign is a **systemic defect** — demand the mechanism fix and an
@@ -80,7 +93,9 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 
 - **Verdict:** pass / fail.
 - **Criteria matrix:** criterion → `met | unmet | unverified` + evidence pointer.
-- **Findings by severity:** defect/noise, pointer, severity.
+- **Claims status:** claim ID → `confirmed | refuted | unverified`; any blocking claim named
+  explicitly.
+- **Findings by severity:** defect/noise, pointer, claim ID, severity.
 - **Correction routing:** what to correct first, and DO vs PLAN.
 - **Confidence and gaps:** what is verified, what could not be judged.
 

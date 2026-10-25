@@ -14,23 +14,22 @@ Without it the cycle does not fail loudly. It either degrades to the flat primar
 ## 1. What the skill expects from the host
 
 The roles are **subagent names**. Every skill in the family is explicit about its own table
-(`## Host requirements (roles → agents)`); this page only aggregates them.
+(`## Roles and host requirements`); this page only aggregates them.
 
 | Skill | Roles it dispatches | Role assets shipped |
 |---|---|---|
-| `pdca-entry` | none itself — it classifies and hands off to one contract below (the contract dispatches its roles) | `assets/opencode-agents/pdca-orchestrator.md` |
 | `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 files) |
 | `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 files) |
 | `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/opencode-agents/*.md` (7 files) |
-| `pdca-collection` | all of the above per task, plus the runner `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` |
-| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per block, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca-collection` | all of the above per item, plus the runner `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per step, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` |
 
-Every shipped agent id carries the `pdca-` prefix and is **the same across the variants**, so a
-skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
+Every shipped agent id carries the `pdca-` prefix and is **the same across the base and the overlays**,
+so a skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
 
 Agents carry only **identity, tier, permissions and an output contract**; decision knowledge
 (routes, gates, checklists) lives in the skill and is loaded with it. The driver in particular
-never classifies a task — it loads the contract named in `selected_variant`.
+never classifies a task — it loads the contract of the form and the overlay that the plan declared.
 
 The runner **`pdca-orchestrator` ships in every skill's `assets/opencode-agents/`** (the same file,
 so any install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
@@ -58,12 +57,13 @@ root.
 npx skills add AlexeyShirshov/skills@pdca-dotnet -g -y
 ```
 
-One command per skill (`pdca-entry`, `pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`,
+One command per skill (`pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`,
 `pdca-incremental`); `-g` installs for all projects, without it the CLI targets the current one.
-`pdca-entry` is the umbrella; the variant contracts stay installable on their own for an explicit
-invocation. Only the entry is advertised to the model: every other skill carries
-`metadata.opencode/autoinvoke: false`, so it loads only by explicit ID (`@pdca-dotnet`) or when the
-entry hands off. This is the deliberate split — the model cannot pick a contract by phrase.
+`pdca` is the single entry and the whole cycle; the two overlays and the two forms stay installable
+on their own for an explicit invocation. Only `pdca` is advertised to the model: every other skill
+carries `metadata.opencode/autoinvoke: false`, so it loads only by explicit ID (`@pdca-dotnet`) or
+when the base PLAN selects that overlay or form. This is the deliberate split — the model cannot
+pick a contract by phrase.
 From a checkout (paths are relative to the repository root):
 
 ```sh
@@ -72,7 +72,7 @@ cp -r skills/pdca* ~/.config/opencode/skills/
 
 For the PDCA family the global skills root is enough — OpenCode discovers
 `~/.config/opencode/skills`. The `skills-keep.txt` + `curate-skills.mjs` pack is only for skills kept
-in a custom `skills` source; if the family lives there, add the six ids to that list and rebuild it.
+in a custom `skills` source; if the family lives there, add the five ids to that list and rebuild it.
 
 The helpers under the installed skill's `scripts/` are the **source** of the runtime copies — the
 package you installed determines which ones exist (`pdca` and `pdca-coder` ship `pdca_cost.py`;
@@ -110,18 +110,18 @@ cp skills/pdca/assets/opencode-agents/*.md ~/.config/opencode/agents/
 cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 ```
 
-> **One variant, one asset set.** All three cycle variants ship **the same six ids**
-> (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, and — in the
-> `pdca-coder`/`pdca-dotnet` variants — `pdca-security-auditor`) with **different bodies**: `pdca` is
-> domain-neutral, `pdca-coder` selects a toolchain per task, `pdca-dotnet` carries the evidence
-> contract and the inner-loop gate. Copying two variants into one directory silently overwrites
-> one with the other. Install one variant's assets, or keep a single shared set (§4).
+> **One overlay chain, one asset set.** The base and both overlays ship **the same six ids**
+> (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, and — in
+> `pdca-coder`/`pdca-dotnet` — `pdca-security-auditor`) with **different bodies**: `pdca` is
+> domain-neutral, `pdca-coder` selects a toolchain per task, `pdca-dotnet` inherits the coder overlay
+> and carries the evidence contract and the inner-loop gate. Copying two of them into one directory
+> silently overwrites one with the other. Install one chain's assets, or keep a single shared set (§4).
 
 ## 4. Keep one shared set when you use several families
 
-The variants are alternatives, not layers: their role ids coincide by design, so one deployed copy
-always wins. A third, richer copy may already live in your config repository. Pick one source of
-truth:
+The base and its overlays are **layers of one chain** (`pdca-dotnet` inherits `pdca-coder`, and both
+add to `pdca`), but their role ids coincide by design, so one deployed copy always wins. A third,
+richer copy may already live in your config repository. Pick one source of truth:
 
 - **one family** — copy that skill's `assets/opencode-agents/*.md`;
 - **shared host set** — keep the role files in your host config repository and mirror them into the
@@ -147,7 +147,7 @@ What it must be (the asset already encodes this — check it after installation)
 - a `subagent` allowlist for `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`/
   `pdca-scout`/`pdca-security-auditor` (+ the `dotnet-*` lenses and `docfx-specialist` where used),
   with `*` denied;
-- `skill` allowed (it loads the contract named in `selected_variant`).
+- `skill` allowed (it loads the contract of the form and the overlay declared by the plan).
 
 A host that already ships its own runner may keep it only if it grants the same allowlist; otherwise
 the shipped copy should win, because a dispatcher without the `pdca-*` allowlist cannot start a
@@ -233,7 +233,7 @@ OpenCode V1 uses the `permission` map and the `task` action; the `subagent` acti
 The `task` pattern matches the subagent name, last match wins; `pdca-*` covers the six roles, and
 `skill` lets the runner load its contract. V1 has no `subagent` action to translate.
 
-All six ids are the same in every variant (`pdca-planner`, `pdca-executor`, `pdca-check`,
+All six ids are the same across the base and the overlays (`pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`), so one allowlist serves the family. The
 runner gets the same allowlist for its own children — and it may **not** widen the expensive roles'
 permissions.
@@ -344,7 +344,7 @@ Failure semantics:
 |---|---|
 | driver unavailable (no agent, no nested delegation, preflight failed) | exactly one fallback: the cheap primary runs inline and writes `Notice:` with a durable reason (normal mode also tells you) |
 | mandatory role unavailable | resource stop: no other agent takes over; the run stops and records what was already accepted |
-| cycle contract unavailable | fail closed: no substitute variant, no "similar" cycle, no generic execution |
+| cycle contract unavailable | fail closed: no substitute contract, no "similar" cycle, no generic execution |
 | discovered late (after start) | safe pause before the dependent action; the gate is never weakened |
 
 ## 11. Verification status: unverified
@@ -401,4 +401,4 @@ The checklist is packaged as a copy-paste prompt: [`install-prompt.md`](install-
 of §9.
 
 The skill files remain the normative source: `skills/<skill>/SKILL.md`, section
-`## Host requirements (roles → agents)`.
+`## Roles and host requirements`.

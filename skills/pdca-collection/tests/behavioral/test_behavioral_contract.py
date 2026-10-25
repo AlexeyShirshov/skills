@@ -40,8 +40,8 @@ class GapProbeChecksTest(unittest.TestCase):
 
     def test_ready_placeholder_is_rejected(self) -> None:
         mutated = self.status.replace(
-            "| T2 | 2 | campaign | — | n/a | pending |",
-            "| T2 | 2 | campaign | — | n/a | ready |",
+            "| T2 | 2 | campaign | — (step-level) | n/a | pending |",
+            "| T2 | 2 | campaign | — (step-level) | n/a | ready |",
         )
         self.assertNotEqual(mutated, self.status, "fixture row changed shape")
         failures = checks.check_gap_probe(mutated)
@@ -113,25 +113,34 @@ class CampaignProbeChecksTest(unittest.TestCase):
             f"a cycle unit passed the campaign check: {failures}",
         )
 
-    def test_unit_level_variant_is_rejected(self) -> None:
+    def test_item_level_contract_on_a_campaign_is_rejected(self) -> None:
+        # A campaign item carries no contract/overlay: only a concrete step does.
         mutated = self.status.replace(
-            "| U1 | campaign | pending | n/a (campaign) | — | — |",
-            "| U1 | campaign | pending | n/a (campaign) | pdca-coder | — |",
+            "| U1 | campaign | pending | n/a (campaign) | — (step-level) | — |",
+            "| U1 | campaign | pending | n/a (campaign) | `pdca` + `coder` | — |",
         )
         self.assertNotEqual(mutated, self.status, "fixture unit row changed shape")
         failures = checks.check_campaign_probe(mutated, self.preparation)
         self.assertTrue(
-            any("unit-level selected_variant" in failure for failure in failures),
-            f"a unit-level variant on a campaign was accepted: {failures}",
+            any("item-level contract/overlay" in failure for failure in failures),
+            f"an item-level contract on a campaign was accepted: {failures}",
         )
 
-    def test_incomplete_frame_is_rejected(self) -> None:
-        mutated = self.preparation.replace("## 5. Dependencies", "## Dependencies")
-        self.assertNotEqual(mutated, self.preparation, "fixture frame heading changed shape")
+    def test_preparation_missing_a_mandatory_block_is_rejected(self) -> None:
+        # The old nine-point charter is gone; the new document must still carry
+        # its mandatory blocks (here: the carrying claims / definition of done).
+        mutated = self.preparation.replace(
+            "## Carrying claims and definition of done", "## Carrying claims"
+        )
+        mutated = mutated.replace(
+            "- Definition of done: the whole-goal CHECK passes on the accepted state",
+            "- The whole-goal CHECK closes it: PASS on the accepted state",
+        )
+        self.assertNotEqual(mutated, self.preparation, "fixture block heading changed shape")
         failures = checks.check_campaign_probe(self.status, mutated)
         self.assertTrue(
-            any("frame point 5" in failure for failure in failures),
-            f"a frame missing point 5 was accepted: {failures}",
+            any("definition of done" in failure for failure in failures),
+            f"a charter missing the definition of done was accepted: {failures}",
         )
 
     def test_runtime_status_before_the_barrier_is_rejected(self) -> None:
@@ -198,8 +207,8 @@ class TableParsingTest(unittest.TestCase):
     def test_units_carry_both_recorded_shapes(self) -> None:
         gap = checks.units(fixture("gap-status.md"))
         campaign = checks.units(fixture("campaign-status.md"))
-        self.assertEqual("campaign", gap["T2"]["execution_kind"])
-        self.assertEqual("cycle", gap["T1"]["execution_kind"])
+        self.assertEqual("campaign", gap["T2"]["form"])
+        self.assertEqual("cycle", gap["T1"]["form"])
         self.assertEqual("ready", campaign["U1"]["preparation_state"])
         self.assertTrue(campaign["U1"]["preparation_ref"].endswith("@r1"))
 
@@ -211,7 +220,7 @@ class TableParsingTest(unittest.TestCase):
     def test_units_merge_input_and_state_tables(self) -> None:
         """A run may describe a unit in an `Input units` table and a `Units` table."""
         parsed = checks.units(fixture("campaign-status-multitable.md"))
-        self.assertEqual("campaign", parsed["U1"]["execution_kind"])
+        self.assertEqual("campaign", parsed["U1"]["form"])
         self.assertEqual("ready", parsed["U1"]["preparation_state"])
         self.assertTrue(parsed["U1"]["preparation_ref"].endswith("@r1"))
         self.assertEqual("ready", parsed["U2"]["plan_state"])

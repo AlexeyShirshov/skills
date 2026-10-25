@@ -8,19 +8,19 @@
 3. T3 — add README.md describing the project.
 
 ## Collection units (per-unit fields)
-| unit | order | execution_kind | selected_variant | plan_state | preparation_state | preparation_ref | campaign_ref | disposition | status | gap / readiness reason |
+| unit | order | form | contract+overlay | plan_state | preparation_state | preparation_ref | campaign_ref | disposition | status | gap / readiness reason |
 |---|---|---|---|---|---|---|---|---|---|---|
-| T1 | 1 | cycle | pdca-coder | ready | n/a | — | — | active | pending | — |
-| T2 | 2 | campaign | — | n/a | pending | — | — | active | pending | User-reserved acceptance metric, measurement recipe and target are unchosen; user unavailable; invention/assumption forbidden. No ready preparation may be created. |
-| T3 | 3 | cycle | pdca | ready | n/a | — | — | active | pending | — |
+| T1 | 1 | cycle | `pdca` + `coder` | ready | n/a | — | — | active | pending | — |
+| T2 | 2 | campaign | — (step-level) | n/a | pending | — | — | active | pending | User-reserved acceptance metric, measurement recipe and target are unchosen; user unavailable; invention/assumption forbidden. No ready preparation may be created. |
+| T3 | 3 | cycle | `pdca` + none | ready | n/a | — | — | active | pending | — |
 
 - Pending approval refs: none (ALL-barrier not passed; no DO started; user unavailable in this run).
 
 Unit notes:
-- `execution_kind` is fixed by the collection PLAN: T1/T3 are `cycle`, T2 is `campaign`.
-- A campaign unit has no unit-level `selected_variant`; a step variant is selected later by `pdca-planner` per the campaign stack rule.
+- `form` is fixed by the collection PLAN: T1/T3 are `cycle`, T2 is `campaign`.
+- A campaign item has no item-level contract/overlay; the contract/overlay of a concrete step is chosen later by `pdca-planner` for that step.
 - Readiness (`plan_state` / `preparation_state`), campaign runtime `Status`, and per-unit `disposition` are three different things; readiness is not runtime and not completion.
-- Legacy rule: a missing `execution_kind` reads as `cycle`; an unknown value fails closed.
+- Rule: an item record without a `form` reads as `cycle`; an unrecognised form value fails closed.
 
 ## Groups
 | group | units (order) | worktree | branch/ref | status | note |
@@ -28,19 +28,19 @@ Unit notes:
 | — | — | — | — | — | Not formed: ALL-barrier not passed; no lane allocated. |
 
 ## Tasks (queue; source of truth)
-| task | unit | group | branch | status | plan_state | selected_variant | cycle_id (N) | canonical task status path | plan_revision | baseline ref | footprint / predecessor / prerequisite refs | incomplete reason + patch |
+| task | unit | group | branch | status | plan_state | contract+overlay | cycle_id (N) | canonical task status path | plan_revision | baseline ref | footprint / predecessor / prerequisite refs | incomplete reason + patch |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T1 | T1 | — | — | pending | ready | pdca-coder | T1-1 | .pdca/status/T1-1.md | r1 | — | footprint: calc.py (low uncertainty); no predecessor; prerequisites: writable calc.py, python3.10 + doctest | — |
-| T2 | T2 | — | — | pending | n/a | — | — | .pdca/calc-20261021/units/T2/plan-gap.md | — | none | preparation gap: user-reserved metric/recipe/target unchosen; no report artifact; no predecessor can supply them | pending campaign preparation; no preparation_ref, no baseline, no invented threshold |
-| T3 | T3 | — | — | pending | ready | pdca | T3-1 | .pdca/status/T3-1.md | r1 | — | footprint: README.md (low uncertainty); no predecessor required (not gated on T1); prerequisites: repo root writable | — |
+| T1 | T1 | — | — | pending | ready | `pdca` + `coder` | T1-1 | .pdca/status/T1-1.md | r1 | — | footprint: calc.py (low uncertainty); no predecessor; prerequisites: writable calc.py, python3.10 + doctest | — |
+| T2 | T2 | — | — | pending | n/a | — | — | .pdca/calc-20261021/items/T2/plan-gap.md | — | none | preparation gap: user-reserved metric/recipe/target unchosen; no report artifact; no predecessor can supply them | pending campaign preparation; no preparation_ref, no baseline, no invented threshold |
+| T3 | T3 | — | — | pending | ready | `pdca` + none | T3-1 | .pdca/status/T3-1.md | r1 | — | footprint: README.md (low uncertainty); no predecessor required (not gated on T1); prerequisites: repo root writable | — |
 
 ## Phase decisions log
-- 2026-10-21 bootstrap (`pdca-planner`): collection-id `calc-20261021`; T1 `cycle`/`pdca-coder`, T2 `campaign` (no unit-level variant), T3 `cycle`/`pdca`; order T1 → T2 → T3 unchanged.
+- 2026-10-21 bootstrap (`pdca-planner`): collection-id `calc-20261021`; T1 `cycle` (`pdca` + `coder`), T2 `campaign` (no item-level contract), T3 `cycle` (`pdca` + none); order T1 → T2 → T3 unchanged.
 - 2026-10-21 T2: acceptance metric, measurement recipe and target are user-reserved and unchosen; no values invented; `preparation_state=pending`, no `preparation_ref`.
 - ALL-barrier: awaiting own PLAN for T1 and T3 and campaign preparation for T2. DAG/groups/lanes are not created before the barrier.
 - 2026-10-21 Notice: host denied nested delegation (Subagent depth limit reached (1)); flat-primary fallback used for all three COLLECTION TASK PLANs (collection Fallback).
 - 2026-10-21 T1 own PLAN complete: plan_state=ready, r=1, status path .pdca/status/T1-1.md; DO not started.
-- 2026-10-21 T2 campaign preparation: user-reserved metric/recipe/target unchosen; preparation_state=pending, no preparation_ref, gap record .pdca/calc-20261021/units/T2/plan-gap.md; no baseline/runtime/steps.
+- 2026-10-21 T2 campaign preparation: user-reserved metric/recipe/target unchosen; preparation_state=pending, no preparation_ref, gap record .pdca/calc-20261021/items/T2/plan-gap.md; no baseline/runtime/steps.
 - 2026-10-21 T3 own PLAN complete: plan_state=ready, r=1, status path .pdca/status/T3-1.md; DO not started.
 - 2026-10-21 ALL-barrier validation (pdca-planner): FAIL. T1 cycle PASS (plan_state=ready, r1, T1-1); T3 cycle PASS (plan_state=ready, r1, T3-1); T2 campaign FAIL (preparation_state=pending, preparation_ref=none, readiness=gap). T2=gap awaiting user-reserved acceptance metric/measurement recipe/target; not a ready placeholder and not terminal incomplete. No DAG/groups/clustering/lane allocation; DO FORBIDDEN. No schedule; no plan-revision vector bound. T1/T3 plans reusable without a fresh PLAN unless a real applicability failure occurs (scenario h). Next: user supplies T2 reserved inputs; approve preparation with a single preparation_ref and preparation_state=ready; then re-run the ALL-barrier.
 

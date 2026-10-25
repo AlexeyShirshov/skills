@@ -17,7 +17,7 @@ stage: when the matrix was compiled the file was marked "not created yet (pendin
 to the moment before Task 2, not to the current state.) The behavioural review of this matrix is the
 read-only samples `baseline-*`/`after-*` by the rubric (see below); they too are a simulation, not a live run.
 
-The git mechanics (`SKILL.md` §Git model) are checked by a deterministic bash script —
+The git mechanics (`references/lane.md` §Git model) are checked by a deterministic bash script —
 no network, on temporary repositories:
 `bash skills/pdca-collection/tests/git-model-sim.sh` (it is also launched from `unittest discover`
 through `tests/test_git_model.py`; cases: ref naming (siblings,
@@ -71,7 +71,7 @@ The collection skill **does not override** the state machine/gates/revision rule
 PDCA contract (`skills/pdca-coder/SKILL.md`; for .NET — the identical `pdca-dotnet`).
 
 The common operating base (applies to all cases unless stated otherwise below):
-`skills/pdca-collection/SKILL.md` — §C (verification), §Failure, §Collection status, §D
+`skills/pdca-collection/SKILL.md` — §C (verification), §D; `references/lane.md` §Failure; `references/status.md`
 (infrastructure/merge); the base of the code contract (`skills/pdca-coder/SKILL.md`; for .NET —
 the identical `pdca-dotnet`) — §State machine (counters
 `r`/`n`/3), §Escalation (`pdca-escalate`), §Cycle status file. The roles are not invented:
@@ -145,7 +145,7 @@ integrated current tree/branch with its own linked status file; after its ACT �
 a repeat of **all** common gates of the parent C; no cleanup/success while C is red; no
 automatic rerun/remerge/recluster/reset/revert.
 **Operating sources:** spec §Step 1–5, §Control flow, §Common verification and
-recovery; SKILL §C, §Failure (the row "A regression of the mandatory checks/artifacts of a task"), §Collection
+recovery; SKILL §C; lane.md §Failure (the row "A regression of the mandatory checks/artifacts of an item"), status.md §General
 status, §A.
 
 ---
@@ -175,7 +175,7 @@ and no skipping/disabling of tests; preserve the source transcript/root evidence
 the environment is restored/the evidence obtained — a repeat of **the whole** C with a new triage; no
 unbounded auto-polling/retries; no success/cleanup while C is not resolved.
 **Operating sources:** spec §Step 2 (b/c), §Control flow, §Restoring the environment and
-missing reports; SKILL §C, §Failure, §Collection status.
+missing reports; SKILL §C, references/lane.md §Failure, references/status.md.
 
 ---
 
@@ -209,7 +209,7 @@ acceptable plan/STOP — preserve the unresolved status/evidence/integrated work
 success/cleanup, the parent collection stays `unverified`, the source tasks of the collection
 keep their previous statuses; the local PASS of the corrective task **does not** mean the success of the
 collection.
-**Operating sources:** spec §Escalation, revisions and STOP, §Step 5; SKILL §Failure; the base
+**Operating sources:** spec §Escalation, revisions and STOP, §Step 5; references/lane.md §Failure; the base
 `skills/pdca-dotnet/SKILL.md` §State machine / §Escalation (the same-defect rule).
 
 ---
@@ -244,7 +244,7 @@ group — the current tree/branch, `merge --no-ff` is **skipped**, the worktree 
 groups/tasks **are not created**; a merge conflict → `git merge --abort` + `pdca-escalate`, the other
 groups are not touched; the `incomplete` decision excludes the group tip fully and integrates
 the remaining `done` groups.
-**Operating sources:** spec §Merge barrier and safeguards, §Context; SKILL §D, §Failure
+**Operating sources:** spec §Merge barrier and safeguards, §Context; SKILL §D, references/lane.md §Failure
 (the merge rows), §P (one group), §Parameters.
 
 ---
@@ -277,7 +277,7 @@ the collection and tidy up the worktrees/branches".
   `skipped` is an integration note, **not** a group status; `incomplete` stays
   `incomplete` and is never `merged`.
 
-**Operating sources:** SKILL §C, §A, §Collection status, §Failure, §P/§Lane; the base of the code
+**Operating sources:** SKILL §C, §A, §P; references/status.md; references/lane.md; the base of the code
 contract `skills/pdca-coder/SKILL.md` (for .NET — the identical `pdca-dotnet`; the counters/escalation do not change).
 
 ---
@@ -521,7 +521,7 @@ behaviour of the collection was not enacted here and is not claimed as verified.
 
 ### Rubric (a separate reviewer; a static checklist)
 
-- [ ] **f-1** The status of every task has `selected_variant`; the barrier requires the readiness of all.
+- [ ] **f-1** The status of every item has a `form` (`cycle`/`campaign`) and, for a `cycle`, its contract + overlay; the barrier requires the readiness of all.
 - [ ] **g-1** No `ready` placeholder; early DO is forbidden.
 - [ ] **h-1** `ready` plans are not recalculated; `cycle_id`/N/r/n preserved.
 - [ ] **i-1** The authority of the canonical status is resolved before DO.

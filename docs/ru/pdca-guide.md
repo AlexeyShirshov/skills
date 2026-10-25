@@ -3,12 +3,12 @@
 Это человекочитаемый путеводитель по семейству скиллов `pdca*` и агенту-драйверу
 `pdca-orchestrator`: зачем они нужны, как устроен цикл, где у него переходы и гейты
 (условия, при которых разрешён следующий шаг), чем различаются контракты семейства, как
-зонтик `pdca-entry` выбирает один из них и как всё
+единственный PLAN базы `pdca` выбирает форму и оверлей и как всё
 это переживает длинную работу, компакцию контекста и сбой. Документ задуман как база для публицистических статей, поэтому он объясняет логику
 доступным языком, а не пересказывает контракты дословно.
 
-**Источник-рекорд — файлы скиллов в этом репозитории:** `skills/pdca-entry/…`,
-`skills/pdca/SKILL.md`, `skills/pdca-coder/…`, `skills/pdca-dotnet/…`,
+**Источник-рекорд — файлы скиллов в этом репозитории:** `skills/pdca/…` (база и единственный
+вход, с `references/`), `skills/pdca-coder/…`, `skills/pdca-dotnet/…`,
 `skills/pdca-collection/…`, `skills/pdca-incremental/…`.
 Установленные копии в `~/.config/opencode/skills/*` норму не расширяют.
 Часть ссылок указывает на **хостовые артефакты репозитория `opencode-config`
@@ -26,7 +26,7 @@
 
 - §§1–4 — интуитивная модель: зачем цикл, кто в нём кто, как выглядит один проход.
 - §§5–9 — механика: гейты, счётчики, возвраты в PLAN, режимы, память и доказательства.
-- §§10–11 — контракты семейства: зонтик, варианты цикла, коллекция задач и инкрементальная кампания — чем они отличаются и что добавляют.
+- §§10–11 — контракты семейства: база и вход, два оверлея, коллекция задач и инкрементальная кампания — чем они отличаются и что добавляют.
 - §§12–14 — учебные истории, ограничения и безопасность, глоссарий, карта источников и идеи статей.
 
 ---
@@ -80,38 +80,35 @@ PDCA-цикл заменяет последовательность действ
 ## 2. Карта семейства
 
 Семейство состоит ровно из **пяти скиллов**; `pdca-orchestrator` — это не шестой скилл,
-а **агент-драйвер** (роль-обёртка), который ведёт цикл по одному из выбранных скиллов.
+а **агент-драйвер** (роль-обёртка), который ведёт цикл по контракту выбранной формы.
 
 | Скилл | Для чего | Как вызывается | Файл (репо) |
 |---|---|---|---|
-| `pdca-entry` | Единая входная точка (зонтик): классифицирует задачу и передаёт одному контракту ниже | «по циклу», «через PDCA», «by the cycle», «via PDCA», `pdca-entry` | `skills/pdca-entry/SKILL.md` |
-| `pdca` | Доменно-нейтральный контракт для задачи с проверяемым результатом | **Явно по имени**: `skill pdca` / `@pdca` | `skills/pdca/SKILL.md` |
-| `pdca-coder` | Программно-инженерные задачи любого стека: код, тесты, документация, рефакторинг, конфигурация | Явный id (`@pdca-coder`) или маршрут зонтика для другого кода | `skills/pdca-coder/SKILL.md` |
-| `pdca-dotnet` | То же, но с .NET/C#-спецификой и `.NET`-гейтами | Явный id (`@pdca-dotnet`) или маршрут зонтика для .NET/C# | `skills/pdca-dotnet/SKILL.md` |
-| `pdca-collection` | Пакет независимых задач, разбитый на параллельные группы-лейны | «список задач», «milestone», «милстоун», «параллельные группы», «pdca-collection» | `skills/pdca-collection/SKILL.md` |
-| `pdca-incremental` | Одна цель без обязательного плана на весь объём (планы задач могут быть готовы): цепочка шагов, каждый следующий — от принятого замера предыдущего | «инкрементами», «маленькими шагами», «нет плана на весь объём», «каждый следующий шаг из предыдущего», «pdca-incremental» | `skills/pdca-incremental/SKILL.md` |
+| `pdca` | **Единственный вход** и базовый цикл для задачи с проверяемым результатом: один PLAN решает форму (обычный цикл / incremental-кампания / коллекция) и оверлей | «по циклу», «через PDCA», «by the cycle», «via PDCA», `skill pdca` / `@pdca` | `skills/pdca/SKILL.md` |
+| `pdca-coder` | Программный **оверлей** к выбранной форме: код, тесты, документация, рефакторинг, конфигурация любого стека | Только явный id (`@pdca-coder`) | `skills/pdca-coder/SKILL.md` |
+| `pdca-dotnet` | .NET/C# **оверлей**, наследующий `pdca-coder` и добавляющий .NET-специфику и `.NET`-гейты | Только явный id (`@pdca-dotnet`) | `skills/pdca-dotnet/SKILL.md` |
+| `pdca-collection` | **Форма коллекции**: пакет независимых целей, разбитый на параллельные группы-лейны | Только явный id (`@pdca-collection`) | `skills/pdca-collection/SKILL.md` |
+| `pdca-incremental` | **Incremental-форма**: одна цель без известного метода или объёма, продвигаемая цепочкой зачётных шагов, каждый следующий — от принятого результата предыдущего | Только явный id (`@pdca-incremental`) | `skills/pdca-incremental/SKILL.md` |
 
-Модели показывается **только `pdca-entry`**; у пяти контрактов стоит
-`metadata.opencode/autoinvoke: false`, поэтому они загружаются лишь по явному id или
-через handoff зонтика. Сам зонтик не задаёт контракта: он классифицирует задачу и передаёт
-её ровно одному контракту, после чего устраняется.
+Модели показывается **только `pdca`**; у остальных четырёх стоит
+`metadata.opencode/autoinvoke: false`, поэтому они загружаются лишь по явному id или когда
+базовый PLAN выберет этот оверлей или форму. Отдельного скилла-зонтика нет: классификация живёт
+в единственном PLAN базы.
 
-Ключевое разделение — **скилл задаёт контракт, агент задаёт исполнение**. `pdca`,
-`pdca-coder` и `pdca-dotnet` — это три варианта одного и того же цикла, отличающиеся
-уровнем конкретики: доменно-нейтральный, инженерный и .NET-специализированный.
-`pdca-collection` — верхний уровень **над** циклом: он не переопределяет машину состояний
-базового контракта, а добавляет слой группировки и параллельного запуска.
-`pdca-incremental` — второй верхний уровень: та же база, но вместо фиксированного пакета —
-цепочка шагов, где следующий выбирается по принятому замеру. Список задач может быть
-известен заранее, но это очередь кандидатов, а не общий DAG; шаг = задача (см.
-[`pdca-incremental.md`](pdca-incremental.md)).
+Ключевое разделение — **форма и оверлей решаются один раз, агент задаёт исполнение**. `pdca`
+несёт весь цикл; `pdca-coder` и `pdca-dotnet` — **оверлеи**: они добавляют только свои отличия к
+выбранной форме, и `pdca-dotnet` наследует `pdca-coder` (ни один из них не копия цикла).
+`pdca-collection` и `pdca-incremental` — **формы**: коллекция добавляет слой группировки и
+параллельного запуска, кампания — цепочку зачётных шагов, где следующий выбирается по принятому
+результату. Список задач может быть известен заранее, но это очередь кандидатов, а не общий DAG;
+шаг — ограниченная единица кампании (см. [`pdca-incremental.md`](pdca-incremental.md)).
 
-**Развилка: `pdca-collection` или `pdca-incremental`.** Обе надстройки запускают полные
+**Развилка: `pdca-collection` или `pdca-incremental`.** Обе формы запускают полные
 циклы; различает их **структура цели**, а не известность списка и не наличие параллелизма.
-Collection — пакет **независимых** задач, у каждой своя цель и приёмка; группы и параллелизм —
+Collection — пакет **независимых** целей, у каждой своя цель и приёмка; группы и параллелизм —
 способ исполнения (при одной группе или `cap = 1` — штатная последовательная деградация).
 Incremental — **одна** проверяемая цель/метрика; список задач может быть известен, но все шаги
-служат этой цели, и следующий шаг выбирается по принятому замеру.
+служат этой цели, и следующий шаг выбирается по принятому результату.
 
 | вопрос | `pdca-collection` | `pdca-incremental` |
 | --- | --- | --- |
@@ -119,57 +116,53 @@ Incremental — **одна** проверяемая цель/метрика; с�
 | нужен параллелизм и worktree? | нет как условие входа: независимые цели — collection даже при одном лейне/общем footprint; один лейн — штатная деградация | не требуется, один шаг за раз |
 | автокоммит разрешён? | для `>=2` групп обязателен; без него — preflight блокер до аллокации; одна группа может идти без коммитов | не требуется; допускается по явному разрешению (коммит принятого шага, push никогда) |
 | известен список, но footprint один / цепочка? | если цели разные — всё равно collection, один лейн | да, если цель общая |
-| следующий шаг зависит от предыдущего замера? | нет, планы задач независимы | да, baseline-цепочка |
-| нужен per-step repair / интегральный verify? | corrective-задача + collection C | `repair`/`verify` внутри кампании |
+| следующий шаг зависит от предыдущего результата? | нет, планы пунктов независимы | да, baseline-цепочка |
+| что с недобором шага? | corrective-цикл + collection C | loop-back того же шага и проверка всей цели в конце |
 
 Правило: **несколько независимых целей → collection** (даже если исполнение последовательное);
 **одна общая цель/метрика → incremental** (шаг = задача, даже если список известен заранее).
 Отсутствие параллелизма — не аргумент за incremental. Одиночная задача с известным планом не
-нуждается ни в одной из надстроек — это базовый цикл.
+нуждается ни в одной из форм — это обычный цикл.
 
 Это не отказ от декомпозиции: коллекция делает её входом (список и footprint'ы известны
-до старта), incremental — выходом (шаг выбирается после замера). Для метрики с движущимся
+до старта), incremental — выходом (шаг выбирается после результата). Для метрики с движущимся
 множеством непокрытых ветвей второй порядок честнее.
 
 **Соседство и композиция.** Это соседи, а не альтернативы. Пакет коллекции может содержать
-единицы обеих форм исполнения: одиночный цикл (`execution_kind=cycle`) и incremental-кампанию
-(`execution_kind=campaign`). Кампания внутри пакета остаётся последовательной — один шаг за раз,
-один лейн, без внутреннего параллелизма. Приоритеты строк входной точки при этом не меняются
-(коллекция → инкременты → .NET → другой код → нейтральный цикл), шестой контракт не появляется, а
+пункты обеих форм: `cycle` и `campaign`. Пункт-кампания внутри пакета остаётся последовательным —
+один шаг за раз, один лейн, без внутреннего параллелизма. Шестой контракт не появляется, а
 после старта контракта повторной маршрутизации нет: loop-back'и (DO → PLAN, CHECK → DO)
-принадлежат выбранному контракту. `execution_kind` — не `selected_variant`: форма исполнения
-единицы не является вариантом цикла, и наоборот
-(`skills/pdca-collection/SKILL.md` §Collection units and the execution form;
-`skills/pdca-entry/SKILL.md` §Composition: form of execution vs. cycle variant).
+принадлежат выбранной форме. Три значения различны: **форма** (`cycle` | `campaign`),
+**контракт** (`pdca`) и **оверлей** (`none` | `coder` | `coder+.NET`); форма — не оверлей, и у
+пункта-кампании нет контракта/оверлея уровня пункта
+(`skills/pdca-collection/SKILL.md` §Items: form, contract, overlay;
+`skills/pdca/SKILL.md` §Entry: one PLAN decides the form).
 
-**Кто выбирает вариант.** Есть три пути.
+**Кто выбирает форму и оверлей.** Один путь, с ограничением.
 
-- **Зонтик.** Запрос «по циклу»/«через PDCA» без имени контракта идёт в `pdca-entry`,
-  который применяет таблицу (коллекция → инкременты → .NET → другой код → нейтральный
-  цикл) и передаёт управление.
-- **Прямой вызов.** Пользователь называет нужный скилл сам по имени — и дальше цикл идёт
-  по этому контракту; зонтик обходится.
-- **Выбор диспетчеризующего скилла.** В автономном одиночном цикле контракт называет
-  себя в handoff (`selected_variant: pdca` / `pdca-coder` / `pdca-dotnet`); в коллекции или
-  кампании вариант на задачу/шаг выбирает их скилл и передаёт его так же. Драйвер лишь
-  загружает названный контракт — сам он не классифицирует задачу и не подставляет
-  значение по умолчанию. Роли, линзы (проверочные перспективы — наборы правил, под
-  которые подбирается агент или явный generic-путь) и счётчики при этом — из контракта
-  выбранного скилла.
+- **PLAN базы.** Запрос «по циклу»/«через PDCA» или `@pdca` загружает единственный вход; его
+  единственный настроенный `pdca-planner` решает форму, оверлей (когда работа кодовая) и ближайший
+  полезный шаг, а драйвер загружает ровно этот контракт. Дешёвого семантического классификатора
+  нет, второго PLAN на том же содержании нет.
+- **Прямой вызов как ограничение.** Имя `pdca-dotnet`, `pdca-collection` или `pdca-incremental` не
+  создаёт вторую входную точку: PLAN работает внутри названного контракта и не перенаправляет
+  молча. Роли, линзы (проверочные перспективы — наборы правил, под которые подбирается агент или
+  явный generic-путь) и счётчики при этом — из базы плюс этого оверлея или формы.
 
-У `pdca-orchestrator` два входа. Первый — **одна группа `pdca-collection`**: он загружает
-скиллы `pdca-collection` и выбранный вариант цикла и ведёт одну группу в своём
+У `pdca-orchestrator` три контекста. Первый — **одна группа `pdca-collection`**: он загружает
+скилл `pdca-collection` и контракт выбранной формы и ведёт одну группу в своём
 изолированном worktree (отдельной рабочей копии git) при нескольких группах, или
 в текущем дереве при одной.
-Второй — **одиночный автономный цикл**: он загружает только выбранный скилл и работает
-в текущем worktree, возвращая компактную сводку (не длиннее 8 строк).
+Второй — **одиночный автономный цикл** в cycle-control: он загружает только выбранный контракт и
+работает в текущем worktree, возвращая компактную сводку (не длиннее 8 строк). Третий —
+**campaign-control**: он владеет автономной incremental-кампанией — её durable-состоянием,
+бюджетами и восстановлением, — и запускает следующий шаг только по решению планировщика.
 
-Ещё одна важная деталь: `pdca-coder` и `pdca-dotnet` расширяются **проектным оверлеем** —
+Ещё одна важная деталь: оверлеи расширяются **проектным оверлеем** —
 репозиторий может добавить свои правила через файл в `instructions`, проектный скилл
-`*-pdca` или `.opencode/skills/<name>/SKILL.md`. Оверлей уточняет инварианты, реестры
-находок, форматы отчётов и пороги, но **не отменяет** машину состояний и гейты
-(апрув плана, «всё зелёное», loop-back, автономный режим). Доменно-нейтральный `pdca`
-такого оверлея не описывает.
+`*-pdca` или `.opencode/skills/<name>/SKILL.md`. Такой проектный оверлей уточняет инварианты,
+реестры находок, форматы отчётов и пороги, но **не отменяет** машину состояний и гейты
+(апрув плана, «всё зелёное», loop-back, автономный режим).
 
 ## 3. Кто делает какую работу
 
@@ -180,13 +173,13 @@ Incremental — **одна** проверяемая цель/метрика; с�
 
 | Роль | Что делает | Агент | Тир |
 |---|---|---|---|
-| GATHER | Собирает **факты**: `file:line`, URL, версии, числа. Никаких рекомендаций | `pdca-scout` (+ линзы/специалисты там, где они есть у варианта) | cheap |
+| GATHER | Собирает **факты**: `file:line`, URL, версии, числа. Никаких рекомендаций | `pdca-scout` (+ линзы/специалисты, которые добавляет оверлей) | cheap |
 | PLAN | Принимает решения: цель, критерии, декомпозиция, оценка рисков | `pdca-planner` | medium |
 | DO | «Руки»: правит файлы, запускает команды, пишет статус-файл | `pdca-executor` | cheap |
 | CHECK | Выносит **независимый вердикт** по критериям | `pdca-check` | medium |
 | ESCALATE | Второй тир для трудных решений | `pdca-escalate` | strong |
 | RUNNER | Ведёт (диспетчеризует) цикл, ничего не читая и не правя | `pdca-orchestrator` | cheap |
-| SECURITY | Аудит безопасности по триггеру (`pdca-coder`/`pdca-dotnet`-варианты) | `pdca-security-auditor` | medium |
+| SECURITY | Аудит безопасности по триггеру (добавляет оверлей `coder`/`coder+.NET`) | `pdca-security-auditor` | medium |
 
 Пять принципов, которые объясняют эту таблицу.
 
@@ -334,7 +327,7 @@ STOP **не обходит** правило «нет четвёртой попы
 параллельно в одном дереве / параллельно в worktree); пройденный дизайн-чеклист и
 зафиксированный выбор toolchain и линз. Пропуск или «полузакрытая» матрица валит гейт 1.
 
-Закрытие плана проверяется механически там, где вариант поставляет хелпер. Прогон, выбравший
+Закрытие плана проверяется механически там, где оверлей поставляет хелпер. Прогон, выбравший
 **ноль** целей, — провальный независимо от кода выхода; решающая негативная ветка объявляется
 `expected-negative` с точной идентичностью ожидаемого отказа и считается `met` по наблюдённому
 исходу. Вердикт может принять записанное исключение только из фиксированного каталога
@@ -367,7 +360,7 @@ STOP **не обходит** правило «нет четвёртой попы
 | **Ответственный** | Check выносит вердикт; оркестратор лишь передаёт его |
 | **Разрешённый следующий шаг** | ACT; иначе loop-back: дефект реализации → DO, неверный план → PLAN |
 
-У инженерных вариантов гейт 3 конкретнее: должны быть зелёными **все** потоки CHECK —
+Под инженерными оверлеями гейт 3 конкретнее: должны быть зелёными **все** потоки CHECK —
 четыре безусловных (аудит кода, тесты, документация, производительность) плюс
 безопасность, если она запущена по триггеру; worktree-подзадачи слиты и **повторно
 проверены на объединённом дереве**. «Часть зелёных» — не пропуск. Любой упавший поток
@@ -409,7 +402,7 @@ AGENTS.md/реестров — не тесты и не код; нужная пр
    **добирают заново**, а не записывают в выдуманный дефект.
 3. **Необратимый выбор.** Архитектурный/API-компромисс с долгими последствиями
    (публичный контракт и совместимость, конкурентность, миграции данных, дизайн
-   криптографии; в инженерных вариантах — **жёсткий компромисс по безопасности**).
+   криптографии; в инженерных оверлеях — **жёсткий компромисс по безопасности**).
 4. **Рискованная приёмка.** Финальная приёмка рискованного результата перед ACT.
 5. **Низкая уверенность плана.** Решение в PLAN (или классификация DO-кандидата,
    которая осталась низкоуверенной после **адресного** сбора `pdca-scout`), где pdca-planner
@@ -567,7 +560,7 @@ fallback**: cheap-primary ведёт цикл сам и записывает `No
   pdca-planner/pdca-escalate, а если не разрешится — **STOP** с записанной сводкой и без вопроса.
 - **Автономность не отменяет одобрения**, требуемые средой или пользователем, и **не
   расширяет права**. Недоступное одобрение — это STOP, а не тихий проход.
-- **Автокоммит — только по явному запросу** (в инженерных вариантах и в кампании incremental). Без запроса
+- **Автокоммит — только по явному запросу** (в инженерных оверлеях и в кампании incremental). Без запроса
   дерево остаётся незакоммиченным; `push` не делается никогда.
 
 Режим держится до тех пор, пока пользователь явно его не снимет; иначе действует normal.
@@ -595,7 +588,7 @@ PLAN стартует в том же ходу, а его вход — `Next plan
 
 - **Статус-файл цикла** — **источник истины** по плану и прогрессу. Он лежит на диске,
   переживает компакцию и новую сессию, и обновляет его исполнитель на каждом событии.
-  Все варианты держат статус-файл цикла в одном фиксированном корне
+  Все формы и оверлеи держат статус-файл цикла в одном фиксированном корне
   (`.pdca/status/<task>-<N>.md`); PLAN может добавить суффикс или подкаталог, но не другой корень.
 
 **Единственное зеркало прогресса.** Статус-файл — единственное место, где записаны план и
@@ -718,16 +711,17 @@ checkout, где идут проверки. Если работа идёт во 
 
 ## 10. От общего к специализированному
 
-Три циклических скилла — это один контракт с разной степенью конкретики. Общая часть
-(машина состояний, счётчики, гейты, роли, доказательства, восстановление) описана выше;
-здесь — что добавляет каждый вариант.
+База и два её оверлея — это один контракт с разной степенью конкретики. Общая часть
+(машина состояний, счётчики, гейты, роли, доказательства, восстановление, формы) описана выше;
+здесь — что несёт база и что добавляет каждый оверлей.
 
 ### 10.1. `pdca` — доменно-нейтральный
 
-`pdca` называет только **роли** и **фазы**. Он не навязывает ни предметных обязанностей,
+`pdca` называет только **роли**, **фазы** и **формы**. Он не навязывает ни предметных
+обязанностей,
 ни списка типов задач, ни примеров из конкретной области: чем будет артефакт, выбирает
-PLAN, и он же выбирает способ проверки. Этот скилл — «эталон» остальных: `pdca-coder` и
-`pdca-dotnet` сохраняют ту же базу, но достраивают её.
+PLAN, и он же выбирает способ проверки. Этот скилл — **вход** семейства и «эталон» остальных:
+`pdca-coder` и `pdca-dotnet` — оверлеи, которые достраивают его и никогда не дублируют.
 
 У ролей здесь свои имена: `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`,
 `pdca-scout` и драйвер `pdca-orchestrator`. Готовые определения ролей лежат в `assets/opencode-agents/`
@@ -944,22 +938,23 @@ disposition `diagnostic_nonbinding`, а не переписывание), а `pd
 сначала собственный настоящий PLAN каждой задачи, затем барьер, и только потом
 кластеризация (DAG/группы) и запуск лейнов.
 
-**Композиция.** Пакет может содержать единицы двух форм: одиночный цикл и incremental-кампанию
-(`execution_kind`). Кампания в пакете остаётся последовательной, и её ведёт inline тот же
-`pdca-orchestrator` в своём лейне; барьер спрашивает с неё отдельный preparation document,
+**Композиция.** Пакет может содержать пункты обеих форм: `cycle` и `campaign`. Пункт-кампания
+в пакете остаётся последовательным, и его ведёт inline тот же
+`pdca-orchestrator` в campaign-control; барьер спрашивает с него отдельный preparation document,
 baseline bootstrap идёт после барьера, готовность не равна завершению, пауза не равна финалу, а
-`done` даёт только принятый `met`. Внешний commit/branch lifecycle единицы принадлежит коллекции
+`done` даёт только принятый `met`. Внешний commit/branch lifecycle пункта принадлежит коллекции
 (см. [`pdca-collection.md`](pdca-collection.md) §7).
 
-**Роль и выбор варианта.** Коллекцию ведёт primary-оркестратор; он **не правит файлы и
+**Роль, форма, контракт и оверлей.** Коллекцию ведёт primary-оркестратор; он **не правит файлы и
 не запускает команды сам** — инфраструктуру (worktree, ветки), `git merge --no-ff` и
 обязательные проверки делает `pdca-executor` по его команде; оркестратор ведёт трекинг, гейты
-и решение о merge. Каждую задачу (и каждую корректирующую задачу) исполняет
-`pdca-orchestrator`, но вариант на **`cycle`**-задачу выбирает коллекция (`.NET/C#` → `pdca-dotnet`,
-другой код → `pdca-coder`, иначе → `pdca`) и передаёт его как `selected_variant`. У единицы
-`campaign` unit-level варианта нет: конкретный вариант шага выбирает `pdca-planner` по stack rule
-кампании и персистит его до шага. База
-коллекции — штатный CHECK кодового контракта.
+и решение о merge. Каждый пункт (и каждый корректирующий цикл) исполняет
+`pdca-orchestrator`, но PLAN коллекции решает для **`cycle`**-пункта оверлей —
+`.NET/C#` → `coder+.NET` (`pdca-dotnet`, наследующий `pdca-coder`), другой код → `coder`, иначе
+`none` — а контракт всегда `pdca`. У пункта
+`campaign` контракта и оверлея уровня пункта нет: их решает `pdca-planner` для каждого
+конкретного шага и персистит до шага. CHECK
+коллекции — штатный CHECK базы.
 
 **Разрешение на автокоммит.** Стандартный многогрупповой запуск предполагает **явно
 разрешённый автокоммит** для веток `collection/**` и `merge --no-ff` (иначе ветка задачи
@@ -988,8 +983,8 @@ safe stop с сохранением refs/коммитов и patch'ем неза
 коллекционному родителю (handoff `plan_handoff` с тем же `N`/`r`/`n`); код на этом шаге не
 пишется. **`campaign`**-единица идёт маршрутом **подготовки**: те же роли создают immutable
 preparation document, `preparation_state=ready` и единственный `preparation_ref`, возвращая
-`preparation_handoff`; unit-level вариант, baseline, runtime-статус, планы будущих шагов и их
-число на барьере не нужны. **Повторный заход** после терминального `incomplete`/STOP —
+`preparation_handoff`; контракт/оверлей уровня пункта, baseline, runtime-статус, планы будущих
+шагов и их число на барьере не нужны. **Повторный заход** после терминального `incomplete`/STOP —
 обязательный вход
 собственного PLAN: прежняя терминальная причина не даёт перезапустить провалившийся критерий
 без изменений — `pdca-planner` либо доказывает, что доказательство теперь получаемо, либо
@@ -1073,8 +1068,8 @@ merge-состояния нет. Вход общей `C` включает фак
 (`pass`/`fail` + находки) выдаёт `pdca-check`.
 
 - **PASS** → разрешён общий ACT коллекции.
-- **FAIL, реальный дефект** → открывается **стандартная корректирующая задача** (вариант
-  по правилу выбора; PLAN→DO→CHECK→ACT) на текущем интегрированном дереве с **собственным
+- **FAIL, реальный дефект** → открывается **стандартный корректирующий цикл** (форма и
+  оверлей по правилу выбора; PLAN→DO→CHECK→ACT) на текущем интегрированном дереве с **собственным
   связанным статус-файлом**; её ACT возвращает управление в **полный** родительский CHECK —
   перезапускаются все обязательные общие гейты, а не только упавший тест. Дешёвый вердикт
   без корректирующей задачи не допускается.
@@ -1139,8 +1134,9 @@ Worktree, ветки, коммиты и patch'и **`incomplete`-групп не 
 
 Файл: `.pdca/status/collection-<slug>.md`. В нём: вход и `collection-id`; таблица
 групп (id, задачи, порядок, worktree, ветка/ref, статус, причина остановки, tip, patch);
-таблица задач (id, группа, ветка, статус, фазовая готовность плана `plan_state`
-(`pending | running | ready`), `selected_variant`, `cycle_id`, `plan_revision`, baseline,
+таблица пунктов (id, группа, ветка, статус, фазовая готовность плана `plan_state`
+(`pending | running | ready`), форма пункта и — для `cycle` — его оверлей, `cycle_id`,
+`plan_revision`, baseline,
 refs footprint/зависимостей, ссылка на статус-файл задачи); решения фаз (включая вектор
 ревизий PLAN, использованный для расписания); подраздел «Общая верификация и восстановление» (последний
 результат `C` с путями к свидетельствам, причина блокировки и состояние `blocked |
@@ -1319,15 +1315,17 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 | **Recovery after compaction** | Восстановление состояния из статус-файла после потери контекста |
 | **Evidence vs assertion** | Свежие данные/указатели против самоотчёта; цикл закрывается только на первом |
 | **Замороженный манифест доказательств** | Машиночитаемый индекс «обязательный критерий → свидетельство по ссылке», замораживается на DO → CHECK; PASS запрещает **binding** `open`-строка, а самовольно добавленная audit-строка получает disposition `diagnostic_nonbinding` вместо переписывания |
-| **Каталог доказательств (`rv<k>`)** | Каталог манифеста, логов и артефактов строк: `.pdca/<task>/rv<k>/` у всех вариантов; `<k>` — ревизия `rv` |
+| **Каталог доказательств (`rv<k>`)** | Каталог манифеста, логов и артефактов строк: `.pdca/<task>/rv<k>/` у всех форм и оверлеев; `<k>` — ревизия `rv` |
 | **Scoped read у `pdca-check`** | Право `pdca-check` открыть собственные артефакты цикла (статус/evidence/манифест), но не продуктовый артефакт |
 | **Escalation** | Второй (strong) тир для трудных решений; возвращает решение, которое оркестратор только роутит |
 | **Resource blocker** | Отсутствие обязательной роли/ресурса; не повод работать без неё |
 | **Normal / autonomous** | Интерактивный режим с апрувом плана пользователем против режима без пауз и вопросов |
 | **Апрув плана** | Единственный сигнал старта DO в normal-режиме: пользователь ознакомился с планом и утвердил его |
 | **`Notice:`** | Запись в статус-лог в автономном режиме вместо сообщения пользователю |
-| **Runner / `pdca-orchestrator`** | Cheap-агент-диспетчер: ведёт цикл или одну группу коллекции |
-| **Overlay** | Проектные добавления к `pdca-coder`/`pdca-dotnet`, уточняющие, но не отменяющие гейты |
+| **Runner / `pdca-orchestrator`** | Cheap-агент-диспетчер: ведёт один цикл (cycle-control), одну кампанию (campaign-control) или одну группу коллекции |
+| **Форма** | Как исполняется цель: обычный цикл, incremental-кампания (`pdca-incremental`) или коллекция (`pdca-collection`); решается один раз в PLAN базы |
+| **Overlay** | `pdca-coder` (программный) или `pdca-dotnet` (наследует его): добавляет доменные факты, инструменты и доказательства к выбранной форме, но не второй цикл |
+| **Проектный оверлей** | Собственные добавления репозитория (инструкции, проектный скилл `*-pdca`), уточняющие, но не отменяющие гейты |
 | **Worktree** | Изолированное рабочее дерево git на группу/единицу |
 | **Lane / stream** | Параллельный поток работ на группу (лейн) или поток фазы (code/test/docs) |
 | **Collection / group** | Пакет задач и его группа (связная компонента по зависимостям/файлам) |
@@ -1350,93 +1348,122 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 
 ### 14.2. Источники и соответствие
 
-Нормативные утверждения путеводителя сверены с текущими файлами репозитория (зеркало
-`pdca-dotnet` канонического `opencode-config`, коммит `063dffa`); при расхождении приоритет у `skills/<skill>/SKILL.md`. Ниже — карта «тема →
-источник» по репозиторным файлам: ссылка на скилл называет раздел
-(`skills/<skill>/SKILL.md §Заголовок`), поэтому правки внутри скилла карту не ломают;
-диапазоны строк остались только для короткой преамбулы до первого заголовка `##` и для
-нескилловых файлов.
+Нормативные утверждения путеводителя сверены с текущими файлами репозитория; при расхождении
+приоритет у `skills/<skill>/SKILL.md` (или его `references/`). Ниже — карта «тема → источник» по
+репозиторным файлам: ссылка на скилл называет раздел (`skills/<skill>/SKILL.md §Заголовок`),
+поэтому правки внутри скилла карту не ломают; диапазоны строк остались только для короткой
+преамбулы до первого заголовка `##` и для нескилловых файлов.
 
 **Семейство и вызовы**
-- состав семейства → `README.md:13-16`; способы вызова/триггеры → `README.md:42-49`
-- `pdca` — назначение и доменная нейтральность → `skills/pdca/SKILL.md:11-14`
-- `pdca-coder` — назначение/стек-агностичность → `skills/pdca-coder/SKILL.md:11-15`
-- `pdca-dotnet` — .NET-таргет → `skills/pdca-dotnet/SKILL.md:11-13`
-- `pdca-collection` — роль и выбор варианта по задаче → `skills/pdca-collection/SKILL.md §Role`
+
+- состав семейства → `README.md` (Contents); способы вызова/триггеры → `README.md` (Usage)
+- единственный вход и решение о форме/оверлее → `skills/pdca/SKILL.md §Entry: one PLAN decides the form · §Forms · §Overlays`
+- `pdca` — назначение и доменная нейтральность → `skills/pdca/SKILL.md:6-17`
+- `pdca-coder` — назначение/стек-агностичность → `skills/pdca-coder/SKILL.md:9-40`
+- `pdca-dotnet` — .NET-таргет и цепочка наследования → `skills/pdca-dotnet/SKILL.md:9-27`
+- `pdca-collection` — роль и форма/контракт/оверлей пункта → `skills/pdca-collection/SKILL.md §Role · §Items: form, contract, overlay`
 
 **Роли и полномочия**
-- host requirements, таблица ролей/fallback → `skills/pdca/SKILL.md §Host requirements (roles → agents)`;
-  `skills/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
-- ассеты ролей: только `# tier:` и permission-блоки, без `model:` → `skills/pdca/SKILL.md §Host requirements (roles → agents)`;
-  `skills/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
-- orchestrator role (диспетчер) → `skills/pdca/SKILL.md §Orchestrator role`; `skills/pdca-coder/SKILL.md §Orchestrator role`
-- `pdca-check` вправе открыть артефакты доказательств (scoped `read`) → `skills/pdca/SKILL.md:22-28`;
-  `skills/pdca-coder/SKILL.md §CHECK: audit checklist (generic)`; `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic)`
+
+- требования хоста, таблица ролей/fallback → `skills/pdca/SKILL.md §Roles and host requirements`
+- ассеты ролей: только `# tier:` и блоки прав, без `model:` → `skills/pdca/SKILL.md §Roles and host requirements`;
+  `skills/pdca-coder/SKILL.md §Composition`; `skills/pdca-dotnet/SKILL.md §Composition`
+- роль оркестратора (диспетчер) → `skills/pdca/SKILL.md §Roles and host requirements`
+- режимы контроля и владелец кампании (cycle-control / campaign-control) → `skills/pdca/SKILL.md §Control modes and the campaign owner`
+- `pdca-check` может открывать артефакты свидетельств (scoped `read`) → `skills/pdca/SKILL.md:19-24`;
+  `skills/pdca/references/check.md §What CHECK receives`; `skills/pdca-coder/references/check.md §Boundaries and output`
 
 **Машина состояний, счётчики, зеркало прогресса**
-- state machine → `skills/pdca/SKILL.md §State machine`; `skills/pdca-coder/SKILL.md §Orchestrator role · §State machine`
-- счётчики `N/r/n` → `skills/pdca/SKILL.md §State machine`
-- phase progress mirror → `skills/pdca/SKILL.md §Phase progress mirror (status file only)`
-- DO → PLAN candidate (a–d) → `skills/pdca/SKILL.md §DO → PLAN candidate`
+
+- машина состояний → `skills/pdca/SKILL.md §State machine and counters`
+- счётчики `N/r/n` → `skills/pdca/SKILL.md §State machine and counters`
+- зеркало прогресса фазы → `skills/pdca/SKILL.md §Phase progress mirror`
+- кандидат DO → PLAN (а–d) → `skills/pdca/SKILL.md §DO → PLAN candidate`
 
 **Гейты и эскалация**
+
 - гейты 1–5 → `skills/pdca/SKILL.md §Transition gates`
-- контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO, stop-loss бюджет, единая привязка evidence → `skills/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
-- фазовые контракты (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
-- повторный заход (re-entry) после терминального `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
-  `skills/pdca-coder/SKILL.md §PLAN owns the quality of the plan`; `skills/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`
-- режимы normal/autonomous → `skills/pdca/SKILL.md §Normal and autonomous modes`
-- collection caller handoff (`plan_handoff`) → `skills/pdca/SKILL.md §Normal and autonomous modes`;
-  `skills/pdca-coder/SKILL.md §Plan approval (PLAN → DO)`
-- escalation и триггеры → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`; `skills/pdca-coder/SKILL.md §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §PLAN selects the toolchain and lenses (per task)`
+- контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO, stop-loss бюджет, одна привязка свидетельства → `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
+- контракты фаз (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
+- повторный вход после терминального `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
+  `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`
+- обычный/автономный режимы → `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval`
+- handoff вызывающей коллекции (`plan_handoff`) → `skills/pdca/SKILL.md §Normal-mode approval`;
+  `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`
+- эскалация и её триггеры → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`
+- несущие утверждения и вето → `skills/pdca/SKILL.md §Claims and veto`; `skills/pdca/references/check.md §Carrying claims and the veto`
 
-**Память, доказательства, восстановление, ACT**
-- durable status / progress log / unit states → `skills/pdca/SKILL.md §Skill workspace: .pdca/ · §Durable status · §Cycle status file`
-- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `skills/pdca/SKILL.md §Frozen evidence manifest`
-- evidence over assertion → `skills/pdca/SKILL.md §Evidence over assertion`
-- recovery → `skills/pdca/SKILL.md §Recovery after compaction and drift`
-- ACT / статус / сообщение → `skills/pdca/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file · §Message for the next session`
+**Память, свидетельства, восстановление, ACT**
 
-**Ограничения, безопасность, red flags**
-- generic constraints → `skills/pdca/SKILL.md §Generic operating constraints`
-- instruction priority / injection → `skills/pdca-coder/SKILL.md §Evidence over assertion · §Instruction priority and injection defense`;
-  `skills/pdca-dotnet/SKILL.md §Instruction priority and injection defense`
-- red flags / failure modes → `skills/pdca/SKILL.md §Red flags (self-check) · §Cycle failure modes`
+- durable-статус / журнал прогресса / состояния единиц → `skills/pdca/SKILL.md §Workspace and durable status`; `skills/pdca/references/act.md §Status file`
+- замороженный манифест свидетельств + `.pdca/<task>/rv<k>/` → `skills/pdca/references/plan.md §Frozen evidence manifest`
+- свидетельства против утверждений → `skills/pdca/SKILL.md §Evidence over assertion`
+- восстановление → `skills/pdca/SKILL.md §Recovery`
+- ACT / статус / сообщение → `skills/pdca/references/act.md §Closing order · §Status file · §Message for the next session`
+
+**Ограничения, безопасность, красные флаги**
+
+- общие ограничения → `skills/pdca/SKILL.md §Generic operating constraints`
+- красные флаги → `skills/pdca/SKILL.md §Red flags (self-check)`
 
 **pdca-coder: инженерные потоки**
-- project overlay → `skills/pdca-coder/SKILL.md:38-47`
-- toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
-- test strategy/variant matrix → `:832-879`; test run safety → `:881-894`; docs owners → `:896-912`
-- frozen evidence manifest + `.pdca/<task>/rv<k>/` → `:914-958`
-- CHECK audit/streams → `:960-1037`; debugging → `:1113-1135`
-- ACT → `:1137-1168`; economics → `:1313-1323`
+
+- оверлей и его композиция с базой → `skills/pdca-coder/SKILL.md §When it applies · §Composition`
+- toolchain/линзы → `skills/pdca-coder/SKILL.md §Toolchain and lenses`; параллельный DO → `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)`;
+  дисциплина редактирования → `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`
+- стратегия тестирования/матрица вариантов → `skills/pdca-coder/references/plan.md §Test strategy (PLAN → TEST) · §Variant/branch matrix — mandatory, before the cases`;
+  безопасность прогонов → `skills/pdca-coder/SKILL.md §Test run safety (every phase — DO and CHECK)`; владельцы доков → `skills/pdca-coder/references/plan.md §Documentation (owners by phase)`
+- замороженный манифест свидетельств + `.pdca/<task>/rv<k>/` → `skills/pdca/references/plan.md §Frozen evidence manifest`
+- аудит/потоки CHECK → `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)`;
+  отладка → `skills/pdca-coder/references/act.md §Debugging (loop-back CHECK → DO)`
+- ACT → `skills/pdca-coder/references/act.md §Status-file additions (code) · §Handoff additions (code)`;
+  экономика → `skills/pdca/SKILL.md §Roles and host requirements`
 
 **pdca-dotnet: .NET-гейты**
-- обязательный `test scope` → `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope`
-- политика прогонов/журнал + reviewer pack + cleanup receipt → `:577-614,1084-1122,1484-1513`
-- binding/applicability disposition → `:1058-1082,1325-1336`
-- versioned evidence contract + манифест + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; механический конвейер (`generate`/`lint`) → `:1035-1056`
-- CHECK completeness gate (**binding** `open` запрещает PASS; disposition `diagnostic_nonbinding`) → `:1024-1034,1291-1337`
-- inner-loop evidence gate → `:1233-1245`; ноль предупреждений → `:1127,1212,1282-1283`
-- покрытие/ветки/мутации → `:911-920`; безопасность прогонов → `:942-955`
-- `dotnet-*` линзы → `:397-402,715-720,1127-1136,1181-1186`
-- `pdca-security-auditor` — условный сбор, отчёт в агрегат `pdca-check` → `:1172-1179`
-- ACT → `:1362-1397`
+
+- обязательный `test scope` → `skills/pdca-dotnet/references/plan.md §Mandatory \`test scope\` envelope`;
+  `skills/pdca-dotnet/SKILL.md §.NET plan deltas`
+- политика исполнения/журнал + reviewer pack + cleanup receipt → `skills/pdca-dotnet/references/act.md §Execution journal and the unit/integration policy · §ACT cleanup receipt (heavy staged materials)`;
+  `skills/pdca-dotnet/references/plan.md §Reviewer evidence pack (independent CHECK over full bodies)`
+- disposition привязки/применимости → `skills/pdca-dotnet/references/plan.md §Binding/applicability disposition (append-only)`
+- версионированный контракт свидетельств + манифест + `.pdca/<task>/rv<k>/` → `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §Frozen evidence manifest`;
+  механический конвейер (`generate`/`lint`) → `skills/pdca-dotnet/references/plan.md §Mechanical evidence pipeline (\`.pdca/scripts/pdca_evidence.py\`, stdlib only)`
+- гейт полноты CHECK (**binding** `open` запрещает PASS; disposition `diagnostic_nonbinding`) → `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`
+- гейт доказательств внутреннего цикла → `skills/pdca-dotnet/references/check.md §Inner-loop evidence gate (mandatory, fails closed)`;
+  ноль предупреждений → `skills/pdca-dotnet/references/check.md §Streams and audit items`
+- покрытие/ветви/мутации → `skills/pdca-dotnet/references/plan.md §.NET test strategy deltas`;
+  безопасность прогонов → `skills/pdca-dotnet/references/plan.md §Test run safety (memory + streaming) — every phase`
+- линзы `dotnet-*` → `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)`; `skills/pdca-dotnet/references/plan.md §PLAN lenses and .NET skills`
+- `pdca-security-auditor` — условный сбор, отчёт в агрегат `pdca-check` → `skills/pdca-coder/SKILL.md §Optional specialists`; `skills/pdca-dotnet/SKILL.md §.NET check deltas`
+- ACT → `skills/pdca-dotnet/references/act.md §Status-file additions (.NET)`
 - `validate_inner_loop.py`: режимы/коды → `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
-  манифест (`required_rows` ↔ `rows[]`) → `:1158-1226`; разбор режимов → `:1241-1300`
+  манифест (`required_rows` ↔ `rows[]`) → `:1158-1226`; разбор режима → `:1241-1300`
 - `pdca_evidence.py`: `generate`/`lint`, замороженное синтетическое дерево, двустороннее покрытие → `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
-- `plan_lint.py`: `check`/`probe`, коды, проекция `commands.json` → `skills/pdca-dotnet/scripts/plan_lint.py:1-70`; обязательная строка `PLAN-LINT` → `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`
+- `plan_lint.py`: `check`/`probe`, коды, проекция `commands.json` → `skills/pdca-dotnet/scripts/plan_lint.py:1-70`; обязательная строка `PLAN-LINT` → `skills/pdca-dotnet/references/plan.md §Versioned evidence contract`
 
 **pdca-collection**
-- роль/вариант → `skills/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
-  C → `:157-218`; A → `:220-233`; лейн/`incomplete` → `:235-282`;
-  git-модель → `:306-336`; сбой → `:338-350`; статус → `:352-393`;
-  параметры cap=4 → `:402-413`; fallback → `:439-448`
+
+- роль и владение → `skills/pdca-collection/SKILL.md §Role · §Ownership`; форма/контракт/оверлей пункта → `§Items: form, contract, overlay`;
+  P → `§P — per-item PLANs, the barrier, clustering`; барьер по формам пунктов → `§Barrier by item forms`;
+  D/merge → `§D — infrastructure, tracking, merge`; C → `§C — verification (the standard CHECK)`; A → `§A — completion`;
+  параметры cap=4 → `§Parameters`; fallback → `§Fallback`
+- полоса/`incomplete` → `skills/pdca-collection/references/lane.md §One lane = one group · §Failure (semantics)`;
+  git-модель → `references/lane.md §Git model`; статус → `references/status.md §File and content · §Invariants`;
+  campaign-control в полосе → `references/lane.md §A campaign item in a lane (campaign-control)`
+
+**pdca-incremental**
+
+- контракт формы, владение и владелец кампании → `skills/pdca-incremental/SKILL.md §Form, not a second cycle · §Ownership`
+- инварианты и калибровка порогов → `skills/pdca-incremental/SKILL.md §Campaign invariants · §Threshold calibration`
+- цикл кампании, бриф, исполнение шага → `skills/pdca-incremental/SKILL.md §Campaign cycle · §2. Step brief · §3. Step execution`
+- граница шага, приёмка и остановка → `skills/pdca-incremental/SKILL.md §Step boundary · §Acceptance and carry-over · §Stop`
+- статус кампании, запись подготовки, checkpoint → `skills/pdca-incremental/references/status.md`
+- экономика, красные флаги, восстановление → `skills/pdca-incremental/SKILL.md §Economics and sizing · §Red flags (self-check) · §Recovery`
 
 **Хостовые артефакты.** `config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,
 `config/skills/…` живут в отдельном конфиг-репозитории `opencode-config` и в этот репозиторий
 не входят: здесь они не проверяются. Проверки скиллов обращаются к ним только при заданном
-`OPENCODE_CONFIG_REPO` (`README.md:59-66`); фразовый маппинг триггеров — оттуда же.
+`OPENCODE_CONFIG_REPO` (`README.md`, Tests); фразовый маппинг триггеров — оттуда же.
 
 ### 14.3. Направления для статей
 
@@ -1474,7 +1501,6 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 
 - [`docs/ru/pdca.md`](pdca.md) — доменно-нейтральный цикл с проверяемым результатом.
 - [`docs/ru/pdca-coder.md`](pdca-coder.md) — инженерный цикл: код, тесты, документация.
-- [`docs/ru/pdca-dotnet.md`](pdca-dotnet.md) — .NET-вариант с дополнительными гейтами.
+- [`docs/ru/pdca-dotnet.md`](pdca-dotnet.md) — .NET-оверлей с дополнительными гейтами.
 - [`docs/ru/pdca-collection.md`](pdca-collection.md) — пакет задач параллельными группами.
-
 

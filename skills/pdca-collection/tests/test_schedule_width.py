@@ -17,7 +17,9 @@ import re
 import unittest
 from pathlib import Path
 
-SKILL = Path(__file__).resolve().parents[1] / "SKILL.md"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SKILL = SKILL_DIR / "SKILL.md"
+LANE_REF = SKILL_DIR / "references/lane.md"
 
 
 def norm(text: str) -> str:
@@ -27,7 +29,10 @@ def norm(text: str) -> str:
 class ScheduleWidthTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        # Width/host budget stay in §P.4; the capacity rule of a late addition
+        # moved with the schedule revision into references/lane.md.
         cls.text = norm(SKILL.read_text(encoding="utf-8"))
+        cls.lane = norm(LANE_REF.read_text(encoding="utf-8"))
 
     def test_width_is_a_clustering_objective(self) -> None:
         self.assertIn("Width is an objective, not a by-product", self.text)
@@ -38,7 +43,8 @@ class ScheduleWidthTest(unittest.TestCase):
         self.assertIn("memory, measurement locks, container capacity", self.text)
 
     def test_scope_addition_consumes_capacity(self) -> None:
-        self.assertIn("may not silently jump ahead of ready units", self.text)
+        self.assertIn("may not silently jump ahead of ready items", self.lane)
+        self.assertIn("consumes capacity explicitly", self.lane)
 
     def test_own_plan_keeps_plan_hygiene(self) -> None:
         self.assertIn("not a licence to skip plan hygiene", self.text)

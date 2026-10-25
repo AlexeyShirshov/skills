@@ -1,6 +1,6 @@
 """Run the executable git-model check inside ``unittest discover``.
 
-``git-model-sim.sh`` encodes SKILL.md §Git model on throwaway temp
+``git-model-sim.sh`` encodes the git model (``references/lane.md`` §Git model) on throwaway temp
 repositories (branch chain, fast-forwarded group branch, ``merge --no-ff`` of
 completed groups, conflict detection, single-group isolation, ``incomplete``
 group preserved but never merged).  This wrapper only shells out to it, so the
@@ -25,6 +25,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SIM = SKILL_DIR / "tests/git-model-sim.sh"
 SKILL = SKILL_DIR / "SKILL.md"
+LANE_REF = SKILL_DIR / "references/lane.md"
 
 BASH = shutil.which("bash")
 GIT = shutil.which("git")
@@ -105,18 +106,22 @@ def _outer_commit_prohibitions(text: str) -> list[str]:
 
 
 class GitModelContractTextTest(unittest.TestCase):
-    """SKILL.md §Git model: `Commit policy: none` is not a ban on the outer commit."""
+    """Git model + `Commit policy: none`: not a ban on the collection's outer commit.
+
+    The git model moved from SKILL.md §Git model into ``references/lane.md``; the
+    commit-right preflight stayed in §Role/§Parameters. Both files are checked.
+    """
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.raw = SKILL.read_text(encoding="utf-8")
+        cls.raw = SKILL.read_text(encoding="utf-8") + "\n\n" + LANE_REF.read_text(encoding="utf-8")
         cls.plain = " ".join(cls.raw.replace("**", "").replace("`", "").split())
 
     def test_commit_policy_none_is_declared(self):
         self.assertIn(
             "Commit policy: none",
             self.raw,
-            "SKILL.md lacks the explicit `Commit policy: none` marker",
+            "the contract/reference lacks the explicit `Commit policy: none` marker",
         )
         windows = [
             self.plain[max(0, m.start() - 300): m.end() + 300]
@@ -124,7 +129,7 @@ class GitModelContractTextTest(unittest.TestCase):
         ]
         self.assertTrue(
             any(re.search(r"(?i)commit", w) and "external" in w for w in windows),
-            "SKILL.md must scope `Commit policy: none` to external work "
+            "the contract must scope `Commit policy: none` to external work "
             f"(stem 'external' near 'commit'): {windows!r}",
         )
 

@@ -7,8 +7,8 @@ survives long work, context compaction and failure. The document is meant as a b
 public-facing articles, so it explains the logic in plain language rather than retelling the
 contracts verbatim.
 
-**The record source is the skill files in this repository:** `skills/pdca-entry/…`,
-`skills/pdca/SKILL.md`, `skills/pdca-coder/…`, `skills/pdca-dotnet/…`,
+**The record source is the skill files in this repository:** `skills/pdca/…` (the base and the
+single entry, with `references/`), `skills/pdca-coder/…`, `skills/pdca-dotnet/…`,
 `skills/pdca-collection/…`, `skills/pdca-incremental/…`.
 The installed copies in `~/.config/opencode/skills/*` do not extend the norm.
 Some references point at **host artifacts of the `opencode-config` repository
@@ -25,7 +25,7 @@ do not make a plan correct and do not cancel the possibility that the result tur
 
 - §§1–4 — the intuitive model: why the cycle, who is who in it, what one pass looks like.
 - §§5–9 — the mechanics: gates, counters, returns to PLAN, modes, memory and evidence.
-- §§10–11 — the family contracts: the umbrella, the cycle variants, the task collection and the incremental campaign — how they differ and what they add.
+- §§10–11 — the family contracts: the base and the entry, the two overlays, the task collection and the incremental campaign — how they differ and what they add.
 - §§12–14 — teaching stories, limitations and security, glossary, the source map and article ideas.
 
 ---
@@ -76,68 +76,64 @@ loop of identical fixes begin.
 ## 2. The family map
 
 The family consists of exactly **five skills**; `pdca-orchestrator` is not a sixth skill but a
-**driver agent** (a wrapper role) that drives the cycle using one of the chosen skills.
+**driver agent** (a wrapper role) that drives the cycle using the contract of the chosen form.
 
 | Skill | What for | How it is invoked | File (repo) |
 |---|---|---|---|
-| `pdca-entry` | Single entry point (umbrella): classifies a task and hands it to one contract below | "by the cycle", "via PDCA", "run PDCA", `pdca-entry` | `skills/pdca-entry/SKILL.md` |
-| `pdca` | A domain-neutral contract for a task with a verifiable result | **Explicitly by name**: `skill pdca` / `@pdca` | `skills/pdca/SKILL.md` |
-| `pdca-coder` | Software-engineering tasks of any stack: code, tests, documentation, refactoring, configuration | Explicit ID (`@pdca-coder`), or the entry routes other code here | `skills/pdca-coder/SKILL.md` |
-| `pdca-dotnet` | The same, but with .NET/C# specifics and .NET gates | Explicit ID (`@pdca-dotnet`), or the entry routes .NET/C# work here | `skills/pdca-dotnet/SKILL.md` |
-| `pdca-collection` | A batch of independent tasks split into parallel group lanes | Explicit ID (`@pdca-collection`), or the entry routes a known list here | `skills/pdca-collection/SKILL.md` |
-| `pdca-incremental` | One goal without a mandatory whole-volume plan (per-task plans may be ready): a chain of steps, each next one from the previous accepted measurement | "in small increments", "no plan for the whole volume", "each next step from the previous one", `pdca-incremental` | `skills/pdca-incremental/SKILL.md` |
+| `pdca` | The **single entry** and the base cycle for a task with a verifiable result: one PLAN decides the form (ordinary cycle / incremental campaign / collection) and the overlay | "by the cycle", "via PDCA", "run PDCA", `skill pdca` / `@pdca` | `skills/pdca/SKILL.md` |
+| `pdca-coder` | Programming **overlay** applied to the chosen form: code, tests, documentation, refactoring, configuration of any stack | Explicit ID only (`@pdca-coder`) | `skills/pdca-coder/SKILL.md` |
+| `pdca-dotnet` | .NET/C# **overlay** that inherits `pdca-coder` and adds .NET specifics and .NET gates | Explicit ID only (`@pdca-dotnet`) | `skills/pdca-dotnet/SKILL.md` |
+| `pdca-collection` | The **collection form**: a batch of independent goals split into parallel group lanes | Explicit ID only (`@pdca-collection`) | `skills/pdca-collection/SKILL.md` |
+| `pdca-incremental` | The **incremental form**: one goal without a known method or volume, advanced as a chain of credited steps, each next one from the previous accepted result | Explicit ID only (`@pdca-incremental`) | `skills/pdca-incremental/SKILL.md` |
 
-`pdca-entry` is the **only skill advertised to the model**; the five contracts set
-`metadata.opencode/autoinvoke: false` and are loaded by an explicit ID or by the entry's handoff.
-The entry sets no contract of its own: it classifies the task and hands it to exactly one contract,
-then steps aside.
+`pdca` is the **only skill advertised to the model**; the other four set
+`metadata.opencode/autoinvoke: false` and are loaded by an explicit ID or when the base PLAN selects
+that overlay or form. No separate umbrella skill exists: the classification lives in the base's one
+PLAN.
 
-The key separation is **the skill sets the contract, the agent sets the execution**. `pdca`,
-`pdca-coder` and `pdca-dotnet` are three variants of one and the same cycle, differing in their
-level of concreteness: domain-neutral, engineering and .NET-specialized. `pdca-collection` is a
-level **above** the cycle: it does not redefine the base contract's state machine but adds a layer
-of grouping and parallel launching. `pdca-incremental` is the second level above it: the same base,
-but instead of a fixed batch — a chain of steps where the next one is chosen from the accepted
-measurement. The list of tasks may be known in advance, but it is a queue of candidates, not a
-common DAG; a step is a task (see [`pdca-incremental.md`](pdca-incremental.md)).
+The key separation is **the form and the overlay are decided once, the agent sets the execution**.
+`pdca` carries the whole cycle; `pdca-coder` and `pdca-dotnet` are **overlays** — they add only their
+differences to whatever form was chosen, and `pdca-dotnet` inherits `pdca-coder` (neither is a copy of
+the cycle). `pdca-collection` and `pdca-incremental` are **forms**: the collection adds a layer of
+grouping and parallel launching, the campaign a chain of credited steps where the next one is chosen
+from the accepted result. The list of tasks may be known in advance, but it is a queue of candidates,
+not a common DAG; a step is a bounded campaign unit (see [`pdca-incremental.md`](pdca-incremental.md)).
 
 **Neighbour and composition.** These are neighbours, not alternatives. A collection batch may
-contain units of both execution forms: a single cycle (`execution_kind=cycle`) and an incremental
-campaign (`execution_kind=campaign`). A campaign inside a batch stays sequential — one step at a
-time, one lane, no internal parallelism. The entry's routing priorities are unchanged (collection →
-incremental → .NET → other code → neutral), no sixth contract is added, and there is no re-routing
-after a contract starts: loop-backs (DO → PLAN, CHECK → DO) belong to the chosen contract.
-`execution_kind` is not `selected_variant`: a unit's form of execution is not a cycle variant, and a
-variant is not a form of execution
-(`skills/pdca-collection/SKILL.md §Collection units and the execution form`;
-`skills/pdca-entry/SKILL.md §Composition: form of execution vs. cycle variant`).
+contain items of both forms — `cycle` and `campaign`. A campaign item in a batch stays sequential —
+one step at a time, one lane, no internal parallelism. No sixth contract is added, and there is no
+re-routing after a contract starts: loop-backs (DO → PLAN, CHECK → DO) belong to the chosen form.
+The three values are different: the **form** (`cycle` | `campaign`), the **contract** (`pdca`) and
+the **overlay** (`none` | `coder` | `coder+.NET`) — a form is not an overlay, and a campaign item has
+no item-level contract or overlay
+(`skills/pdca-collection/SKILL.md §Items: form, contract, overlay`;
+`skills/pdca/SKILL.md §Entry: one PLAN decides the form`).
 
-**Who chooses the variant.** There are three paths.
+**Who chooses the form and the overlay.** One path, with a constraint.
 
-- **The umbrella.** A request phrased "by the cycle"/"via PDCA" without naming a contract goes to
-  `pdca-entry`, which applies its routing table (collection → incremental → .NET → other code →
-  neutral) and hands off.
-- **A direct invocation.** The user names the skill they need by name — and from then on the cycle
-  follows that contract; this bypasses the umbrella.
-- **The dispatching skill.** In an autonomous single cycle the contract names itself in the
-  handoff (`selected_variant: pdca` / `pdca-coder` / `pdca-dotnet`); in a collection or a campaign,
-  that skill chooses the variant per task/step and passes it the same way. The driver only loads
-  the named contract — it never classifies the task and never falls back to a default. The roles,
-  lenses (verification perspectives — sets of rules, for which an agent or an explicit generic
-  path is selected) and counters then come from the contract of the chosen skill.
+- **The base PLAN.** A request phrased "by the cycle"/"via PDCA", or `@pdca`, loads the single entry;
+  its one configured `pdca-planner` decides the form, the overlay (when the work is code) and the
+  nearest useful step, and the driver loads exactly that contract. There is no cheap semantic
+  classifier and no second PLAN on the same content.
+- **A direct invocation as a constraint.** Naming `pdca-dotnet`, `pdca-collection` or
+  `pdca-incremental` does not create a second entry point: the PLAN works inside the named contract
+  and does not silently re-route. The roles, lenses (verification perspectives — sets of rules, for
+  which an agent or an explicit generic path is selected) and counters then come from the base plus
+  that overlay or form.
 
-`pdca-orchestrator` has two inputs. The first is **one `pdca-collection` group**: it loads the
-`pdca-collection` skill and the chosen cycle variant and drives one group in its own isolated
+`pdca-orchestrator` has three contexts. The first is **one `pdca-collection` group**: it loads the
+`pdca-collection` skill and the chosen form's contract and drives one group in its own isolated
 worktree (a separate git working copy) when there are several groups, or in the current tree when
-there is one. The second is **a single autonomous cycle**: it loads only the chosen skill and works
-in the current worktree, returning a compact summary (no longer than 8 lines).
+there is one. The second is **a single autonomous cycle** in cycle-control: it loads only the chosen
+contract and works in the current worktree, returning a compact summary (no longer than 8 lines). The
+third is **campaign-control**, which owns an autonomous incremental campaign — its durable state,
+budgets and recovery, starting the next step only on the planner's decision.
 
-One more important detail: `pdca-coder` and `pdca-dotnet` are extended by a **project overlay** —
+One more important detail: the overlays can be extended by a **project overlay** —
 a repository may add its own rules through a file in `instructions`, a project skill `*-pdca`, or
-`.opencode/skills/<name>/SKILL.md`. The overlay refines invariants, finding registries, report
-formats and thresholds, but **does not cancel** the state machine and the gates (plan approval,
-"everything green", loop-back, autonomous mode). The domain-neutral `pdca` describes no such
-overlay.
+`.opencode/skills/<name>/SKILL.md`. Such a project overlay refines invariants, finding registries,
+report formats and thresholds, but **does not cancel** the state machine and the gates (plan approval,
+"everything green", loop-back, autonomous mode).
 
 ## 3. Who does what work
 
@@ -148,13 +144,13 @@ is a label of cost and quality, not of authority.
 
 | Role | What it does | Agent | Tier |
 |---|---|---|---|
-| GATHER | Collects **facts**: `file:line`, URLs, versions, numbers. No recommendations | `pdca-scout` (+ lenses/specialists where the variant has them) | cheap |
+| GATHER | Collects **facts**: `file:line`, URLs, versions, numbers. No recommendations | `pdca-scout` (+ lenses/specialists where the overlay adds them) | cheap |
 | PLAN | Makes decisions: goal, criteria, decomposition, risk assessment | `pdca-planner` | medium |
 | DO | The "hands": edits files, runs commands, writes the status file | `pdca-executor` | cheap |
 | CHECK | Renders an **independent verdict** on the criteria | `pdca-check` | medium |
 | ESCALATE | The second tier for hard decisions | `pdca-escalate` | strong |
 | RUNNER | Drives (dispatches) the cycle, reading and editing nothing | `pdca-orchestrator` | cheap |
-| SECURITY | Security audit by trigger (`pdca-coder`/`pdca-dotnet` variants) | `pdca-security-auditor` | medium |
+| SECURITY | Security audit by trigger (added by the `coder`/`coder+.NET` overlay) | `pdca-security-auditor` | medium |
 
 Five principles explain that table.
 
@@ -297,7 +293,7 @@ argument**; the unit execution mode (sequential / parallel in one tree / paralle
 completed design checklist and a fixed choice of toolchain and lenses. A skipped or "half-closed"
 matrix fails gate 1.
 
-The plan close is checked mechanically where the variant supplies a helper. A **zero-target run** is
+The plan close is checked mechanically where the overlay supplies a helper. A **zero-target run** is
 a failed run whatever its exit status; a decisive negative arm is declared `expected-negative` with
 the exact expected failure identity and is `met` on that observed outcome. A verdict may accept a
 recorded exception only from a fixed catalog (environment/infrastructure, tooling incompatibility,
@@ -329,7 +325,7 @@ proceed.
 | **Responsible** | The check renders the verdict; the orchestrator merely relays it |
 | **Permitted next step** | ACT; otherwise loop-back: an implementation defect → DO, a wrong plan → PLAN |
 
-For the engineering variants gate 3 is more specific: **all** CHECK streams must be green — the four
+Under the engineering overlays gate 3 is more specific: **all** CHECK streams must be green — the four
 unconditional ones (code audit, tests, documentation, performance) plus security if it was started
 by trigger; worktree subtasks are merged and **re-verified on the merged tree**. "Some green" is not
 a pass. Any failed CHECK stream counts as a failed verification of the current revision for the
@@ -371,7 +367,7 @@ no answer. A trigger fires when **any** of the conditions holds:
    invented defect.
 3. **An irreversible choice.** An architectural/API trade-off with long-lasting consequences (a
    public contract and compatibility, concurrency, data migrations, cryptographic design; in the
-   engineering variants — a **hard security trade-off**).
+   engineering overlays — a **hard security trade-off**).
 4. **A risky acceptance.** The final acceptance of a risky result before ACT.
 5. **Low plan confidence.** A decision in PLAN (or the classification of a DO candidate that
    remained low-confidence after a **targeted** `pdca-scout` gathering) where the pdca-planner reports low
@@ -524,7 +520,7 @@ In autonomous mode:
   with a recorded summary and no question.
 - **Autonomy does not cancel approvals** required by the environment or the user, and **does not
   expand permissions**. An unavailable approval is a STOP, not a silent pass.
-- **An auto-commit only on explicit request** (in the engineering variants and in an incremental campaign). Without a request the
+- **An auto-commit only on explicit request** (in the engineering overlays and in an incremental campaign). Without a request the
   tree stays uncommitted; `push` is never done.
 
 The mode holds until the user explicitly lifts it; otherwise normal applies.
@@ -551,7 +547,7 @@ The cycle's progress is recorded in **one place**.
 
 - **The cycle status file** — the **source of truth** on the plan and progress. It lives on disk,
   survives compaction and a new session, and the executor updates it on every event. All
-  variants keep the cycle status file under the same fixed workspace root
+  forms and overlays keep the cycle status file under the same fixed workspace root
   (`.pdca/status/<task>-<N>.md`); a plan may add a suffix or a subdirectory, never another root.
 
 **The only progress mirror.** The status file is the single place where the plan and the progress
@@ -660,16 +656,16 @@ turn into "verifier theater" (Verifier Theater) — a green status without numbe
 
 ## 10. From the general to the specialized
 
-The three cycle skills are one contract with different degrees of concreteness. The shared part
-(the state machine, the counters, the gates, the roles, evidence, recovery) is described above;
-here is what each variant adds.
+The base and its two overlays are one contract with different degrees of concreteness. The shared
+part (the state machine, the counters, the gates, the roles, evidence, recovery, the forms) is
+described above; here is what the base carries and what each overlay adds.
 
 ### 10.1. `pdca` — domain-neutral
 
-`pdca` names only **roles** and **phases**. It imposes neither domain duties, nor a list of task
-types, nor examples from a specific field: what the artifact will be is chosen by PLAN, and PLAN
-also chooses the way to verify it. This skill is the "reference" for the others: `pdca-coder` and
-`pdca-dotnet` keep the same base but build on it.
+`pdca` names only **roles**, **phases** and **forms**. It imposes neither domain duties, nor a list
+of task types, nor examples from a specific field: what the artifact will be is chosen by PLAN, and
+PLAN also chooses the way to verify it. This skill is the family's **entry** and "reference" for the
+others: `pdca-coder` and `pdca-dotnet` are overlays that build on it and never duplicate it.
 
 The roles here have their own names: `pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout` and the `pdca-orchestrator` driver. The ready-made role definitions live in
@@ -695,10 +691,10 @@ re-run unchanged — either it must be proven obtainable now, or the oracle must
 
 ### 10.2. `pdca-coder` — engineering streams
 
-`pdca-coder` is the same cycle for programming: code, tests, documentation, refactoring,
-configuration. It is stack-agnostic: PLAN chooses the toolchain and the lenses for the specific
-task, and the project overlay supplies the concrete commands, thresholds and formats. What is added
-to the base:
+`pdca-coder` is the **programming overlay** for code, tests, documentation, refactoring and
+configuration, applied to whichever form the base PLAN chose. It is stack-agnostic: PLAN chooses the
+toolchain and the lenses for the specific task, and a project overlay supplies the concrete commands,
+thresholds and formats. What is added to the base:
 
 - **Required roles are never substituted.** An absent or forbidden required role is a **resource
   blocker** (`pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, and
@@ -761,9 +757,10 @@ to the base:
 
 ### 10.3. `pdca-dotnet` — .NET gates and the inner loop
 
-`pdca-dotnet` is the same engineering contract but with .NET specifics. Its shared base (the
-machine, the gates, the roles, the DO/CHECK streams) is **identical** to `pdca-coder`; the
-differences are in the lenses, the thresholds and the additional gates.
+`pdca-dotnet` is the **.NET overlay**: it inherits the base and the coder overlay, and adds only
+.NET specifics. Its inherited part (the machine, the gates, the roles, the DO/CHECK streams) is
+**identical** to `pdca-coder`; the differences are in the lenses, the thresholds and the additional
+gates.
 
 - **Zero warnings.** The build must be clean under the project's own policy (for example,
   `TreatWarningsAsErrors`); a change that introduces a warning is not a fix. Zero warnings is a gate
@@ -861,9 +858,9 @@ differences are in the lenses, the thresholds and the additional gates.
 
 ## 11. A batch of tasks (`pdca-collection`)
 
-`pdca-collection` is a stack-neutral **level above the PDCA cycle**: a list of **independent**
-tasks split into groups. It does not duplicate or redefine the base state machine and gates but
-adds clustering, isolation and completion. Planning goes **from the tasks**: first each task's own
+`pdca-collection` is the **collection form** of the family, stack-neutral: a list of **independent**
+goals split into groups. It does not duplicate or redefine the base state machine and gates but
+adds clustering, isolation and completion. Planning goes **from the items**: first each item's own
 genuine PLAN, then the barrier, and only then the clustering (DAG/groups) and the launching of
 lanes.
 
@@ -874,22 +871,23 @@ condition); **one shared goal/metric** whose path is unknown and information-dep
 `pdca-incremental` (step = task), even when the list is known up front. A known list alone is not a
 campaign, and a serialized batch is not a reason to switch contracts.
 
-**Composition.** A batch may contain units of two forms: a single cycle and an incremental campaign
-(`execution_kind`). A campaign inside a batch stays sequential and is led inline by the same
-`pdca-orchestrator` in its lane; the barrier asks it for a separate preparation document, the
-baseline bootstrap runs after the barrier, readiness is not completion, pause is not final, and only
-an accepted `met` gives `done`. The external commit/branch lifecycle of the unit belongs to the
-collection (see [`pdca-collection.md`](pdca-collection.md) §7).
+**Composition.** A batch may contain items of both forms: `cycle` and `campaign`. A campaign item
+in a batch stays sequential and is led inline by the same `pdca-orchestrator` in campaign-control;
+the barrier asks it for a separate preparation document, the baseline bootstrap runs after the
+barrier, readiness is not completion, pause is not final, and only an accepted `met` gives `done`.
+The external commit/branch lifecycle of the item belongs to the collection (see
+[`pdca-collection.md`](pdca-collection.md) §7).
 
-**The role and the choice of variant.** The collection is driven by a primary orchestrator; it
+**The role, the form, the contract and the overlay.** The collection is driven by a primary
+orchestrator; it
 **does not edit files or run commands itself** — the infrastructure (worktrees, branches),
 `git merge --no-ff` and the mandatory checks are done by `pdca-executor` on its command; the orchestrator
-keeps the tracking, the gates and the merge decision. Each task (and each corrective task) is
-executed by `pdca-orchestrator`, but the collection chooses the variant per **`cycle`** task
-(`.NET/C#` → `pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`) and passes it as
-`selected_variant`. A `campaign` unit has no unit-level variant: its `pdca-planner` selects the
-concrete step variant by the campaign's stack rule and persists it before the step.
-The collection's base is the code contract's standard CHECK.
+keeps the tracking, the gates and the merge decision. Each item (and each corrective cycle) is
+executed by `pdca-orchestrator`, but the collection PLAN decides per **`cycle`** item the overlay —
+`.NET/C#` → `coder+.NET` (`pdca-dotnet`, inheriting `pdca-coder`), other code → `coder`, otherwise
+`none` — and the contract is always `pdca`. A `campaign` item has no item-level contract or overlay:
+its `pdca-planner` decides them for each concrete step and persists them before the step.
+The collection's CHECK is the standard CHECK of the base.
 
 **Permission for auto-commits.** A standard multi-group run presupposes an **explicitly permitted
 auto-commit** for `collection/**` branches and for `merge --no-ff` (otherwise a task branch gets no
@@ -910,14 +908,14 @@ The user provides a list of tasks in any form. The order is strict: **first each
 PLAN, then the ALL-barrier, and only then the DAG and the groups.** A preliminary gathering of task
 descriptions is not itself a PLAN and does not replace it.
 
-Each **`cycle`** task is conducted by `pdca-orchestrator` in the **COLLECTION TASK PLAN** input:
+Each **`cycle`** item is conducted by `pdca-orchestrator` in the **COLLECTION TASK PLAN** input:
 `pdca-scout` gathers facts, `pdca-planner` makes decisions, `pdca-executor` persists the status. The
 task goes through its
 **own PLAN** and stops at the PLAN→DO boundary, handing control to the collection parent (a
-`plan_handoff` with the same `N`/`r`/`n`); no code is written at this step. A **`campaign`** unit
+`plan_handoff` with the same `N`/`r`/`n`); no code is written at this step. A **`campaign`** item
 takes the **preparation** route instead: the same roles produce the immutable preparation document,
 `preparation_state=ready` and the single `preparation_ref`, returning a `preparation_handoff`; it
-needs no unit-level variant, baseline, runtime status, future step plans or step count at the
+needs no item-level contract or overlay, baseline, runtime status, future step plans or step count at the
 barrier. A **re-entry** after a
 terminal `incomplete`/STOP is a mandatory input of the own PLAN: the previous terminal cause does
 not allow the failed criterion to be re-run unchanged — `pdca-planner` either proves that the evidence is
@@ -998,8 +996,8 @@ to `pdca-check`. Raw measurements **never decide a PASS themselves**: the verdic
 findings) is rendered by `pdca-check`.
 
 - **PASS** → the collection's common ACT is permitted.
-- **FAIL, a real defect** → a **standard corrective task** is opened (the variant by the selection
-  rule; PLAN→DO→CHECK→ACT) on the current integrated tree with **its own linked status file**; its
+- **FAIL, a real defect** → a **standard corrective cycle** is opened (form and overlay by the
+  selection rule; PLAN→DO→CHECK→ACT) on the current integrated tree with **its own linked status file**; its
   ACT returns control to the **full** parent CHECK — all mandatory common gates are re-run, not just
   the failed test. A cheap verdict without a corrective task is not allowed.
 - **No mandatory report / an unreliable report / an environment failure** → a standard
@@ -1034,7 +1032,7 @@ preserved results. **STOP before `C = PASS` — no cleanup.**
 `pdca-orchestrator` executes **one** group (a work stream — one parallel stream of work per group).
 For each task in order: with `≥ 2` groups, the branch `collection/<id>/task-<g>-<k>` off the previous
 task's committed tip (with one group there is no branch); **continuing the task's saved own PLAN**
-from DO (the same variant/N/r/n; a second PLAN is not launched by default; reopening only when
+from DO (the same contract/overlay/N/r/n; a second PLAN is not launched by default; reopening only when
 staleness is revealed after checking the plan's applicability); an auto-commit after the task (in
 the permitted mode) — only the task's files (`git add <paths>`, not `git add -A`). The orchestrator
 **makes no decisions**: it does not decide that a task is infeasible/not ready/independent, does not
@@ -1061,7 +1059,8 @@ rolled back.
 The file: `.pdca/status/collection-<slug>.md`. It contains: the input and the `collection-id`;
 a group table (id, tasks, order, worktree, branch/ref, status, stop reason, tip, patch); a task table
 (id, group, branch, status, the plan's phase readiness `plan_state`
-(`pending | running | ready`), `selected_variant`, `cycle_id`, `plan_revision`, baseline,
+(`pending | running | ready`), the item's form and — for a `cycle` item — its overlay, `cycle_id`,
+`plan_revision`, baseline,
 footprint/dependency refs, a link to the task's status file); the phase decisions (including the
 PLAN revision vector used for the schedule); a "Common verification and recovery" subsection (the
 last `C` result with evidence paths, the blocking reason and the state
@@ -1227,15 +1226,17 @@ identical retries will not be passed off as progress.
 | **Recovery after compaction** | Restoring the state from the status file after the context is lost |
 | **Evidence vs assertion** | Fresh data/pointers against a self-report; the cycle closes only on the former |
 | **Frozen evidence manifest** | A machine-readable index "mandatory criterion → evidence by reference", frozen at DO → CHECK; a **binding** `open` row forbids a PASS, while a self-imposed extra audit row gets a `diagnostic_nonbinding` disposition instead of being rewritten |
-| **Evidence directory (`rv<k>`)** | The directory of the manifest, logs and row artifacts: `.pdca/<task>/rv<k>/` in every variant; `<k>` is the revision `rv` |
+| **Evidence directory (`rv<k>`)** | The directory of the manifest, logs and row artifacts: `.pdca/<task>/rv<k>/` in every form and under every overlay; `<k>` is the revision `rv` |
 | **Scoped read in `pdca-check`** | The check's right to open the cycle's own artifacts (status/evidence/manifest), but not the product artifact |
 | **Escalation** | The second (strong) tier for hard decisions; it returns a decision that the orchestrator only routes |
 | **Resource blocker** | The absence of a mandatory role/resource; not a reason to work without it |
 | **Normal / autonomous** | An interactive mode with the user's plan approval versus a mode without pauses and questions |
 | **Plan approval** | The only signal to start DO in normal mode: the user has read the plan and approved it |
 | **`Notice:`** | A record in the status log in autonomous mode instead of a message to the user |
-| **Runner / `pdca-orchestrator`** | The cheap dispatcher agent: it drives a cycle or one collection group |
-| **Overlay** | Project additions to `pdca-coder`/`pdca-dotnet` that refine but do not cancel the gates |
+| **Runner / `pdca-orchestrator`** | The cheap dispatcher agent: it drives one cycle (cycle-control), one campaign (campaign-control) or one collection group |
+| **Form** | How the goal is executed: an ordinary cycle, an incremental campaign (`pdca-incremental`) or a collection (`pdca-collection`); decided once in the base PLAN |
+| **Overlay** | `pdca-coder` (programming) or `pdca-dotnet` (inheriting it): adds domain facts, tools and evidence to the chosen form, never a second cycle |
+| **Project overlay** | A repository's own additions (instructions, a project `*-pdca` skill) that refine but do not cancel the gates |
 | **Worktree** | An isolated git working tree per group/unit |
 | **Lane / stream** | A parallel stream of work per group (a lane) or a phase stream (code/test/docs) |
 | **Collection / group** | A batch of tasks and its group (a connected component by dependencies/files) |
@@ -1258,92 +1259,112 @@ identical retries will not be passed off as progress.
 
 ### 14.2. Sources and correspondence
 
-The guide's normative claims were reconciled with the repository's current files (`pdca-dotnet`
-mirrored from canonical `opencode-config` commit `063dffa`); where they disagree, `skills/<skill>/SKILL.md` takes precedence. Below is the
+The guide's normative claims were reconciled with the repository's current files; where they
+disagree, `skills/<skill>/SKILL.md` (or its `references/`) takes precedence. Below is the
 "topic → source" map over the repository files: a skill citation names the section
 (`skills/<skill>/SKILL.md §Heading`), so edits inside a skill do not rot it; line ranges are
 kept only for the short preamble before the first `##` heading and for non-skill files.
 
 **The family and invocations**
-- the family's composition → `README.md:13-16`; the invocation methods/triggers → `README.md:42-49`
-- `pdca` — its purpose and domain neutrality → `skills/pdca/SKILL.md:11-14`
-- `pdca-coder` — its purpose/stack-agnosticism → `skills/pdca-coder/SKILL.md:11-15`
-- `pdca-dotnet` — the .NET target → `skills/pdca-dotnet/SKILL.md:11-13`
-- `pdca-collection` — its role and the per-task variant choice → `skills/pdca-collection/SKILL.md §Role`
+- the family's composition → `README.md` (Contents); the invocation methods/triggers → `README.md` (Usage)
+- the single entry and the forms/overlay decision → `skills/pdca/SKILL.md §Entry: one PLAN decides the form · §Forms · §Overlays`
+- `pdca` — its purpose and domain neutrality → `skills/pdca/SKILL.md:6-17`
+- `pdca-coder` — its purpose/stack-agnosticism → `skills/pdca-coder/SKILL.md:9-40`
+- `pdca-dotnet` — the .NET target and the inheritance chain → `skills/pdca-dotnet/SKILL.md:9-27`
+- `pdca-collection` — its role and the item form/contract/overlay → `skills/pdca-collection/SKILL.md §Role · §Items: form, contract, overlay`
 
 **Roles and authorities**
-- host requirements, the role table/fallback → `skills/pdca/SKILL.md §Host requirements (roles → agents)`;
-  `skills/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
-- the role assets: only `# tier:` and permission blocks, no `model:` → `skills/pdca/SKILL.md §Host requirements (roles → agents)`;
-  `skills/pdca-coder/SKILL.md §Host requirements (roles → agents)`; `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents)`
-- the orchestrator role (dispatcher) → `skills/pdca/SKILL.md §Orchestrator role`; `skills/pdca-coder/SKILL.md §Orchestrator role`
-- `pdca-check` may open the evidence artifacts (scoped `read`) → `skills/pdca/SKILL.md:22-28`;
-  `skills/pdca-coder/SKILL.md §CHECK: audit checklist (generic)`; `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic)`
+- host requirements, the role table/fallback → `skills/pdca/SKILL.md §Roles and host requirements`
+- the role assets: only `# tier:` and permission blocks, no `model:` → `skills/pdca/SKILL.md §Roles and host requirements`;
+  `skills/pdca-coder/SKILL.md §Composition`; `skills/pdca-dotnet/SKILL.md §Composition`
+- the orchestrator role (dispatcher) → `skills/pdca/SKILL.md §Roles and host requirements`
+- the control modes and the campaign owner (cycle-control / campaign-control) → `skills/pdca/SKILL.md §Control modes and the campaign owner`
+- `pdca-check` may open the evidence artifacts (scoped `read`) → `skills/pdca/SKILL.md:19-24`;
+  `skills/pdca/references/check.md §What CHECK receives`; `skills/pdca-coder/references/check.md §Boundaries and output`
 
 **The state machine, the counters, the progress mirror**
-- the state machine → `skills/pdca/SKILL.md §State machine`; `skills/pdca-coder/SKILL.md §Orchestrator role · §State machine`
-- the counters `N/r/n` → `skills/pdca/SKILL.md §State machine`
-- phase progress mirror → `skills/pdca/SKILL.md §Phase progress mirror (status file only)`
+- the state machine → `skills/pdca/SKILL.md §State machine and counters`
+- the counters `N/r/n` → `skills/pdca/SKILL.md §State machine and counters`
+- phase progress mirror → `skills/pdca/SKILL.md §Phase progress mirror`
 - the DO → PLAN candidate (a–d) → `skills/pdca/SKILL.md §DO → PLAN candidate`
 
 **Gates and escalation**
 - gates 1–5 → `skills/pdca/SKILL.md §Transition gates`
-- the plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring, the stop-loss budget, one evidence binding → `skills/pdca/SKILL.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
+- the plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring, the stop-loss budget, one evidence binding → `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
 - the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
 - re-entry after a terminal `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
-  `skills/pdca-coder/SKILL.md §PLAN owns the quality of the plan`; `skills/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`
-- the normal/autonomous modes → `skills/pdca/SKILL.md §Normal and autonomous modes`
-- the collection caller handoff (`plan_handoff`) → `skills/pdca/SKILL.md §Normal and autonomous modes`;
-  `skills/pdca-coder/SKILL.md §Plan approval (PLAN → DO)`
-- escalation and its triggers → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`; `skills/pdca-coder/SKILL.md §Worktree sub-tasks of one cycle: subagent prompt template · §Escalation (pdca-escalate) · §PLAN selects the toolchain and lenses (per task)`
+  `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`
+- the normal/autonomous modes → `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval`
+- the collection caller handoff (`plan_handoff`) → `skills/pdca/SKILL.md §Normal-mode approval`;
+  `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`
+- escalation and its triggers → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`
+- claims and the veto → `skills/pdca/SKILL.md §Claims and veto`; `skills/pdca/references/check.md §Carrying claims and the veto`
 
 **Memory, evidence, recovery, ACT**
-- durable status / progress log / unit states → `skills/pdca/SKILL.md §Skill workspace: .pdca/ · §Durable status · §Cycle status file`
-- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `skills/pdca/SKILL.md §Frozen evidence manifest`
+- durable status / progress log / unit states → `skills/pdca/SKILL.md §Workspace and durable status`; `skills/pdca/references/act.md §Status file`
+- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `skills/pdca/references/plan.md §Frozen evidence manifest`
 - evidence over assertion → `skills/pdca/SKILL.md §Evidence over assertion`
-- recovery → `skills/pdca/SKILL.md §Recovery after compaction and drift`
-- ACT / status / message → `skills/pdca/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file · §Message for the next session`
+- recovery → `skills/pdca/SKILL.md §Recovery`
+- ACT / status / message → `skills/pdca/references/act.md §Closing order · §Status file · §Message for the next session`
 
 **Limitations, security, red flags**
 - generic constraints → `skills/pdca/SKILL.md §Generic operating constraints`
-- instruction priority / injection → `skills/pdca-coder/SKILL.md §Evidence over assertion · §Instruction priority and injection defense`;
-  `skills/pdca-dotnet/SKILL.md §Instruction priority and injection defense`
-- red flags / failure modes → `skills/pdca/SKILL.md §Red flags (self-check) · §Cycle failure modes`
+- red flags → `skills/pdca/SKILL.md §Red flags (self-check)`
 
 **pdca-coder: engineering streams**
-- the project overlay → `skills/pdca-coder/SKILL.md:38-47`
-- toolchain/lenses → `:617-658`; parallel DO → `:427-475`; editing discipline → `:477-509`
-- the test strategy/variant matrix → `:832-879`; test-run safety → `:881-894`; doc owners → `:896-912`
-- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `:914-958`
-- the CHECK audit/streams → `:960-1037`; debugging → `:1113-1135`
-- ACT → `:1137-1168`; the economics → `:1313-1323`
+- the overlay and its composition with the base → `skills/pdca-coder/SKILL.md §When it applies · §Composition`
+- toolchain/lenses → `skills/pdca-coder/SKILL.md §Toolchain and lenses`; parallel DO → `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)`;
+  editing discipline → `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`
+- the test strategy/variant matrix → `skills/pdca-coder/references/plan.md §Test strategy (PLAN → TEST) · §Variant/branch matrix — mandatory, before the cases`;
+  test-run safety → `skills/pdca-coder/SKILL.md §Test run safety (every phase — DO and CHECK)`; doc owners → `skills/pdca-coder/references/plan.md §Documentation (owners by phase)`
+- the frozen evidence manifest + `.pdca/<task>/rv<k>/` → `skills/pdca/references/plan.md §Frozen evidence manifest`
+- the CHECK audit/streams → `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)`;
+  debugging → `skills/pdca-coder/references/act.md §Debugging (loop-back CHECK → DO)`
+- ACT → `skills/pdca-coder/references/act.md §Status-file additions (code) · §Handoff additions (code)`;
+  the economics → `skills/pdca/SKILL.md §Roles and host requirements`
 
 **pdca-dotnet: .NET gates**
-- the mandatory `test scope` → `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope`
-- the execution policy/journal + the reviewer pack + the cleanup receipt → `:577-614,1084-1122,1484-1513`
-- the binding/applicability disposition → `:1058-1082,1325-1336`
-- the versioned evidence contract + manifest + `.pdca/<task>/rv<k>/` → `:972-1002,1009-1034`; the mechanical pipeline (`generate`/`lint`) → `:1035-1056`
-- the CHECK completeness gate (a **binding** `open` forbids a PASS; the `diagnostic_nonbinding` disposition) → `:1024-1034,1291-1337`
-- the inner-loop evidence gate → `:1233-1245`; zero warnings → `:1127,1212,1282-1283`
-- coverage/branches/mutations → `:911-920`; run safety → `:942-955`
-- the `dotnet-*` lenses → `:397-402,715-720,1127-1136,1181-1186`
-- `pdca-security-auditor` — a conditional gathering, its report into the `pdca-check` aggregate → `:1172-1179`
-- ACT → `:1362-1397`
+- the mandatory `test scope` → `skills/pdca-dotnet/references/plan.md §Mandatory \`test scope\` envelope`;
+  `skills/pdca-dotnet/SKILL.md §.NET plan deltas`
+- the execution policy/journal + the reviewer pack + the cleanup receipt → `skills/pdca-dotnet/references/act.md §Execution journal and the unit/integration policy · §ACT cleanup receipt (heavy staged materials)`;
+  `skills/pdca-dotnet/references/plan.md §Reviewer evidence pack (independent CHECK over full bodies)`
+- the binding/applicability disposition → `skills/pdca-dotnet/references/plan.md §Binding/applicability disposition (append-only)`
+- the versioned evidence contract + manifest + `.pdca/<task>/rv<k>/` → `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §Frozen evidence manifest`;
+  the mechanical pipeline (`generate`/`lint`) → `skills/pdca-dotnet/references/plan.md §Mechanical evidence pipeline (\`.pdca/scripts/pdca_evidence.py\`, stdlib only)`
+- the CHECK completeness gate (a **binding** `open` forbids a PASS; the `diagnostic_nonbinding` disposition) → `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`
+- the inner-loop evidence gate → `skills/pdca-dotnet/references/check.md §Inner-loop evidence gate (mandatory, fails closed)`;
+  zero warnings → `skills/pdca-dotnet/references/check.md §Streams and audit items`
+- coverage/branches/mutations → `skills/pdca-dotnet/references/plan.md §.NET test strategy deltas`;
+  run safety → `skills/pdca-dotnet/references/plan.md §Test run safety (memory + streaming) — every phase`
+- the `dotnet-*` lenses → `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)`; `skills/pdca-dotnet/references/plan.md §PLAN lenses and .NET skills`
+- `pdca-security-auditor` — a conditional gathering, its report into the `pdca-check` aggregate → `skills/pdca-coder/SKILL.md §Optional specialists`; `skills/pdca-dotnet/SKILL.md §.NET check deltas`
+- ACT → `skills/pdca-dotnet/references/act.md §Status-file additions (.NET)`
 - `validate_inner_loop.py`: modes/codes → `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300`;
   the manifest (`required_rows` ↔ `rows[]`) → `:1158-1226`; mode parsing → `:1241-1300`
 - `pdca_evidence.py`: `generate`/`lint`, the frozen synthetic tree, the two-way coverage → `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709`
-- `plan_lint.py`: `check`/`probe`, exit codes, the `commands.json` projection → `skills/pdca-dotnet/scripts/plan_lint.py:1-70`; the mandatory `PLAN-LINT` row → `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`
+- `plan_lint.py`: `check`/`probe`, exit codes, the `commands.json` projection → `skills/pdca-dotnet/scripts/plan_lint.py:1-70`; the mandatory `PLAN-LINT` row → `skills/pdca-dotnet/references/plan.md §Versioned evidence contract`
 
 **pdca-collection**
-- the role/variant → `skills/pdca-collection/SKILL.md §Role`; P → `:49-105`; D/merge → `:107-155`;
-  C → `:157-218`; A → `:220-233`; the lane/`incomplete` → `:235-282`;
-  the git model → `:306-336`; failure → `:338-350`; the status → `:352-393`;
-  the parameters cap=4 → `:402-413`; the fallback → `:439-448`
+- the role and ownership → `skills/pdca-collection/SKILL.md §Role · §Ownership`; the item form/contract/overlay → `§Items: form, contract, overlay`;
+  P → `§P — per-item PLANs, the barrier, clustering`; the barrier by item forms → `§Barrier by item forms`;
+  D/merge → `§D — infrastructure, tracking, merge`; C → `§C — verification (the standard CHECK)`; A → `§A — completion`;
+  the parameters cap=4 → `§Parameters`; the fallback → `§Fallback`
+- the lane/`incomplete` → `skills/pdca-collection/references/lane.md §One lane = one group · §Failure (semantics)`;
+  the git model → `references/lane.md §Git model`; the status → `references/status.md §File and content · §Invariants`;
+  campaign-control in a lane → `references/lane.md §A campaign item in a lane (campaign-control)`
+
+**pdca-incremental**
+- the form contract, ownership and the campaign owner → `skills/pdca-incremental/SKILL.md §Form, not a second cycle · §Ownership`
+- invariants and threshold calibration → `skills/pdca-incremental/SKILL.md §Campaign invariants · §Threshold calibration`
+- the campaign cycle, the brief, the step execution → `skills/pdca-incremental/SKILL.md §Campaign cycle · §2. Step brief · §3. Step execution`
+- the step boundary, acceptance and stop → `skills/pdca-incremental/SKILL.md §Step boundary · §Acceptance and carry-over · §Stop`
+- the campaign status file, the preparation record, the checkpoint → `skills/pdca-incremental/references/status.md`
+- economics, red flags, recovery → `skills/pdca-incremental/SKILL.md §Economics and sizing · §Red flags (self-check) · §Recovery`
 
 **Host artifacts.** `config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,
 `config/skills/…` live in the separate `opencode-config` config repository and are not part of this
 repository: they are not checked here. The skill checks consult them only when
-`OPENCODE_CONFIG_REPO` is set (`README.md:59-66`); the phrase-to-trigger mapping comes from there as
+`OPENCODE_CONFIG_REPO` is set (`README.md`, Tests); the phrase-to-trigger mapping comes from there as
 well.
 
 ### 14.3. Directions for articles
@@ -1383,5 +1404,5 @@ is in `docs/`.
 
 - [`docs/pdca.md`](pdca.md) — the domain-neutral cycle with a verifiable result.
 - [`docs/pdca-coder.md`](pdca-coder.md) — the engineering cycle: code, tests, documentation.
-- [`docs/pdca-dotnet.md`](pdca-dotnet.md) — the .NET variant with additional gates.
+- [`docs/pdca-dotnet.md`](pdca-dotnet.md) — the .NET overlay with additional gates.
 - [`docs/pdca-collection.md`](pdca-collection.md) — a batch of tasks in parallel groups.

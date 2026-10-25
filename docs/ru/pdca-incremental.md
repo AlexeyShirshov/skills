@@ -47,7 +47,7 @@ rolling-выбор цели, цепочка принятых измерений 
 | план | все задачи сразу, ALL-barrier | только текущий шаг |
 | единица | задача со своей целью/приёмкой | инкремент: цель + флор + замер |
 | следующий шаг | из плана | из результата предыдущего замера |
-| провал | group-stop, остальные не выполняются | `repair` одного шага, кампания продолжается |
+| провал | group-stop, остальные не выполняются | loop-back того же шага, кампания продолжается |
 | параллелизм | режим исполнения (один лейн — штатная деградация), не условие входа | нет, последовательно по природе |
 
 Это не движение наугад: у каждого шага есть цель, флор и зачётный замер, а следующий шаг
@@ -106,9 +106,8 @@ checkpoint) разобраны в §3.2.
 3. **Флор инкремента (floor)** — минимальный прирост, ради которого стоит платить за полный цикл.
    Цель шага = принятый baseline + флор; флор — нижняя граница, не потолок.
 4. **Цепочка baseline** — вход шага N+1 только последнее **принятое** число. Нет принятого
-   числа — нет следующего шага. `repair` двигает baseline от последнего принятого baseline
-   один раз; исходный increment остаётся `not accepted`, его delta не зачитывается, а
-   `verify` baseline не двигает.
+   числа — нет следующего шага. Пересмотренный и в итоге принятый шаг двигает baseline от
+   последнего принятого; отклонённый кандидат остаётся `not accepted`, его delta не зачитывается.
 5. **Один зачётный замер на шаг** — красный результат не переснимают «на удачу»;
    замена допустима лишь при объективной невалидности и архивируется.
 6. **Цели открываются, а не планируются заранее** — сначала свежая карта разрыва, затем
@@ -124,37 +123,38 @@ checkpoint) разобраны в §3.2.
 `Stop verdict`. Таблица шагов append-only; при расхождении статуса и evidence приоритет
 у evidence.
 
-Шаги бывают трёх видов: `increment` (обычный прирост), `repair` (новый цикл на тот же
-target после непринятого шага, `parent = N`) и `verify` (интегральный гейт без прироста).
-Подробнее — §4.2.
+Шаг — ограниченная единица кампании с наблюдаемым результатом и условием остановки; «видов шагов»
+нет. Недобор — это **loop-back той же идентичности шага** (исправленный brief, `r`/`n` по правилам
+базы), а не второй вид шага и не «следующий шаг с недобором»; действительно новый шаг сохраняет
+историю, состояние и бюджеты. Финальная проверка всей цели **не является шагом**: её brief и
+заранее заданное условие остановки выдаются на границе последнего шага. Подробнее — §4.2.
 
 **Остановка** — явная, с записанным остатком:
 
 | статус | смысл |
 | --- | --- |
-| `met` | предикат истинен на **принятом** замере **и** все due обязательные `verify` (финальный и периодические) прошли на текущем принятом snapshot; единственный успех |
+| `met` | проверка всей цели пройдена: предикат истинен на **принятом** состоянии, несущие утверждения не блокируют, исходные требования проверены; единственный успех |
 | `unreachable` | остаток доказан числами по каждому кластеру и перераспределён |
 | `blocked` | внешний блокер: тикет, среда, доступ |
 | `stopped` | бюджет, лимит или остановка пользователем; остаток сохранён для продолжения |
+| `limited` | блок несущего утверждения снят явным сужением результата в пределах исходной цели |
 
-`met` требует обеих частей: принятого замера цели и всех обязательных `verify`, которые уже
-наступили, на том же принятом snapshot. Частичная проверка или финальный `verify`, обещанный
-позже, `met` не даёт. Если **baseline уже удовлетворяет цели**, фиктивный increment не
-создаётся. Если объявлен обязательный `verify`, он прогоняется на этом snapshot; `met` следует
-только после того, как цель принята независимым `pdca-check` по критериям цели **и** все due
-гейты/`verify` прошли. Без обязательного `verify` тот же независимый `pdca-check` принимает
-baseline против критериев цели (не self-accept со стороны DO/оркестратора), и только затем
-записывается `met`. Красный `verify` идёт обычным маршрутом `repair`/`blocked`; `unreachable`
+`met` требует проверки всей цели — совмещённой с проверкой increment'а или отдельной: набор принятых
+increment'ов и PASS по всем механическим строкам **не** доказывают всю цель, а частичная проверка
+`met` не даёт. Если **baseline уже удовлетворяет цели**, фиктивный increment не
+создаётся: baseline уходит в независимый `pdca-check` против критериев цели (не self-accept со
+стороны DO/оркестратора), и только затем кампания закрывается. Красная проверка всей цели — это
+loop-back планировщика или `blocked`; `unreachable`
 требует доказательства недостижимости числами от `pdca-planner`, а не автоматического шага из
-красного `verify`.
+проваленной проверки.
 
 ### 3.1 Роли, тиры и полномочия
 
 Блоки кампании — не анонимные шаги: у каждого есть роль-владелец, тир и полномочия.
 Скилл называет роли; привязку к агентам и моделям даёт хост через `agent`-блок профиля,
 model id в скилле нет. Тиры кампании: **cheap** — исполнение и факты, **medium** —
-решения и вердикт. **strong** (`pdca-escalate`) — не роль кампании: его вызывает вариант
-цикла внутри шага по триггерам, кампания получает только результат.
+решения и вердикт. **strong** (`pdca-escalate`) — не роль кампании: его вызывает собственный
+цикл шага по триггерам (оверлей в том числе), кампания получает только результат.
 
 | блок | роль | тир | полномочия | выход |
 | --- | --- | --- | --- | --- |
@@ -162,7 +162,7 @@ model id в скилле нет. Тиры кампании: **cheap** — исп
 | BOOTSTRAP — baseline | `pdca-executor` | cheap | edit/bash в разрешённой поверхности | точная дробь baseline |
 | DISCOVER | `pdca-scout` | cheap | read-only: код, артефакты замера, git | карта разрыва, ranked seed |
 | BRIEF | `pdca-planner` | medium | read-only, без делегирования | шесть блоков задания |
-| STEP N | `pdca-orchestrator` | cheap | dispatch-only; в collection-режиме (`mode=collection-lane`) тот же раннер ведёт кампанию и цикл шага inline (§3.2); внутри — роли варианта (pdca-planner/pdca-check — medium, pdca-executor — cheap, escalate — strong по триггерам) | отчёт шага + evidence |
+| STEP N | `pdca-orchestrator` | cheap | dispatch-only; в collection-режиме (`mode=collection-lane`) тот же раннер ведёт кампанию и цикл шага inline (§3.2); внутри — роли базы (pdca-planner/pdca-check — medium, pdca-executor — cheap, escalate — strong по триггерам) | отчёт шага + evidence |
 | ACCEPT | `pdca-check` | medium | read-only + evidence шага | вердикт по строкам, зачётное число |
 | DECIDE | `pdca-planner` | medium | read-only | next seed, перераспределение или стоп |
 | ACT/STOP | `pdca-executor` + primary | cheap | pdca-executor: статус/доки; primary: только статус-файл | закрытая запись кампании |
@@ -172,11 +172,11 @@ model id в скилле нет. Тиры кампании: **cheap** — исп
 не пишет код; escalate (strong) — внутри шага и только решает. Отсутствие роли — resource blocker;
 flat-primary fallback помечается `Notice:`.
 
-### 3.2 Кампания как единица коллекции
+### 3.2 Кампания как пункт коллекции
 
-Кампания — не только самостоятельный режим. Она может быть **единицей коллекции**: у такой
-единицы форма исполнения `execution_kind=campaign`, и это поле не смешивается с
-`selected_variant` (`skills/pdca-collection/SKILL.md` §Collection units and the execution form).
+Кампания — не только самостоятельный режим. Она может быть **пунктом коллекции** с формой
+`campaign`, и форма — не то же значение, что контракт и оверлей пункта: у пункта-кампании их на
+уровне пункта нет (`skills/pdca-collection/SKILL.md` §Items: form, contract, overlay).
 Форму решает PLAN коллекции (`pdca-planner`); раннер только читает готовое значение и не
 классифицирует задачу.
 
@@ -184,23 +184,23 @@ flat-primary fallback помечается `Notice:`.
 
 | модель | маршрут | кто держит состояние |
 | --- | --- | --- |
-| standalone | дешёвый primary → step-оркестратор (`pdca-orchestrator`) → роли варианта | primary: state machine кампании, один делегированный шаг на вызов |
-| collection-lane | primary коллекции → collection lane driver (`pdca-orchestrator`, `mode=collection-lane`) → роли варианта | тот же драйвер: state machine кампании и текущий цикл шага inline, в одной сессии лейна |
+| standalone | дешёвый primary → step-оркестратор (`pdca-orchestrator`) → роли базы | primary: state machine кампании, один делегированный шаг на вызов |
+| collection-lane | primary коллекции → collection lane driver (`pdca-orchestrator`, `mode=collection-lane`) → роли базы | тот же драйвер: state machine кампании и текущий цикл шага inline, в одной сессии лейна |
 
 Отдельного агента кампании нет и нового уровня `Task` нет; primary коллекции не становится
 исполнителем кампании — он ведёт статус коллекции, а не шаг. Коллекция не даёт кампании ни
-параллельных шагов, ни зачёта числа без ACCEPT (`skills/pdca-incremental/SKILL.md` §Role).
+параллельных шагов, ни зачёта числа без ACCEPT (`skills/pdca-incremental/SKILL.md` §Ownership).
 Standalone-модель при этом не меняется.
 
-**Вариант принадлежит шагу, а не кампании.** У единицы-кампании нет собственного
-`selected_variant` и нет «домена кампании». Каждый шаг получает конкретный вариант по
-содержанию шага — `.NET/C#` → `pdca-dotnet`, другой код → `pdca-coder`, иначе `pdca` — и он
-фиксируется в durable-записи (каркас/статус), а не выбирается раннером
+**Контракт и оверлей принадлежат шагу, а не кампании.** У пункта-кампании нет контракта и
+оверлея уровня пункта и нет «домена кампании». Каждый шаг получает их по содержанию шага —
+`.NET/C#` → оверлей `coder+.NET` (`pdca-dotnet`, наследующий `pdca-coder`), другой код → `coder`,
+иначе `none` — и они фиксируются в durable-записи (каркас/статус), а не выбираются раннером
 (`skills/pdca-incremental/SKILL.md` §3. Step execution). Правило диспетчеризации
 принадлежит загруженному контракту кампании: раннер его исполняет и задачу не классифицирует.
 
 **Каркас — отдельный артефакт, а не копия в статусе.** Подготовка кампании живёт в отдельном
-immutable/revisioned **preparation document** — `.pdca/<collection-id>/units/<unit-id>/preparation.md` —
+immutable/revisioned **preparation document** — `.pdca/<collection-id>/items/<item-id>/preparation.md` —
 и на барьере единица предъявляет `preparation_state=ready` и единственный authoritative
 `preparation_ref` вида `<path>@r<k>`. В каркасе девять пунктов: предикат цели; критерии
 target/floor (конкретные значения или утверждённые до evidence правила их вывода); критерии
@@ -208,7 +208,7 @@ target/floor (конкретные значения или утверждённ�
 зависимости; ресурсы и доказательство неконфликтности с расписанием; правила продвижения;
 правила остановки и протокол bootstrap; свидетельства совместимости расписания. Runtime-статус
 кампании хранит `preparation_ref` как **ссылку**, а не копию каркаса
-(`skills/pdca-incremental/SKILL.md` §Campaign status file); пересогласование цели, критериев,
+(`skills/pdca-incremental/SKILL.md` §Campaign status); пересогласование цели, критериев,
 порога или правил остановки создаёт **новую** immutable ревизию, обновляет ссылку и сохраняет
 прежнюю. Тихая правка и backfill уже принятых критериев запрещены.
 
@@ -222,12 +222,12 @@ target/floor (конкретные значения или утверждённ�
 
 `campaign_ref` — указатель на runtime-статус кампании: до bootstrap он может отсутствовать и
 обязателен после. Барьеру не нужны ни baseline, ни runtime-статус `running`, ни планы будущих
-шагов, ни варианты будущих шагов, ни число шагов; до барьера не аллоцируется ни один лейн.
+шагов, ни их контракты/оверлеи, ни число шагов; до барьера не аллоцируется ни один лейн.
 
 **Готовность ≠ завершение.** `preparation_state=ready` без runtime — это `barrier-ready`, а не
 `started`: единица остаётся `pending` и никогда не становится `done` от готовности каркаса.
 `done` даёт только принятый `met` с явным `disposition=finalized`
-(`skills/pdca-collection/SKILL.md` §A.1 Routing campaign outcomes).
+(`skills/pdca-collection/references/status.md` §Routing campaign outcomes).
 
 **Пауза ≠ финал.** `blocked`, `stopped` и `unreachable` с допустимым следующим target в
 неизменной цели/границах — это checkpoint: `disposition=paused`, единица остаётся `in-progress`,
@@ -236,25 +236,25 @@ target/floor (конкретные значения или утверждённ�
 неуспешного disposition и из паузы не выводится. Resume явный; автоматической бесконечной
 докачки нет; пауза не сбрасывает `N`/`r`/`n`, не даёт попыток сверх базового контракта и не
 продвигает зависимую цепочку своей группы, остальные группы продолжают
-(`skills/pdca-incremental/SKILL.md` §5. Stop decision).
+(`skills/pdca-incremental/SKILL.md` §Stop).
 
 **Три разных поля.** Готовность (`preparation_state`, `plan_state`), runtime-статус кампании
 (`Status`) и per-unit `disposition` (`active | paused | finalized`) — разные вещи, и ни одно из
 них не является статусом задачи. Пауза лейна **производна** от `disposition=paused` текущей
 единицы и не хранится отдельным authoritative полем лейна; новых статусов задачи/группы не
-вводится (`skills/pdca-collection/SKILL.md` §Lane (work stream)).
+вводится (`skills/pdca-collection/references/lane.md` §One lane = one group).
 
 **PLAN шага и апрув.** Бриф шага не подменяет PLAN и не является апрувом. В normal mode каждый
-фактический шаг проходит полный PLAN своего варианта и утверждается по действующему active
-contract; утверждение фиксируется durable pending approval ref, а текущая единица получает
-`disposition=paused` (`skills/pdca-collection/SKILL.md` §Lane (work stream)). В автономном
+фактический шаг проходит полный PLAN своего контракта и оверлея и утверждается по действующему
+active contract; утверждение фиксируется durable pending approval ref, а текущая единица получает
+`disposition=paused` (`skills/pdca-incremental/SKILL.md` §Ownership; `skills/pdca/SKILL.md` §Normal-mode approval). В автономном
 режиме кампания не изобретает апрув, которого контракт не требует.
 
 **Коммиты.** `Commit policy: none` означает отсутствие промежуточных step-коммитов и **не**
 запрещает внешний outer completion commit коллекции: завершение кампании и финализация единицы —
 разные события. Внешний commit/branch lifecycle единицы принадлежит коллекции. Явное no-commit
 ограничение, конфликтующее с обязательной git-моделью, — preflight блокер до аллокации лейнов,
-а не тихое переопределение модели (`skills/pdca-collection/SKILL.md` §Git model).
+а не тихое переопределение модели (`skills/pdca-collection/references/lane.md` §Git model).
 
 **Рекурсия запрещена.** Шаг кампании — только цикл семейства: ни «кампании в кампании», ни
 «коллекции внутри кампании» (и коллекции внутри коллекции). Кампания внутри коллекции не
@@ -263,11 +263,12 @@ contract; утверждение фиксируется durable pending approval
 
 ## 4. Как это работает
 
-![Граф кампании pdca-incremental: BOOT → PLAN → STEP → ACC → DEC, петля DEC → PLAN «next step · baseline = принято», петля repair DEC → STEP «repair · parent N», сноска verify и ветка DEC → STOP](../../skills/pdca-incremental/assets/diagram/incremental-state-dark.svg)
+![Граф кампании pdca-incremental: BOOT → PLAN → STEP → ACC → DEC, петля DEC → PLAN «next step · baseline = принято», выход шага «accept · revise · new step» и ветка DEC → STOP](../../skills/pdca-incremental/assets/diagram/incremental-state-dark.svg)
 
 *Схема: `skills/pdca-incremental/assets/diagram/incremental-state-dark.svg`; полная
-раскладка с ролями и тирами — `incremental-contract-dark.svg`. Нижняя пунктирная петля
-`DEC → STEP` — это `repair`; сноска внизу — опциональный `verify`.*
+раскладка с ролями и тирами — `incremental-contract-dark.svg`. Выход шага — граница шага базы:
+принять increment, пересмотреть тот же шаг или открыть новый; финальная проверка всей цели
+шагом не является.*
 
 - **Bootstrap** — `pdca-planner` фиксирует цель, рецепт, единицу, флор и target; `pdca-executor`
   снимает baseline тем же рецептом, которым будут приниматься шаги.
@@ -275,9 +276,9 @@ contract; утверждение фиксируется durable pending approval
   (ranked-список целей), `pdca-planner` собирает шесть блоков: goal, current state, hard
   constraints, scope, acceptance, targets. Discovery сам по себе — не план шага: решение
   принимает pdca-planner. Разделение нужно не для фаз, а для полномочий и артефактов.
-- **STEP N** исполняет `pdca-orchestrator`, но вариант шага выбирает кампания
-  (`.NET` → `pdca-dotnet`, код → `pdca-coder`, иначе `pdca`) и передаёт его как
-  `selected_variant`; драйвер не классифицирует задачу. В collection-лейне тот же драйвер
+- **STEP N** исполняет `pdca-orchestrator`, но контракт и оверлей шага объявляет план кампании
+  (`.NET` → `pdca-dotnet`, код → `pdca-coder`, иначе `none`) и передаёт их дальше; драйвер не
+  классифицирует задачу. В collection-лейне тот же драйвер
   ведёт цикл шага inline (§3.2). Кампания не вмешивается в
   гейты шага и не принимает число за CHECK.
 - **ACCEPT** — `pdca-check` выносит вердикт и зачётное число; primary дописывает строку в
@@ -334,38 +335,37 @@ evidence, ревью, обновление статус-файла. Слишко
 остановки. Если оркестратор недоступен, flat-primary ведёт шаг сам и помечает это
 строкой `Notice:`.
 
-### 4.2 Repair, verify и маршрут после шага
+### 4.2 Пересмотр, приёмка и маршрут после шага
 
-**Repair** — это не «ещё одна попытка» и не ревизия внутри шага. Ревизия `r+1` живёт в
-том же цикле и не создаёт строку в статусе. `repair` открывается, когда `increment` уже
-закрыт `not accepted` (внутренний `incomplete`/STOP; исчерпаны ревизии/попытки или нужен
-другой подход), и создаёт новую строку `kind = repair`, `parent = N`:
+**Пересмотр — не «ещё одна попытка» и не новый шаг.** После CHECK шага один вызов планировщика на
+границе решает и тем же ходом выдаёт либо brief, либо STOP. Исправленный brief **той же**
+идентичности шага (repair/loop-back) сохраняет target, рецепт, порог и флор; отклонённый кандидат
+остаётся `not accepted` с сохранённым красным замером, зачёт за обход проваленного CHECK не
+начисляется, а номер шага без приёмки не растёт. `r`/`n` шага идут по правилам loop-back базы;
+исчерпанная ревизия — это `pdca-escalate` или `unreachable`, а не четвёртая попытка и не молчаливый
+переход к «следующему шагу с недобором».
 
-- target, рецепт, порог и флор те же; смена цели/рецепта/порога/флора — новая кампания с
-  новым baseline;
-- старый `increment` остаётся `not accepted`, красный замер сохраняется, его delta не
-  зачитывается дважды;
-- принятый `repair` двигает baseline от **последнего принятого baseline один раз** (delta
-  repair прибавляется туда, а не к непринятому increment); `verify` его не двигает;
-- один repair на провальный шаг; повторный провал — `pdca-escalate` или `unreachable`;
-- повтор того же дефекта после одного фикса — `pdca-escalate` до второго фикса.
+**Новый шаг отличается от пересмотра.** История, состояние и общие бюджеты сохраняются, каждая
+фактическая стоимость и попытка учитываются, а непринятый красный шаг никогда не превращается в
+дополнительный принятый прогресс. Последний шаг забирает весь остаток, если остаток невелик.
 
-**Verify** — интегральный гейт кампании, аналог collection C, но не отдельный контракт:
-не даёт прироста и не двигает baseline, в таблице `target = gate`, `accepted = pass/fail`.
-Он гоняет полный гейт кампании на текущем принятом состоянии. Место фиксируется на
-bootstrap: финал кампании или каждые K шагов. Провал открывает `repair` затронутых целей
-или `blocked`, но не снижает порог. `verify` не заменяет ACCEPT шага: числа шагов
-остаются источником истины.
+**Финальная проверка всей цели шагом не является.** После локального CHECK шага планировщик тем же
+ходом выдаёт brief финальной проверки с **заранее заданным условием завершения**; при PASS владелец
+кампании фиксирует STOP по этому условию без нового вызова планировщика, при не-PASS это loop-back
+планировщика. Проверка локальна утверждениям increment'а и затронутым инвариантам, а не полный аудит
+каждого increment'а; она совмещается с проверкой increment'а или идёт отдельно
+(`skills/pdca/references/check.md` §Local and whole-goal checks).
 
-**Маршрут после шага.** `accepted` → `next` или `verify` на чекпойнте. `not accepted`,
-но цель ещё достижима → `repair`. `not accepted` и цель доказанно недостижима →
-`unreachable` с evidence и переход к следующему target (если кампания допускает
-независимые цели) либо `stop`. Внешний блокер → `blocked`. Провал шага не закрывает
-остальные шаги: group-stop в кампании нет, blast radius = один шаг.
+**Маршрут после шага.** `accepted` → `next` либо STOP, когда условия конца всей цели выполнены.
+`not accepted`, но цель ещё достижима → исправленный brief того же шага. `not accepted` и цель
+доказанно недостижима → `unreachable` с evidence и переход к следующему target (если кампания
+допускает независимые цели) либо `stop`. Внешний блокер → `blocked`. Провал шага не закрывает
+остальные шаги: group-stop в кампании нет, blast radius = один шаг, и маршрут остаётся за
+планировщиком.
 
 Это и есть ответ на десять прожаренных задач **с одной кампанийной целью** (покрытие,
-перф, чистка): каждая становится шагом `increment` со своим планом, провал одной открывает
-`repair` только для неё, а в конце при необходимости запускается `verify` по интегральному
+перф, чистка): каждая становится шагом со своим планом, провал одной остаётся loop-back'ом только
+этого шага, а в конце при необходимости идёт проверка всей цели по интегральному
 дереву. Общего ALL-barrier и group-stop здесь нет. Если у десяти задач десять независимых
 целей — это не одна кампания, а collection (даже при одном лейне или общем footprint) или
 десять базовых циклов.
@@ -373,7 +373,7 @@ bootstrap: финал кампании или каждые K шагов. Про�
 ## 5. Реальный кейс: кампания покрытия в nextorm (октябрь 2026)
 
 > Ниже — **настоящий прогон**, а не учебный пример: десять автономных циклов одной задачи,
-> одна метрика и ни одного worktree. Он показывает, как .NET-вариант ведёт длинную серию,
+> одна метрика и ни одного worktree. Он показывает, как .NET-оверлей ведёт длинную серию,
 > где каждый следующий план опирается на измерение предыдущего, и почему её вели цепочкой
 > циклов, а не коллекцией.
 
@@ -406,14 +406,14 @@ bootstrap: финал кампании или каждые K шагов. Про�
 
 ### 5.2 Как подтянулся скилл
 
-Задача — .NET (xunit v3, Testcontainers, `dotnet-coverage`), поэтому выбран вариант
+Задача — .NET (xunit v3, Testcontainers, `dotnet-coverage`), поэтому выбран оверлей
 `pdca-dotnet`, а не `pdca-coder` и не доменно-нейтральный `pdca`. Поверх него включён
 проектный оверлей `nextorm-pdca`: регистры, тулчейн, перф-приёмка cached path и гигиена
 планов. Оверлей не расширяет гейты базового контракта — он добавляет проектную специфику
 аудита.
 
 В автономном режиме дешёвый primary не ведёт цикл сам: он **делегирует один цикл**
-субагенту `pdca-orchestrator` и передаёт в брифе вариант, цель, состояние, ограничения,
+субагенту `pdca-orchestrator` и передаёт в брифе контракт и оверлей, цель, состояние, ограничения,
 скоуп и критерии приёмки. Оркестратор сам проходит PLAN → DO → CHECK → ACT, пишет
 статус-файл и возвращает сжатый отчёт; primary только запускает следующий цикл и
 пересказывает результат, не спрашивая пользователя. Отсюда «десять циклов» — это десять
@@ -636,7 +636,7 @@ collection.
 
 - Полный контракт — [`skills/pdca-incremental/SKILL.md`](../../skills/pdca-incremental/SKILL.md);
   диаграмма кампании — `skills/pdca-incremental/assets/diagram/`.
-- База цикла — [`pdca.md`](pdca.md); инженерные варианты —
+- База цикла — [`pdca.md`](pdca.md); инженерные оверлеи —
   [`pdca-coder.md`](pdca-coder.md) и [`pdca-dotnet.md`](pdca-dotnet.md).
 - Пакетная работа с ≥2 непересекающимися footprint — [`pdca-collection.md`](pdca-collection.md).
 - Обзор семейства — [`pdca-guide.md`](pdca-guide.md).
@@ -644,26 +644,26 @@ collection.
 ## Источники
 
 Карта «утверждение → источник». При расхождении приоритет у контрактов:
-`skills/pdca-incremental/SKILL.md` — для кампании, `skills/pdca-collection/SKILL.md` —
-для единиц коллекции.
+`skills/pdca-incremental/SKILL.md` — для кампании, `skills/pdca-collection/SKILL.md` (с его
+`references/`) — для пунктов коллекции, `skills/pdca/SKILL.md` (с его `references/`) — для базы.
 
 | Утверждение в статье | Источник |
 | --- | --- |
-| Роль кампании, «не вариант цикла», делегирование шага `pdca-orchestrator` с выбором варианта | `skills/pdca-incremental/SKILL.md` §Role |
-| Роли, тиры и полномочия: блок → роль → тир → доступ → выход; правила primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate | `skills/pdca-incremental/SKILL.md` §Roles, tiers and authority |
-| Когда выбирать и разведение с `pdca-collection` (известный список сам по себе коллекцию не выбирает) | `skills/pdca-incremental/SKILL.md` §When to choose |
+| Форма-контракт семейства, «не оверлей и не второй цикл»; порядок загрузки поверх базы и объявленного оверлея; владелец автономной кампании — `pdca-orchestrator` в campaign-control | `skills/pdca-incremental/SKILL.md` §Form, not a second cycle, §Ownership; `skills/pdca/SKILL.md` §Control modes and the campaign owner |
+| Роли, тиры и полномочия: блок → роль → тир → доступ → выход; правила primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate | `skills/pdca-incremental/SKILL.md` §Ownership |
+| Когда выбирать и разведение с `pdca-collection` (известный список сам по себе коллекцию не выбирает) | `skills/pdca/SKILL.md` §Forms; `skills/pdca-incremental/SKILL.md` §Form, not a second cycle |
 | Инварианты кампании: цель/рецепт, единица, флор, baseline-цепочка, один замер, discovery, перенос состояния, серийность | `skills/pdca-incremental/SKILL.md` §Campaign invariants |
-| Статус-файл кампании: единственный файл, поля, append-only, приоритет evidence | `skills/pdca-incremental/SKILL.md` §Campaign status file |
-| Цикл: bootstrap, discovery, brief из шести блоков, шаг, приёмка, решения об остановке, сайзинг | `skills/pdca-incremental/SKILL.md` §Campaign cycle |
-| Типы шагов `increment`/`repair`/`verify` и маршрут после шага | `skills/pdca-incremental/SKILL.md` §3.1, §4 |
+| Статус кампании: единственный файл, поля, append-only, приоритет evidence | `skills/pdca-incremental/SKILL.md` §Campaign status; `skills/pdca-incremental/references/status.md` |
+| Цикл: bootstrap, discovery, brief из шести блоков, шаг, приёмка, решения об остановке, сайзинг | `skills/pdca-incremental/SKILL.md` §Campaign cycle, §Stop |
+| Шаг — ограниченная единица кампании без «видов шагов»; недобор — loop-back того же шага; финальная проверка всей цели шагом не является; маршрут после шага | `skills/pdca-incremental/SKILL.md` §Step boundary; `skills/pdca/SKILL.md` §Lens: probe, increment and step |
 | Brief: шесть блоков, почему это минимум, что закрывает каждый и почему нельзя короче/длиннее | `skills/pdca-incremental/SKILL.md` §2. Step brief |
-| Экономика флора и размера шага | `skills/pdca-incremental/SKILL.md` §Economics |
-| Красные флаги и восстановление после компакции | `skills/pdca-incremental/SKILL.md` §Red flags, §Recovery after compaction |
-| Автономный режим и flat-primary fallback с `Notice:` | `skills/pdca-incremental/SKILL.md` §Autonomous mode |
-| Композиция: кампания как единица коллекции, `execution_kind` ≠ `selected_variant`, две исполняющие модели | `skills/pdca-collection/SKILL.md` §Collection units and the execution form; `skills/pdca-incremental/SKILL.md` §Role |
-| Каркас и `preparation_ref` (ссылка, не копия), три операции, готовность ≠ завершение | `skills/pdca-collection/SKILL.md` §P — per-task PLANs, the barrier, clustering; `skills/pdca-incremental/SKILL.md` §0. Bootstrap (once) — pdca-planner + pdca-executor, §Campaign status file |
-| Пауза ≠ финал, per-unit `disposition`, производная пауза лейна, явный resume | `skills/pdca-collection/SKILL.md` §A.1 Routing campaign outcomes, §Lane (work stream); `skills/pdca-incremental/SKILL.md` §5. Stop decision |
-| Вариант шага по содержанию; правило диспетчеризации принадлежит загруженному контракту | `skills/pdca-incremental/SKILL.md` §3. Step execution |
-| `Commit policy: none` и внешний outer completion commit; no-commit конфликт — preflight блокер | `skills/pdca-collection/SKILL.md` §Git model; `skills/pdca-incremental/SKILL.md` §Campaign invariants |
-| Запрет рекурсии и «композиция не даёт прав» | `skills/pdca-collection/SKILL.md` §Collection units and the execution form; `skills/pdca-incremental/SKILL.md` §Campaign invariants |
+| Экономика флора и размера шага | `skills/pdca-incremental/SKILL.md` §Economics and sizing |
+| Красные флаги и восстановление после компакции | `skills/pdca-incremental/SKILL.md` §Red flags (self-check), §Recovery |
+| Автономный режим и flat-primary fallback с `Notice:` | `skills/pdca/SKILL.md` §Control modes and the campaign owner, §Roles and host requirements; `skills/pdca-incremental/SKILL.md` §Ownership |
+| Композиция: кампания как пункт коллекции (форма ≠ контракт/оверлей пункта), две исполняющие модели | `skills/pdca-collection/SKILL.md` §Items: form, contract, overlay; `skills/pdca-incremental/SKILL.md` §Ownership |
+| Каркас и `preparation_ref` (ссылка, не копия), три операции, готовность ≠ завершение | `skills/pdca-collection/SKILL.md` §P — per-item PLANs, the barrier, clustering; `skills/pdca-incremental/SKILL.md` §0. Bootstrap (once), §Campaign status |
+| Пауза ≠ финал, per-item `disposition`, производная пауза лейна, явный resume | `skills/pdca-collection/references/status.md` §Routing campaign outcomes, §Invariants; `skills/pdca-collection/references/lane.md` §Lane pause; `skills/pdca-incremental/SKILL.md` §Stop |
+| Контракт и оверлей шага по содержанию; правило диспетчеризации принадлежит загруженному контракту | `skills/pdca-incremental/SKILL.md` §3. Step execution |
+| `Commit policy: none` и внешний outer completion commit; no-commit конфликт — preflight блокер | `skills/pdca-collection/references/lane.md` §Git model; `skills/pdca-incremental/SKILL.md` §Campaign invariants |
+| Запрет рекурсии и «композиция не даёт прав» | `skills/pdca-collection/SKILL.md` §Items: form, contract, overlay; `skills/pdca-incremental/SKILL.md` §Campaign invariants |
 | Реальный прогон nextorm: 10 шагов, 64.8 % → 75.49 %, +4 098 ветвей | `.pdca/status/integration-branch-coverage-{1..10}.md` (репозиторий nextorm) |

@@ -20,13 +20,14 @@ overkill.
 ## 2. Launching: `pdca-dotnet`
 
 This skill's trigger is **explicit**: naming `pdca-dotnet` (the explicit id is what selects the
-.NET variant). The generic phrases "by the cycle"/"via PDCA" go to `pdca-entry`, which routes .NET/C#
-work here; naming another contract explicitly bypasses the umbrella. The variant for a task is
-chosen by the dispatching skill (`pdca-entry`, or the collection/campaign per task/step) and
-passed to the driver as `selected_variant`; the driver never classifies. The logic "`.NET/C#` →
-`pdca-dotnet`, other code → `pdca-coder`, otherwise → `pdca`" is described in
-`skills/pdca-entry/SKILL.md`, while `pdca-orchestrator` itself ships as
-`assets/opencode-agents/pdca-orchestrator.md` in every skill of the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
+.NET overlay). The generic phrases "by the cycle"/"via PDCA" load the family's single entry —
+`pdca` — whose one PLAN decides the form and, for .NET/C# work, this overlay; naming another
+contract explicitly just makes that choice a constraint. The overlay is applied **to** the chosen
+form and is not a cycle of its own: it **inherits** `pdca` (base cycle) and `pdca-coder` (the
+programming overlay) and adds only the .NET differences, so the driver never classifies. This is
+described in `skills/pdca/SKILL.md §Overlays` and `skills/pdca-dotnet/SKILL.md`, while
+`pdca-orchestrator` itself ships as `assets/opencode-agents/pdca-orchestrator.md` in every skill of
+the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
 edit without the cycle is performed directly.
 
 ## 3. Participants and tiers
@@ -60,7 +61,7 @@ to test and how), `dotnet-benchmark-designer`/`dotnet-async-performance-speciali
 (documentation). The specialized subagents are additional **gatherers** of evidence, not new gates:
 the verdict still belongs to `pdca-check`.
 
-## 4. How the .NET variant differs
+## 4. How the .NET overlay differs
 
 ### 4.1. A mandatory `test scope` and a validator that fails closed
 
@@ -388,8 +389,8 @@ ACT does not edit them.
 - **Lenses are gatherers, not judges.** The `dotnet-*` subagents bring candidates and numbers. The
   verdict, ranking and loop-back belong to `pdca-check`; zero numbers or the author's self-report is a
   fail ("verifier theater", Verifier Theater).
-- **The .NET variant does not replace the general cycle.** It is the same contract with added .NET
-  specifics; the state machine, the "all green" gate and the loop-back are shared.
+- **The .NET overlay does not replace the general cycle.** It inherits the same contract and adds
+  .NET specifics; the state machine, the "all green" gate and the loop-back are shared.
 
 ## 8. Where to go next
 
@@ -398,8 +399,9 @@ Start with the family overview — [`pdca.md`](pdca.md) — then with the stack-
 domain lenses and the additional gates (and if there are many independent tasks —
 [`pdca-collection.md`](pdca-collection.md)).
 The primary source of behaviour is the contract itself: the sections "Versioned evidence contract"
-and "CHECK completeness gate — mandatory evidence contract" in
-[`skills/pdca-dotnet/SKILL.md`](../skills/pdca-dotnet/SKILL.md), as well as the role
+in [`skills/pdca-dotnet/references/plan.md`](../skills/pdca-dotnet/references/plan.md) and
+"CHECK completeness gate — mandatory evidence contract" in
+[`skills/pdca-dotnet/references/check.md`](../skills/pdca-dotnet/references/check.md), as well as the role
 templates that reference them
 ([`pdca-planner.md`](../skills/pdca-dotnet/assets/opencode-agents/pdca-planner.md),
 [`check.md`](../skills/pdca-dotnet/assets/opencode-agents/pdca-check.md)) and the compact implementation of
@@ -414,40 +416,41 @@ An overview of the whole family is in [`docs/pdca-guide.md`](pdca-guide.md).
 
 ## Sources
 
-The article's normative claims were reconciled with the repository's current files (the
-`pdca-dotnet` mirror of canonical `opencode-config` commit `063dffa`); where they disagree, `skills/pdca-dotnet/SKILL.md` takes precedence. The
+The article's normative claims were reconciled with the repository's current files
+(`skills/pdca/SKILL.md`, `skills/pdca-coder/SKILL.md`, `skills/pdca-dotnet/SKILL.md` and their
+`references/`); where they disagree, the skill file takes precedence. The
 "claim → source" map:
 
 | Claim | Source |
 |---|---|
-| The .NET variant is the same contract, the tools are replaceable | `skills/pdca-dotnet/SKILL.md:11-13` |
-| The variant per task (`.NET/C#` → `pdca-dotnet`) and the identity of the `pdca-coder`/`pdca-dotnet` base | `skills/pdca-collection/SKILL.md §Role` |
-| The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md:42-48`; `skills/pdca-dotnet/SKILL.md:1-4,8-9` |
-| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `skills/pdca-dotnet/SKILL.md §Host requirements (roles → agents), :15-19`; `skills/pdca-dotnet/assets/opencode-agents/*.md:5` |
-| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `skills/pdca-dotnet/SKILL.md §CHECK: audit checklist (generic), :21-26`; `skills/pdca-dotnet/assets/opencode-agents/pdca-check.md:6-22`; `skills/pdca-dotnet/assets/opencode-agents/pdca-scout.md:6-23` |
-| `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `skills/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
+| The .NET overlay is the same contract, the tools are replaceable; it inherits `pdca` + `pdca-coder` | `skills/pdca-dotnet/SKILL.md:11-27` |
+| The form and the overlay are decided once by the base PLAN; an overlay is not a second cycle | `skills/pdca/SKILL.md §Entry: one PLAN decides the form · §Overlays` |
+| The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md` (Usage); `skills/pdca-dotnet/SKILL.md:1-7` |
+| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `skills/pdca/SKILL.md §Roles and host requirements`; `skills/pdca-dotnet/SKILL.md:14-19`; `skills/pdca-dotnet/assets/opencode-agents/*.md` |
+| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `skills/pdca/SKILL.md:19-24`; `skills/pdca-dotnet/assets/opencode-agents/pdca-check.md`; `skills/pdca-dotnet/assets/opencode-agents/pdca-scout.md` |
+| `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `skills/pdca-coder/SKILL.md §Optional specialists`; `skills/pdca-dotnet/SKILL.md §.NET check deltas` |
 | The economics in practice (cost/tokens by phase and tier, no model names) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
-| The mandatory `test scope` (the `unit`+`scope` envelope, fields, wide selectors, docs-only/`rebuild`, the boundary) | `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope` |
+| The mandatory `test scope` (the `unit`+`scope` envelope, fields, wide selectors, docs-only/`rebuild`, the boundary) | `skills/pdca-dotnet/SKILL.md §.NET plan deltas`; `skills/pdca-dotnet/references/plan.md §Mandatory \`test scope\` envelope` |
 | The validator modes (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`), the `--journal` reconciliation, the `0`/`2`/`1` codes, "executes nothing" | `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
 | The scope/execution rules: wide selectors, an invented rebuild, `selected_count ≥ 1` for a finished run, shell wrappers, the kind/phase policy (integration inside DO, the planned boundary budget, a mislabelled `unit`), scope expansion, freshness, final green; structural violations before the freshness/boundary rules | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
-| The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
-| The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `skills/pdca-dotnet/SKILL.md §Versioned evidence contract`; `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `skills/pdca-dotnet/SKILL.md §Documentation (owners by phase) · §Versioned evidence contract` |
-| The plan command contract: the `commands.json` projection, `plan_lint.py check`/`probe`, the mandatory `PLAN-LINT` row, one evidence location binding | `skills/pdca-dotnet/SKILL.md §Plan command contract (PLAN close) · §Versioned evidence contract`; `skills/pdca-dotnet/scripts/plan_lint.py:1-70` |
-| The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `skills/pdca-dotnet/SKILL.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `skills/pdca-dotnet/SKILL.md §Parallel sub-tasks in worktrees (within one cycle) · §CHECK completeness gate — mandatory evidence contract` |
-| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `skills/pdca-dotnet/SKILL.md §PLAN owns the quality of the plan`; `skills/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering` |
-| Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `skills/pdca-dotnet/SKILL.md §Coder editing discipline (applying fixes) · §Test strategy (PLAN → TEST) · §Test run safety (memory + streaming) — every phase · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| The `dotnet-*` lenses of PLAN/CHECK | `skills/pdca-dotnet/SKILL.md §Delegation by phase · §PLAN: design checklist (generic) · §CHECK: audit checklist (generic) · §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| The ban on a 4th attempt, escalation by counter, decision routing | `skills/pdca-dotnet/SKILL.md §State machine · §Escalation (pdca-escalate)` |
-| ACT: two artifacts, the order of steps, the status file always kept; the status file path, the durable state (`N`, `r`, `n`) and the defect history | `skills/pdca-dotnet/SKILL.md §ACT: closing the cycle, status and handoff · §Cycle status file` |
-| The execution policy and the journal: unit unlimited, integration boundary-only, the planned boundary count, the explicit states, the projection | `skills/pdca-dotnet/SKILL.md §DO brief: mandatory test scope · §Execution journal and the unit/integration policy`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
-| The reviewer evidence pack: staged full bodies, the source-side receipt (digest/source identity/content equality), Roslyn on one snapshot, drift ⇒ invalidation | `skills/pdca-dotnet/SKILL.md §Reviewer evidence pack (independent CHECK over full bodies)` |
-| The binding/applicability disposition: append-only, `diagnostic_nonbinding`, the non-loophole boundary | `skills/pdca-dotnet/SKILL.md §Versioned evidence contract · §CHECK completeness gate — mandatory evidence contract` |
-| The ACT cleanup receipt: the gate, the deletion scope, `cleanup`/`archived`, the immutable manifest | `skills/pdca-dotnet/SKILL.md §ACT cleanup receipt (heavy staged materials)`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
+| The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `skills/pdca-dotnet/references/plan.md §Frozen evidence manifest`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
+| The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `skills/pdca-dotnet/references/plan.md §Mechanical evidence pipeline (\`.pdca/scripts/pdca_evidence.py\`, stdlib only)`; `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
+| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §.NET documentation owners` |
+| The plan command contract: the `commands.json` projection, `plan_lint.py check`/`probe`, the mandatory `PLAN-LINT` row, one evidence location binding | `skills/pdca-dotnet/references/plan.md §Machine projection: \`commands.json\` + \`plan_lint.py\``; `skills/pdca/references/plan.md §Plan command contract (PLAN close)`; `skills/pdca-dotnet/scripts/plan_lint.py:1-70` |
+| The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `skills/pdca-dotnet/references/check.md §Inner-loop evidence gate (mandatory, fails closed)` |
+| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`; `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
+| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
+| Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `skills/pdca-dotnet/references/plan.md §.NET test strategy deltas · §Test run safety (memory + streaming) — every phase`; `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`; `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
+| The `dotnet-*` lenses of PLAN/CHECK | `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)`; `skills/pdca-dotnet/references/plan.md §PLAN lenses and .NET skills`; `skills/pdca-dotnet/references/check.md §Streams and audit items` |
+| The ban on a 4th attempt, escalation by counter, decision routing | `skills/pdca/SKILL.md §Escalation (pdca-escalate)` |
+| ACT: the order of steps, the status file always kept; the status file path, the durable state (`N`, `r`, `n`) and the defect history | `skills/pdca/references/act.md §Closing order · §Status file` |
+| The execution policy and the journal: unit unlimited, integration boundary-only, the planned boundary count, the explicit states, the projection | `skills/pdca-dotnet/references/act.md §Execution journal and the unit/integration policy`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
+| The reviewer evidence pack: staged full bodies, the source-side receipt (digest/source identity/content equality), Roslyn on one snapshot, drift ⇒ invalidation | `skills/pdca-dotnet/references/plan.md §Reviewer evidence pack (independent CHECK over full bodies)` |
+| The binding/applicability disposition: append-only, `diagnostic_nonbinding`, the non-loophole boundary | `skills/pdca-dotnet/references/plan.md §Binding/applicability disposition (append-only)`; `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract` |
+| The ACT cleanup receipt: the gate, the deletion scope, `cleanup`/`archived`, the immutable manifest | `skills/pdca-dotnet/references/act.md §ACT cleanup receipt (heavy staged materials)`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
 | The teaching scenario: the numbers are fictional; the skill's static matrix does not prove behaviour | `skills/pdca-dotnet/tests/scenarios.md:3-5` |
 
 The host artifacts (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,
 `config/skills/…`) live in a separate config repository and are not shipped here: the checks
-consult them only when `OPENCODE_CONFIG_REPO` is set (`README.md:59-66`); the phrase-to-trigger mapping
+consult them only when `OPENCODE_CONFIG_REPO` is set (`README.md`, Tests); the phrase-to-trigger mapping
 comes from there as well.

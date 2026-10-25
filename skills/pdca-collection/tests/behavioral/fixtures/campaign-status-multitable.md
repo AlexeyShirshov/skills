@@ -9,24 +9,24 @@
 
 ## Input units (order locked)
 
-| unit | brief | execution_kind |
+| unit | brief | form |
 |---|---|---|
 | U1 | Campaign: reduce p95 of `python3 bench.py` (p95 over 20 runs, same host, single-threaded) from measured baseline to target p95 <= 40 ms, floor p95 <= 60 ms; next step chosen from previous measurement; surface `app.py`, `bench.py` only. | campaign |
 | U2 | Add `README.md` describing the project. | cycle |
 
 ## Units
 
-| unit | execution_kind | status | disposition | plan_state | selected_variant | cycle_id / N | plan_revision | preparation_state | preparation_ref | campaign_ref | baseline_ref | footprint reservation | predecessor requirements | assumptions / prerequisites | refs |
+| unit | form | status | disposition | plan_state | contract+overlay | cycle_id / N | plan_revision | preparation_state | preparation_ref | campaign_ref | baseline_ref | footprint reservation | predecessor requirements | assumptions / prerequisites | refs |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| U1 | campaign | pending (barrier-ready; not started) | active | — | — | — | — | ready | `.pdca/r2-campaign/units/U1/preparation.md@r1` | — | none | surface {app.py, bench.py}; write reservation {app.py}; bench.py frozen/read-only as the measurement recipe; no new product files; uncertainty: baseline and in-surface headroom unmeasured | none | preparation barrier before baseline bootstrap; same host, single-threaded, frozen recipe; commit policy none unless overlay grants | `.pdca/r2-campaign/units/U1/preparation.md@r1` |
-| U2 | cycle | pending (PLAN ready at PLAN→DO; DO not started) | active | ready | `pdca-coder` | `U2-1 (N=1)` | r1 | — | — | — | none | `README.md` (new, repo root) only; no `app.py`/`bench.py` edits; uncertainty: prose must match final code | none (independent of U1) | repo root cwd; docs-only; no performance numbers; U1 state is not an input | `.pdca/status/U2.md` |
+| U1 | campaign | pending (barrier-ready; not started) | active | — | — (step-level) | — | — | ready | `.pdca/r2-campaign/items/U1/preparation.md@r1` | — | none | surface {app.py, bench.py}; write reservation {app.py}; bench.py frozen/read-only as the measurement recipe; no new product files; uncertainty: baseline and in-surface headroom unmeasured | none | preparation barrier before baseline bootstrap; same host, single-threaded, frozen recipe; commit policy none unless overlay grants | `.pdca/r2-campaign/items/U1/preparation.md@r1` |
+| U2 | cycle | pending (PLAN ready at PLAN→DO; DO not started) | active | ready | `pdca` + `coder` | `U2-1 (N=1)` | r1 | — | — | — | none | `README.md` (new, repo root) only; no `app.py`/`bench.py` edits; uncertainty: prose must match final code | none (independent of U1) | repo root cwd; docs-only; no performance numbers; U1 state is not an input | `.pdca/status/U2.md` |
 
 ## Tasks
 
-| task | unit | group | branch | status | plan_state | selected_variant | cycle_id / N | plan_revision | canonical task status path | baseline ref | footprint/requirements/prerequisites refs | incomplete reason + patch |
+| task | unit | group | branch | status | plan_state | contract+overlay | cycle_id / N | plan_revision | canonical task status path | baseline ref | footprint/requirements/prerequisites refs | incomplete reason + patch |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| U1 | U1 | G1 | not allocated (D blocked) | pending | — | — | — | r1 (preparation revision) | `.pdca/status/collection-r2-campaign-unit-U1.md` (not created) | pending (baseline bootstrap after barrier) | preparation_ref `.pdca/r2-campaign/units/U1/preparation.md@r1`; corpus docs nine points verified; footprint reservation: `app.py` editable, `bench.py` frozen as measurement recipe (subset of `app.py`+`bench.py` unit surface) | barrier-ready; not started; no baseline measured; no product code |
-| U2 | U2 | G2 | not allocated (D blocked) | pending | ready | `pdca-coder` | `U2-1 (N=1)` | r1 | `.pdca/status/U2.md` | none | status ref `.pdca/status/U2.md`; footprint `README.md` (new file only); requirements none; independent of U1 | barrier-ready; PLAN→DO boundary; README not written; DO not started |
+| U1 | U1 | G1 | not allocated (D blocked) | pending | — | — | — | r1 (preparation revision) | `.pdca/status/collection-r2-campaign-unit-U1.md` (not created) | pending (baseline bootstrap after barrier) | preparation_ref `.pdca/r2-campaign/items/U1/preparation.md@r1`; the mandatory preparation blocks verified; footprint reservation: `app.py` editable, `bench.py` frozen as measurement recipe (subset of `app.py`+`bench.py` unit surface) | barrier-ready; not started; no baseline measured; no product code |
+| U2 | U2 | G2 | not allocated (D blocked) | pending | ready | `pdca` + `coder` | `U2-1 (N=1)` | r1 | `.pdca/status/U2.md` | none | status ref `.pdca/status/U2.md`; footprint `README.md` (new file only); requirements none; independent of U1 | barrier-ready; PLAN→DO boundary; README not written; DO not started |
 
 ## Groups
 
@@ -41,13 +41,13 @@ Integration note: `skipped` is not a group status and is not used here; no merge
 
 ## Barrier and decisions log
 
-- Collection bootstrap PLAN (`pdca-planner`): collection-id `r2-campaign`; U1 = `campaign` (no unit-level variant); U2 = `cycle` with `selected_variant=pdca-coder` (project stack is Python ⇒ "other code" under the stack rule); unit order locked U1, U2.
-- U1 own `COLLECTION TASK PLAN` (campaign preparation) returned `preparation_handoff`: immutable preparation document `.pdca/r2-campaign/units/U1/preparation.md` at r1; `preparation_state=ready`; single authoritative `preparation_ref=.pdca/r2-campaign/units/U1/preparation.md@r1`; all nine mandatory framework points present; no baseline measured, no runtime status, no step plans, no future step variants, no product code.
+- Collection bootstrap PLAN (`pdca-planner`): collection-id `r2-campaign`; U1 = `campaign` (no item-level contract); U2 = `cycle` with the contract `pdca` + the overlay `coder` (the project is Python code); item order locked U1, U2.
+- U1 own `COLLECTION TASK PLAN` (campaign preparation) returned `preparation_handoff`: immutable preparation document `.pdca/r2-campaign/items/U1/preparation.md` at r1; `preparation_state=ready`; single authoritative `preparation_ref=.pdca/r2-campaign/items/U1/preparation.md@r1`; the mandatory preparation blocks present; no baseline measured, no runtime status, no step plans, no future step variants, no product code.
 - U2 own `COLLECTION TASK PLAN` (cycle, `pdca-coder`) returned `plan_handoff`: genuine PLAN persisted at `.pdca/status/U2.md`, cycle `U2-1` (N=1), plan revision `r1`, `plan_state=ready`, footprint `README.md` (new file only); stopped at the PLAN→DO boundary; README not written; DO not started.
 - `.pdca/status/project-readme-1.md` is a non-authoritative draft/duplicate created during planning; the canonical U2 status is `.pdca/status/U2.md`. It is not referenced by any handoff and must be ignored on resume.
-- ALL-barrier: PASS (2/2). U1 kind-specific readiness: `preparation.md@r1`, `preparation_state=ready`, nine-point framework present. U2 kind-specific readiness: `.pdca/status/U2.md`, cycle U2-1 (N=1), plan revision r1, `plan_state=ready`, `selected_variant=pdca-coder`.
+- ALL-barrier: PASS (2/2). U1 form-specific readiness: `preparation.md@r1`, `preparation_state=ready`, the mandatory preparation blocks present. U2 form-specific readiness: `.pdca/status/U2.md`, cycle U2-1 (N=1), plan revision r1, `plan_state=ready`, contract `pdca` + overlay `coder`.
 - Clustering (`pdca-planner`, after barrier): DAG nodes U1, U2 with NO directed edges. Groups: G1={U1}, G2={U2}; topological order [U1] and [U2]; group footprints disjoint (`{app.py, bench.py}` ∩ `{README.md}` = ∅); there is no real shared-footprint or shared-measurement reason to serialize them.
-- PLAN revision vector used for the schedule: { U1: `.pdca/r2-campaign/units/U1/preparation.md@r1` ; U2: `.pdca/status/U2.md@r1` (cycle U2-1, N=1) }.
+- PLAN revision vector used for the schedule: { U1: `.pdca/r2-campaign/items/U1/preparation.md@r1` ; U2: `.pdca/status/U2.md@r1` (cycle U2-1, N=1) }.
 - Merge strategy: not applied in this run. Clustering produced 2 groups and no autocommit/merge right was granted, so D is preflight-blocked before lane/worktree allocation. No group branch, worktree, merge, or integration exists.
 - P phase complete. Stop at the P→D boundary. No lanes, worktrees, branches, baseline, product changes, commits, or merges were created in this run.
 

@@ -15,26 +15,26 @@ Notice: flat-primary fallback used because pdca-orchestrator nested delegation f
 2. U2 — add README.md describing the project.
 
 ## Collection PLAN / bootstrap decisions
-- U1 execution_kind = campaign. No unit-level selected_variant. Campaign step stack rule: Python code in app.py/bench.py => pdca-coder; non-code step => pdca.
-- U2 execution_kind = cycle. selected_variant = pdca.
+- U1 form = campaign. No item-level contract/overlay. The concrete step's contract/overlay is chosen by `pdca-planner` for that step (code step => the coder overlay).
+- U2 form = cycle. Contract `pdca`, overlay `none`.
 - P is planning-only: no baseline, no runtime campaign status, no future step plans/count/variants, no product code, no README.
 - DAG/groups are built only after the ALL-barrier.
 - No lanes/worktrees/branches are allocated before the barrier.
 - Autocommit/merge right: NOT granted for this run. Clustering yields >=2 groups, so this is a preflight blocker before worktree/lane allocation.
 
 ## Units
-| Unit | execution_kind | Unit status | plan_state | selected_variant | cycle_id | plan_revision | preparation_state | preparation_ref | campaign_ref | disposition | Unit status file |
+| Unit | form | Unit status | plan_state | contract+overlay | cycle_id | plan_revision | preparation_state | preparation_ref | campaign_ref | disposition | Unit status file |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| U1 | campaign | pending | n/a (campaign) | — | — | — | ready | .pdca/latency-readme/units/U1/preparation.md@r1 | — (baseline bootstrap not run; future .pdca/status/U1-campaign.md) | active | .pdca/status/U1-preparation.md |
-| U2 | cycle | pending | ready | pdca | U2-N1 | r1 | — | — | — | active | .pdca/status/U2-N1.md |
+| U1 | campaign | pending | n/a (campaign) | — (step-level) | — | — | ready | .pdca/latency-readme/items/U1/preparation.md@r1 | — (baseline bootstrap not run; future .pdca/status/U1-campaign.md) | active | .pdca/status/U1-preparation.md |
+| U2 | cycle | pending | ready | `pdca` + none | U2-N1 | r1 | — | — | — | active | .pdca/status/U2-N1.md |
 
 Note: readiness (plan_state/preparation_state) is not approval, not runtime, and not completion.
 
 ## Tasks
-| Task | Unit | Group | Branch/worktree | Task status | plan_state | selected_variant | cycle_id | plan_revision | Canonical status path | Baseline ref | Footprint / requirements / prerequisites | Incomplete reason/patch |
+| Task | Unit | Group | Branch/worktree | Task status | plan_state | contract+overlay | cycle_id | plan_revision | Canonical status path | Baseline ref | Footprint / requirements / prerequisites | Incomplete reason/patch |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | U1 | U1 | G1 | — (not allocated; preflight blocker) | pending | n/a (campaign) | — | — | — | .pdca/status/U1-preparation.md | — | app.py, bench.py (bench.py frozen); requirements: none; prerequisites: preparation ready | — |
-| U2 | U2 | G2 | — (not allocated; preflight blocker) | pending | ready | pdca | U2-N1 | r1 | .pdca/status/U2-N1.md | — | README.md (new file); requirements: none; prerequisites: none | — |
+| U2 | U2 | G2 | — (not allocated; preflight blocker) | pending | ready | `pdca` + none | U2-N1 | r1 | .pdca/status/U2-N1.md | — | README.md (new file); requirements: none; prerequisites: none | — |
 
 ## Groups
 | Group | Tasks (order) | Worktree | Branch/ref | Status | Merge note |
@@ -43,7 +43,7 @@ Note: readiness (plan_state/preparation_state) is not approval, not runtime, and
 | G2 | U2 | — (not allocated) | — | pending | Preflight blocker: >=2 groups and no autocommit/merge right; group not started. Future integration: merge --no-ff only if done. |
 
 ## Revision vector (schedules)
-- U1 -> .pdca/latency-readme/units/U1/preparation.md@r1 (preparation_state=ready)
+- U1 -> .pdca/latency-readme/items/U1/preparation.md@r1 (preparation_state=ready)
 - U2 -> plan_revision r1 (cycle U2-N1, plan_state=ready)
 - Used for the P-phase clustering above. Any later schedule change must rebind the vector.
 

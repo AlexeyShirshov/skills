@@ -38,17 +38,25 @@ LIGHT_TITLE = "pdca-incremental — campaign in steps"
 DARK_TITLE = "pdca-incremental — campaign in steps (dark theme)"
 LABELS = (
     "BOOTSTRAP", "PLAN", "STEP N", "ACCEPT", "DECIDE", "STOP",
-    "Discover · gap map", "Brief · six blocks",
+    "Discover · gap map", "Brief · six blocks", "Ranked seed",
     "P · PLAN", "D · DO", "C · CHECK", "A · ACT",
-    "Step kind", "increment · repair · verify",
-    "Route", "next · repair · verify",
+    # the step exit is the base step boundary, not a step-kind table
+    "Step exit", "accept · revise · new step",
+    "Route", "next · revise · stop",
+    "one writer · status write",
     "next step · baseline = accepted", "repair · parent N",
-    "verify — optional integrated gate",
+    "verify — optional integrated gate: target = gate, does not move the baseline",
     "met · unreachable · blocked · stopped",
-    "Orchestrator · cheap", "pdca-planner · read-only", "pdca-executor · edit/bash",
+    "Orchestrator · cheap — cycle-control / campaign-control",
+    "pdca-planner · read-only", "pdca-executor · edit/bash",
     "pdca-scout · facts, not a decision", "pdca-check · read-only · evidence", "primary · status-only",
     "cheap tier", "medium tier", "pdca-check · medium",
     "strong · pdca-escalate — not a campaign role",
+)
+# The old campaign catalogue (step kinds) is gone: the step boundary decides.
+STALE_LABELS = (
+    "Step kind", "increment · repair · verify", "next · repair · verify",
+    "verify — optional integrated gate<",
 )
 BAD_TOKENS = ("nextorm", "dot" + "net", "python")
 
@@ -94,6 +102,13 @@ class DiagramArtifactsTest(unittest.TestCase):
         for name in (LIGHT + ".svg", DARK + ".svg"):
             with self.subTest(name=name):
                 self.assertIn('data-edge-id="decide_plan"', read(DIAGRAM / name))
+
+    def test_the_stale_step_kind_catalogue_is_gone(self) -> None:
+        for name in (LIGHT + ".svg", DARK + ".svg"):
+            with self.subTest(name=name):
+                svg = read(DIAGRAM / name)
+                for label in STALE_LABELS:
+                    self.assertNotIn(label, svg, f"stale step-kind label {label!r}")
 
     def test_the_repair_feedback_edge_exists(self) -> None:
         for name in (LIGHT + ".svg", DARK + ".svg"):

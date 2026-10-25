@@ -1,20 +1,24 @@
-"""RED contract tests for the pdca-collection own-PLAN barrier (P1).
+"""Contract tests for the pdca-collection own-PLAN barrier and the batch form.
 
-Normative-text contract tests for the change described in
-``docs/superpowers/specs/2026-10-06-pdca-collection-plan-barrier-design.md`` and
-``docs/superpowers/plans/2026-10-06-pdca-collection-plan-barrier-plan.md``:
+Normative-text contract tests for the collection contract after the family
+restructure:
 
-    every task's OWN genuine PLAN must finish and be persisted BEFORE any
-    DAG/group/clustering decision (the ALL-barrier), and a resumed lane must
-    continue the already-done PLAN rather than run a fresh full PLAN.
+    every item's OWN genuine PLAN (or campaign preparation) must finish and be
+    persisted BEFORE any DAG/group/clustering decision (the ALL-barrier), and a
+    resumed lane must continue the already-done PLAN rather than run a fresh full
+    PLAN.  The base PLAN decided the batch form; the collection classifies only
+    each item (`cycle` | `campaign`) and never routes on a variant field.
 
-Style mirrors ``test_verification_recovery.py``: plain ``unittest``, ``pathlib``
-paths from the repository root and no third-party dependencies.  Assertions are
-section-scoped/normalized (locate a section, then assert within it), never global
-bare keyword counts and never line-number fragile checks.
+Sections that moved into ``references/`` are asserted in the reference file, not
+dropped.  Style mirrors ``test_verification_recovery.py``: plain ``unittest``,
+``pathlib`` paths from the repository root and no third-party dependencies.
+Assertions are section-scoped/normalized (locate a section, then assert within
+it), never global bare keyword counts and never line-number fragile checks.
 
-At P1 these tests are intentionally RED: the new contract markers do not exist
-yet.  They must fail on the missing NEW contract text, not on syntax/typos.
+Host-config parity: the live host is not migrated to the restructured family, so
+the checks that would read the deployed ``config/agents/pdca-orchestrator.md``
+are explicit skips.  The canonical shipped asset (``assets/opencode-agents/``)
+is asserted instead.
 
 Run:
     python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v
@@ -38,7 +42,17 @@ HOST_AVAILABLE = bool(CONFIG) and CONFIG.is_dir()
 SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/opencode-config"
 
 COLLECTION_SKILL = SKILL_DIR / "SKILL.md"
+COLLECTION_STATUS_REF = SKILL_DIR / "references/status.md"
+COLLECTION_LANE_REF = SKILL_DIR / "references/lane.md"
+INCREMENTAL_SKILL = SKILLS_ROOT / "pdca-incremental/SKILL.md"
+# Canonical shipped runner asset (in-repo, always readable) and the deployed copy
+# in the host config repo (host parity; skipped — the host is not migrated).
+ORCHESTRATOR_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 ORCHESTRATOR = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
+SKIP_HOST_NOT_MIGRATED = (
+    "the live host config is not migrated to the restructured PDCA family; "
+    "the shipped asset is asserted instead"
+)
 BASE_VARIANTS = {
     "pdca": SKILLS_ROOT / "pdca/SKILL.md",
     "pdca-coder": SKILLS_ROOT / "pdca-coder/SKILL.md",
@@ -48,6 +62,7 @@ BASE_VARIANTS = {
 # The contract fixes the token families, not one exact sentence.
 _OWN_PLAN_TOKENS = ("task's own PLAN", "own PLAN")
 _PLAN_STATE_VALUES = ("pending", "running", "ready")
+_DISPOSITION_VALUES = ("active", "paused", "finalized")
 _APPROVAL_CONTEXT = re.compile(r"approv\w*", re.I)
 
 
@@ -173,7 +188,7 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
 
     def test_status_writes_are_serialized_not_single_owner(self):
         # One writer at a time, but the physical write belongs to pdca-executor
-        # (§Collection status), not to the primary directly.
+        # (references/status.md), not to the primary directly.
         p = self._p_section()
         self.assertIn("serialized", p, "§P must say the status writes are serialized")
         self.assertIn(
@@ -181,7 +196,11 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
             p,
             "§P must name pdca-executor as the physical writer of the status file",
         )
-        self.assertIn("§Collection status", p, "§P must defer the write ownership to §Collection status")
+        self.assertIn(
+            "references/status.md",
+            p,
+            "§P must defer the write ownership to references/status.md",
+        )
         self.assertNotIn(
             "a single owner writes",
             p,
@@ -209,13 +228,13 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         )
 
     def test_plan_state_values_declared(self):
-        skill = _plain(self.skill)
+        skill = _plain(COLLECTION_STATUS_REF.read_text(encoding="utf-8"))
         windows = [
             skill[m.start(): m.start() + 240]
             for m in re.finditer(r"plan_state", skill)
         ]
         self.assertTrue(
-            windows, "SKILL.md lacks the 'plan_state' readiness field token"
+            windows, "references/status.md lacks the 'plan_state' readiness field token"
         )
         ok = any(
             all(value in window for value in _PLAN_STATE_VALUES)
@@ -228,24 +247,26 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
         )
 
     def test_lane_section_resumes_saved_plan_not_fresh_full_plan(self):
-        lane = _plain(_section(self.skill, "## Lane", "## Git model"))
-        self.assertTrue(lane, "SKILL.md §Lane (## Lane) section not found")
-        self.assertIn("PLAN", lane, "§Lane no longer refers to PLAN")
-        self.assertRegex(
-            lane,
-            re.compile(r"saved"),
-            "§Lane must resume the already-done PLAN via 'saved ...' wording",
-        )
+        lane = _plain(COLLECTION_LANE_REF.read_text(encoding="utf-8"))
+        self.assertTrue(lane, "references/lane.md not found")
+        self.assertIn("the continuation of the saved own PLAN", lane)
+        self.assertIn("A repeated PLAN is by default not started", lane)
+        self.assertIn("the cycle continues from DO", lane)
+        self.assertIn("PLAN is reopened only when staleness is detected", lane)
 
     def test_status_section_records_plan_handoff_fields(self):
-        status = _plain(_section(self.skill, "## Collection status", "## Report"))
-        self.assertTrue(status, "SKILL.md §Collection status section not found")
-        for field in ("plan_state", "cycle_id", "selected_variant"):
-            self.assertIn(field, status, f"§Collection status must record {field!r}")
+        # The status tables moved to references/status.md; the item's form (not a
+        # variant) plus the cycle/plan revision are the handoff fields.
+        status = _plain(COLLECTION_STATUS_REF.read_text(encoding="utf-8"))
+        self.assertTrue(status, "references/status.md not found")
+        for field in ("plan_state", "cycle_id", "preparation_state", "preparation_ref"):
+            self.assertIn(field, status, f"the status reference must record {field!r}")
+        self.assertIn("the item's form", status)
         self.assertTrue(
             "plan_revision" in status or "plan revision vector" in status.lower(),
-            "§Collection status must record 'plan_revision' r (or the 'PLAN revision vector')",
+            "the status reference must record 'plan_revision' r (or the 'PLAN revision vector')",
         )
+        self.assertNotIn("selected_variant", status)
 
     def test_skill_still_forbids_automatic_recluster(self):
         # preservation guard: the new barrier must not re-enable automatic
@@ -262,13 +283,13 @@ class CollectionOwnPlanBarrierContractTest(unittest.TestCase):
 
 
 class StepPlanApprovalContractTest(unittest.TestCase):
-    """SKILL.md §Lane: the normal-mode step-PLAN approval gate (AC06).
+    """SKILL.md §Approval barrier (normal mode): the step-PLAN approval gate.
 
-    Guards the rule written in §"Lane driver and campaign": every real step runs its
-    own full PLAN of its variant before DO, and in normal mode that plan is approved
-    per the active contract through a *durable* pending approval ref while the current
-    unit takes ``disposition=paused``; the step brief neither replaces the PLAN nor
-    counts as an approval.
+    Guards the rule stated once in the base and applied by the collection: a step
+    waiting for approval is ``disposition=paused``/``in-progress`` with a *durable*
+    pending approval ref, the approval is recorded against the same ref, and
+    applicability without a matching record is an approval-needed checkpoint —
+    not DO and not a fresh PLAN.
     """
 
     @classmethod
@@ -276,29 +297,38 @@ class StepPlanApprovalContractTest(unittest.TestCase):
         cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
 
     def test_normal_mode_step_plan_approval_is_durable_and_pauses_the_unit(self):
-        """AC06: normal-mode step gate = durable pending approval ref + paused unit + brief ≠ PLAN."""
-        lane = _plain(_section(self.skill, "## Lane", "## Stale PLAN"))
-        self.assertTrue(lane, "SKILL.md §Lane (## Lane) section not found")
-        # (a) normal mode ties the step PLAN approval to a *durable* pending ref
+        """Normal-mode step gate = paused item + durable ref + applicability ≠ approval."""
+        gate = _plain(_section(self.skill, "## Approval barrier (normal mode)", "## Fallback"))
+        self.assertTrue(gate, "SKILL.md §Approval barrier (normal mode) not found")
+        # (a) the waiting item/step is disposition=paused, not done/incomplete
         self.assertRegex(
-            lane,
-            re.compile(r"normal mode.{0,400}?durable\s+pending\s+approval\s+ref", re.I),
-            "§Lane must state that in normal mode the step PLAN approval is recorded "
-            "as a durable pending approval ref (got: %r)" % lane[:600],
+            gate,
+            re.compile(r"waiting for approval is disposition=paused.{0,120}?in-progress", re.I),
+            "§Approval barrier must state that a waiting item/step is disposition=paused "
+            "with the status in-progress (got: %r)" % gate[:600],
         )
-        # (b) the current unit is paused for the duration of that approval
+        # (b) the approval itself is a durable pending ref, recorded against the same ref
         self.assertRegex(
-            lane,
-            re.compile(r"pending\s+approval\s+ref.{0,200}?disposition=paused", re.I),
-            "§Lane must state that the current unit gets disposition=paused at the "
-            "step approval gate (got: %r)" % lane[:600],
+            gate,
+            re.compile(r"durable pending approval ref.{0,200}?same ref", re.I),
+            "§Approval barrier must record the approval against the same durable ref "
+            "(got: %r)" % gate[:600],
         )
-        # (c) the step brief is not the step's PLAN
+        # (c) applicability is not approval: a missing record is a checkpoint, not DO/PLAN
         self.assertRegex(
-            lane,
-            re.compile(r"step\s+brief\s+does\s+not\s+replace\s+the\s+plan", re.I),
-            "§Lane must state explicitly that the step brief does not replace the "
-            "step's PLAN ('The step brief does not replace the PLAN')",
+            gate,
+            re.compile(
+                r"applicability without a matching record is an approval-needed "
+                r"checkpoint, not DO and not a fresh PLAN",
+                re.I,
+            ),
+            "§Approval barrier must state that applicability without a matching record "
+            "is an approval-needed checkpoint, not DO and not a fresh PLAN",
+        )
+        self.assertRegex(
+            gate,
+            re.compile(r"brief, (?:a )?summary or a chat message is not an approval", re.I),
+            "§Approval barrier must state that a brief/summary/message is not an approval",
         )
 
 
@@ -318,21 +348,22 @@ _RUNTIME_STATUS_REQUIREMENT = re.compile(
 
 
 class CollectionUnitPreparationBarrierTest(unittest.TestCase):
-    """SKILL.md: `execution_kind`, per-unit preparation barrier, disposition (AC03/05/14)."""
+    """SKILL.md: item form, per-item preparation barrier, disposition."""
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
         cls.plain = _plain(cls.skill)
 
-    def test_pipeline_declares_execution_kind_and_both_kinds(self):
-        for token in ("execution_kind", "cycle", "campaign"):
+    def test_pipeline_declares_the_item_form_and_both_forms(self):
+        section = _plain(_section(self.skill, "## Items: form, contract, overlay", "## Collection"))
+        self.assertIn("Every item has a form, decided by the collection PLAN", section)
+        for token in ("cycle", "campaign"):
             with self.subTest(token=token):
-                self.assertIn(
-                    token,
-                    self.plain,
-                    f"SKILL.md lacks the execution-kind token {token!r}",
-                )
+                self.assertIn(token, section, f"SKILL.md lacks the item form {token!r}")
+        for legacy in ("execution_kind", "selected_variant"):
+            with self.subTest(legacy=legacy):
+                self.assertNotIn(legacy, self.plain)
 
     def test_preparation_state_gates_dispatch_on_ready(self):
         for token in ("plan_state", "preparation_state", "preparation_ref", "@r"):
@@ -376,17 +407,19 @@ class CollectionUnitPreparationBarrierTest(unittest.TestCase):
         )
 
     def test_unit_disposition_values_are_declared(self):
-        for token in ("disposition", "active", "paused", "finalized"):
+        self.assertIn("disposition", self.plain, "SKILL.md lacks the disposition field")
+        status = _plain(COLLECTION_STATUS_REF.read_text(encoding="utf-8"))
+        for token in _DISPOSITION_VALUES:
             with self.subTest(token=token):
                 self.assertIn(
                     token,
-                    self.plain,
-                    f"SKILL.md lacks the unit disposition token {token!r}",
+                    status,
+                    f"references/status.md lacks the item disposition value {token!r}",
                 )
 
     def test_unit_preparation_artifact_and_campaign_binding(self):
         for token in ("campaign_ref", "preparation.md",
-                      ".pdca/<collection-id>/units/<unit-id>/"):
+                      ".pdca/<collection-id>/items/<item-id>/"):
             with self.subTest(token=token):
                 self.assertIn(
                     token,
@@ -412,56 +445,162 @@ class CollectionUnitPreparationBarrierTest(unittest.TestCase):
                 )
 
 
-@unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
 class OrchestratorCollectionPlanHandoffTest(unittest.TestCase):
-    """pdca-orchestrator.md: a distinct COLLECTION TASK PLAN entry + plan_handoff."""
+    """The shipped runner: a distinct COLLECTION TASK PLAN entry + its handoffs.
+
+    The in-repo asset is the canonical source and is always asserted. The deployed
+    copy under ``config/agents/`` is host parity and is skipped: the live host is
+    not migrated to the restructured family (it still routes on the removed
+    ``execution_kind`` field), so parity would compare the new contract to an old
+    implementation instead of checking anything.
+    """
 
     @classmethod
     def setUpClass(cls) -> None:
-        assert ORCHESTRATOR is not None
-        cls.text = ORCHESTRATOR.read_text(encoding="utf-8")
+        cls.text = ORCHESTRATOR_ASSET.read_text(encoding="utf-8")
 
     def test_orchestrator_declares_collection_task_plan_entry(self):
         self.assertIn(
             "COLLECTION TASK PLAN",
             self.text,
-            "pdca-orchestrator.md lacks the 'COLLECTION TASK PLAN' entry",
+            "the shipped runner lacks the 'COLLECTION TASK PLAN' entry",
         )
 
-    def test_orchestrator_returns_plan_handoff(self):
-        self.assertIn(
-            "plan_handoff",
-            self.text,
-            "pdca-orchestrator.md lacks the 'plan_handoff' result token",
+    def test_orchestrator_returns_the_form_specific_handoffs(self):
+        self.assertIn("plan_handoff", self.text)
+        self.assertIn("preparation_handoff", self.text)
+
+    def test_orchestrator_routes_the_item_form_not_a_variant(self):
+        self.assertIn("the unit's form", self.text)
+        self.assertNotIn("execution_kind", self.text)
+        self.assertNotIn("selected_variant", self.text)
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_deployed_copy_matches_the_shipped_asset(self):
+        self.skipTest(
+            f"{SKIP_HOST_NOT_MIGRATED}: deployed {ORCHESTRATOR} still carries the "
+            "legacy execution_kind routing"
         )
 
 
 class StandaloneVariantCollectionHandoffTest(unittest.TestCase):
-    """Base variants keep standalone semantics AND gain a collection caller note."""
+    """The base owns approval/autonomous semantics; the overlays apply to the form.
 
-    def test_variants_keep_standalone_approval_and_autonomous_immediate(self):
-        for name, path in BASE_VARIANTS.items():
-            with self.subTest(variant=name):
-                low = _plain(path.read_text(encoding="utf-8")).lower()
-                self.assertTrue(
-                    _APPROVAL_CONTEXT.search(low),
-                    f"{name}: lost the explicit normal-mode plan-approval "
-                    f"context",
-                )
-                self.assertTrue(
-                    "immediately" in low,
-                    f"{name}: lost the standalone-autonomous immediate-start token",
-                )
+    The overlays no longer restate the standalone approval or a collection-caller
+    note — the base owns both — so this guards the replacement invariant: the base
+    keeps normal-mode approval and the no-question autonomous mode, the durable
+    caller-driven approval protocol, and the overlays apply to the chosen form
+    without opening a second cycle.
+    """
 
-    def test_variants_document_collection_caller_handoff(self):
-        for name, path in BASE_VARIANTS.items():
+    def test_base_keeps_normal_mode_approval_and_quiet_autonomous_mode(self):
+        base = _plain(BASE_VARIANTS["pdca"].read_text(encoding="utf-8"))
+        self.assertRegex(base, r"## Normal-mode approval")
+        self.assertIn("that approval is the only start signal", base)
+        self.assertIn("Autonomous mode has no pauses and no questions", base)
+
+    def test_base_documents_the_caller_driven_approval_protocol(self):
+        base = _plain(BASE_VARIANTS["pdca"].read_text(encoding="utf-8"))
+        self.assertIn("Durable approval protocol (caller-driven cycles)", base)
+        self.assertIn("approval-needed checkpoint", base)
+        self.assertIn("the parent asks the user", base)
+
+    def test_overlays_apply_to_the_chosen_form_without_a_second_cycle(self):
+        for name in ("pdca-coder", "pdca-dotnet"):
             with self.subTest(variant=name):
-                low = _plain(path.read_text(encoding="utf-8")).lower()
+                low = _plain(BASE_VARIANTS[name].read_text(encoding="utf-8")).lower()
+                self.assertIn("overlay", low)
                 self.assertTrue(
-                    "collection caller" in low,
-                    f"{name}: missing the collection caller handoff note "
-                    f"('collection caller')",
+                    _APPROVAL_CONTEXT.search(low) or "inherits unchanged" in low,
+                    f"{name}: lost the inheritance/approval boundary",
                 )
+                self.assertIn("never opens a second", low)
+                self.assertIn("form", low)
+
+
+class CollectionPhaseContractTest(unittest.TestCase):
+    """§C/§A: the common CHECK is the base's; only its PASS allows completion."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
+
+    def _c(self) -> str:
+        return _plain(_section(self.skill, "### C —", "### A —"))
+
+    def _a(self) -> str:
+        return _plain(_section(self.skill, "### A —", "## Report"))
+
+    def test_c_is_the_standard_check_not_a_bespoke_stage(self) -> None:
+        c = self._c()
+        self.assertIn("the standard CHECK of the base contract", c)
+        self.assertIn("two ticks", c)
+        self.assertIn("pdca-check", c)
+        self.assertIn("not a separate bespoke stage", c)
+        self.assertIn("§.NET check deltas", c)
+
+    def test_c_has_no_collection_counter_and_uses_the_base_rules(self) -> None:
+        c = self._c()
+        self.assertIn("without a collection counter", c)
+        self.assertIn("base r/n/3", c)
+        self.assertIn("same defect after one fix", c)
+        self.assertIn("does not get a 4th implementation CHECK", c)
+
+    def test_pass_may_coexist_with_incomplete_groups(self) -> None:
+        c = self._c()
+        self.assertIn("may coexist", c)
+        self.assertIn("separate fields", c)
+        self.assertIn("not marked done retroactively", c)
+
+    def test_completion_requires_the_common_pass_and_cleanup_is_disposable_only(self) -> None:
+        a = self._a()
+        self.assertIn("Only a PASS of the common C allows completion", a)
+        self.assertIn("removes only disposable", a)
+        self.assertIn("incomplete groups are never deleted", a)
+        self.assertIn("A STOP before C = PASS — cleanup is forbidden", a)
+        self.assertIn("Push — never", a)
+
+    def test_campaign_acceptance_is_not_the_common_c(self) -> None:
+        a = self._a()
+        self.assertIn("campaign acceptance is not the common C and does not replace it", a)
+        self.assertIn("§Routing campaign outcomes", a)
+
+
+class CollectionFallbackContractTest(unittest.TestCase):
+    """§Fallback: one flat-primary fallback, recorded, without role substitution."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
+        cls.fallback = _plain(_section(cls.skill, "## Fallback", "## Parameters"))
+
+    def test_trigger_is_a_failed_delegation(self) -> None:
+        self.assertIn("no nested delegation", self.fallback)
+        self.assertIn("pdca-orchestrator cannot orchestrate pdca", self.fallback)
+        self.assertIn("delegation/subagent-unavailability error", self.fallback)
+
+    def test_one_flat_fallback_leads_one_item_per_group(self) -> None:
+        self.assertIn("one flat-primary fallback", self.fallback)
+        self.assertIn("one current item per group", self.fallback)
+        self.assertIn("cap is an upper bound, not a guarantee", self.fallback)
+
+    def test_the_fallback_substitutes_no_role_and_obtains_no_rights(self) -> None:
+        self.assertIn("does not substitute roles", self.fallback)
+        self.assertIn("does not obtain the roles' rights", self.fallback)
+        self.assertIn("Notice:", self.fallback)
+
+    def test_the_fallback_keeps_the_all_barrier_and_the_saved_plan(self) -> None:
+        self.assertIn("observing the ALL-barrier", self.fallback)
+        self.assertIn("continues the saved PLAN in the lane with DO", self.fallback)
+
+    def test_capability_preflight_performs_no_dummy_work(self) -> None:
+        self.assertIn("Capability preflight", self.fallback)
+        self.assertIn("no trial edits, trial items or fake steps", self.fallback)
+        self.assertIn("escalate → scout", self.fallback)
+
+    def test_an_unavailable_contract_fails_closed(self) -> None:
+        self.assertIn("fail closed without substituting a", self.fallback)
+        self.assertIn("safe pause before the dependent action", self.fallback)
 
 
 class CollectionPlanGapTest(unittest.TestCase):
@@ -517,16 +656,16 @@ class CollectionPlanGapTest(unittest.TestCase):
         )
 
     def test_gap_stands_for_campaign_preparation_too(self):
-        windows = _windows(self.plain, "A unit without a meaningful plan", 260)
+        windows = _windows(self.plain, "An item without a meaningful plan", 260)
         self.assertTrue(
             windows,
-            "SKILL.md lacks the shared gap sentence for both execution kinds",
+            "SKILL.md lacks the shared gap sentence for both item forms",
         )
         window = windows[0]
         self.assertIn(
-            "frame",
+            "plan or charter",
             window,
-            "the shared gap sentence must cover a campaign whose frame is not ready",
+            "the shared gap sentence must cover a campaign whose charter is not ready",
         )
         self.assertIn(
             "not a single lane",
@@ -534,9 +673,9 @@ class CollectionPlanGapTest(unittest.TestCase):
             "the shared gap sentence must state that no lane is allocated before the barrier",
         )
         self.assertIn(
-            "for both kinds",
+            "for both forms",
             window,
-            "the shared gap sentence must bind both execution kinds",
+            "the shared gap sentence must bind both item forms",
         )
 
     def test_reentry_requires_evidence_or_a_new_oracle(self):
@@ -557,54 +696,54 @@ class CollectionPlanGapTest(unittest.TestCase):
             "re-entry must either prove the evidence or re-scope the oracle",
         )
         self.assertIn(
-            "otherwise the task stays a gap",
+            "otherwise the item stays a gap",
             window,
-            "a silent re-run of the same criterion must leave the unit a gap",
+            "a silent re-run of the same criterion must leave the item a gap",
         )
 
 
 class CollectionUnitKindOwnershipTest(unittest.TestCase):
-    """SKILL.md + runner: the collection PLAN owns `execution_kind`; the runner never infers it."""
+    """SKILL.md + runner: the collection PLAN owns the item form; the runner never infers it."""
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
         cls.plain = _plain(cls.skill)
 
-    def test_collection_plan_decides_execution_kind_before_dispatch(self):
+    def test_collection_plan_decides_the_item_form_before_dispatch(self):
         p = _plain(_section(self.skill, "### P —", "### D —"))
         self.assertTrue(p, "SKILL.md §P section not found")
         windows = [
             window
-            for window in _windows(p, "execution_kind", 320)
-            if "decided by the collection PLAN" in window
+            for window in _windows(p, "decides the form of every item", 320)
         ]
         self.assertTrue(
             windows,
             "SKILL.md must state that the collection PLAN (`pdca-planner`) decides "
-            "each unit's `execution_kind`",
+            "each item's form",
         )
         window = windows[0]
         for token in (
-            "pdca-planner",
-            "before the per-kind dispatch",
+            "the collection PLAN",
+            "before the per-form dispatch",
             "passes the ready value",
-            "does not infer it from the task text",
         ):
             with self.subTest(token=token):
                 self.assertIn(
                     token,
                     window,
-                    f"the `execution_kind` ownership sentence lost {token!r}",
+                    f"the item-form ownership sentence lost {token!r}",
                 )
+        items = _plain(_section(self.skill, "## Items: form, contract, overlay", "## Collection"))
+        self.assertIn("pdca-planner", items)
+        self.assertIn("does not classify the item", items)
 
     def test_runner_never_classifies_the_task(self):
-        runner = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
-        text = _plain(runner.read_text(encoding="utf-8"))
+        text = _plain(ORCHESTRATOR_ASSET.read_text(encoding="utf-8"))
         for token in (
-            "never classifies the task",
-            "you do not infer it",
-            "execution_kind",
+            "never classify the task",
+            "do not infer it",
+            "the unit's form",
         ):
             with self.subTest(token=token):
                 self.assertIn(
@@ -612,22 +751,23 @@ class CollectionUnitKindOwnershipTest(unittest.TestCase):
                     text,
                     f"the runner prompt must refuse to classify the task: {token!r} missing",
                 )
+        for legacy in ("execution_kind", "selected_variant"):
+            with self.subTest(legacy=legacy):
+                self.assertNotIn(legacy, text)
 
-    def test_unknown_execution_kind_fails_closed(self):
-        windows = _windows(self.plain, "legacy files", 280)
-        self.assertTrue(windows, "SKILL.md lost the legacy `execution_kind` rule")
+    def test_unknown_form_value_fails_closed(self):
+        status = _plain(COLLECTION_STATUS_REF.read_text(encoding="utf-8"))
+        windows = _windows(status, "unrecognised form value", 280)
+        self.assertTrue(windows, "references/status.md lost the unknown-form rule")
         window = windows[0]
-        for token in (
-            "unknown execution_kind value",
-            "fail closed",
-            "not a guess",
-        ):
+        for token in ("fail closed", "not a guess"):
             with self.subTest(token=token):
                 self.assertIn(
                     token,
                     window,
-                    f"an unknown `execution_kind` must fail closed: {token!r} missing",
+                    f"an unknown form value must fail closed: {token!r} missing",
                 )
+        self.assertIn("read as cycle", status)
 
 
 class CollectionPostBarrierUnitTest(unittest.TestCase):
@@ -636,8 +776,9 @@ class CollectionPostBarrierUnitTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.skill = COLLECTION_SKILL.read_text(encoding="utf-8")
+        lane = COLLECTION_LANE_REF.read_text(encoding="utf-8")
         cls.revision = _plain(
-            _section(cls.skill, "## Stale PLAN", "### Surface reservation")
+            _section(lane, "## Stale plan and schedule revision", "## Git model")
         )
 
     def test_new_campaign_after_the_barrier_needs_explicit_replan(self):
@@ -646,7 +787,7 @@ class CollectionPostBarrierUnitTest(unittest.TestCase):
             "SKILL.md §Stale PLAN and schedule revision not found",
         )
         for token in (
-            "A new campaign or a new unit after the barrier",
+            "A new campaign or a new item after the barrier",
             "does not mutate the DAG silently",
             "explicit collection replan/reapprove",
             "in normal mode — the user",

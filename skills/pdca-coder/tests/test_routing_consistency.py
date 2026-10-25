@@ -134,7 +134,7 @@ class RoleAssetTest(unittest.TestCase):
 class LensSelectionWordingTest(unittest.TestCase):
     def test_lenses_are_selected_per_task(self):
         skill = norm(read(SKILL))
-        self.assertIn("PLAN selects the toolchain and lenses", skill)
+        self.assertIn("the toolchain and the review lenses are selected by PLAN", skill)
         self.assertIn("selected by PLAN for each", skill)
         self.assertIn("explicit generic-role path", skill)
         self.assertIn("missing optional lens", skill)

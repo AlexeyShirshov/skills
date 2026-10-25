@@ -17,24 +17,24 @@ Skills live under [`skills/`](skills/).
 
 | Skill | Description |
 | --- | --- |
-| [`pdca-entry`](skills/pdca-entry) | Single entry point (umbrella) for the family: classifies a task and routes it to exactly one contract — collection, incremental, .NET, coder or the neutral cycle. |
-| [`pdca`](skills/pdca) | Domain-neutral PDCA cycle: PLAN → DO → CHECK → ACT with transition gates, evidence-based CHECK, escalation accounting, durable status, and recovery. |
-| [`pdca-coder`](skills/pdca-coder) | Stack-agnostic PDCA executor for software-engineering tasks (code, tests, docs, refactoring, config). Picks the build/test/lint toolchain per language. |
-| [`pdca-collection`](skills/pdca-collection) | Runs a batch of tasks as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups); a batch may contain single-cycle units and sequential incremental-campaign units. |
-| [`pdca-dotnet`](skills/pdca-dotnet) | PDCA cycle for .NET/C# tasks: parallel DO/CHECK streams, role routing, ACT handoff. |
-| [`pdca-incremental`](skills/pdca-incremental) | Drives a goal without a committed whole-volume plan as a chain of small PDCA increments: one accepted measurement per step, baseline chain, one campaign status file, explicit stop conditions, plus `repair` and `verify` step kinds; a campaign can also be a unit of a collection batch and then stays sequential. |
+| [`pdca`](skills/pdca) | Single entry and base cycle of the family: one PLAN picks the **form** (ordinary cycle, incremental campaign or collection) and the coder/.NET **overlay**, then drives PLAN → DO → CHECK → ACT with probes and increments, transition gates, evidence-based CHECK, carrying claims and a veto, escalation accounting, durable status, and recovery. |
+| [`pdca-coder`](skills/pdca-coder) | Programming **overlay** applied to the chosen form (not a cycle of its own): adds code-specific facts, the build/test/lint toolchain per task, the parallel DO streams and the code CHECK deltas. |
+| [`pdca-collection`](skills/pdca-collection) | Collection **form**: a batch of independent goals as parallel PDCA lanes (worktree per group, branch chain + auto-commit, `--no-ff` merge of completed groups); a batch may contain `cycle` items and sequential `campaign` items. |
+| [`pdca-dotnet`](skills/pdca-dotnet) | .NET/C# **overlay** that inherits `pdca-coder` and adds only the .NET differences: the dotnet toolchain and command forms, Roslyn-first symbol work, versioned evidence and the inner-loop gates. |
+| [`pdca-incremental`](skills/pdca-incremental) | Incremental **form**: one goal whose method or volume is unknown advanced as a chain of credited steps by the cheap `pdca-orchestrator` in campaign-control — one accepted increment per step, a baseline chain, one campaign status file, explicit stop conditions; a campaign can also be a `campaign` item of a collection batch and then stays sequential. |
 
-The five contracts share the same cycle: a cheap orchestrator drives roles (planner, coder,
-check, scout, escalate), every CHECK is evidence-based, and a required approval that cannot
-be obtained is a STOP rather than an open question. `pdca-entry` sits above them: it does not
-run a cycle, it only classifies the task and hands it to exactly one contract.
+**Five skills, two layers.** `pdca` is the **only entry** and carries the whole cycle; `pdca-coder`
+and `pdca-dotnet` are **overlays** (dotnet inherits coder) applied _to_ whichever form was chosen,
+never a second cycle; `pdca-collection` and `pdca-incremental` are **forms** the base PLAN selects.
+One cheap orchestrator drives the roles (planner, executor, check, scout, escalate), every CHECK is
+evidence-based, and a required approval that cannot be obtained is a STOP rather than an open
+question.
 
 ## Install
 
 Install a single skill with the [skills](https://skills.sh) CLI — one command per skill:
 
 ```sh
-npx skills add AlexeyShirshov/skills@pdca-entry
 npx skills add AlexeyShirshov/skills@pdca
 npx skills add AlexeyShirshov/skills@pdca-coder
 npx skills add AlexeyShirshov/skills@pdca-dotnet
@@ -52,9 +52,9 @@ Without `-g` the CLI targets the current project.
 
 Installing a skill is only half of the setup: the cycle dispatches **subagents**, so the host needs
 the role agents and the runner `pdca-orchestrator` (they ship in the skills' `assets/opencode-agents/`:
-`pdca`, `pdca-coder` and `pdca-dotnet` carry the full role set — `pdca-coder` and `pdca-dotnet`
-also ship `pdca-security-auditor` — while `pdca-entry`, `pdca-collection` and `pdca-incremental`
-carry only the runner prompt),
+`pdca` carries the six role files — `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`,
+`pdca-escalate`, `pdca-orchestrator` — `pdca-coder` and `pdca-dotnet` add `pdca-security-auditor`,
+while the forms `pdca-collection` and `pdca-incremental` carry only the runner prompt),
 nested delegation (`experimental.subagent_depth`) and `subagent` permissions. Every agent id is
 `pdca-`prefixed (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`,
 `pdca-security-auditor`, `pdca-orchestrator`), so it cannot collide with an existing
@@ -70,10 +70,10 @@ helpers there are the source of the runtime copies the executor stages into the 
 `.pdca/scripts/` (see the workspace note above). `tests/` and the diagram generators are
 development-only and not needed at runtime.
 
-Global (all projects) — the full family, `pdca-entry` included:
+Global (all projects) — the full family, five skills:
 
 ```sh
-cp -r skills/pdca-entry skills/pdca skills/pdca-coder skills/pdca-collection \
+cp -r skills/pdca skills/pdca-coder skills/pdca-collection \
   skills/pdca-dotnet skills/pdca-incremental ~/.config/opencode/skills/
 ```
 
@@ -84,27 +84,30 @@ mkdir -p .opencode/skills
 cp -r skills/pdca* .opencode/skills/
 ```
 
-Skills are discovered by the `name` field in their frontmatter. Copying all six does not change
-which ones the model may pick: only `pdca-entry` is advertised, the contracts keep
+Skills are discovered by the `name` field in their frontmatter. Copying all five does not change
+which ones the model may pick: only `pdca` is advertised, the overlays and the forms keep
 `metadata.opencode/autoinvoke: false`.
 
 ## Usage
 
-Only `pdca-entry` is advertised to the model for automatic selection. The five contracts set
+Only `pdca` is advertised to the model for automatic selection; it is the single entry of the
+family. `pdca-coder`, `pdca-dotnet`, `pdca-collection` and `pdca-incremental` set
 `metadata.opencode/autoinvoke: false`: they stay registered but load only when the user names them
-explicitly (`skill pdca-dotnet`, `@pdca-dotnet`) or when the entry hands off.
+explicitly (`skill pdca-dotnet`, `@pdca-dotnet`) or when the base PLAN selects that overlay or form.
 
 Invoke a skill by name, e.g. in an opencode session:
 
-- `pdca-entry` — "by the cycle" / "via PDCA": the umbrella that routes the task to
-  one contract below (an explicitly named contract bypasses it).
-- `pdca` — only when explicitly named (domain-neutral cycle).
-- `pdca-coder` — explicitly, for code tasks of any stack.
-- `pdca-dotnet` — explicitly, for .NET/C# work.
-- `pdca-collection` — for a list of independent tasks / a milestone; a collection batch may contain
-  cycle units and campaign units, and a campaign unit stays sequential (one lane, one step at a
-  time).
-- `pdca-incremental` — for a goal without a committed whole-volume plan (per-task plans may already exist), moved forward in steps; includes per-step `repair` and an optional integrated `verify`. A campaign can also run as a unit of a collection batch.
+- `pdca` — "by the cycle" / "via PDCA" / `pdca`: the entry. One PLAN picks the form and, for code
+  work, the overlay, then the cycle runs.
+- `pdca-coder` — explicitly, as the code overlay for tasks of any stack.
+- `pdca-dotnet` — explicitly, as the .NET/C# overlay (it inherits `pdca-coder`).
+- `pdca-collection` — explicitly, to force the collection form for a list of independent goals / a
+  milestone; a batch may contain `cycle` items and `campaign` items, and a campaign item stays
+  sequential (one lane, one step at a time).
+- `pdca-incremental` — explicitly, to force the incremental form for a goal whose method or volume
+  is unknown: one goal moved forward as credited steps, with an explicit stop condition — a step's
+  shortfall is a loop-back inside the step, and the campaign closes only on a whole-goal check. A
+  campaign can also run as a `campaign` item of a collection batch.
 
 ## Tests
 

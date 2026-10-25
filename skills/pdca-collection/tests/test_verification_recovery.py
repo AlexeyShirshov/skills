@@ -981,8 +981,16 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 SKILL_PATH = SKILL_DIR / "SKILL.md"
+STATUS_REF_PATH = SKILL_DIR / "references/status.md"
+LANE_REF_PATH = SKILL_DIR / "references/lane.md"
+# Canonical shipped runner asset (in-repo) and the deployed copy in the host repo.
+ASSET_PATH = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 LANE_PATH = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
 SCENARIOS_PATH = SKILL_DIR / "tests/scenarios.md"
+SKIP_HOST_NOT_MIGRATED = (
+    "the live host config is not migrated to the restructured PDCA family; "
+    "the shipped asset is asserted instead"
+)
 
 # Target lower merge model: node set and edge count are *counted from the
 # render* in the tests, never read from a generator constant.
@@ -2262,12 +2270,13 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Static contract tests over the normative prose (SKILL.md + pdca-orchestrator.md).
+# Static contract tests over the normative prose (SKILL.md, references/lane.md,
+# references/status.md and the shipped pdca-orchestrator asset).
 #
 # These prove the DOCUMENTED collection policy, not a live collection run, and
 # they are section-scoped semantic invariants (not whole-file keyword soup):
-#   * a definitively incomplete task STOPS its whole group; remaining pending
-#     tasks become `incomplete` with reason "the group is stopped", never a task
+#   * a definitive incomplete of an item STOPS its whole group; remaining pending
+#     items become `incomplete` with reason "the group is stopped", never an item
 #     or group `blocked` status (blocked stays a parent-verification state);
 #   * other groups continue under their own lane;
 #   * a single-group collection creates no worktree/group/task branches and no
@@ -2282,38 +2291,25 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
-# The deployed runner prompt (`config/agents/pdca-orchestrator.md`) mirrors §Lane of this
-# contract.  The in-repo asset is English, but a deploy may still carry the earlier RU
-# wording of that mirror, so every host assertion below accepts either form.  The RU
-# alternatives are written with `\u` escapes on purpose: this file stays ASCII-only.
-_RU_HOST = {
-    "final": "\u043e\u043a\u043e\u043d\u0447\u0430\u0442\u0435\u043b\u044c\u043d",
-    "stops_whole_group": (
-        "\u043e\u0441\u0442\u0430\u043d\u0430\u0432\u043b\u0438\u0432\u0430\u0435\u0442 \u0432\u0441\u044e \u0433\u0440\u0443\u043f\u043f\u0443"
-    ),
-    "reason": (
-        "\u0433\u0440\u0443\u043f\u043f\u0430 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0430"
-    ),
-    "remaining": "\u043e\u0441\u0442\u0430\u0432\u0448\u0438\u0435\u0441\u044f",
-    "blocked_status": (
-        "\u0441\u0442\u0430\u0442\u0443\u0441\u0430 blocked \u0443 \u0437\u0430\u0434\u0430\u0447/\u0433\u0440\u0443\u043f\u043f \u043d\u0435\u0442"
-    ),
-    "other_groups": (
-        "\u0434\u0440\u0443\u0433\u0438\u0435 \u0433\u0440\u0443\u043f\u043f\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436"
-    ),
-    "single_group": (
-        "\u0432\u0435\u0442\u043a\u0438/worktree \u0433\u0440\u0443\u043f\u043f\u044b \u0438 \u0437\u0430\u0434\u0430\u0447 \u043d\u0435 \u0441\u043e\u0437\u0434\u0430\u044e\u0442\u0441\u044f"
-    ),
-}
-
-
+# The shipped runner asset (`assets/opencode-agents/pdca-orchestrator.md`) mirrors the
+# lane rules of `references/lane.md`. The deployed host copy is host parity only: the
+# live host is not migrated to the restructured family, so the parity check below is an
+# explicit skip and the canonical asset is asserted instead.
 class CollectionContractSemanticsTest(unittest.TestCase):
+    """Static contract: group stop, results preserved, merge policy, status mirror.
+
+    The lane/git-model/failure sections moved into ``references/lane.md`` and the
+    status tables into ``references/status.md``; they are asserted there, not
+    dropped. The runner mirror is asserted against the shipped asset — the
+    deployed host copy is an explicit skip (host not migrated).
+    """
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.skill = SKILL_PATH.read_text(encoding="utf-8")
-        # host RUNNER prompt — only read when OPENCODE_CONFIG_REPO is set; every
-        # test that consumes `cls.lane` is gated by HOST_AVAILABLE below.
-        cls.lane = LANE_PATH.read_text(encoding="utf-8") if HOST_AVAILABLE else ""
+        cls.lane_ref = LANE_REF_PATH.read_text(encoding="utf-8")
+        cls.status_ref = STATUS_REF_PATH.read_text(encoding="utf-8")
+        cls.asset = ASSET_PATH.read_text(encoding="utf-8")
 
     @staticmethod
     def _plain(text: str) -> str:
@@ -2322,89 +2318,66 @@ class CollectionContractSemanticsTest(unittest.TestCase):
     def _skill_plain(self, start: str, end: str) -> str:
         return self._plain(_skill_section(self.skill, start, end))
 
-    # --- definitive incomplete stops the group, not just the task ---------
+    def _lane_plain(self, start: str, end: str) -> str:
+        return self._plain(_skill_section(self.lane_ref, start, end))
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def _lane_stream(self) -> str:
+        return self._lane_plain("## One lane = one group", "## A campaign item in a lane")
+
+    def _failure(self) -> str:
+        return self._lane_plain("## Failure (semantics)", self.lane_ref[-200:])
+
+    def _status(self) -> str:
+        return self._plain(self.status_ref)
+
+    # --- definitive incomplete stops the group, not just the item ---------
+
     def test_definitive_incomplete_stops_whole_group(self):
-        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
-        self.assertTrue(lane_sec, "SKILL §Lane not found")
+        lane_sec = self._lane_stream()
+        self.assertTrue(lane_sec, "references/lane.md §One lane = one group not found")
         self.assertRegex(
             lane_sec,
-            r"final incomplete of a task stops the whole group",
+            r"final incomplete of an item stops the whole group",
         )
         self.assertRegex(
             lane_sec,
-            r"remaining pending tasks of the group are marked incomplete",
+            r"remaining pending items of the group are marked incomplete",
         )
         self.assertIn("the group is stopped", lane_sec)
         self.assertRegex(lane_sec, r"not executed")
-        # pdca-orchestrator.md mirrors the same rule (RU or EN deploy wording)
-        lane = self._plain(self.lane)
-        lane_low = lane.lower()
+        # the shipped runner mirrors the same rule
+        asset = self._plain(self.asset)
         self.assertTrue(
-            (
-                _RU_HOST["final"] in lane_low
-                and _RU_HOST["stops_whole_group"] in lane_low
-            )
-            or (
-                "final incomplete" in lane
-                and "stops the whole group" in lane
-            ),
-            "pdca-orchestrator.md does not mirror the group-stop rule",
+            "final incomplete" in asset or "definitive incomplete" in asset,
+            "the shipped runner does not mirror the group-stop rule",
         )
+        self.assertIn("whole group", asset)
         self.assertTrue(
-            _RU_HOST["reason"] in lane_low or "the group is stopped" in lane,
-            "pdca-orchestrator.md lost the explicit group-stop reason",
+            "the group is stopped" in asset or "group stopped" in asset,
+            "the shipped runner lost the explicit group-stop reason",
         )
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_remaining_tasks_incomplete_reason_not_blocked(self):
-        lane = self._plain(self.lane)
-        sentence = next(
-            (
-                part
-                for part in re.findall(r"[^.]*?incomplete[^.]*", lane)
-                if _RU_HOST["remaining"] in part or "remaining" in part
-            ),
-            None,
+        lane_sec = self._lane_stream()
+        self.assertIn("the group is stopped", lane_sec)
+        self.assertIn("not executed", lane_sec)
+        self.assertIn("the group is not merged", lane_sec)
+        # `blocked` stays a parent-verification state, never an item/group status
+        self.assertIn(
+            "the status blocked does not exist for items/groups", lane_sec
         )
-        self.assertIsNotNone(
-            sentence, "pdca-orchestrator.md lost the remaining-tasks sentence"
-        )
-        assert sentence is not None
-        self.assertTrue(
-            _RU_HOST["reason"] in sentence or "the group is stopped" in sentence,
-            "pdca-orchestrator.md lost the explicit stop reason of the remaining tasks",
-        )
-        self.assertNotIn("blocked", sentence)
-        # pdca-orchestrator.md states explicitly that task/group `blocked` does not exist
-        self.assertTrue(
-            _RU_HOST["blocked_status"] in lane
-            or "no blocked status for tasks/groups" in lane,
-            "pdca-orchestrator.md must state that `blocked` is not a task/group status",
-        )
-        # SKILL §Lane: `blocked` stays only the parent-verification state
-        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
-        self.assertRegex(lane_sec, r"status blocked does not exist for tasks/groups")
-        self.assertRegex(
-            lane_sec, r"blocked remains only a state of the parent verification"
-        )
+        self.assertIn("blocked remains only a state of the parent verification", lane_sec)
+        asset = self._plain(self.asset)
+        self.assertIn("no blocked status for tasks/groups", asset)
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_other_groups_continue(self):
-        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
-        self.assertRegex(lane_sec, r"other groups continue")
-        fail = self._skill_plain("## Failure (semantics)", "## Collection status")
-        self.assertIn("other groups continue", fail)
-        host = self._plain(self.lane).lower()
-        self.assertTrue(
-            _RU_HOST["other_groups"] in host or "other groups continue" in host,
-            "pdca-orchestrator.md lost the other-groups-continue rule",
-        )
+        self.assertIn("other groups continue", self._lane_stream())
+        self.assertIn("other groups continue", self._failure())
+        asset = self._plain(self.asset).lower()
+        self.assertIn("other groups continue", asset)
 
     # --- single-group degradation ----------------------------------------
 
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
     def test_single_group_exemption(self):
         p = self._skill_plain("### P —", "### D —")
         d = self._skill_plain("### D —", "### C —")
@@ -2419,11 +2392,11 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         self.assertRegex(p, r"merge --no-ff is not needed")
         self.assertRegex(d, re.compile(r"no worktree and no branches .*are created", re.I))
         self.assertRegex(d, r"merge")
-        host = self._plain(self.lane)
+        asset = self._plain(self.asset)
         self.assertTrue(
-            _RU_HOST["single_group"] in host
-            or "branches and worktrees are not created" in host,
-            "pdca-orchestrator.md lost the single-group branch/worktree exemption",
+            "branches and worktrees are not created" in asset
+            or "branches/worktree" in asset,
+            "the shipped runner lost the single-group branch/worktree exemption",
         )
 
     # --- the status file is the only progress mirror ----------------------
@@ -2438,10 +2411,10 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         self.assertIn("in the same tick as the event", p)
         self.assertIn("Before dispatching, check the status file", p)
         self.assertIn("after compaction the state is restored from it", p)
-        # groups and tasks live in the status file tables, not a sidebar list
-        status = self._skill_plain("## Collection status", "## Report")
+        # groups and items live in the status file tables, not a sidebar list
+        status = self._status()
         self.assertIn("table of groups", status)
-        self.assertIn("table of tasks", status)
+        self.assertIn("table of items", status)
 
     # --- merge policy -----------------------------------------------------
 
@@ -2450,14 +2423,14 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         self.assertRegex(d, r"only for the done groups")
         self.assertRegex(d, r"[Aa]n incomplete group is never merged")
         self.assertRegex(d, r"even if")
-        status = self._skill_plain("## Collection status", "## Report")
+        status = self._status()
         self.assertRegex(status, r"incomplete is never merged")
-        self.assertRegex(status, r"incomplete.*not merged")
+        self.assertRegex(status, r"incomplete stays incomplete .*never merged")
 
     # --- incomplete results survive cleanup -------------------------------
 
     def test_incomplete_results_preserved_through_cleanup(self):
-        a = self._skill_plain("### A —", "## Lane")
+        a = self._skill_plain("### A —", "## Report")
         self.assertRegex(a, r"removes only disposable")
         self.assertRegex(a, r"incomplete groups are never deleted")
         self.assertRegex(a, r"patch")
@@ -2466,7 +2439,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         # single-group: earlier commits stay in the current branch, no rollback
         p = self._skill_plain("### P —", "### D —")
         self.assertRegex(p, r"incomplete.*commits.*stay.*no automatic rollback")
-        fail = self._skill_plain("## Failure (semantics)", "## Collection status")
+        fail = self._failure()
         self.assertRegex(fail, r"the results are preserved")
         self.assertRegex(fail, r"refs/branches/commits \+ the patch")
 
@@ -2483,72 +2456,72 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         )
         self.assertRegex(header, r"does not extend the global AGENTS\.md")
         self.assertRegex(header, re.compile(r"without authorization", re.I))
-        params = self._skill_plain("## Parameters", "## Relation to the base PDCA")
+        params = self._skill_plain("## Parameters", "## References")
         self.assertRegex(params, r"project overlay or an explicit user request")
         self.assertRegex(params, r"skill itself grants no right")
 
-    # --- stack-neutral: per-task variant, no hard pdca-dotnet dependency -----
+    # --- stack-neutral: per-item contract/overlay, no hard .NET router -----
 
-    def test_collection_is_stack_neutral_with_per_task_variant(self):
-        # The collection must not require .NET: the cycle variant is chosen per
-        # task, so both code contracts are named and the base stays generic.
+    def test_collection_is_stack_neutral_with_a_per_item_contract(self):
+        # The collection must not require .NET and must not route by stack: the
+        # item's contract is `pdca` + overlay (none | coder | coder+.NET), chosen
+        # per item; a campaign item's overlay belongs to each concrete step.
         header = self._skill_plain("## Role", "## Collection")
-        self.assertRegex(header, re.compile(r"the cycle variant is chosen per task", re.I))
-        self.assertIn("pdca-dotnet", header)
-        self.assertIn("pdca-coder", header)
-        self.assertRegex(
-            header,
-            re.compile(r"\.NET/C#\s*→\s*pdca-dotnet, other code\s*→\s*pdca-coder"),
-        )
-        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
-        self.assertRegex(lane_sec, re.compile(r"variant chosen for the task", re.I))
-        self.assertIn("pdca-coder", lane_sec)
-        self.assertIn("pdca-dotnet", lane_sec)
-        conn = self._skill_plain("## Relation to the base PDCA", "## Fallback")
-        self.assertTrue(conn, "SKILL §Relation to the base PDCA not found")
-        self.assertRegex(conn, re.compile(r"stack-neutral", re.I))
-        self.assertIn("pdca-coder", conn)
+        self.assertIn("the contract is pdca plus the overlay", header)
+        for overlay in ("none", "coder", "coder+.NET"):
+            with self.subTest(overlay=overlay):
+                self.assertIn(overlay, header)
+        self.assertIn("A campaign item has no item-level contract", header)
+        self.assertIn("decided by pdca-planner for that step", header)
+        self.assertIn("../pdca-incremental/SKILL.md", header)
+        items = self._skill_plain("## Items: form, contract, overlay", "## Collection")
+        self.assertIn("The item carries no contract/overlay", items)
+        refs = self._skill_plain("## References", self.skill[-200:])
+        self.assertIn("pdca-coder", refs)
+        self.assertIn("pdca-dotnet", refs)
+        self.assertIn("overlays applied to the relevant work", refs)
 
-    # --- the branch chain is per task, not per group ----------------------
+    # --- the branch chain is per item, not per group ----------------------
 
     def test_branch_chain_is_per_task_not_group(self):
-        lane_sec = self._skill_plain("## Lane (work stream)", "## Git model")
+        lane_sec = self._lane_stream()
         self.assertRegex(
             lane_sec,
-            r"branch collection/<id>/task-<g>-<k> from the committed tip of the previous",
+            r"branch collection/<id>/task-<g>-<k> from the committed tip of the previous one",
         )
-        git = self._skill_plain("## Git model", "## Failure (semantics)")
+        git = self._lane_plain("## Git model", "## Failure (semantics)")
         self.assertRegex(git, r"chain of task branches")
-        self.assertRegex(git, r"next one branches from the tip of the previous")
+        self.assertRegex(git, r"next one branches from the tip of the previous one")
+        self.assertRegex(git, r"[Ww]ith one group there are no task branches")
 
     # --- group status enum: the exact original 5 values, `merged` included -
 
     def test_group_status_enum_is_exact_five_including_merged(self):
-        # User correction: the ORIGINAL, approved group enum has exactly five
-        # values and `merged` is one of them -- reached only as the
-        # `done` -> `merged` status transition.  It must NOT be renamed/relocated
-        # into a separate "merge-disposition" field, and `skipped` is not a group
-        # status value at all (only an integration note).
-        skill_status = _skill_section(self.skill, "## Collection status", "## Report")
-        skill_enum = re.search(
+        # The ORIGINAL, approved group enum has exactly five values and `merged`
+        # is one of them -- reached only as the `done` -> `merged` transition.
+        # It is not renamed into a "merge-disposition" field, and `skipped` is not
+        # a group status value at all (only an integration note).
+        status_ref = STATUS_REF_PATH.read_text(encoding="utf-8")
+        status_enum = re.search(
             r"\(`pending`\s*\|\s*`in-progress`\s*\|\s*`done`\s*\|\s*"
             r"`incomplete`\s*\|\s*`merged`\)",
-            skill_status,
+            status_ref,
         )
         self.assertIsNotNone(
-            skill_enum,
-            "SKILL §Collection status must carry the exact 5-value group enum "
+            status_enum,
+            "references/status.md must carry the exact 5-value group enum "
             "including `merged`",
         )
-        assert skill_enum is not None
-        self.assertNotIn("skipped", skill_enum.group(0))
+        assert status_enum is not None
+        self.assertNotIn("skipped", status_enum.group(0))
         # the representation is unchanged: no "merge-disposition" field anywhere
         self.assertNotIn("merge-disposition", self.skill)
-        status_plain = self._plain(skill_status)
+        self.assertNotIn("merge-disposition", status_ref)
+        status_plain = self._status()
         self.assertRegex(status_plain, r"transition is only done → merged")
         self.assertRegex(status_plain, r"incomplete is never merged")
         self.assertRegex(
-            status_plain, r"skipped is an integration note .*not a group status"
+            status_plain, r"skipped .*not a group status"
         )
 
         # the scenario matrix enumerates the same exact 5-value group enum
@@ -2569,61 +2542,77 @@ class CollectionContractSemanticsTest(unittest.TestCase):
     # --- pause of a lane is derived: no new status, no runtime mirror -----
 
     def test_lane_pause_is_derived_and_adds_no_new_status(self):
-        skill = self._plain(self.skill)
-        # `paused` co-exists with the existing group enum value `in-progress`:
-        # it is derived, not a replacement for the group enum.
-        self.assertIn("in-progress", skill)
-        self.assertIn("paused", skill, "SKILL.md lacks the derived `paused` state")
-        windows = [
-            skill[max(0, m.start() - 300): m.end() + 300]
-            for m in re.finditer("paused", skill)
-        ]
-        self.assertTrue(
-            any("in-progress" in w for w in windows),
-            "`paused` must be stated next to `in-progress` (it is derived, not a "
-            "replacement for the group enum)",
-        )
-        # the pause is derived from the lane, and adds no new statuses
-        self.assertIn("derived", skill,
-                      "SKILL.md must say the pause is derived (stem 'derived')")
-        self.assertIn("no new task/group statuses", skill,
-                      "SKILL.md must say no new statuses are introduced")
-        # negative: `blocked` is never (re)defined as a task/group status; a
-        # negated mention ("the status `blocked` does not exist") is the required wording,
-        # not a definition.
-        for line in self.skill.splitlines():
-            m = re.search(r"(?i)status\w*\s+`?blocked`?", line)
-            if not m:
-                continue
-            tail = line[m.end(): m.end() + 60].lower()
-            with self.subTest(line=line.strip()[:80]):
-                self.assertTrue(
-                    re.search(r"no\b|not\b|never|forbidden|absent", tail),
-                    "a status definition of `blocked` appeared for tasks/groups: "
-                    f"{line!r}",
-                )
+        pause = self._lane_plain("## Lane pause", "## Stale plan and schedule revision")
+        self.assertTrue(pause, "references/lane.md §Lane pause not found")
+        self.assertIn("derived", pause)
+        self.assertIn("in-progress", pause)
+        self.assertIn("no new item/group statuses are introduced", pause)
+        self.assertIn("a pause is not a new status value", pause)
+        # the status reference repeats the invariant for the item record
+        status = self._status()
+        self.assertIn("no new item/group statuses are introduced", status)
+        # negative: `blocked` is never (re)defined as an item/group status; a
+        # negated mention is the required wording, not a definition.
+        for path, raw in (
+            ("SKILL.md", self.skill),
+            ("references/lane.md", self.lane_ref),
+            ("references/status.md", self.status_ref),
+        ):
+            for line in raw.splitlines():
+                m = re.search(r"(?i)status\w*\s+`?blocked`?", line)
+                if not m:
+                    continue
+                tail = line[m.end(): m.end() + 60].lower()
+                with self.subTest(path=path, line=line.strip()[:80]):
+                    self.assertTrue(
+                        re.search(r"no\b|not\b|never|forbidden|absent", tail),
+                        "a status definition of `blocked` appeared for items/groups: "
+                        f"{path}: {line!r}",
+                    )
 
     def test_failure_recovery_writes_a_checkpoint_and_resumes(self):
-        skill = self._plain(self.skill)
+        corpus = " ".join(
+            self._plain(raw)
+            for raw in (self.skill, self.lane_ref, self.status_ref)
+        )
         for token in ("checkpoint", "resume", "incomplete", "group-stop", "met"):
             with self.subTest(token=token):
                 self.assertIn(
-                    token, skill,
-                    f"SKILL.md lacks the recovery token {token!r}",
+                    token,
+                    corpus,
+                    f"the contract family lacks the recovery token {token!r}",
                 )
 
     def test_final_disposition_is_explicit_and_only_accepted_met_is_done(self):
-        skill = self._plain(self.skill)
-        self.assertIn("checkpoint", skill,
-                      "SKILL.md lacks the recovery checkpoint (paired with the "
+        corpus = " ".join(
+            self._plain(raw) for raw in (self.skill, self.lane_ref, self.status_ref)
+        )
+        self.assertIn("checkpoint", corpus,
+                      "the contract lacks the recovery checkpoint (paired with the "
                       "explicit final disposition)")
-        self.assertIn("explicit", skill,
-                      "SKILL.md must require an explicit final disposition "
-                      "(stem 'explicit')")
-        self.assertIn("only by an accepted", skill,
-                      "SKILL.md must state that only an accepted `met` closes "
-                      "work ('only an accepted')")
-        self.assertIn("met", skill)
+        self.assertIn("explicit", corpus,
+                      "the contract must require an explicit final disposition")
+        self.assertIn("only by an accepted", corpus,
+                      "the contract must state that only an accepted `met` closes "
+                      "work ('only by an accepted')")
+        self.assertIn("met", corpus)
+
+    def test_campaign_outcome_routing_is_in_the_status_reference(self):
+        status = self._status()
+        self.assertIn("Routing campaign outcomes", status)
+        for outcome in ("preparation_state=pending", "met (accepted)",
+                        "unreachable, the route is exhausted"):
+            with self.subTest(outcome=outcome):
+                self.assertIn(outcome, status)
+        self.assertIn("done is given only by an accepted met", status)
+        self.assertIn("blocked/stopped are a checkpoint", status)
+
+    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
+    def test_deployed_runner_mirrors_the_shipped_asset(self):
+        self.skipTest(
+            f"{SKIP_HOST_NOT_MIGRATED}: deployed {LANE_PATH} still carries the "
+            "legacy execution_kind routing"
+        )
 
 
 # ---------------------------------------------------------------------------

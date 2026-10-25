@@ -52,25 +52,42 @@ class RunnerAssetTest(unittest.TestCase):
         raw = read(ASSET)
         self.assertRegex(raw, r'(?ms)^\s*task:\n\s+"?\*"?:\s*deny$')
 
-    def test_runner_declares_execution_kind_and_the_lane_mode(self):
-        # AC01/AC11: one canonical runner serves both execution kinds; the mode is
-        # an explicit field, never a second agent layer.
+    def test_runner_declares_the_form_and_the_family_contexts(self):
+        # One canonical runner serves every form; the item form (`form=cycle` /
+        # `form=campaign`) plus the dispatch selection rule are explicit inputs,
+        # never a second agent layer.
         raw = read(ASSET)
-        for token in ("execution_kind", "collection-lane", "step orchestrator"):
+        for token in ("form=cycle", "form=campaign", "campaign-control",
+                      "cycle-control", "collection-lane"):
             with self.subTest(token=token):
-                self.assertIn(token, raw, f"asset lacks the mode token {token!r}")
+                self.assertIn(token, raw, f"asset lacks the scope token {token!r}")
         self.assertIn("dispatch", raw)
         self.assertTrue(
             "fail closed" in raw or "fail-closed" in raw,
-            "asset must fail closed (or fail-closed) on an unknown execution kind",
+            "asset must fail closed on an unresolvable contract",
         )
+
+    def test_runner_carries_no_legacy_routing_fields(self):
+        raw = read(ASSET)
+        for legacy in ("execution_kind", "selected_variant"):
+            with self.subTest(legacy=legacy):
+                self.assertNotIn(
+                    legacy, raw,
+                    f"the asset still routes on the removed field {legacy!r}",
+                )
+
+    def test_runner_holds_the_campaign_inline_and_routes_the_stop(self):
+        raw = read(ASSET)
+        self.assertIn("inline in your own session", raw)
+        self.assertIn("The next step starts **only on the planner's decision**", raw)
+        self.assertIn("record the STOP **without a new planner call**", raw)
 
     def test_runner_adds_no_agent_layers_and_keeps_the_family_roles(self):
         raw = read(ASSET)
         self.assertIn(
-            "execution_kind",
+            "campaign-control",
             raw,
-            "the mode field and the no-extra-layer rule are one boundary (AC01)",
+            "the campaign context and the no-extra-layer rule are one boundary",
         )
         for layer in ("campaign-agent", "cycle-agent"):
             with self.subTest(layer=layer):

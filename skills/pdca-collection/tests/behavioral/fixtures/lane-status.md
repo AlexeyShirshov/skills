@@ -7,9 +7,9 @@
 
 ## Units
 
-| id | brief | execution_kind | plan_state | preparation_state | selected_variant | cycle_id | disposition | preparation_ref | campaign_ref |
+| id | brief | form | plan_state | preparation_state | contract+overlay | cycle_id | disposition | preparation_ref | campaign_ref |
 |---|---|---|---|---|---|---|---|---|---|
-| T1 | add `mul(a, b)` to `calc.py` with a doctest | cycle | ready | — | pdca-coder | calc-mul-t1-add-mul/1 (N=1) | finalized | — | — |
+| T1 | add `mul(a, b)` to `calc.py` with a doctest | cycle | ready | — | `pdca` + `coder` | calc-mul-t1-add-mul/1 (N=1) | finalized | — | — |
 
 ## Groups
 
@@ -19,15 +19,15 @@
 
 ## Tasks
 
-| id | group | branch | status | plan_state | selected_variant | cycle_id | status_path | plan_revision | baseline ref | footprint / requirements / prerequisites | reason + patch | task status file |
+| id | group | branch | status | plan_state | contract+overlay | cycle_id | status_path | plan_revision | baseline ref | footprint / requirements / prerequisites | reason + patch | task status file |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| T1 | G1 | main (current; no task branch) | done | ready | pdca-coder | calc-mul-t1-add-mul/1 | .pdca/status/collection-calc-mul.md | r=1 | 639e101 (initial) / calc.py | footprint: `calc.py` only (uncertainty: doctest expected-output formatting); predecessors: none; prerequisites: Python 3, clean main, existing calc.py | — | .pdca/status/t1-add-mul-1.md |
+| T1 | G1 | main (current; no task branch) | done | ready | `pdca` + `coder` | calc-mul-t1-add-mul/1 | .pdca/status/collection-calc-mul.md | r=1 | 639e101 (initial) / calc.py | footprint: `calc.py` only (uncertainty: doctest expected-output formatting); predecessors: none; prerequisites: Python 3, clean main, existing calc.py | — | .pdca/status/t1-add-mul-1.md |
 
 ## Collection decisions
 
 | when (UTC) | decision | by | evidence |
 |---|---|---|---|
-| 2026-10-21T18:03:10Z | Collection PLAN: T1 = `cycle`, variant `pdca-coder` (Python = other code); slug `t1-add-mul`; exactly one unit, no campaign | pdca-planner | planner decision returned to primary |
+| 2026-10-21T18:03:10Z | Collection PLAN: T1 = `cycle` with the contract `pdca` + the overlay `coder` (Python = code); slug `t1-add-mul`; exactly one item, no campaign | pdca-planner | planner decision returned to primary |
 | 2026-10-21T18:03:10Z | Collection bootstrap in autonomous mode; one group expected; no worktree/branches before the ALL-barrier | primary | this file |
 | 2026-10-21T18:05:55Z | COLLECTION TASK PLAN T1 accepted: own PLAN persisted, plan_state=ready, r=1, n=1; no DO started, no branch/worktree, no product code written | pdca-orchestrator -> pdca-executor | .pdca/status/t1-add-mul-1.md |
 | 2026-10-21T18:06:24Z | Clustering accepted by pdca-planner: DAG has no edges; one group G1=[T1]; one lane in the current worktree; no worktree/branch/merge; revision vector <1>, attempt <1> | pdca-planner -> pdca-executor | this file |

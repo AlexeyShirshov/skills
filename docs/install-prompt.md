@@ -30,9 +30,9 @@ PROFILE=
   `1`/`2` pin the adapter (must match detection; unknown or mismatch → ask). Ignored for other hosts.
 - `SKILLS_ROOT` / `AGENTS_ROOT` — empty means "use the host default" (table in
   `docs/install.md`); filled means "use exactly this".
-- `VARIANT` — one cycle contract: `pdca`, `pdca-coder` or `pdca-dotnet`. Install the other cycle
-  contracts too if the entry has to route to them.
-- `INSTALL_COLLECTION` / `INSTALL_INCREMENTAL` — install the two top-level contracts.
+- `VARIANT` — the overlay chain to install on top of the base: `pdca`, `pdca-coder` or
+  `pdca-dotnet` (`pdca` is always installed — it is the single entry and the cycle itself).
+- `INSTALL_COLLECTION` / `INSTALL_INCREMENTAL` — install the two form contracts.
 - `PRIMARY` — the cheap primary that will drive the cycle.
 - `PROFILE` — optional host profile with model bindings; empty means "do not touch bindings".
 
@@ -56,7 +56,7 @@ PRIMARY=<имя дешёвого primary>
 PROFILE=<профиль или пусто>
 
 0. Preflight и выбор адаптера
-   - Проверь, что $SKILLS_REPO/skills/pdca-entry/SKILL.md и
+   - Проверь, что $SKILLS_REPO/skills/pdca/SKILL.md и
      $SKILLS_REPO/skills/$VARIANT/SKILL.md существуют.
    - Разреши корни по хосту (таблица — в docs/install.md §2/§3):
      opencode : skills ~/.config/opencode/skills, agents ~/.config/opencode/agents
@@ -71,22 +71,21 @@ PROFILE=<профиль или пусто>
 
 1. Скиллы
    - Скопируй из $SKILLS_REPO/skills/ в $SKILLS_ROOT каталоги целиком:
-     pdca-entry, $VARIANT, а также pdca-collection и pdca-incremental, если соответствующий
+     pdca, $VARIANT, а также pdca-collection и pdca-incremental, если соответствующий
      INSTALL_* = yes. Каталог скилла — это `SKILL.md`, `assets/` и `scripts/`, если скилл их
-     поставляет; `tests/` и генераторы диаграмм для рантайма не нужны. Если entry должен роутить
-     и в другие цикловые варианты, установи и их — иначе перечисли в отчёте, какие цели маршрута
-     отсутствуют.
+     поставляет; `tests/` и генераторы диаграмм для рантайма не нужны. База `pdca` — единственный
+     вход семейства, поэтому она нужна всегда.
    - Хелперы из `scripts/` установленного скилла — источник рантайм-копий: `pdca-executor` кладёт
      их байт-в-байт копиями в `.pdca/scripts/` проекта и запускает оттуда
      (`python3 .pdca/scripts/<helper>.py …`), а не из установленного каталога скилла.
    - Существующие каталоги с теми же именами сначала сохрани в <name>.bak-<UTC timestamp>.
    - Проверь frontmatter каждого установленного SKILL.md:
      * `name` совпадает с именем каталога;
-     * у pdca, pdca-coder, pdca-dotnet, pdca-collection, pdca-incremental скрытие из авто-выбора:
+     * у pdca-coder, pdca-dotnet, pdca-collection, pdca-incremental скрытие из авто-выбора:
        OpenCode V2 — `disable-model-invocation: true` и `metadata.opencode/autoinvoke: false`;
        OpenCode V1 — только `metadata.opencode/autoinvoke: false` (V1 не знает
        `disable-model-invocation`; если ключ есть, он безвреден — не требуй его и не добавляй);
-     * у pdca-entry этих флагов нет.
+     * у pdca этих флагов нет — он единственный авто-вызываемый скилл семейства.
    - Тело скиллов должно остаться host-агностичным: не добавляй в SKILL.md пути конкретного хоста.
 
 2. Агенты-роли
@@ -123,18 +122,23 @@ PROFILE=<профиль или пусто>
      отчёте, что осталось привязать вручную.
 
 4. Инструкции хоста
-   - Удали фразовые триггеры вида «по циклу»/«через PDCA» → pdca-coder из инструкций хоста
-     (opencode/codex: AGENTS.md; claude: CLAUDE.md; custom: файл инструкций хоста), если они там есть.
+   - Убедись, что фразовые триггеры вида «по циклу»/«через PDCA» ведут в `pdca`, а не в оверлей
+     или форму (`pdca-coder`/`pdca-dotnet`/`pdca-collection`/`pdca-incremental`); если в инструкциях
+     они привязаны к другому скиллу, исправь это (opencode/codex: AGENTS.md; claude: CLAUDE.md;
+     custom: файл инструкций хоста).
    - Оставь одну нейтральную строку: «Семейство PDCA: единственный авто-вызываемый скилл —
-     `pdca-entry`; остальные контракты загружаются только по явному id или через handoff зонтика.»
-   - Если в инструкциях сказано, что драйвер сам выбирает вариант, замени на «вариант называет
-     диспетчеризующий скилл и передаёт драйверу как `selected_variant`».
+     `pdca`; он же единственный вход и весь цикл. `pdca-coder`/`pdca-dotnet` — оверлеи, а
+     `pdca-collection`/`pdca-incremental` — формы; они загружаются только по явному id или когда
+     их выберет PLAN базы.»
+   - Если в инструкциях сказано, что драйвер сам классифицирует задачу или выбирает вариант,
+     замени на «форму и оверлей решает единственный PLAN базы `pdca`; драйвер только загружает
+     названный контракт».
    - Синхронизируй $CONFIG_REPO и хостовую копию, сохранив локальные различия.
 
 5. Курирование (только если применимо)
    - Если семейство лежит прямо в $SKILLS_ROOT — keep-list не нужен, пропусти.
    - Если хост держит скиллы в отдельном pack/списке (например OpenCode skills-keep.txt) —
-     добавь туда pdca-entry и установленные контракты и пересобери pack скриптом хоста.
+     добавь туда pdca и установленные контракты и пересобери pack скриптом хоста.
    - Если правишь `skills` в opencode.json: V1 — `{ "paths": [...], "urls": [...] }`,
      V2 — один массив `[ ... ]`; не смешивай формы в одном файле.
 
@@ -143,14 +147,14 @@ PROFILE=<профиль или пусто>
      видны) и `opencode debug config` (`experimental.subagent_depth` виден в секции `experimental`;
      само значение — не проверка цепочки).
    - opencode V1: перезапусти TUI/приложение (команды `service` в V1 нет); проверь
-     `opencode agent list` (все роли и runner видны) и что `pdca-entry` виден в списке скиллов.
+     `opencode agent list` (все роли и runner видны) и что `pdca` виден в списке скиллов.
      `debug agents`/`debug config` — V2-only, в V1 их не требуй.
    - claude: новая сессия, `/agents` перечисляет субагентов.
    - codex/dsh/custom: перезапуск/новая сессия по правилам хоста и его список агентов.
-   - Проверь, что pdca-entry виден модели для авто-выбора, а остальные контракты — только по
-     явному id/имени.
-   - Smoke: вызови pdca-entry на тривиальной задаче; убедись, что он назвал маршрут и передал
-     выбранный контракт (в autonomous — как selected_variant).
+   - Проверь, что `pdca` виден модели для авто-выбора, а `pdca-coder`, `pdca-dotnet`,
+     `pdca-collection`, `pdca-incremental` — только по явному id/имени.
+   - Smoke: вызови `pdca` на тривиальной задаче; убедись, что единственный PLAN назвал форму и
+     (для кодовой работы) оверлей, а дальше цикл пошёл по этому решению.
    - Preflight: проверь разрешимость обязательных ролей (без dummy substantive work — никаких
      пробных правок, пробных задач и фиктивных шагов), доступность вложенной делегации драйверу,
      `pdca-orchestrator` как субагента, ребро `escalate → scout` и загружаемость контракта шага.

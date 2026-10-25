@@ -24,6 +24,9 @@ REPO = Path(__file__).resolve().parents[3]
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts/validate_inner_loop.py"
 SKILL = SKILL_DIR / "SKILL.md"
+# The .NET text is an overlay: the executable inner-loop wiring lives in SKILL.md
+# plus the phase references it loads, so the contract corpus is the union.
+REFERENCE_DIR = SKILL_DIR / "references"
 EN_CODER = SKILL_DIR / "assets/opencode-agents/pdca-executor.md"
 SELECTOR = "FullyQualifiedName~Foo.Tests.BarTests"
 SELECTOR_2 = "FullyQualifiedName~Shared.Tests.ContractTests"
@@ -860,16 +863,20 @@ def _norm(text):
 
 
 class ContractWiringTests(unittest.TestCase):
-    """Contract-wiring guards: the SKILL must carry the executable inner-loop gate.
+    """Contract-wiring guards: the contract must carry the executable inner-loop gate.
 
-    Rule-presence only, tied to real content: reads the sibling ``SKILL.md`` as
-    text (path relative to this test file) and asserts the validator wiring is
-    stated.  It never executes a model or the PDCA cycle.
+    Rule-presence only, tied to real content: reads the sibling ``SKILL.md`` plus the
+    phase references it loads (the .NET overlay keeps the bulky gate text in
+    ``references/plan.md`` / ``references/check.md``) and asserts the validator
+    wiring is stated.  It never executes a model or the PDCA cycle.
     """
 
     @classmethod
     def setUpClass(cls):
-        cls.raw = SKILL.read_text(encoding="utf-8")
+        cls.raw = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in [SKILL] + sorted(REFERENCE_DIR.glob("*.md"))
+        )
         cls.text = _norm(cls.raw)
 
     def assert_contract_wired(self, skill_text):
@@ -907,7 +914,7 @@ class ContractWiringTests(unittest.TestCase):
         # E10: integration is boundary-only; unit runs are unlimited and the
         # filter is not the classification criterion.
         self.assertIn(
-            "integration runs happen only at the do → check boundary", text
+            "integration runs happen at the do → check boundary", text
         )
         self.assertIn("unit runs are unlimited", text)
 
@@ -939,7 +946,7 @@ class ContractWiringTests(unittest.TestCase):
     def test_negative_dispatch_refusal_removed_detected(self):
         self._assert_mutation_detected(
             self.raw.replace(
-                "without it the orchestrator must NOT dispatch the brief", ""
+                "without it the driver must NOT dispatch the brief", ""
             )
         )
 
@@ -951,15 +958,15 @@ class ContractWiringTests(unittest.TestCase):
     def test_negative_boundary_once_removed_detected(self):
         self._assert_mutation_detected(
             self.raw.replace(
-                "Integration runs happen only at the DO → CHECK boundary",
-                "Integration runs may happen anywhere in the cycle",
+                "integration runs\n  happen at the DO → CHECK boundary",
+                "integration runs may happen anywhere in the cycle",
             )
         )
 
     def test_negative_unit_unlimited_removed_detected(self):
         # The phrase wraps across lines in the raw Markdown; mutate it as written.
         self._assert_mutation_detected(
-            self.raw.replace("Unit runs are\n  unlimited**", "Unit runs are\n  capped**")
+            self.raw.replace("Unit runs are unlimited", "Unit runs are capped")
         )
 
     def test_negative_test_scope_phrase_removed_detected(self):
@@ -2655,10 +2662,12 @@ class SkillBriefExampleTest(unittest.TestCase):
     the loop: extract the example and run it through the real validator.
     """
 
+    REFERENCE = REFERENCE_DIR / "plan.md"
+
     @staticmethod
     def _example() -> dict:
-        text = SKILL.read_text(encoding="utf-8")
-        section = text.index("### DO brief: mandatory `test scope`")
+        text = SkillBriefExampleTest.REFERENCE.read_text(encoding="utf-8")
+        section = text.index("### Mandatory `test scope` envelope")
         start = text.index("```json", section)
         body_start = text.index("\n", start) + 1
         end = text.index("```", body_start)

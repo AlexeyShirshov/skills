@@ -1,10 +1,15 @@
 """Install docs: the checkout commands cover the whole family and ship the runtime helpers.
 
+The family is exactly five skills (`skills/pdca*/SKILL.md`): the base/entry `pdca`, the
+two overlays (`pdca-coder`, `pdca-dotnet`) and the two forms (`pdca-collection`,
+`pdca-incremental`).  `pdca-entry` was deleted, so an install command, an `npx` list or a
+prose sentence that still mentions it is a stale artefact — a fresh host would look for a
+skill that no longer exists.
+
 Guards two install defects:
 
-* the global "from a checkout" copy listed five contracts and silently dropped
-  `pdca-entry` (the umbrella), so a fresh host had nothing to route through;
-* the install docs claimed that only `SKILL.md` + `assets/` travel and that nothing
+* an install list (checkout `cp`, README `npx`) that silently drops one of the five;
+* the install docs claiming that only `SKILL.md` + `assets/` travel and that nothing
   else needs installing, while the helpers under the skill's `scripts/` are the
   source of the byte-identical copies the executor stages into the project's
   `.pdca/scripts/`.
@@ -30,6 +35,9 @@ REPO = Path(__file__).resolve().parents[3]
 SHIPPED = sorted(
     path.parent.name for path in REPO.glob("skills/pdca*/SKILL.md")
 )
+EXPECTED_SHIPPED = [
+    "pdca", "pdca-coder", "pdca-collection", "pdca-dotnet", "pdca-incremental",
+]
 
 CHECKOUT_DOCS = ("README.md", "docs/install.md", "docs/ru/install.md")
 INSTALL_FILES = ("docs/install.md", "docs/ru/install.md", "docs/install-prompt.md")
@@ -168,6 +176,24 @@ def numbered_step(text: str, number: int, next_number: int) -> str:
         return ""
     end = re.search(r"(?m)^%d\.\s" % next_number, text[start.start():])
     return text[start.start():start.start() + end.start()] if end else text[start.start():]
+
+
+class ShippedFamilyTest(unittest.TestCase):
+    def test_shipped_family_is_the_five_expected_skills(self) -> None:
+        self.assertEqual(EXPECTED_SHIPPED, SHIPPED)
+
+    def test_docs_do_not_mention_the_removed_umbrella(self) -> None:
+        problems = [
+            rel for rel in CHECKOUT_DOCS + INSTALL_FILES if "pdca-entry" in read(rel)
+        ]
+        self.assertEqual([], problems, "stale `pdca-entry` mention in %r" % (problems,))
+
+    def test_readme_documents_installed_role_assets(self) -> None:
+        # The install is not only SKILL.md: the roles and the runner travel with it.
+        text = read("README.md")
+        for role in ("pdca-orchestrator", "pdca-planner", "pdca-executor", "pdca-check"):
+            with self.subTest(role=role):
+                self.assertIn(role, text)
 
 
 class CheckoutCommandTest(unittest.TestCase):

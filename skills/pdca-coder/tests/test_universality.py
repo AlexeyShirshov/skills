@@ -39,7 +39,7 @@ class UniversalityTest(unittest.TestCase):
     # --- toolchain/lens-selection model ----------------------------------
 
     def test_lens_selection_section_present(self):
-        self.assertIn("PLAN selects the toolchain and lenses", self.skill)
+        self.assertIn("the toolchain and the review lenses are selected by PLAN", self.skill)
         self.assertIn("The cycle is stack-agnostic", self.skill)
 
     def test_five_step_lens_selection_model(self):

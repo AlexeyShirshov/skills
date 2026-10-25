@@ -15,7 +15,7 @@ mutations that a contract violation would produce.
 | Probe | Input | What must hold |
 |---|---|---|
 | `gap` | three units; `T2` needs a metric/recipe/target that the user reserved and never supplied | `T2` stays a gap (`plan_state`/`preparation_state` not ready, no `ready` placeholder); the ALL-barrier fails; no DAG, group, worktree, branch, lane or product edit |
-| `campaign` | `U1` campaign (fixed recipe/target, unknown information-dependent path) + `U2` a simple cycle; no autocommit right | `U1` is `execution_kind=campaign` with a nine-point frame, `preparation_state=ready` and one `preparation_ref`; no unit-level variant, no baseline, no runtime status, no step plans; the barrier passes and D leaves no lane behind the preflight blocker |
+| `campaign` | `U1` campaign (fixed recipe/target, unknown information-dependent path) + `U2` a simple cycle; no autocommit right | `U1` has `form=campaign` with the immutable preparation document (mandatory blocks), `preparation_state=ready` and one `preparation_ref`; no item-level contract, no baseline, no runtime status, no step plans; the barrier passes and D leaves no lane behind the preflight blocker |
 | `lane` | one task, autonomous mode | after the barrier the group is driven through DO by `pdca-orchestrator` (nested roles), the product changes and the unit reaches `done`/`merged`; a flat-primary fallback is a failure |
 
 ## Prerequisites

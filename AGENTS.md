@@ -41,6 +41,6 @@ The host config is `~/.config/opencode`.
 ## What is vendored
 
 `config/tools/vendor-skills.mjs` in the snapshot lists the items (`ITEMS`): skills `pdca`,
-`pdca-entry`, `pdca-coder`, `pdca-collection`, `pdca-dotnet`, `pdca-incremental` and plugins
+`pdca-coder`, `pdca-collection`, `pdca-dotnet`, `pdca-incremental` and plugins
 `git-status`, `zen-failover`. A new skill/plugin reaches the snapshot only after adding it to
 that list — and only after it exists here, committed and pushed.

@@ -8,8 +8,8 @@ is that the *artifacts* land where the contract says they do:
 
 * ``gap``      — a unit whose plan cannot be made stays a gap; the ALL-barrier
                  fails, and no DAG, group, lane, branch or product edit happens;
-* ``campaign`` — a campaign unit is prepared (frame + ref) during phase P next
-                 to the cycle units, with no baseline/runtime/step plans yet;
+* ``campaign`` — a campaign item is prepared (charter + ref) during phase P next
+                 to the cycle items, with no baseline/runtime/step plans yet;
 * ``lane``     — after the barrier a single group is driven through DO by
                  ``pdca-orchestrator`` (needs ``experimental.subagent_depth>=2``
                  in the sandbox).
@@ -45,7 +45,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import checks  # noqa: E402  (sibling module, not a package)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-SKILLS = ("pdca", "pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental", "pdca-entry")
+# pdca-entry was folded into the base `pdca` skill (single public entry).
+SKILLS = ("pdca", "pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental")
 AGENT_SET = "pdca-coder"  # the collection's base variant (identical base for .NET)
 AGENTS = ("pdca-orchestrator", "pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate", "pdca-scout")
 

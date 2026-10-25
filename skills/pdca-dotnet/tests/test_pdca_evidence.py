@@ -637,7 +637,7 @@ class UsageTests(FixtureCase):
 class MinimumManifestTests(FixtureCase):
     """The documented minimum manifest is genuinely usable by *both* mechanical gates.
 
-    §"Frozen evidence manifest" of ``SKILL.md`` states the joint requirement of
+    §"Frozen evidence manifest" of ``references/plan.md`` states the joint requirement of
     ``validate_inner_loop.py manifest`` (row/evidence shape + coverage) and
     ``pdca_evidence.py lint`` (frozen-tree binding).  A hand-written minimum built from
     that list must pass both, every *required* field must be rejected by its owning gate
@@ -646,7 +646,9 @@ class MinimumManifestTests(FixtureCase):
     guard below mirrors the two helpers, not a new contract.
     """
 
-    SKILL = os.path.join(os.path.dirname(HERE), "SKILL.md")
+    # The frozen-manifest minimum lives in the PLAN reference now (the .NET text is
+    # an overlay and keeps only a pointer); the anchor and its content are unchanged.
+    SKILL = os.path.join(os.path.dirname(HERE), "references", "plan.md")
 
     def _minimum(self):
         footprint = ["tool.py", "notes.md"]

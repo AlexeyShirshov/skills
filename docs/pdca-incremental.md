@@ -44,7 +44,7 @@ These are two planning modes, not "with a collection and without one":
 | plan | all tasks at once, ALL-barrier | the current step only |
 | unit | a task with its own goal/acceptance | an increment: goal + floor + measurement |
 | next step | from the plan | from the result of the previous measurement |
-| failure | group-stop, the rest are not executed | `repair` of one step, the campaign continues |
+| failure | group-stop, the rest are not executed | a loop-back of the same step, the campaign continues |
 | parallelism | an execution mode (one lane is a normal degradation), not an entry condition | no, sequential by nature |
 
 This is not movement at random: every step has a goal, a floor and a credited measurement, and the next
@@ -102,9 +102,8 @@ consequences (one lane, commit policy, pause as a checkpoint) are covered in §3
 3. **Increment floor** — the minimum gain that is worth paying for a full cycle. The step target =
    accepted baseline + floor; the floor is a lower bound, not a ceiling.
 4. **Baseline chain** — the input of step N+1 is only the last **accepted** number. No accepted
-   number — no next step. A `repair` advances the baseline from the last accepted baseline once; the
-   original increment stays `not accepted` and its delta is never credited, while `verify` does not
-   move the baseline.
+   number — no next step. A revised step that is finally accepted advances the baseline from the last
+   accepted one; the rejected candidate stays `not accepted` and its delta is never credited.
 5. **One credited measurement per step** — a red result is not re-taken "for luck"; a replacement is
    admissible only on objective invalidity and is archived.
 6. **Goals are opened, not planned in advance** — first a fresh gap map, then selection by expected
@@ -119,35 +118,37 @@ consequences (one lane, commit policy, pause as a checkpoint) are covered in §3
 `Deferred` with triggers, `Blockers`, `Protected/foreign`, `Tickets`, `Stop verdict`. The step table is
 append-only; when the status and the evidence disagree, the evidence wins.
 
-Steps come in three kinds: `increment` (an ordinary gain), `repair` (a new cycle at the same target
-after an unaccepted step, `parent = N`) and `verify` (an integral gate without a gain). More in §4.2.
+A step is a bounded campaign unit with an observable result and a stop condition — there are no step
+"kinds". A shortfall is a **loop-back of the same step identity** (a corrected brief, `r`/`n` per the
+base rules), not a second kind of step and not "the next step with the shortfall"; a genuinely distinct
+step preserves history, state and budgets. The final whole-goal check is **not** a step: its brief and
+its pre-set stop condition are issued at the last step boundary. More in §4.2.
 
 **Stopping** is explicit and records the remainder:
 
 | status | meaning |
 | --- | --- |
-| `met` | the predicate is true on the **accepted** measurement **and** all due mandatory `verify` (final and periodic) passed on the current accepted snapshot; the only success |
+| `met` | the whole-goal check passed: the predicate is true on the **accepted** state, no carrying claim blocks and the original requirements are verified; the only success |
 | `unreachable` | the remainder is proven with numbers for every cluster and redistributed |
 | `blocked` | an external blocker: a ticket, the environment, access |
 | `stopped` | budget, a limit or a user stop; the remainder is preserved for continuation |
+| `limited` | a carrying-claim block removed by an explicit narrowing of the result inside the original goal |
 
-`met` needs both halves: an accepted goal measurement and every mandatory `verify` that is due at
-that point, on the same accepted snapshot. A partial check, or a final `verify` promised for later,
-does not give `met`. If the **baseline already satisfies the goal**, no fictitious increment is
-created. If a mandatory `verify` is declared, it runs on that snapshot; `met` follows only after the
-goal is accepted by an independent `pdca-check` against the goal criteria **and** all due
-gates/`verify` pass. Without a mandatory `verify`, the same independent `pdca-check` accepts the
-baseline against the goal criteria (never a DO/orchestrator self-accept), and only then is `met`
-recorded. A red `verify` follows the ordinary `repair`/`blocked` route; `unreachable` requires a
-`pdca-planner` proof of impossibility in numbers, never an automatic step from a red `verify`.
+`met` needs the whole-goal check, combined with the increment's check or run separately: a set of
+accepted increments and PASS on every mechanical row does **not** prove the whole goal, and a partial
+check does not give `met`. If the **baseline already satisfies the goal**, no fictitious increment is
+created: the baseline goes to an independent `pdca-check` against the goal criteria (never a
+DO/orchestrator self-accept), and only then is the campaign closed. A red whole-goal check is a planner
+loop-back or `blocked`; `unreachable` requires a `pdca-planner` proof of impossibility in numbers,
+never an automatic step from a failed check.
 
 ### 3.1 Roles, tiers and authority
 
 The campaign's blocks are not anonymous steps: each has an owning role, a tier and authority. The
 skill names roles; the host binds them to agents and models through the profile's `agent` block, and
 the skill contains no model id. Campaign tiers: **cheap** — execution and facts, **medium** — decisions
-and the verdict. **strong** (`pdca-escalate`) is not a campaign role: it is invoked by the cycle
-variant inside a step by its own triggers, and the campaign only receives the result.
+and the verdict. **strong** (`pdca-escalate`) is not a campaign role: it is invoked by the step's
+own cycle through its own triggers (the overlay included), and the campaign only receives the result.
 
 | block | role | tier | authority | output |
 | --- | --- | --- | --- | --- |
@@ -155,7 +156,7 @@ variant inside a step by its own triggers, and the campaign only receives the re
 | BOOTSTRAP — baseline | `pdca-executor` | cheap | edit/bash on the permitted surface | the exact baseline fraction |
 | DISCOVER | `pdca-scout` | cheap | read-only: code, measurement artifacts, git | gap map, ranked seed |
 | BRIEF | `pdca-planner` | medium | read-only, no delegation | the six blocks of the brief |
-| STEP N | `pdca-orchestrator` | cheap | dispatch-only; in the collection mode the same runner leads the campaign and the step's cycle inline (§3.2); inside — the variant's roles (pdca-planner/pdca-check — medium, pdca-executor — cheap, escalate — strong by triggers) | step report + evidence |
+| STEP N | `pdca-orchestrator` | cheap | dispatch-only; in the collection mode the same runner leads the campaign and the step's cycle inline (§3.2); inside — the base roles (pdca-planner/pdca-check — medium, pdca-executor — cheap, escalate — strong by triggers) | step report + evidence |
 | ACCEPT | `pdca-check` | medium | read-only + the step's evidence | verdict by rows, the credited number |
 | DECIDE | `pdca-planner` | medium | read-only | next seed, redistribution or a stop recommendation |
 | ACT/STOP | `pdca-executor` + primary | cheap | pdca-executor: status/docs; primary: only the campaign status file | the closed campaign record |
@@ -165,36 +166,37 @@ not execute and does not delegate; check does not edit and does not judge from a
 not recommend; the orchestrator does not write code; escalate (strong) lives inside a step and only
 decides. A missing role is a resource blocker; the flat-primary fallback is marked with `Notice:`.
 
-### 3.2 A campaign as a collection unit
+### 3.2 A campaign as a collection item
 
-A campaign is not only a standalone mode. It can be a **collection unit**: such a unit's execution
-form is `execution_kind=campaign`, and this field is not mixed with `selected_variant`
-(`skills/pdca-collection/SKILL.md §Collection units and the execution form`). The form is decided by
-the collection PLAN (`pdca-planner`); the runner only reads the ready value and does not classify the
-task.
+A campaign is not only a standalone mode. It can be a **collection item** with the form `campaign`,
+and the form is not the same value as the item's contract and overlay — a campaign item has none of
+those at item level (`skills/pdca-collection/SKILL.md §Items: form, contract, overlay`). The form is
+decided by the collection PLAN (`pdca-planner`); the runner only reads the ready value and does not
+classify the task.
 
 **Two execution models.** Both use the same roles; they differ in the route, not in the role set.
 
 | model | route | who holds the state |
 | --- | --- | --- |
-| standalone | cheap primary → step orchestrator (`pdca-orchestrator`) → the variant's roles | the primary: the campaign state machine, one delegated step per call |
-| collection-lane | collection primary → collection lane driver (`pdca-orchestrator`, `mode=collection-lane`) → the variant's roles | the same driver: the campaign state machine and the current step's cycle inline, in one lane session |
+| standalone | cheap primary → step orchestrator (`pdca-orchestrator`) → the base roles | the primary: the campaign state machine, one delegated step per call |
+| collection-lane | collection primary → collection lane driver (`pdca-orchestrator`, `mode=collection-lane`) → the base roles | the same driver: the campaign state machine and the current step's cycle inline, in one lane session |
 
 There is no separate campaign agent and no new `Task` level; the collection primary does not become the
 campaign's executor — it keeps the collection status, not the step. A collection gives the campaign
 neither parallel steps nor crediting a number without ACCEPT
-(`skills/pdca-incremental/SKILL.md §Role`). The standalone model is unchanged.
+(`skills/pdca-incremental/SKILL.md §Ownership`). The standalone model is unchanged.
 
-**The variant belongs to the step, not to the campaign.** A campaign unit has no `selected_variant` of
-its own and no "campaign domain". Each step gets a concrete variant from the step's content — `.NET/C#`
-→ `pdca-dotnet`, other code → `pdca-coder`, otherwise `pdca` — and it is fixed in the durable record
+**The contract and the overlay belong to the step, not to the campaign.** A campaign item has no
+item-level contract or overlay and no "campaign domain". Each step gets them from the step's content —
+`.NET/C#` → the `coder+.NET` overlay (`pdca-dotnet`, inheriting `pdca-coder`), other code → `coder`,
+otherwise `none` — and they are fixed in the durable record
 (the frame/status), not chosen by the runner
 (`skills/pdca-incremental/SKILL.md §3. Step execution`). The dispatch policy belongs to the loaded
 campaign contract; the runner executes it and does not classify the task.
 
 **The frame is a separate artifact, not a copy in the status.** Campaign preparation lives in a
 separate immutable/revisioned **preparation document** —
-`.pdca/<collection-id>/units/<unit-id>/preparation.md` — and at the barrier the unit presents
+`.pdca/<collection-id>/items/<item-id>/preparation.md` — and at the barrier the item presents
 `preparation_state=ready` and a single authoritative `preparation_ref` of the form `<path>@r<k>`. The
 frame has nine items: the goal predicate; the target/floor criteria (concrete values or rules for
 deriving them approved before evidence); the step acceptance criteria and the boundary of the credited
@@ -202,7 +204,7 @@ measurement; the bounds and the conservative reservation of the surface; depende
 proof of non-conflict with the schedule; promotion rules; stop rules and the bootstrap protocol;
 schedule-compatibility evidence. The campaign runtime status stores `preparation_ref` as a
 **reference**, not as a copy of the frame
-(`skills/pdca-incremental/SKILL.md §Campaign status file`); renegotiating the goal, the criteria,
+(`skills/pdca-incremental/SKILL.md §Campaign status`); renegotiating the goal, the criteria,
 the threshold or the stop rules creates a **new** immutable revision, updates the reference and keeps
 the previous one. A silent edit and the backfill of already accepted criteria are forbidden.
 
@@ -216,12 +218,12 @@ the previous one. A silent edit and the backfill of already accepted criteria ar
 
 `campaign_ref`, the pointer to the campaign runtime status, may be absent before the bootstrap and is
 mandatory after it. The barrier does not need a baseline, a `running` runtime status, future step plans,
-future step variants or a number of steps; before the barrier no lane is allocated.
+their contracts/overlays or a number of steps; before the barrier no lane is allocated.
 
 **Readiness ≠ completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
 `started`: the unit stays `pending` and never becomes `done` because the frame is ready. `done` is given
 only by an accepted `met` with an explicit `disposition=finalized`
-(`skills/pdca-collection/SKILL.md §A.1 Routing campaign outcomes`).
+(`skills/pdca-collection/references/status.md §Routing campaign outcomes`).
 
 **Pause ≠ final.** `blocked`, `stopped` and `unreachable` with an admissible next target within an
 unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays `in-progress`, and
@@ -230,16 +232,16 @@ unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays
 unsuccessful disposition and is not derived from a pause. Resume is explicit; there is no automatic
 endless retry; a pause does not reset `N`/`r`/`n`, does not grant attempts beyond the base contract and
 does not advance its group's dependent chain, while the other groups continue
-(`skills/pdca-incremental/SKILL.md §5. Stop decision`).
+(`skills/pdca-incremental/SKILL.md §Stop`).
 
 **Three different fields.** Readiness (`preparation_state`, `plan_state`), the campaign runtime status
 (`Status`) and the per-unit `disposition` (`active | paused | finalized`) are different things, and
 none of them is a task status. The lane pause is **derived** from the current unit's
 `disposition=paused` and is not stored as a separate authoritative lane field; no new task or group
-status is introduced (`skills/pdca-collection/SKILL.md §Lane (work stream)`).
+status is introduced (`skills/pdca-collection/references/lane.md §One lane = one group`).
 
 **The step's PLAN and approval.** The brief neither replaces the step's PLAN nor constitutes approval.
-In normal mode every actual step passes a full PLAN of its variant and is approved under the active
+In normal mode every actual step passes a full PLAN of its contract+overlay and is approved under the active
 contract; the approval is recorded as a durable pending approval ref, and the current unit gets
 `disposition=paused`. In autonomous mode the campaign invents no approval the contract does not require.
 
@@ -247,7 +249,7 @@ contract; the approval is recorded as a durable pending approval ref, and the cu
 collection's outer completion commit: campaign completion and unit finalization are different events.
 The external commit/branch lifecycle of the unit belongs to the collection. An explicit no-commit
 restriction that conflicts with the mandatory git model is a preflight blocker before lanes are
-allocated, not a silent override of the model (`skills/pdca-collection/SKILL.md §Git model`).
+allocated, not a silent override of the model (`skills/pdca-collection/references/lane.md §Git model`).
 
 **Recursion is forbidden.** A campaign step is only a family cycle: neither "a campaign in a campaign"
 nor "a collection inside a campaign" (nor a collection inside a collection). A campaign inside a
@@ -256,11 +258,12 @@ steps (`skills/pdca-incremental/SKILL.md §Campaign invariants`).
 
 ## 4. How it works
 
-![The pdca-incremental campaign graph: BOOT → PLAN → STEP → ACC → DEC, the DEC → PLAN loop "next step · baseline = accepted", the repair loop DEC → STEP "repair · parent N", a verify footnote and the DEC → STOP branch](../../skills/pdca-incremental/assets/diagram/incremental-state-dark.svg)
+![The pdca-incremental campaign graph: BOOT → PLAN → STEP → ACC → DEC, the DEC → PLAN loop "next step · baseline = accepted", the step exit "accept · revise · new step" and the DEC → STOP branch](../../skills/pdca-incremental/assets/diagram/incremental-state-dark.svg)
 
 *Diagram: `skills/pdca-incremental/assets/diagram/incremental-state-dark.svg`; the full layout with
-roles and tiers is `incremental-contract-dark.svg`. The lower dashed `DEC → STEP` loop is `repair`; the
-footnote at the bottom is the optional `verify`.*
+roles and tiers is `incremental-contract-dark.svg`. The step exit is the base step boundary —
+accept the increment, revise the same step or open a new one; the final whole-goal check is not a
+step.*
 
 - **Bootstrap** — `pdca-planner` fixes the goal, the recipe, the unit, the floor and the target;
   `pdca-executor` takes the baseline with the same recipe that will be used to accept steps.
@@ -268,9 +271,9 @@ footnote at the bottom is the optional `verify`.*
   of goals), `pdca-planner` assembles six blocks: goal, current state, hard constraints, scope,
   acceptance, targets. Discovery on its own is not a step's plan: the decision is made by pdca-planner.
   The split exists for authority and artifacts, not for phases.
-- **STEP N** is executed by `pdca-orchestrator`, but the campaign chooses the step's variant (`.NET` →
-  `pdca-dotnet`, code → `pdca-coder`, otherwise `pdca`) and passes it as `selected_variant`; the driver
-  does not classify the task. In a collection lane the same driver leads the step's cycle inline
+- **STEP N** is executed by `pdca-orchestrator`, but the campaign's plan declares the step's contract
+  and overlay (`.NET` → `pdca-dotnet`, code → `pdca-coder`, otherwise none) and passes them along; the
+  driver does not classify the task. In a collection lane the same driver leads the step's cycle inline
   (§3.2). The campaign does not interfere with the step's gates and does not accept the number in place
   of CHECK.
 - **ACCEPT** — `pdca-check` renders the verdict and the credited number; the primary appends the row to
@@ -325,34 +328,33 @@ A good target is a step that is realistically achieved in one or two plan revisi
 there is no approval pause between steps until the stop condition fires. If the orchestrator is
 unavailable, the flat primary drives the step itself and marks that with a `Notice:` line.
 
-### 4.2 Repair, verify and the route after a step
+### 4.2 Revise, accept, and the route after a step
 
-**Repair** is not "one more attempt" and not a revision inside a step. Revision `r+1` lives in the same
-cycle and creates no row in the status. `repair` opens when `increment` is already closed `not accepted`
-(internal `incomplete`/STOP; revisions/attempts exhausted or a different approach needed) and creates a
-new row `kind = repair`, `parent = N`:
+**Revise is not "one more attempt" and not a new step.** After the step's CHECK, one planner call at the
+boundary decides and, in the same turn, emits either a brief or a STOP. A corrected brief of the **same**
+step identity (repair/loop-back) keeps the target, recipe, threshold and floor; the rejected candidate
+stays `not accepted` with its red measurement preserved, no increment is credited for bypassing a
+failed CHECK, and the number of the step does not grow without acceptance. The step's `r`/`n` follow the
+base loop-back rules; an exhausted revision is `pdca-escalate` or `unreachable`, never a fourth attempt
+and never a silent move to "the next step with the shortfall".
 
-- the target, recipe, threshold and floor are the same; a change of goal/recipe/threshold/floor
-  is a new campaign with a new baseline;
-- the old `increment` stays `not accepted`, the red measurement is preserved, and its delta is
-  never credited twice;
-- an accepted `repair` advances the baseline from the **last accepted baseline once** (the repair's
-  accepted delta is added there, not to the unaccepted increment); `verify` does not move it;
-- one repair per failed step; a repeated failure is `pdca-escalate` or `unreachable`;
-- a recurrence of the same defect after one fix is `pdca-escalate` before a second fix.
+**A new step is distinct from revising.** History, state and the shared budgets are preserved, every
+actual cost and attempt counts, and an unaccepted red step is never converted into extra accepted
+progress. The latest step takes the whole remainder when the remainder is small.
 
-**Verify** is the campaign's integral gate, the counterpart of collection C, but not a separate
-contract: it yields no gain and does not move the baseline; in the table `target = gate`,
-`accepted = pass/fail`. It runs the campaign's full gate against the current accepted state. Its place
-is fixed at bootstrap: the campaign's end or every K steps. A failure opens `repair` of the affected
-goals or `blocked`, but does not lower the threshold. `verify` does not replace a step's ACCEPT: the
-steps' numbers remain the source of truth.
+**The final whole-goal check is not a step.** After a local step CHECK the planner, in the same turn,
+issues the final-check brief with a **pre-set completion condition**; on PASS the campaign owner records
+the STOP from that condition without a new planner call, on a non-PASS it is a planner loop-back. The
+check is local to the increment's claims and the affected invariants, not a full audit of every
+increment; it is combined with the increment's check or run separately (`skills/pdca/references/check.md`
+§Local and whole-goal checks).
 
-**The route after a step.** `accepted` → `next` or `verify` at a checkpoint. `not accepted`, but the goal
-is still reachable → `repair`. `not accepted` and the goal is proven unreachable → `unreachable` with
-evidence and a move to the next target (if the campaign allows independent goals) or `stop`. An external
-blocker → `blocked`. A step's failure does not close the remaining steps: there is no group-stop in a
-campaign, the blast radius is one step.
+**The route after a step.** `accepted` → `next`, or STOP when the whole-goal end conditions are met.
+`not accepted`, but the goal is still reachable → a revised brief of the same step. `not accepted` and
+the goal is proven unreachable → `unreachable` with evidence and a move to the next target (if the
+campaign allows independent goals) or `stop`. An external blocker → `blocked`. A step's failure does not
+close the remaining steps: there is no group-stop in a campaign, the blast radius is one step, and the
+route stays the planner's.
 
 That is also the answer to ten grilled tasks **with one campaign goal** (coverage, performance,
 cleanup): each becomes an `increment` step with its own plan, a failure of one opens `repair` only for
@@ -363,7 +365,7 @@ no group-stop here. If ten tasks have ten independent goals, that is not one cam
 ## 5. A real case: the coverage campaign in nextorm (October 2026)
 
 > The following is a **real run**, not a teaching example: ten autonomous cycles of one task, one metric
-> and not a single worktree. It shows how the .NET variant drives a long series where every next plan
+> and not a single worktree. It shows how the .NET overlay drives a long series where every next plan
 > rests on the previous measurement, and why it was driven as a chain of cycles rather than as a
 > collection.
 
@@ -394,13 +396,13 @@ counted (literal 75.48%), the gate green.
 
 ### 5.2 How the skill was pulled in
 
-The task was .NET (xunit v3, Testcontainers, `dotnet-coverage`), so the variant `pdca-dotnet` was chosen
+The task was .NET (xunit v3, Testcontainers, `dotnet-coverage`), so the overlay `pdca-dotnet` was chosen
 rather than `pdca-coder` or the domain-neutral `pdca`. On top of it the project overlay `nextorm-pdca`
 was enabled: registers, the toolchain, the cached-path performance acceptance and plan hygiene. The
 overlay does not extend the base contract's gates — it adds project-specific audit detail.
 
 In autonomous mode the cheap primary does not drive the cycle itself: it **delegates one cycle** to the
-`pdca-orchestrator` subagent and passes the variant, the goal, the state, the constraints, the scope and
+`pdca-orchestrator` subagent and passes the contract and the overlay, the goal, the state, the constraints, the scope and
 the acceptance criteria in the brief. The orchestrator goes through PLAN → DO → CHECK → ACT itself,
 writes the status file and returns a compressed report; the primary only starts the next cycle and
 retells the result without asking the user. Hence "ten cycles" means ten delegations, not ten manual
@@ -616,7 +618,7 @@ Case sources (the `nextorm` repository, not part of this repository): `.pdca/sta
 
 - The full contract — [`skills/pdca-incremental/SKILL.md`](../skills/pdca-incremental/SKILL.md); the
   campaign diagram — `skills/pdca-incremental/assets/diagram/`.
-- The cycle base — [`pdca.md`](pdca.md); the engineering variants —
+- The cycle base — [`pdca.md`](pdca.md); the engineering overlays —
   [`pdca-coder.md`](pdca-coder.md) and [`pdca-dotnet.md`](pdca-dotnet.md).
 - Batch work with independent goals — [`pdca-collection.md`](pdca-collection.md) (parallelism is a
   schedule property, not an entry condition).
@@ -625,26 +627,26 @@ Case sources (the `nextorm` repository, not part of this repository): `.pdca/sta
 ## Sources
 
 The "claim → source" map. Where they disagree, the contracts take precedence:
-`skills/pdca-incremental/SKILL.md` for the campaign and `skills/pdca-collection/SKILL.md` for
-collection units.
+`skills/pdca-incremental/SKILL.md` for the campaign, `skills/pdca-collection/SKILL.md` (with its
+`references/`) for collection items and `skills/pdca/SKILL.md` (with its `references/`) for the base.
 
 | Claim in the article | Source |
 | --- | --- |
-| The campaign role, "not a cycle variant", delegating a step to `pdca-orchestrator` with the variant chosen by the campaign | `skills/pdca-incremental/SKILL.md §Role` |
-| Roles, tiers and authority: block → role → tier → access → output; the primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate rules | `skills/pdca-incremental/SKILL.md §Roles, tiers and authority` |
-| When to choose and the distinction from `pdca-collection` (a known list by itself does not select a collection) | `skills/pdca-incremental/SKILL.md §When to choose` |
+| A form contract of the family, "not an overlay and not a second cycle"; load order over the base and the declared overlay; the campaign owner is `pdca-orchestrator` in campaign-control | `skills/pdca-incremental/SKILL.md §Form, not a second cycle · §Ownership`; `skills/pdca/SKILL.md §Control modes and the campaign owner` |
+| Roles, tiers and authority: block → role → tier → access → output; the primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate rules | `skills/pdca-incremental/SKILL.md §Ownership` |
+| When to choose and the distinction from `pdca-collection` (a known list by itself does not select a collection) | `skills/pdca/SKILL.md §Forms`; `skills/pdca-incremental/SKILL.md §Form, not a second cycle` |
 | Campaign invariants: goal/recipe, unit, floor, baseline chain, one measurement, discovery, state transfer, seriality | `skills/pdca-incremental/SKILL.md §Campaign invariants` |
-| Campaign status file: the single file, fields, append-only, evidence precedence | `skills/pdca-incremental/SKILL.md §Campaign status file` |
-| The cycle: bootstrap, discovery, the six-block brief, the step, acceptance, stop decisions, sizing | `skills/pdca-incremental/SKILL.md §Campaign cycle` |
-| Step kinds `increment`/`repair`/`verify` and the route after a step | `skills/pdca-incremental/SKILL.md §3.1. Step kinds: increment, repair, verify` |
-| Brief: six blocks, why this is the minimum, what each closes and why not fewer/more | `skills/pdca-incremental/SKILL.md §2. Step brief — pdca-planner` |
-| Floor economics and step size | `skills/pdca-incremental/SKILL.md §Economics` |
-| Red flags and recovery after compaction | `skills/pdca-incremental/SKILL.md §Red flags (self-check) · §Recovery after compaction` |
-| Autonomous mode and the flat-primary fallback with `Notice:` | `skills/pdca-incremental/SKILL.md §Autonomous mode` |
-| Composition: a campaign as a collection unit, `execution_kind` vs `selected_variant`, two execution models | `skills/pdca-collection/SKILL.md §Collection units and the execution form`; `skills/pdca-incremental/SKILL.md §Role` |
-| The frame, `preparation_ref` as a reference (not a copy), the three operations, readiness ≠ completion | `skills/pdca-collection/SKILL.md §P — per-task PLANs, the barrier, clustering`; `skills/pdca-incremental/SKILL.md §0. Bootstrap (once) — pdca-planner + pdca-executor · §Campaign status file` |
-| Pause ≠ final, per-unit `disposition`, derived lane pause, explicit resume | `skills/pdca-collection/SKILL.md §A.1 Routing campaign outcomes · §Lane (work stream)`; `skills/pdca-incremental/SKILL.md §5. Stop decision` |
-| The step's variant by content; the dispatch policy belongs to the loaded contract | `skills/pdca-incremental/SKILL.md §3. Step execution` |
-| `Commit policy: none` and the outer completion commit; a no-commit conflict is a preflight blocker | `skills/pdca-collection/SKILL.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
-| The recursion ban and "composition grants no rights" | `skills/pdca-collection/SKILL.md §Collection units and the execution form`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| Campaign status: the single file, fields, append-only, evidence precedence | `skills/pdca-incremental/SKILL.md §Campaign status`; `skills/pdca-incremental/references/status.md` |
+| The cycle: bootstrap, discovery, the six-block brief, the step, acceptance, stop decisions, sizing | `skills/pdca-incremental/SKILL.md §Campaign cycle · §Stop` |
+| A step is a bounded campaign unit with no step kinds; a shortfall is a loop-back of the same step; the final whole-goal check is not a step, and the route after a step | `skills/pdca-incremental/SKILL.md §Step boundary`; `skills/pdca/SKILL.md §Lens: probe, increment and step` |
+| Brief: six blocks, why this is the minimum, what each closes and why not fewer/more | `skills/pdca-incremental/SKILL.md §2. Step brief` |
+| Floor economics and step size | `skills/pdca-incremental/SKILL.md §Economics and sizing` |
+| Red flags and recovery after compaction | `skills/pdca-incremental/SKILL.md §Red flags (self-check) · §Recovery` |
+| Autonomous mode and the flat-primary fallback with `Notice:` | `skills/pdca/SKILL.md §Control modes and the campaign owner · §Roles and host requirements`; `skills/pdca-incremental/SKILL.md §Ownership` |
+| Composition: a campaign as a collection item (form ≠ item contract/overlay), two execution models | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay`; `skills/pdca-incremental/SKILL.md §Ownership` |
+| The frame, `preparation_ref` as a reference (not a copy), the three operations, readiness ≠ completion | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-incremental/SKILL.md §0. Bootstrap (once) · §Campaign status` |
+| Pause ≠ final, per-item `disposition`, derived lane pause, explicit resume | `skills/pdca-collection/references/status.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/references/lane.md §Lane pause`; `skills/pdca-incremental/SKILL.md §Stop` |
+| The step's contract and overlay by content; the dispatch policy belongs to the loaded contract | `skills/pdca-incremental/SKILL.md §3. Step execution` |
+| `Commit policy: none` and the outer completion commit; a no-commit conflict is a preflight blocker | `skills/pdca-collection/references/lane.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| The recursion ban and "composition grants no rights" | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | The real nextorm run: 10 steps, 64.8% → 75.49%, +4 098 branches | `.pdca/status/integration-branch-coverage-{1..10}.md` (the `nextorm` repository) |

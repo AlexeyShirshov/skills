@@ -51,6 +51,13 @@ ALLOWED_ROLES = frozenset(
     ("pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
      "pdca-orchestrator", "pdca-scout")
 )
+# The base is the family's single entry, so it legitimately *names its own
+# contracts* (forms and overlays). Those names are not roles: they are the
+# packages a PLAN may hand the work to, and the neutral contract keeps no
+# domain knowledge about them.
+FAMILY_CONTRACTS = frozenset(
+    ("pdca-coder", "pdca-dotnet", "pdca-collection", "pdca-incremental")
+)
 ROLE_TOKEN = re.compile(r"pdca-[a-z]+")
 
 # Markers of a domain example / task-type list: none may appear.
@@ -120,7 +127,7 @@ class UniversalityTest(unittest.TestCase):
         offenders = set()
         for path, raw in self.texts.items():
             for hit in ROLE_TOKEN.findall(raw):
-                if hit not in ALLOWED_ROLES:
+                if hit not in ALLOWED_ROLES and hit not in FAMILY_CONTRACTS:
                     offenders.add((str(path), hit))
         self.assertEqual(set(), offenders, "non-universal role names: %r" % sorted(offenders))
 
