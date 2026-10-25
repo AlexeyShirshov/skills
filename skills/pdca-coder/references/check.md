@@ -28,6 +28,11 @@ CHECK proceeds in two beats, so as **not to load code into the driver's context*
    code/diff into context; a missing datum goes to the gatherer. The driver executes the loop-back:
    `D:` via `pdca-executor`, the `P:` via `pdca-planner` — no manual agent switching.
 
+The CHECK brief includes the **frozen variant and priority matrices** from the approved PLAN;
+triage applies the priority/row obligations defined in `references/plan.md`
+(§PLAN owns the quality of the plan). That section is the single normative definition — this file
+only points to it and does not restate it.
+
 ## Keep CHECK within one approved PLAN
 
 The driver holds the active task, the approved PLAN and the `task_id` from `pdca-check`:

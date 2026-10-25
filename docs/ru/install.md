@@ -18,11 +18,11 @@
 
 | Скилл | Кого диспетчеризует | Ассеты ролей в поставке |
 |---|---|---|
-| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 файлов) |
-| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 файлов) |
-| `pdca-dotnet` | как `pdca-coder`, плюс линзы `dotnet-*` | `assets/opencode-agents/*.md` (7 файлов) |
-| `pdca-collection` | всё вышеперечисленное по задаче, плюс драйвер `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` |
-| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` по блокам, плюс драйвер `pdca-orchestrator` (цикл шага добавляет `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 файлов — канонический общий набор) |
+| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 файлов — 6 байт-в-байт зеркал + специалист) |
+| `pdca-dotnet` | как `pdca-coder`, плюс линзы `dotnet-*` | `assets/opencode-agents/*.md` (7 файлов — 6 байт-в-байт зеркал + специалист) |
+| `pdca-collection` | всё вышеперечисленное по задаче, плюс драйвер `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` (зеркало) |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` по блокам, плюс драйвер `pdca-orchestrator` (цикл шага добавляет `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` (зеркало) |
 
 Все поставляемые id агентов несут префикс `pdca-` и **одинаковы у базы и у оверлеев**: скилл никогда
 не перехватит уже существующих у хоста `planner`, `coder`, `scout`, `check` или `escalate`.
@@ -107,28 +107,44 @@ cp skills/pdca/assets/opencode-agents/*.md ~/.config/opencode/agents/
 cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 ```
 
-> **Одна цепочка оверлеев — один набор ассетов.** База и оба оверлея поставляют **одни и те же шесть
-> id** (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, а в
-> `pdca-coder`/`pdca-dotnet` ещё `pdca-security-auditor`) с **разными телами**: `pdca` —
-> доменно-нейтральный, `pdca-coder` выбирает тулчейн под задачу, `pdca-dotnet` несёт
-> evidence-контракт и inner-loop-гейт. Если скопировать две копии в один каталог, одна молча
-> затрёт другую. Ставьте ассеты одной цепочки — или держите один общий набор (§4).
+> **Один общий набор, генерируемые зеркала.** У шести общих ролей (`pdca-planner`, `pdca-executor`,
+> `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-orchestrator`) **один авторитетный источник**:
+> `skills/pdca/assets/opencode-agents/`. `pdca-coder` и `pdca-dotnet` поставляют байт-в-байт
+> копии этих шести (frontmatter, тело и права), а `pdca-collection`/`pdca-incremental` — только
+> такую же копию `pdca-orchestrator`. Проверка и перегенерация:
+> `python3 skills/pdca/scripts/sync_role_assets.py --check` (или `--fix`); явный allowlist никогда
+> не трогает `pdca-security-auditor` и рукописные файлы. `pdca-security-auditor` — единственная
+> роль coder/.NET, которая отличается намеренно: это специалист-сборщик фактов, а не одна из общих
+> шести. Поэтому ассеты `pdca`/`pdca-coder`/`pdca-dotnet` дают те же шесть ролей, а пакет формы
+> (`pdca-collection`/`pdca-incremental`) добавляет только оркестратор и ставится вместе с одним из
+> шестиролевых пакетов.
 
-## 4. Один общий набор, если семейств несколько
+## 4. Один авторитетный источник, хостовые адаптеры отдельно
 
-База и её оверлеи — **слои одной цепочки** (`pdca-dotnet` наследует `pdca-coder`, и оба
-добавляют к `pdca`), но их id ролей совпадают намеренно, поэтому выигрывает одна
-развёрнутая копия. Третья, более полная копия может уже лежать в конфиг-репозитории. Выберите один
-источник истины:
+База `skills/pdca/assets/opencode-agents/` — **единственный источник истины** для общих ролей.
+Копии в оверлеях генерируются из неё, а конфиг-репозиторий хоста — **адаптер**, не ещё один
+источник: никогда не копируйте роли хоста обратно в скиллы. Хостовые description, привязка
+моделей по тирам и трансляция frontmatter остаются в адаптере/профиле хоста и применяются при
+развёртывании агентов.
 
-- **одно семейство** — копируйте `assets/opencode-agents/*.md` этого скилла;
-- **общий набор хоста** — держите роли в конфиг-репозитории и механически зеркальте их в ассеты
-  скилла. Готового sync-скрипта пак не поставляет: если он нужен, держите его в конфиг-репозитории
-  и роняйте CI при расхождении. Это единственный способ не потерять молча тела `pdca-coder` на
-  .NET-хосте — и наоборот.
+- **один пакет** — копируйте `skills/pdca/assets/opencode-agents/*.md` (или эквивалентное
+  шестиролевое зеркало в `pdca-coder`/`pdca-dotnet`); если используете форму, добавьте её
+  оркестратор;
+- **CI-защита от дрейфа** — `python3 skills/pdca/scripts/sync_role_assets.py --check` падает на
+  любом отсутствующем или разошедшемся зеркале; `--fix` пишет только пути из allowlist.
+  Канонические файлы генератор не пишет.
 
-В обоих случаях роль несёт только ярлык `# tier:` и права. **`model:` в роль не пишется никогда** —
-id моделей привязывает профиль хоста (§8).
+В любом случае файлы ролей несут только метку `# tier:` и права. **Никогда не кладите `model:` в
+markdown роли** — id моделей привязывает профиль хоста (§8).
+
+> **Миграция вниз по цепочке — отдельный шаг.** Вендоринг этого исходника в конфиг-репозиторий
+> **не** обновляет уже развёрнутый хост. Текущий `sync-roles` в `opencode-config` привязан к
+> старому зеркалу `pdca-dotnet` и сравнивает настройки frontmatter — включая права, — а также
+> **уровни** заголовков, но не текст инструкций. Несовпадение уровней ещё может быть обнаружено;
+> правку только в тексте — нет, а его `--fix` сохраняет существующее тело, поэтому инструкции он
+> мигрировать не может. После commit/push/вендоринга исходника тела ролей на хосте нужно
+> мигрировать осознанно и перепроверить — не считайте, что `vendor-skills` или
+> `sync_role_assets.py --fix` их обновили.
 
 ## 5. Поставить драйвер `pdca-orchestrator`
 

@@ -219,6 +219,182 @@ class RunnerAssetTest(unittest.TestCase):
         self.assertNotIn("execution_kind", body)
 
 
+ENTRY_STAGE_RULES = (
+    "form: UNDECIDED",
+    "not a fourth context",
+    "discriminators themselves",
+    "same controller",
+    "same pending PLAN",
+    "collection owner",
+    "one bounded choice probe",
+    "bespoke checker",
+)
+
+
+def entry_stage_gaps(text: str) -> list:
+    flat = norm(text).replace("`", "").replace("*", "")
+    return [rule for rule in ENTRY_STAGE_RULES if rule not in flat]
+
+
+class EntryStageTest(unittest.TestCase):
+    """A fresh dispatch has one pre-decision stage before the existing contexts.
+
+    Presence and mutation checks only: no model, agent or cycle is executed here.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.raw = read(asset_path("pdca", "pdca-orchestrator"))
+        cls.body = norm(cls.raw).replace("`", "").replace("*", "")
+
+    def test_entry_stage_comes_before_the_three_contexts(self):
+        self.assertIn("## Entry stage", self.raw)
+        self.assertLess(self.raw.index("## Entry stage"),
+                        self.raw.index("The same asset has three execution contexts"))
+        self.assertIn("not a fourth context", self.body)
+
+    def test_fresh_dispatch_is_form_undecided(self):
+        self.assertIn("contract: pdca", self.body)
+        self.assertIn("form: UNDECIDED", self.body)
+        self.assertIn("one goal or deliverable does not make it form=cycle", self.body)
+        self.assertIn("do not name cycle-control or campaign-control before the PLAN", self.body)
+
+    def test_planner_brief_carries_the_discriminators_not_just_names(self):
+        self.assertIn("base ### Forms discriminators themselves", self.body)
+        self.assertIn("names alone are not a brief for a read-denied planner", self.body)
+        for token in ("facts", "decision-relevant unknowns", "user-named form/contract"):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_same_controller_adopts_the_decided_role(self):
+        self.assertIn("same controller loads the decided contract and adopts the matching role",
+                      self.body)
+        self.assertIn("cycle-control", self.body)
+        self.assertIn("campaign-control", self.body)
+        self.assertIn("no new orchestrator", self.body)
+        self.assertIn("no second planner call for routing", self.body)
+
+    def test_a_chosen_collection_is_handed_back_to_the_primary_owner(self):
+        for token in (
+            "does not become the batch owner",
+            "hands the existing initial batch plan by reference back to the existing cheap "
+            "primary/collection owner",
+            "loads pdca-collection and starts the per-item/lane machinery",
+            "existing permissions",
+            "not classification, a second batch PLAN",
+            "task allowlist is not widened",
+            "no self-delegation or recursion",
+            "collection-lane stays the existing caller-dispatched lane",
+            "batch-level ownership and lane duties stay distinct",
+            "single-lane batch remains normal",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_runner_may_not_self_delegate_for_collection_ownership(self):
+        task = permission(asset_path("pdca", "pdca-orchestrator"))["task"]
+        self.assertNotIn("pdca-orchestrator", task)
+        self.assertIn("no self-delegation or recursion", self.body)
+
+    def test_entry_owned_plan_is_reused_by_reference_at_the_existing_gate(self):
+        for token in (
+            "The returned plan is the initial plan",
+            "pdca-executor persists it by the existing rules",
+            "continues at the current PLAN → DO gate",
+            "Do not run Input 2's",
+            "again for an entry-owned plan",
+            "reuse it by reference and start at the current PLAN → DO gate",
+            "named plan ref in the existing brief/status is enough",
+            "no new state file, schema or counter",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_form_known_dispatch_without_a_plan_and_resume_are_distinguished(self):
+        for token in (
+            "form-known dispatch that genuinely has no plan of its own",
+            "collection task's own PLAN",
+            "persisted plan_handoff/resume is never re-planned",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_campaign_reuses_the_entry_choice_then_prepares_and_bootstraps(self):
+        for token in (
+            "campaign reuses the entry choice and first useful step",
+            "pdca-executor persists the immutable preparation record and its preparation_ref",
+            "clarify the same pending PLAN only if preparation fields are genuinely missing",
+            "then baseline/runtime is bootstrapped before the first step DO",
+            "initial PLAN is not duplicated",
+            "approval/counters follow the incremental contract",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_fresh_entry_contract_taxonomy_is_base_only(self):
+        for token in (
+            "Fresh entry (form=UNDECIDED, no persisted plan)",
+            "neither a cycle nor a campaign step contract",
+            "no overlay is required yet",
+            "Load the base pdca contract only",
+            "post-decision exact contract loader uses the planner's returned form/overlay",
+            "never a driver semantic choice",
+            "fail closed if it is absent",
+            "fail closed for that cycle/step",
+            "do not pick a contract yourself",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_bounded_choice_probe_keeps_form_undecided_without_a_new_cycle(self):
+        for token in (
+            "authorization for one bounded choice probe",
+            "open decision, observable outcomes and budget",
+            "same planner refines the same pending PLAN",
+            "form stays UNDECIDED until the planner chooses",
+            "not an independent cycle",
+            "creates no fresh controller",
+            "adds no per-tool CHECK and no extra full PLAN",
+            "waives no permission or approval",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_missing_rationale_goes_back_as_a_clarification(self):
+        self.assertIn("naming the justified method and bounded volume", self.body)
+        self.assertIn("clarify the same pending PLAN", self.body)
+        self.assertIn("does not bump r/n", self.body)
+        self.assertIn("never choose the form yourself", self.body)
+        self.assertIn("not automatically incremental and not a STOP", self.body)
+        self.assertIn("completeness clarification", self.body)
+
+    def test_bespoke_checker_admission_is_presence_only(self):
+        for token in (
+            "bespoke checker",
+            "concrete insufficiency reason and a bound",
+            "return an incomplete pending PLAN to the same planner",
+            "do not judge whether the checker is necessary",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+
+    def test_existing_resume_and_collection_inputs_are_preserved(self):
+        self.assertIn("Already-planned cycles (Input 2), resumes, collection lanes, campaign steps "
+                      "and normal-mode approval keep their existing inputs and semantics", self.body)
+
+    def test_entry_stage_guard_reacts_to_missing_markers(self):
+        self.assertEqual([], entry_stage_gaps(self.raw))
+        for old in (
+            "`form: UNDECIDED`",
+            "primary/collection owner",
+            "one bounded choice probe",
+            "**bespoke checker**",
+        ):
+            with self.subTest(mutation=old):
+                sample = self.raw.replace(old, "")
+                self.assertNotEqual([], entry_stage_gaps(sample))
+
+
 class AssetSetTest(unittest.TestCase):
     def test_asset_set_and_tier_per_package(self):
         for skill, expected in ASSET_SETS.items():
@@ -270,7 +446,9 @@ class SourcePermissionBoundaryTest(unittest.TestCase):
                 self.assertEqual({"*": "deny"}, permission(path))
 
     def test_check_reads_only_the_cycle_evidence(self):
-        allowed_roots = (".pdca/**", "TestResults/**", "StrykerOutput/**")
+        # The common CHECK template is exactly the cycle state dir: no .NET/tool output
+        # roots and no product source. Overlay copies are byte-identical, so none may
+        # widen or narrow the shared template; a host adapter may narrow it separately.
         for skill in FAMILY_SKILLS:
             path = asset_path(skill, "pdca-check")
             if not path.is_file():
@@ -281,11 +459,10 @@ class SourcePermissionBoundaryTest(unittest.TestCase):
                 for action in ("read", "glob", "list"):
                     node = perm.get(action)
                     self.assertIsInstance(node, dict, "check: no scoped `%s` map" % action)
-                    for pattern, effect in node.items():
-                        if effect != "allow":
-                            continue
-                        self.assertIn(pattern, allowed_roots,
-                                      "check: `%s` widens the evidence scope" % pattern)
+                    allowed = {pattern for pattern, effect in node.items()
+                               if effect == "allow"}
+                    self.assertEqual({".pdca/**"}, allowed,
+                                     "check: `%s` widens the generic evidence scope" % action)
                 self.assertNotIn("bash", perm, "check must not run commands")
 
     def test_inspection_roles_keep_a_read_only_bash_allowlist(self):

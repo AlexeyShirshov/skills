@@ -426,11 +426,11 @@ Changed files) и готовое **сообщение для следующей 
 Первоисточник поведения — сам контракт: раздел «Versioned evidence contract» в
 [`skills/pdca-dotnet/references/plan.md`](../../skills/pdca-dotnet/references/plan.md) и
 «CHECK completeness gate — mandatory evidence contract» в
-[`skills/pdca-dotnet/references/check.md`](../../skills/pdca-dotnet/references/check.md), а также
-ссылающиеся на них шаблоны ролей
-([`pdca-planner.md`](../../skills/pdca-dotnet/assets/opencode-agents/pdca-planner.md),
-[`check.md`](../../skills/pdca-dotnet/assets/opencode-agents/pdca-check.md)) и компактная
-реализация гейта —
+[`skills/pdca-dotnet/references/check.md`](../../skills/pdca-dotnet/references/check.md). Шаблоны
+ролей — общий доменно-нейтральный источник
+([`pdca-planner.md`](../../skills/pdca/assets/opencode-agents/pdca-planner.md),
+[`pdca-check.md`](../../skills/pdca/assets/opencode-agents/pdca-check.md)); .NET-дельты живут в
+SKILL и phase-референсах этого оверлея, а не в телах общих ролей. Компактная реализация гейта —
 [`scripts/validate_inner_loop.py`](../../skills/pdca-dotnet/scripts/validate_inner_loop.py);
 статический линт контракта команд —
 [`scripts/plan_lint.py`](../../skills/pdca-dotnet/scripts/plan_lint.py): `check` валидирует

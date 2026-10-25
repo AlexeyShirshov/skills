@@ -112,9 +112,14 @@ no item-level contract or overlay
 **Who chooses the form and the overlay.** One path, with a constraint.
 
 - **The base PLAN.** A request phrased "by the cycle"/"via PDCA", or `@pdca`, loads the single entry;
-  its one configured `pdca-planner` decides the form, the overlay (when the work is code) and the
-  nearest useful step, and the driver loads exactly that contract. There is no cheap semantic
-  classifier and no second PLAN on the same content.
+  a fresh entry starts as `contract: pdca`, `form: UNDECIDED`, and its one configured
+  `pdca-planner` decides the form, the overlay (when the work is code) and the nearest useful step,
+  and the driver loads exactly that contract. A chosen collection is handed back by reference to the
+  cheap primary/collection owner, which runs the per-item/lane machinery under `pdca-collection`;
+  the entry controller does not become the batch owner. One goal or deliverable does not make the
+  form an ordinary cycle: the reason names the already-justified method and volume bound, or the
+  missing knowledge that decides the next action. There is no cheap semantic classifier and no
+  second PLAN on the same content.
 - **A direct invocation as a constraint.** Naming `pdca-dotnet`, `pdca-collection` or
   `pdca-incremental` does not create a second entry point: the PLAN works inside the named contract
   and does not silently re-route. The roles, lenses (verification perspectives — sets of rules, for

@@ -41,6 +41,14 @@ or restatement of the same plan is not a new PLAN. If the user names a contract 
 (`pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`, `pdca-incremental`), that is a constraint:
 the PLAN works inside it and does not silently re-route.
 
+**A fresh, unclassified task enters as `contract: pdca`, `form: UNDECIDED`**; one deliverable is
+not `form=cycle`; no `cycle-control`/`campaign-control` is named before PLAN. An existing-dispatcher
+stage, not a fourth context/role. The one PLAN returns form/overlay/step/claims or one bounded
+choice probe; routing follows it, not a driver choice. A chosen collection is handed by reference to
+the cheap primary/collection owner; cycle/campaign stay with the same controller. A missing
+method/volume rationale is an incomplete PLAN clarified with the same planner (no `r`/`n` bump).
+Details: `references/plan.md` §Entry routing and bounded continuations.
+
 After that PLAN the driver loads exactly one execution contract and passes the plan to it by
 reference:
 
@@ -63,6 +71,10 @@ reference:
 - **Collection** — a list of **independent goals** (not an internal split of one goal). Each item
   gets its own form by these same rules; a batch may be heterogeneous; a single-lane collection is
   the normal case, not a degradation.
+
+**One deliverable is not a known method.** A finished result, file or format does not establish the
+method; name the justified method and bound. Permissible assumptions may bound a calculation-only
+result but do not evidence a decision-critical mechanism.
 
 To choose the form, the PLAN does not have to prove feasibility up front or plan all the unknown
 work. When facts are missing, a **bounded probe** is allowed and the form is refined from what it
@@ -181,9 +193,12 @@ emits either a brief or a STOP in the same turn:
   history and does not convert an unaccepted red step into extra accepted progress.
 
 Separate DECIDE → brief → STOP turns on the same content are a repeated PLAN and are not allowed.
-Total planner calls are at most `1 + number of steps`, plus legitimate revisions under
-§Strategic revision and the current step's loop-backs. A **separate final check does not count as a
-step** and adds no planner call on the successful path: its brief and STOP condition are issued at
+Total planner calls: successful path `1 + number of steps`, **plus** legitimate
+revisions/loop-backs under §Strategic revision **and** bounded same-pending-PLAN continuations
+(clarification or probe refinement). Continuations count against the existing
+stop-loss (a probe budget is fixed before it runs), are never unchanged confirmations or routing
+calls, with no hidden exempt calls. A **separate final check does not count as a step** and
+adds no planner call on the successful path: its brief and STOP condition are issued at
 the last step boundary. Example for one increment: initial PLAN → local CHECK → step boundary
 (acceptance + final-check brief with the STOP condition) → final CHECK PASS → STOP — **two calls**.
 
@@ -238,10 +253,13 @@ a genuinely **new** item that makes the plan unimplementable — never drifting 
 ## Transition gates
 
 1. **PLAN → DO** — only if the planner's answer contains **all mandatory fields**: goal/expected
-   result; declared **form** and overlay; constraints; assumptions; acceptance criteria **each with
-   a verification method**; **carrying claims with IDs** separated from quality-rubric axes; the
-   decomposition or an explicit decision not to split; means and access; risks and stop conditions;
-   budget. Plus: the plan written to the status file by `pdca-executor`, every frozen command
+   result; declared **form** and overlay with a **form rationale** (justified method + bound,
+   or the missing knowledge that decides the next action); constraints; assumptions; acceptance
+   criteria **each with a verification method**; a **verification choice** (cheapest sufficient
+   method; a bespoke checker also needs its reason and bound); **carrying claims with IDs** separated
+   from quality-rubric axes; the decomposition or
+   an explicit decision not to split; means and access; risks and stop conditions; budget. Plus: the
+   plan written to the status file by `pdca-executor`, every frozen command
    validated against the environment (`references/plan.md` §Plan command contract), and, in normal
    mode, **the user's approval**. On DO start the executor logs `DO started` and records the
    transition. Normal mode with no acceptance criteria → ask the user, do not guess; autonomous →
@@ -266,7 +284,9 @@ a genuinely **new** item that makes the plan unimplementable — never drifting 
 
 ## Phase contracts (generic)
 
-**PLAN** returns the gate-1 fields above. PLAN owns plan quality: reconstruct the goal in essence
+**PLAN** returns the gate-1 fields above (definitions there); on a resume/replan a still-valid
+rationale and verification choice are carried by reference, not re-authored/re-classified. PLAN
+owns plan quality: reconstruct the goal in essence
 rather than inheriting a presupposed solution; derive/complete criteria with negative cases; close
 every gap in the statement one of three ways — evidence, an explicit assumption/risk, or a
 blocker/escalation; a silent guess is forbidden. For a non-obvious trade-off, present 2–3
@@ -515,9 +535,7 @@ the contract**, not "finish and fix later".
   CHECK.
 - I let a rubric score or a threshold margin compensate a confirmed/unverified finding against a
   carrying claim.
-- I silently skipped a mandatory plan field: goal, form/overlay, constraints, assumptions, criteria
-  with verification methods, carrying claims, decomposition, means and access, risks/stop
-  conditions, budget.
+- I silently skipped a mandatory plan field (the full Gate 1 list in §Transition gates).
 - An event happened but `pdca-executor` did not update the status file.
 - I deleted a status file — it is finalized and kept, never deleted.
 - I loaded large artefacts/logs into my context instead of a pointer.

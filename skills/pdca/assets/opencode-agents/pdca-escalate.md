@@ -21,12 +21,10 @@ permission:
     "cd *": allow
     "ls*": allow
     "cat *": allow
-    "sed -n *": allow
     "head *": allow
     "tail *": allow
     "wc *": allow
     "stat *": allow
-    "file *": allow
   # external_directory: add extra allowed paths if the task needs them, e.g.
   #   "/tmp/**": allow
   skill:

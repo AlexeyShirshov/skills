@@ -1,0 +1,64 @@
+name: pdca-role-assets
+
+# Bounded guard for the shared PDCA role assets and the base entry/planning
+# rules: the six canonical roles and their generated overlay mirrors must stay
+# byte-identical, and the focused entry/forms/routing/contract guards run when
+# the base skill, its references or a canonical role changes. No network
+# integration, no host requirements, no publication.
+
+on:
+  push:
+    paths:
+      - "skills/pdca/assets/opencode-agents/**"
+      - "skills/pdca-coder/assets/opencode-agents/**"
+      - "skills/pdca-dotnet/assets/opencode-agents/**"
+      - "skills/pdca-collection/assets/opencode-agents/**"
+      - "skills/pdca-incremental/assets/opencode-agents/**"
+      - "skills/pdca/scripts/sync_role_assets.py"
+      - "skills/pdca/tests/test_role_assets.py"
+      - "skills/pdca/SKILL.md"
+      - "skills/pdca/references/**"
+      - "skills/pdca/tests/test_entry_forms.py"
+      - "skills/pdca/tests/test_contract_consistency.py"
+      - "skills/pdca/tests/test_routing_consistency.py"
+      - ".github/workflows/pdca-role-assets.yml"
+  pull_request:
+    paths:
+      - "skills/pdca/assets/opencode-agents/**"
+      - "skills/pdca-coder/assets/opencode-agents/**"
+      - "skills/pdca-dotnet/assets/opencode-agents/**"
+      - "skills/pdca-collection/assets/opencode-agents/**"
+      - "skills/pdca-incremental/assets/opencode-agents/**"
+      - "skills/pdca/scripts/sync_role_assets.py"
+      - "skills/pdca/tests/test_role_assets.py"
+      - "skills/pdca/SKILL.md"
+      - "skills/pdca/references/**"
+      - "skills/pdca/tests/test_entry_forms.py"
+      - "skills/pdca/tests/test_contract_consistency.py"
+      - "skills/pdca/tests/test_routing_consistency.py"
+      - ".github/workflows/pdca-role-assets.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  role-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Check canonical roles and mirrors
+        run: python3 skills/pdca/scripts/sync_role_assets.py --check
+      - name: Run role-asset tests
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_role_assets.py' -v
+      - name: Run entry and planning guards
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_entry_forms.py' -v
+      - name: Run base contract guards
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_contract_consistency.py' -v
+      - name: Run routing guards
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_routing_consistency.py' -v

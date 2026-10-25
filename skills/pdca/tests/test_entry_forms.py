@@ -244,5 +244,163 @@ class DecisionTableTest(unittest.TestCase):
         self.assertIn("Two contexts, never mixed", base)
 
 
+ENTRY_RULES = (
+    "form: UNDECIDED",
+    "not a fourth context/role",
+    "cycle/campaign stay with the same controller",
+    "handed by reference",
+    "references/plan.md",
+)
+
+
+def entry_gaps(text: str) -> list:
+    """Scoped phrase check used only to prove the guard reacts to a mutation."""
+    flat = norm(text)
+    return [rule for rule in ENTRY_RULES if rule not in flat]
+
+
+class FreshEntryTest(unittest.TestCase):
+    """A fresh request starts unclassified; only the one PLAN decides the form."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.raw = read(BASE)
+        cls.entry = norm(between(cls.raw, "## Entry: one PLAN decides the form",
+                                 "## Roles and host requirements"))
+        cls.forms = norm(between(cls.raw, "### Forms", "## Roles and host requirements"))
+        cls.plan = norm(read(FAMILY / "pdca/references/plan.md"))
+
+    def test_fresh_entry_is_contract_pdca_and_form_undecided(self):
+        self.assertIn("contract: pdca", self.entry)
+        self.assertIn("form: UNDECIDED", self.entry)
+
+    def test_one_deliverable_does_not_preselect_the_cycle_or_a_context(self):
+        self.assertIn("one deliverable is not form=cycle", self.entry)
+        self.assertIn("no cycle-control/campaign-control is named before PLAN", self.entry)
+
+    def test_entry_is_the_existing_dispatcher_not_a_fourth_context(self):
+        self.assertIn("existing-dispatcher stage", self.entry)
+        self.assertIn("not a fourth context/role", self.entry)
+
+    def test_read_denied_planner_receives_discriminator_rules_not_names(self):
+        self.assertIn("references/plan.md", self.entry)
+        self.assertIn("Entry routing and bounded continuations", self.entry)
+        self.assertIn("form discriminators themselves", self.plan)
+        self.assertIn("names alone are not enough for a read-denied planner", self.plan)
+
+    def test_cycle_and_campaign_controller_adopt_their_context_without_a_second_plan(self):
+        self.assertIn("cycle/campaign stay with the same controller", self.entry)
+        self.assertIn("same controller (cycle-control / campaign-control)", self.plan)
+
+    def test_collection_is_handed_to_the_existing_cheap_primary_owner(self):
+        self.assertIn("A chosen collection is handed by reference to the cheap primary/collection "
+                      "owner", self.entry)
+        for token in (
+            "does not become the batch owner",
+            "does not self-delegate",
+            "collection-lane stays an existing caller-dispatched lane",
+            "per-item/lane",
+            "single-lane batch is normal",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.plan)
+
+    def test_missing_method_and_volume_rationale_is_an_incomplete_plan(self):
+        self.assertIn("A missing method/volume rationale is an incomplete PLAN", self.entry)
+        self.assertIn("clarified with the same planner", self.entry)
+        self.assertIn("no r/n bump", self.entry)
+        self.assertIn("routing follows it, not a driver choice", self.entry)
+        self.assertIn("never bumps r/n", self.plan)
+        self.assertIn("not automatically incremental or a STOP", self.plan)
+
+    def test_form_known_no_plan_and_resume_rules_live_in_the_reference(self):
+        self.assertIn("form-known dispatch that genuinely has no plan of its own", self.plan)
+        self.assertIn("persisted plan_handoff/resume is never re-planned", self.plan)
+        self.assertIn("no new state file, schema or counter", self.plan)
+
+    def test_entry_guard_reacts_to_a_preselected_form(self):
+        sample = self.raw.replace("`form: UNDECIDED`", "`form=cycle`")
+        self.assertEqual([], entry_gaps(self.raw))
+        self.assertIn("form: UNDECIDED", entry_gaps(sample))
+
+    def test_one_deliverable_is_not_a_known_method(self):
+        self.assertIn("One deliverable is not a known method", self.forms)
+        self.assertIn("does not establish the method; name the justified method and bound",
+                      self.forms)
+
+    def test_assumptions_bound_calculation_but_do_not_prove_a_mechanism(self):
+        self.assertIn("Permissible assumptions may bound a calculation-only result", self.forms)
+        self.assertIn("do not evidence a decision-critical mechanism", self.forms)
+        self.assertIn("Do not make every design task incremental", self.plan)
+
+    def test_choice_probe_precedes_dependent_work_and_validation_is_not_exploration(self):
+        self.assertIn("A choice probe opens its decision with an observable outcome", self.plan)
+        self.assertIn("before dependent work is fixed", self.plan)
+        self.assertIn("validating a known method is legitimate", self.plan)
+        self.assertIn("bounded probe is allowed and the form is refined", self.forms)
+
+
+class PlannerFormRationaleTest(unittest.TestCase):
+    """The planner asset binds the form decision to method/volume or missing knowledge."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.planner = norm(read(BASE_ASSETS / "pdca-planner.md"))
+
+    def test_form_reason_names_method_and_volume_or_missing_knowledge(self):
+        self.assertIn("which method is already justified and how the volume is bounded", self.planner)
+        self.assertIn("which missing knowledge decides the next action", self.planner)
+
+    def test_one_deliverable_and_assumptions_do_not_make_the_method_known(self):
+        self.assertIn("one finished result, one file or a known desired format is not by itself a "
+                      "known method", self.planner)
+        self.assertIn("do not make every design task incremental", self.planner)
+        self.assertIn("validating an already-known method is legitimate", self.planner)
+
+    def test_probe_authorization_names_decision_outcomes_and_budget(self):
+        for token in (
+            "authorize one bounded probe",
+            "name the open decision, the observable outcomes and the budget",
+            "leave the form undecided until its facts refine this same pending PLAN",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.planner)
+
+    def test_plan_selects_the_approach_and_do_develops_the_deliverable(self):
+        for token in (
+            "PLAN chooses the approach; DO develops the deliverable",
+            "does not pre-write the final artefact",
+            "solve every unresolved downstream choice",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.planner)
+
+    def test_incremental_first_step_resolves_the_leading_unknown(self):
+        self.assertIn("first step resolves the leading unknown", self.planner)
+        self.assertIn("later work stays conditional, not a full speculative backlog", self.planner)
+        self.assertIn("Do not change to incremental merely to excuse a larger plan", self.planner)
+
+    def test_verification_choice_replaces_mandatory_bespoke_checking(self):
+        self.assertIn("Verification choice", self.planner)
+        self.assertIn("Independent manual observation or a focused recomputation can be enough",
+                      self.planner)
+        self.assertIn('"verifiable evidence" does not mandate a new executable checker', self.planner)
+        self.assertIn("concrete reason why existing or manual means are insufficient", self.planner)
+
+    def test_command_contract_is_conditional_on_an_actual_command(self):
+        self.assertIn("Command contract (only for commands the plan freezes)", self.planner)
+        self.assertIn("do not invent a command line", self.planner)
+
+    def test_bounded_continuations_do_not_expand_the_planner_call_cap(self):
+        for token in (
+            "successful path 1 + number of steps",
+            "bounded same-pending-PLAN continuations",
+            "count against the existing stop-loss",
+            "no hidden exempt calls",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.planner)
+
+
 if __name__ == "__main__":
     unittest.main()

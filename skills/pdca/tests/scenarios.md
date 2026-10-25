@@ -80,6 +80,142 @@ unit/integration policy.
 **Оперативные источники:** `config/agents/pdca-check.md`, `assets/opencode-agents/pdca-check.md` —
 пункт «binding/applicable».
 
+## Вход, известность метода и пропорциональная проверка (presence; не запускалось)
+
+Это **presence-сценарии**, а не доказательство поведения: модель/агент по ним не запускались,
+реальный цикл не исполнялся. Наличие правил проверяют `test_entry_forms.py`,
+`test_routing_consistency.py` и `test_contract_consistency.py`.
+
+### E1. Один готовый результат, метод неизвестен
+
+**Вход:** пользователь просит один файл/один готовый результат, но не задаёт метод; из брифа не
+видно, какая последовательность действий уже обоснована.
+**Требуемый исход:** форма не объявляется `cycle` только из-за одного deliverable: PLAN называет
+недостающее знание и выбирает incremental либо один ограниченный choice-probe; полный downstream
+дизайн не замораживается до ответа probe.
+**Оперативные источники:** SKILL §Entry → «A fresh, unclassified task…»; §Forms → «One deliverable
+is not a known method»; `references/plan.md` §Proportional planning.
+
+### E2. Известная ограниченная последовательность
+
+**Вход:** метод известен, шаги зависимы, объём фиксирован (передача результата шага в следующий).
+**Требуемый исход:** ordinary cycle; зависимость данных не выдаётся за неопределённость, лишний
+incremental не навязывается.
+**Оперативные источники:** SKILL §Forms → ordinary/incremental discriminators.
+
+### E3. Допустимые модельные предположения
+
+**Вход:** расчёт допускает явные предположения, которые ограничивают результат; проверяемого
+механизма они не доказывают.
+**Требуемый исход:** ordinary cycle допустим, если предположения записаны как assumptions и
+ограничивают объём; assumption не выдаётся за свидетельство работоспособности decision-critical
+механизма.
+**Оперативные источники:** SKILL §Forms; `references/plan.md` §Gap closure.
+
+### E4. Не хватает evidence для decision-critical механизма
+
+**Вход:** формально есть «полный» дизайн, но ключевой механизм не продемонстрирован; probe
+проверяет уже выбранные числа.
+**Требуемый исход:** это не known method: выбор действия остаётся открытым до наблюдаемого
+результата probe; post-hoc проверка не переименовывается в exploration.
+**Оперативные источники:** SKILL §Forms → probe before dependent work; `pdca-planner` §Form.
+
+### E5. Пользователь ограничил форму
+
+**Вход:** пользователь явно назвал `pdca-incremental` (или другую форму/контракт).
+**Требуемый исход:** ограничение уважается; PLAN работает внутри него и не перенаправляет молча.
+**Оперативные источники:** SKILL §Entry; §Forms.
+
+### E6. Самодельный checker без обоснования
+
+**Вход:** PLAN предлагает новый executable checker, хотя carrying claims проверяются независимым
+наблюдением или точечным пересчётом.
+**Требуемый исход:** verification economy требует cheapest sufficient method; bespoke checker
+допустим только с конкретной причиной, почему существующие/manual средства недостаточны, и с
+пропорциональной границей.
+**Оперативные источники:** `references/plan.md` §Verification economy; `pdca-planner` §Plan hygiene.
+
+### E7. Уже запланированный resume
+
+**Вход:** есть persisted `plan_handoff` с form/ref; повторный вход не должен заново решать форму.
+**Требуемый исход:** тот же controller принимает решённый контекст; нет второго PLAN ради
+маршрутизации и нет нового dispatcher; applicability и approval идут по существующим правилам.
+**Оперативные источники:** `pdca-orchestrator` §Entry stage; §Input 2.
+
+### E8. Свежая коллекция — handoff владельцу, а не lane
+
+**Вход:** entry PLAN выбрал `collection`, но dispatcher пытается сам стать batch owner, применить
+lane-правила ко всему batch или создать отдельный lane-context.
+**Требуемый исход:** entry controller передаёт существующий batch plan by reference обратно
+cheap primary/collection owner; тот загружает `pdca-collection` и запускает per-item/lane механику
+в существующих правах. Начальный batch choice не повторяется, каждый item получает свой PLAN;
+`collection-lane` остаётся существующим caller-dispatched lane; batch ownership и lane duties
+различны, single-lane batch — норма; self-delegation/recursion и новый контекст/роль не появляются.
+**Оперативные источники:** `pdca-orchestrator` §Entry stage; `pdca-collection/SKILL.md`
+§Ownership.
+
+### E9. Entry-owned plan не пересобирается в Input 2
+
+**Вход:** entry PLAN уже вернул и сохранил initial plan, затем поток входит в «new cycle».
+**Требуемый исход:** план переиспользуется by reference; controller стартует с текущего
+PLAN → DO gate со всеми validation/approval; второй full PLAN не запускается; named plan ref в
+существующем brief/status достаточен, новых state-файлов/схем/счётчиков нет.
+**Оперативные источники:** `pdca-orchestrator` §Entry stage шаг 5; §Input 2.
+
+### E10. Form-known dispatch без собственного плана
+
+**Вход:** форма известна, но task-own PLAN действительно отсутствует (например, collection item);
+либо есть persisted `plan_handoff`/resume.
+**Требуемый исход:** отсутствующий task-own PLAN выполняется по существующим правилам; resume не
+перепланируется; это не mixing с entry-owned планом.
+**Оперативные источники:** `pdca-orchestrator` §Entry stage шаг 5; §Input 1–2.
+
+### E11. Bounded choice probe до решения формы
+
+**Вход:** planner не может обосновать форму без одного наблюдаемого факта.
+**Требуемый исход:** planner авторизует **один** bounded choice probe с open decision, observable
+outcomes и budget; `pdca-executor` выполняет probe, `pdca-scout` наблюдает, тот же planner уточняет
+**тот же pending PLAN**; форма остаётся `UNDECIDED` до выбора; нет independent cycle, fresh
+controller, per-tool CHECK или extra full PLAN; права/approval не ослабляются.
+**Оперативные источники:** `pdca-orchestrator` §Entry stage → «Bounded choice probe»;
+`pdca-planner` §Form.
+
+### E12. Bespoke checker без rationale
+
+**Вход:** PLAN предлагает самодельный checker, но не даёт concrete insufficiency reason и bound.
+**Требуемый исход:** dispatcher проверяет только присутствие этих двух элементов и возвращает
+**incomplete pending PLAN** тому же planner; necessity он не судит; новый validator/checker не
+создаётся.
+**Оперативные источники:** `pdca-planner` §Plan hygiene → «Verification choice»;
+`pdca-orchestrator` §Entry stage.
+
+### E13. Контракт fresh entry — только база
+
+**Вход:** fresh dispatch (`form: UNDECIDED`) несёт `contract: pdca`; оверлей/форма ещё не решены.
+**Требуемый исход:** загружается только base `pdca` (не cycle/step contract, оверлей не требуется);
+post-decision loader берёт форму/оверлей из решения planner, не из семантического выбора драйвера;
+отсутствующий base contract и отсутствующий старый cycle/step contract одинаково fail closed.
+**Оперативные источники:** `pdca-orchestrator` §Contract.
+
+### E14. Bounded continuations не расширяют planner cap
+
+**Вход:** незавершённая clarification или choice-probe refinement после начального PLAN.
+**Требуемый исход:** это продолжения **того же pending PLAN**, а не новые strategic decisions; они
+считаются в существующий stop-loss (probe budget фиксируется до запуска), без unchanged
+confirmation/restart/unbounded retry и без лишнего вызова ради routing; успешный обычный путь
+остаётся `1 + number of steps`.
+**Оперативные источники:** SKILL §Lens; `pdca-planner` §Step boundary.
+
+### E15. Campaign bootstrap order
+
+**Вход:** entry PLAN выбрал `campaign`.
+**Требуемый исход:** `pdca-executor` сохраняет immutable preparation record + `preparation_ref` из
+entry-плана (тот же pending PLAN уточняется только при реально недостающих полях), затем
+baseline/runtime, затем first step DO; initial PLAN не дублируется, approval/counters — по
+incremental-контракту.
+**Оперативные источники:** `pdca-orchestrator` §Entry stage шаг 4;
+`pdca-incremental` §0 Bootstrap.
+
 ## Ретро-харденинг (13–23 октября 2026, `nextorm`)
 
 Правила добавлены по итогам десяти дней запусков: половина принятых задач потребовала реплана,

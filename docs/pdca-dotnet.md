@@ -401,11 +401,12 @@ domain lenses and the additional gates (and if there are many independent tasks 
 The primary source of behaviour is the contract itself: the sections "Versioned evidence contract"
 in [`skills/pdca-dotnet/references/plan.md`](../skills/pdca-dotnet/references/plan.md) and
 "CHECK completeness gate — mandatory evidence contract" in
-[`skills/pdca-dotnet/references/check.md`](../skills/pdca-dotnet/references/check.md), as well as the role
-templates that reference them
-([`pdca-planner.md`](../skills/pdca-dotnet/assets/opencode-agents/pdca-planner.md),
-[`check.md`](../skills/pdca-dotnet/assets/opencode-agents/pdca-check.md)) and the compact implementation of
-the gate —
+[`skills/pdca-dotnet/references/check.md`](../skills/pdca-dotnet/references/check.md). The role
+templates are the shared, domain-neutral source
+([`pdca-planner.md`](../skills/pdca/assets/opencode-agents/pdca-planner.md),
+[`pdca-check.md`](../skills/pdca/assets/opencode-agents/pdca-check.md)); the .NET-specific deltas
+stay in this overlay's SKILL and phase references rather than in those generic role bodies. The
+compact implementation of the gate is
 [`scripts/validate_inner_loop.py`](../skills/pdca-dotnet/scripts/validate_inner_loop.py);
 the static command-contract lint — [`scripts/plan_lint.py`](../skills/pdca-dotnet/scripts/plan_lint.py):
 `check` validates the `commands.json` projection before gate 1 (argv shape, phase/scope,

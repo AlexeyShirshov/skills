@@ -578,10 +578,10 @@ class ContractConsistencyTest(unittest.TestCase):
                 r"superseded",
             ])
         elif name == "planner":
-            step = self._scoped(path, "10.", "11.")
+            step = self._scoped(path, "6. **Classify", "## Step boundary")
             self._assert_patterns(step, f"pdca-planner step10 {path}", [
                 r"revised plan",
-                r"increments the revision",
+                r"increments the plan revision",
                 r"resets the attempt n to 1",
                 r"rejected candidate",
                 r"not a new revision",
@@ -589,16 +589,16 @@ class ContractConsistencyTest(unittest.TestCase):
                 r"superseded",
             ])
         elif name == "check":
-            step = self._scoped(path, "5.", "6.")
+            step = self._scoped(path, "8. **Escalation counter awareness", "9. **No numbers")
             self._assert_patterns(step, f"pdca-check item5 {path}", [
-                r"third failed CHECK of the same revision",
+                r"third failed CHECK of (?:the same )?revision",
                 r"same defect",
                 r"persists across revisions",
             ])
         elif name == "escalate":
             para = self._scoped(
                 path,
-                "The counter is scoped",
+                "The attempt counter is bound",
                 "## What you do",
             )
             self._assert_patterns(para, f"pdca-escalate counter {path}", [
@@ -619,7 +619,7 @@ class ContractConsistencyTest(unittest.TestCase):
     def _assert_escalator_brief_revision_scoped(self, path: Path) -> None:
         para = self._scoped(
             path,
-            "The counter is scoped",
+            "The attempt counter is bound",
             "## What you do",
         )
         self.assertRegex(
@@ -680,7 +680,7 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("provisional candidate", candidate)
 
     def _assert_planner_classification(self, path: Path) -> None:
-        step = self._scoped(path, "10.", "11.")
+        step = self._scoped(path, "6. **Classify", "7. On a **replan**")
         self._assert_patterns(step, f"pdca-planner classification {path}", [
             r"insufficient evidence",
             r"pdca-scout|scout",
@@ -696,8 +696,8 @@ class ContractConsistencyTest(unittest.TestCase):
     def _assert_planner_response_format(self, path: Path) -> None:
         resp = self._scoped(
             path,
-            "## Response format",
-            "A missing item",
+            "## Output contract",
+            "## Boundaries",
         )
         self._assert_patterns(resp, f"pdca-planner response {path}", [
             r"(?i)confidence and gaps",
@@ -760,18 +760,25 @@ class ContractConsistencyTest(unittest.TestCase):
     # --- user-go boundary + authority invocation -------------------------
 
     def _assert_planner_plan_disk_paragraph(self, path: Path) -> None:
-        para = self._scoped(
-            path,
-            "11. Take into account",
-            "## Boundaries",
+        # The shared planner brief names the executor as the writer; the mode scoping
+        # (normal-mode approval vs. autonomous no-approval/no-questions) is normative
+        # base-contract text, not duplicated into the role brief.
+        para = norm(read(path))
+        self.assertIn("the executor writes it to the status file", para)
+        control = norm(
+            between(read(BASE_SKILL), "## Control modes", "## Normal-mode approval")
         )
-        self._assert_patterns(para, f"pdca-planner plan-disk {path}", [
-            r"(?i)normal mode",
-            r"(?i)user approves|user's approval",
-            r"(?i)autonomous mode",
-            r"(?i)no question|no questions",
-            r"(?i)no waiting",
-            r"(?i)gate-1|gate 1",
+        approval = norm(
+            between(read(BASE_SKILL), "## Normal-mode approval", "## References")
+        )
+        self._assert_patterns(control, f"base control modes {path}", [
+            r"Autonomous mode has no pauses and no questions",
+        ])
+        self._assert_patterns(approval, f"base approval {path}", [
+            r"Normal-mode approval",
+            r"read and approve",
+            r"only start signal",
+            r"Autonomous mode has no approval slots and no plan-approval gate",
         ])
 
     def test_planner_plan_disk_paragraph_scopes_user_approval_to_normal_mode(self):
@@ -1118,8 +1125,8 @@ class FinalFixGuardTest(unittest.TestCase):
     def test_check_brief_carries_r_n_and_defect_history_as_history_only(self):
         self.assertIn("defect history", self.check_en)
         self.assertIn("revision r", self.check_en)
-        self.assertIn("not evidence for the current CHECK", self.check_en)
-        self.assertIn("current full aggregated report", self.check_en)
+        self.assertIn("not evidence for the current verdict", self.check_en)
+        self.assertIn("full current report", self.check_en)
 
     def test_scout_brief_can_report_status_snapshot_and_defect_history(self):
         self.assertIn("defect history", self.scout_en)

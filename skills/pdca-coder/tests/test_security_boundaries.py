@@ -67,13 +67,15 @@ GIT_DIFF = "git " + "diff"
 # only fully literal commands and literal command + tail ` -- *` survive; after
 # ` -- ` git reads the tokens as pathspecs, never as flags.
 GIT_PREFIXES = (GIT_DIFF, "git log", "git show", "git blame", "git ls-files")
-LITERAL_ALLOW = (
+BASE_LITERAL_ALLOW = (
     "ls*",
     "cat *",
     "head *",
     "tail *",
     "wc *",
     "stat *",
+)
+GIT_LITERAL_ALLOW = (
     "git status",
     "git status --short",
     GIT_DIFF + " --stat",
@@ -93,7 +95,16 @@ PATHSPEC_ALLOW = (
     "git ls-files -- *",
     "git blame -- *",
 )
-ALLOW_SHAPE = LITERAL_ALLOW + PATHSPEC_ALLOW
+GIT_ALLOW = GIT_LITERAL_ALLOW + PATHSPEC_ALLOW
+# The shared read-only roles are not interchangeable: scout and the security
+# auditor inspect git facts, escalate makes decisions and needs no git access.
+# Keep one exact minimal set per role instead of widening all three to parity.
+ROLE_ALLOW = {
+    "pdca-escalate": BASE_LITERAL_ALLOW + ("cd *",),
+    "pdca-scout": BASE_LITERAL_ALLOW + GIT_ALLOW,
+    "pdca-security-auditor": BASE_LITERAL_ALLOW + GIT_ALLOW,
+}
+GIT_ROLES = ("pdca-scout", "pdca-security-auditor")
 
 # Standalone command stems that must never be granted; matched as a whole token
 # so `git ls-files` is not mistaken for a `file` grant.
@@ -128,7 +139,8 @@ NEGATIVE_PROBES = (
 )
 
 # Positive probes: every literal and every ` -- path` form is admitted.
-POSITIVE_PROBES = tuple(LITERAL_ALLOW) + (
+BASE_POSITIVE_PROBES = BASE_LITERAL_ALLOW
+GIT_POSITIVE_PROBES = GIT_LITERAL_ALLOW + (
     GIT_DIFF + " --stat -- src/foo.py",
     GIT_DIFF + " --name-only -- src/foo.py",
     GIT_DIFF + " --no-color -- src/foo.py",
@@ -249,22 +261,31 @@ class WriteProofAllowlistTest(unittest.TestCase):
         for role in READ_ONLY_ROLES:
             with self.subTest(role=role):
                 grants = self._grants(role)
-                for form in ALLOW_SHAPE:
+                for form in ROLE_ALLOW[role]:
                     self.assertEqual("allow", grants.get(form), "%s: %s" % (role, form))
                 allow = self._allow(role)
-                for probe in POSITIVE_PROBES:
+                for probe in BASE_POSITIVE_PROBES:
                     self.assertTrue(
                         any(glob_match(key, probe) for key in allow),
                         "%s: no allow key matches %r" % (role, probe),
                     )
+                if role in GIT_ROLES:
+                    for probe in GIT_POSITIVE_PROBES:
+                        self.assertTrue(
+                            any(glob_match(key, probe) for key in allow),
+                            "%s: no allow key matches %r" % (role, probe),
+                        )
+                else:
+                    for probe in GIT_POSITIVE_PROBES:
+                        self.assertFalse(
+                            any(glob_match(key, probe) for key in allow),
+                            "%s must not grant git access (%r)" % (role, probe),
+                        )
 
-    def test_allowlist_is_exactly_the_write_proof_shape(self):
+    def test_allowlist_is_exactly_the_minimal_role_shape(self):
         for role in READ_ONLY_ROLES:
             with self.subTest(role=role):
-                expected: set = set(ALLOW_SHAPE)
-                if role == "pdca-escalate":
-                    expected.add("cd *")
-                self.assertEqual(expected, set(self._allow(role)))
+                self.assertEqual(set(ROLE_ALLOW[role]), set(self._allow(role)))
 
     def test_forbidden_stems_and_git_verbs_absent(self):
         for role in READ_ONLY_ROLES:
@@ -282,15 +303,15 @@ class WriteProofAllowlistTest(unittest.TestCase):
                         "%s grants a bare diff form %r" % (role, key),
                     )
 
-    def test_git_block_parity_across_assets(self):
-        blocks = []
+    def test_git_block_is_identical_for_git_inspection_roles_only(self):
+        blocks = {}
         for role in READ_ONLY_ROLES:
-            git_keys = tuple(
+            blocks[role] = tuple(
                 sorted(k for k in self._allow(role) if k.startswith(GIT_PREFIXES))
             )
-            blocks.append(git_keys)
-        self.assertEqual(blocks[0], blocks[1])
-        self.assertEqual(blocks[1], blocks[2])
+        self.assertEqual(blocks["pdca-scout"], blocks["pdca-security-auditor"])
+        self.assertEqual((), blocks["pdca-escalate"],
+                         "escalate takes decisions and needs no git access")
 
     def test_installed_mirror_matches_source(self):
         # Host-parity check: the deployed copy of the skill ships with the host

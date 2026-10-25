@@ -98,6 +98,12 @@ PROFILE=<профиль или пусто>
    - Убедись, что установленный pdca-orchestrator совпадает байт-в-байт с
      $SKILLS_REPO/skills/pdca/assets/opencode-agents/pdca-orchestrator.md (тело; frontmatter мог быть
      транслирован).
+   - В шестиролевых вариантах (`pdca`, `pdca-coder`, `pdca-dotnet`) общие шесть ролей
+     (`pdca-planner`, `pdca-check`, `pdca-executor`, `pdca-scout`, `pdca-escalate`,
+     `pdca-orchestrator`) — байт-в-байт зеркала канонического
+     `$SKILLS_REPO/skills/pdca/assets/opencode-agents/`; у `pdca-collection`/`pdca-incremental`
+     есть только зеркало `pdca-orchestrator`. Сверяй с каноном, а не с прежней установленной
+     копией (`python3 skills/pdca/scripts/sync_role_assets.py --check`).
    - Если CONFIG_REPO задан, синхронизируй те же файлы в его каталог агентов (источник для
      будущих установок), с бэкапами.
    - Проверь: ни в одном агенте нет выдуманного `model:`; у runner есть allowlist pdca-*.

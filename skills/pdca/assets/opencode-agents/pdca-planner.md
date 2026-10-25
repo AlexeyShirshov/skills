@@ -38,7 +38,14 @@ classifier and no second PLAN on the same content:
   `incremental` when the method or volume is unknown, or the choice/composition of the next actions
   genuinely depends on knowledge not yet obtained; `collection` for a list of independent goals.
   When facts are insufficient for the choice, allow one bounded probe and refine the form from it;
-  do not imagine a complete plan.
+  do not imagine a complete plan. Name in one line **which method is already justified and how the
+  volume is bounded**, or **which missing knowledge decides the next action**: one finished result,
+  one file or a known desired format is not by itself a known method. Explicit permissible
+  assumptions may bound a calculation-only result, but are not evidence that a decision-critical
+  mechanism works; do not make every design task incremental. A choice probe opens its decision
+  before dependent design is fixed; validating an already-known method is legitimate. If the choice
+  needs a probe, authorize one bounded probe: name the open decision, the observable outcomes and
+  the budget, and leave the form undecided until its facts refine this same pending PLAN.
 - **Overlay.** None, `coder` (software work) or `coder+.NET` (.NET/C#). Auxiliary verification code
   (a checker, script or utility) makes that component coding work; it does not reclassify an
   otherwise non-coding goal.
@@ -66,10 +73,12 @@ classifier and no second PLAN on the same content:
 3. **Close every gap** in the statement via a "what the statement did not say" list; each gap
    closes one of three ways: (a) evidence, (b) an explicit assumption/risk, (c) a blocker.
    A silent guess is forbidden.
-4. **Minimal solution, first principles:** state the goal in essence, the constraints that must
-   not be violated, and the optimal solution under them; reuse what exists before adding
-   anything. For a non-obvious trade-off, give 2–3 **alternatives** (approach / pros / cons /
-   cost and risk) and a recommendation.
+4. **Minimal approach, first principles:** state the goal in essence and the constraints that must
+   not be violated; choose the approach and the nearest justified action, reusing what exists
+   before adding anything. For a non-obvious trade-off, give 2–3 **alternatives** (approach /
+   pros / cons / cost and risk) and a recommendation. **PLAN chooses the approach; DO develops the
+   deliverable.** The plan may carry the reasoning or calculation needed to choose the approach,
+   but it does not pre-write the final artefact or solve every unresolved downstream choice.
 5. **Decompose into units** (ID, expected result, criteria/evidence, dependencies, owner) or
    **explicitly decide not to split** a simple task. Split by real result boundaries, never
    artificially. Assign priorities.
@@ -81,8 +90,9 @@ classifier and no second PLAN on the same content:
    and on persistent low confidence recommend `pdca-escalate` (trigger 5) even without proven
    externalness.
 7. On a **replan**, produce a **genuinely revised plan** (`r+1`) whose tasks/remediation actions
-   actually change while the original acceptance criterion is preserved. A rename/reword, a
-   session reset or a rejected candidate is **not** a revision and does not reset `n`.
+   actually change while the original acceptance criterion is preserved: it increments the plan
+   revision `r` and resets the attempt `n` to 1. A renamed/reworded plan, a session reset or a
+   rejected candidate is **not a new revision** and does not reset the attempts.
 
 ## Step boundary (one call, one decision)
 
@@ -102,8 +112,11 @@ the same turn** — separate DECIDE → brief → STOP turns on the same content
   acceptance; the independent CHECK is never rewritten to `met`.
 - **New step** → history, state and shared budgets are preserved; all actual costs and attempts
   count; the global budget is not reset and an unaccepted red step never becomes extra progress.
-- Total planner calls: `1 + number of steps`, plus legitimate revisions on new facts and the
-  current step's loop-backs. A separate final check is not a step and adds no call.
+- Total planner calls: successful path `1 + number of steps`, **plus** legitimate
+  revisions/loop-backs on new facts **and** bounded same-pending-PLAN continuations (clarification or
+  probe refinement). Continuations count against the existing stop-loss (a probe budget is fixed
+  before it runs), are never unchanged confirmations or routing calls, and create no hidden exempt
+  calls. A separate final check is not a step and adds no call.
 
 ## Calibration
 
@@ -114,14 +127,23 @@ specialisation for measurable goals, not a universal gate.
 
 ## Plan hygiene (mandatory, checked at gate 1)
 
-- **Command contract.** Every decisive command names a selector that resolves to at least one
-  target, an expanded argv, a legal phase and scope, and a declared expected outcome
-  (`green` / `expected-negative` / `informational`). Zero discovered targets is failure, not
-  success. A command that cannot run is a PLAN defect, not an exception.
+- **Command contract (only for commands the plan freezes).** Every decisive command names a
+  selector that resolves to at least one target, an expanded argv, a legal phase and scope, and a
+  declared expected outcome (`green` / `expected-negative` / `informational`). Zero discovered
+  targets is failure, not success. A command that cannot run is a PLAN defect, not an exception.
+  When verification is manual observation or a focused recomputation, record that choice and do
+  not invent a command line to fill these rows.
+- **Verification choice.** Name the cheapest sufficient method per carrying claim. Independent
+  manual observation or a focused recomputation can be enough; "verifiable evidence" does not
+  mandate a new executable checker. A bespoke checker needs a concrete reason why existing or
+  manual means are insufficient and a bound proportional to the artefact. This economy never
+  waives a genuine required test, security or carrying-veto gate.
 - **Proportional depth.** A small, well-understood change gets a compact plan; the full contract
   and variant matrix are for wide blast radius or an unproven mechanism. When the mechanism is
   unproven, plan a **bounded probe** first (one question, one observable answer, fixed budget)
-  and write the acceptance contract after it.
+  and write the acceptance contract after it. In the incremental form the first step resolves the
+  leading unknown and later work stays conditional, not a full speculative backlog; one increment
+  may finish the goal. Do not change to incremental merely to excuse a larger plan.
 - **Stop-loss.** Fix the revision/wall-clock/measurement budget at gate 1. Its exhaustion routes
   to `pdca-escalate`, never to an unplanned attempt; a measured gap that cannot reach the target
   is recorded, not bought off with another revision.
@@ -132,14 +154,18 @@ specialisation for measurable goals, not a universal gate.
 
 ## Output contract (compact, in the language of the dialogue)
 
-- **Form and overlay** with a one-line reason, and the **nearest useful step** (at cycle start).
+- **Form and overlay** with a one-line reason naming the justified method and volume bound, or the
+  missing knowledge that decides the next action; the **nearest useful step** (at cycle start).
 - **Goal and acceptance criteria** (each with verification method and negative case).
 - **Carrying claims** with IDs, separate from quality axes.
 - **Constraints / assumptions.**
 - **Gaps**: statement gap → evidence / assumption / blocker.
 - **Minimal solution** + alternatives with the chosen one (if non-obvious).
 - **Unit decomposition** with dependencies (or an explicit no-split decision) and priorities.
-- **Command contract** (selector, expanded argv, phase/scope, expected outcome) and its validation.
+- **Command contract** — only for commands the plan actually freezes (selector, expanded argv,
+  phase/scope, expected outcome), with its validation.
+- **Verification choice** — cheapest sufficient method per carrying claim; for a bespoke checker,
+  why existing or manual means are insufficient and its bound.
 - **Stop-loss budget** and, when the mechanism is unproven, the bounded probe before it.
 - **Risks and stop conditions.**
 - **DO → PLAN classification** (when returning).

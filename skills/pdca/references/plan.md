@@ -7,19 +7,78 @@ stay in `../SKILL.md`.
 
 - goal and expected result;
 - declared **form** (ordinary cycle / incremental / collection) and **overlay** (none, coder,
-  coder+.NET), with a one-line reason tied to what is known and what is not;
+  coder+.NET), with a one-line reason naming **the method already justified and how the volume is
+  bounded**, or **the missing knowledge that decides the next action**; one finished result, one
+  file or a known format is not by itself a known method;
 - constraints; assumptions;
 - acceptance criteria, **each with a verification method** and a negative case;
 - **carrying claims** with IDs — the central claims of the goal, mandatory criteria and hard
   validity constraints — listed separately from quality-rubric axes;
 - decomposition into units with dependencies, or an explicit decision not to split a simple task;
 - the **nearest useful step** and its observable result;
+- **verification choice** — the cheapest sufficient method per carrying claim; for a bespoke
+  checker, why existing or manual means are insufficient and the bound that keeps it proportional
+  (§Verification economy);
 - means and access;
 - risks and stop conditions;
 - stop-loss budget (wall clock / revisions / measurements).
 
 For a campaign step the same fields are narrowed to that step, while the whole goal, requirements
-and constraints stay stored; a full backlog is not imitated.
+and constraints stay stored; a full backlog is not imitated. On a resume/replan, a still-valid form
+rationale and verification choice are carried **by reference**, not re-authored or re-classified.
+
+## Entry routing and bounded continuations
+
+**Fresh entry.** A dispatch with no decided form and no persisted plan enters as `contract: pdca`,
+`form: UNDECIDED`; one goal or deliverable does not make it `form=cycle`, and the driver names no
+`cycle-control`/`campaign-control` before the PLAN. The single planner brief carries the original
+goal, a user-named form/contract separately as a constraint, the facts, the decision-relevant
+unknowns, and the **form discriminators themselves** (`../SKILL.md` §Forms) — names alone are not
+enough for a read-denied planner. The planner returns the form, overlay, nearest useful step and
+carrying claims, or one bounded choice probe (below). This is a stage of the existing dispatcher, not
+a fourth context, role or recursive orchestrator.
+
+**Routing the decision.** Cycle and campaign stay with the same controller (`cycle-control` /
+`campaign-control`). A chosen collection hands the existing initial batch plan **by reference** back
+to the cheap primary/collection owner, which loads `pdca-collection` and starts the per-item/lane
+machinery under the existing permissions; the entry controller does not become the batch owner, does
+not self-delegate, and `collection-lane` stays an existing caller-dispatched lane. Batch-level
+ownership and lane duties stay distinct; a single-lane batch is normal; legitimate per-item PLANs
+and lane calls stay as the collection contract requires.
+
+**No second PLAN.** The returned plan **is** the initial plan: `pdca-executor` persists it by the
+existing rules, and the controller continues at the current PLAN → DO gate with every validation,
+approval and low-tier boundary. An entry-owned plan is never re-authored as Input 2's full PLAN. A
+form-known dispatch that genuinely has no plan of its own (for example a collection task's own PLAN)
+still runs that PLAN; a persisted `plan_handoff`/resume is never re-planned. A named plan ref in the
+existing brief/status suffices — no new state file, schema or counter.
+
+**Bounded choice probe.** The planner may authorize one bounded probe before the form is settled:
+name the open decision, observable outcomes and budget, and keep `form: UNDECIDED`. A choice probe
+opens its decision with an observable outcome before dependent work is fixed; validating a known
+method is legitimate. Do not make every design task incremental; permissible assumptions may bound a
+calculation-only result but do not evidence a decision-critical mechanism. `pdca-executor` runs
+exactly that probe and `pdca-scout` observes; the same
+planner refines the **same pending PLAN** from the facts and then chooses. A probe is not an
+independent cycle, creates no fresh controller, adds no per-tool CHECK and no extra full PLAN, and
+waives no permission or approval. A missing method/volume rationale is a completeness clarification
+with the same planner — not automatically incremental or a STOP — and never bumps `r`/`n`.
+
+**Campaign bootstrap order.** A campaign reuses the entry choice and first useful step:
+`pdca-executor` persists the immutable preparation record with `preparation_ref` from that plan
+(clarify the same pending PLAN only if preparation fields are genuinely missing), then
+baseline/runtime is bootstrapped before the first step DO; the initial PLAN is not duplicated and
+approval/counters follow `../pdca-incremental/SKILL.md` §0.
+
+**Bespoke checker admission.** The driver checks only that a proposed bespoke checker's verification
+choice carries a concrete insufficiency reason and a bound; if either is absent, it returns an
+incomplete pending PLAN to the same planner and does not judge necessity.
+
+**Planner-call accounting.** Successful path: `1 + number of steps`, plus legitimate
+revisions/loop-backs, **and** bounded same-pending-PLAN continuations (clarification or probe
+refinement). Continuations are not new strategic decisions, count against the existing stop-loss
+(probe budget fixed before the run), are never unchanged confirmations or routing calls, and create
+no hidden exempt calls.
 
 ### Gap closure
 
@@ -44,11 +103,13 @@ where the claim is not numeric.
 
 ### Verification economy
 
-No bespoke verifier or coverage audit "because we can build one": the
-plan needs a rationale for the current decision and the cheapest sufficient method. A custom
-checker is allowed when the PLAN justifies why existing means and manual checking of the carrying
-claims are insufficient, and its size is proportional to the artefact under check. A full future
-verification infrastructure is not the default at the start.
+No bespoke verifier or coverage audit "because we can build one": the plan needs a rationale for
+the current decision and the cheapest sufficient method. Independent manual observation or a
+focused recomputation can be sufficient; "verifiable evidence" does not require a new executable
+checker. A custom checker is allowed when the PLAN justifies why existing means and manual checking
+of the carrying claims are insufficient, and its size is proportional to the artefact under check.
+A full future verification infrastructure is not the default at the start, and a genuine required
+test, security or carrying-veto gate is never waived by this economy.
 
 ### Evidence requirements match role permissions
 
@@ -65,8 +126,11 @@ decision it opens; the bounded cost/stop condition.
 ## Plan command contract (PLAN close)
 
 Every command or invocation the plan freezes is **validated before gate 1** — by `pdca-executor`,
-against the actual environment, with the result recorded in the status file. A plan whose decisive
-command cannot produce a valid result is **not `ready`**:
+against the actual environment, with the result recorded in the status file. The contract is
+**conditional on an actual command**: when the verification choice is manual observation or a
+focused recomputation, the plan records that choice and does not invent a command line,
+selector or argument vector to fill these rows. A plan whose decisive command cannot produce a
+valid result is **not `ready`**:
 
 - **selector resolves** — the identifier names at least one target inside the declared scope; a
   short or ambiguous identifier is rejected even when the tool accepts it and exits `0`;
@@ -129,6 +193,14 @@ A plan may not execute stale anchors, and cosmetic drift may not manufacture a r
 PLAN depth follows risk, not ceremony: a small, well-understood change gets a compact plan; the
 full contract and the measurement budget belong to a change whose mechanism is unproven or whose
 blast radius is wide.
+
+**PLAN chooses the approach; DO develops the deliverable.** The plan fixes the approach, the
+nearest justified action, criteria/evidence, bounds and stop condition. It may carry the reasoning
+or calculation needed to choose the approach, but it does not pre-write the final artefact or solve
+every unresolved downstream choice. In the incremental form the first step resolves the leading
+unknown, later work stays conditional on its result rather than a full speculative backlog, and one
+increment may finish the goal. Do not change to incremental merely to excuse a larger plan; a
+compact ordinary plan is still correct for a known bounded task.
 
 For a measurable target whose mechanism is **not yet demonstrated**, PLAN first authorises a
 **bounded probe** — one question, one observable answer, a fixed budget — and writes the acceptance

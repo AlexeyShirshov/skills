@@ -27,7 +27,6 @@ SKILL = SKILL_DIR / "SKILL.md"
 # The .NET text is an overlay: the executable inner-loop wiring lives in SKILL.md
 # plus the phase references it loads, so the contract corpus is the union.
 REFERENCE_DIR = SKILL_DIR / "references"
-EN_CODER = SKILL_DIR / "assets/opencode-agents/pdca-executor.md"
 SELECTOR = "FullyQualifiedName~Foo.Tests.BarTests"
 SELECTOR_2 = "FullyQualifiedName~Shared.Tests.ContractTests"
 SEL_A = "FullyQualifiedName~Foo.Tests.A"
@@ -975,96 +974,106 @@ class ContractWiringTests(unittest.TestCase):
         )
 
 
-class _CoderParityMixin:
-    """Shared D3 inner-loop bullet guards for the coder bodies in ``ANCHORS``.
+class InnerLoopDocsTest(unittest.TestCase):
+    """D3 guards: the .NET overlay docs carry the inner-loop obligation.
 
-    Rule-presence only: reads the coder Markdown body as text and asserts the
-    standalone bullet is present, that it sits between the Evidence and Git
-    bullets, and that it encodes the key concepts (the contract and every brief
-    are EN-only). It never executes an agent or the cycle.
+    The shared executor asset is domain-neutral by design; the .NET-specific
+    inner-loop gate lives in this overlay's phase references.  Each guard is
+    scoped to its normative section, so dropping one load-bearing obligation
+    fails the test instead of being masked by a keyword elsewhere in the docs.
     """
 
-    # Stable bold prefixes introduced by D3.
-    ANCHORS: dict = {}
-    EVIDENCE: dict = {}
+    PLAN_START = "## Inner-loop gate: `test scope`, journal, report"
+    PLAN_END = "## .NET test strategy deltas"
+    ACT_START = "## Execution journal and the unit/integration policy"
+    ACT_END = "### DO report: test evidence"
 
     @classmethod
     def setUpClass(cls):
-        cls.texts = {
-            path: path.read_text(encoding="utf-8") for path in cls.ANCHORS
-        }
+        cls.plan_raw = (REFERENCE_DIR / "plan.md").read_text(encoding="utf-8")
+        cls.act_raw = (REFERENCE_DIR / "act.md").read_text(encoding="utf-8")
+        cls.plan = cls.section(cls.plan_raw, cls.PLAN_START, cls.PLAN_END)
+        cls.act = cls.section(cls.act_raw, cls.ACT_START, cls.ACT_END)
 
-    def _present(self, text, path, table, what):
-        """Return the first accepted wording from ``table[path]`` found in ``text``."""
-        for variant in table[path]:
-            if variant in text:
-                return variant
-        self.fail(
-            "%s missing in %s: none of %r" % (what, path, table[path])
+    @staticmethod
+    def section(text, start, end):
+        begin = text.find(start)
+        if begin < 0:
+            raise AssertionError("section not found: %s" % start)
+        stop = text.find(end, begin + len(start))
+        if stop < 0:
+            raise AssertionError("section end not found: %s" % end)
+        return text[begin:stop]
+
+    @staticmethod
+    def clean(text):
+        text = text.replace("`", "").replace("*", "")
+        return re.sub(r"\s+", " ", text)
+
+    def assert_inner_loop_contract(self, plan, act):
+        plan = self.clean(plan)
+        act = self.clean(act)
+        for obligation in (
+            # affected unit subset
+            "mandatory structured test scope",
+            "affected test project(s)",
+            # the filter is not the classification criterion
+            "presence of --filter is not a unit-vs-integration criterion",
+            # one DO → CHECK boundary for integration
+            "single DO → CHECK comprehensive sweep point",
+            # no whole-solution inner loop
+            "whole solution in the inner loop",
+            # the report is derived from the raw journal
+            "reconciled against it with --journal",
+        ):
+            self.assertIn(obligation, plan)
+        for obligation in (
+            # unit work is unlimited; integration is boundary-only
+            "Unit tests are unlimited inside DO",
+            "The presence or absence of --filter is not a unit-vs-integration criterion",
+            "permitted at the DO → CHECK boundary",
+            # ledger projected from the raw journal, and omissions fail
+            "projected from that journal",
+            "omits a started execution is rejected",
+        ):
+            self.assertIn(obligation, act)
+
+    def test_scoped_sections_carry_the_inner_loop_contract(self):
+        self.assertTrue(self.plan.strip(), "plan inner-loop section missing")
+        self.assertTrue(self.act.strip(), "act journal section missing")
+        self.assert_inner_loop_contract(self.plan, self.act)
+
+    def test_each_obligation_is_load_bearing(self):
+        # Delete one obligation at a time from its scoped section; the contract
+        # check must fail rather than pass on a keyword elsewhere in the docs.
+        cases = (
+            ("plan", self.plan, "`test scope`", "test may"),
+            ("plan", self.plan, "affected test project(s)", "affected test"),
+            ("plan", self.plan, "unit-vs-integration criterion",
+             "unit-or-integration criterion"),
+            ("plan", self.plan, "DO → CHECK comprehensive sweep point", "sweep point"),
+            ("plan", self.plan, "whole solution", "whole project"),
+            ("plan", self.plan, "reconciled against it with `--journal`",
+             "compared with a hand-written report"),
+            ("act", self.act, "unlimited inside DO",
+             "capped inside DO"),
+            ("act", self.act, "unit-vs-integration criterion",
+             "unit-or-integration criterion"),
+            ("act", self.act, "DO → CHECK boundary",
+             "cycle boundary"),
+            ("act", self.act, "**projected from that journal**",
+             "selected by the author"),
+            ("act", self.act, "omits a started execution",
+             "includes every started execution"),
         )
-
-    def _bullet(self, text, path):
-        """Return the inner-loop bullet text from its anchor to the next item."""
-        anchor = self._present(text, path, self.ANCHORS, "inner-loop bullet anchor")
-        rest = text[text.index(anchor):]
-        match = re.search(r"\n(?=- \*\*|#{1,6}\s)", rest)
-        return rest[: match.start()] if match else rest
-
-    def assert_parity(self, texts):
-        """Assert both bodies carry the anchor, concepts and Evidence→Git order."""
-        for path in self.ANCHORS:
-            self._present(texts[path], path, self.ANCHORS, "inner-loop bullet anchor")
-        for path in self.ANCHORS:
-            bullet = self._bullet(texts[path], path).lower()
-            # affected subset
-            self.assertRegex(bullet, r"affected|subset")
-            # both run kinds are named and distinguished (E10)
-            self.assertRegex(bullet, r"unit")
-            self.assertRegex(bullet, r"integration")
-            # the filter is explicitly NOT the classification criterion
-            self.assertRegex(bullet, r"filter")
-            # stream / DO→CHECK boundary for integration
-            self.assertRegex(bullet, r"boundary")
-            # prohibition of the whole solution (a whole *unit project* run is legal)
-            self.assertRegex(bullet, r"whole solution")
-            # the ledger is projected from the raw journal
-            self.assertRegex(bullet, r"journal")
-        for path in self.ANCHORS:
-            text = texts[path]
-            evidence = text.index(
-                self._present(text, path, self.EVIDENCE, "evidence bullet")
-            )
-            anchor = text.index(
-                self._present(text, path, self.ANCHORS, "inner-loop bullet anchor")
-            )
-            git = text.index("**Git.**")
-            self.assertLess(evidence, anchor)
-            self.assertLess(anchor, git)
-
-    def test_both_bodies_carry_the_inner_loop_bullet(self):
-        self.assert_parity(self.texts)
-
-    def test_bullet_concepts_affected_filter_boundary_no_whole_project(self):
-        self.assert_parity(self.texts)
-
-    def test_bullet_sits_between_evidence_and_git(self):
-        self.assert_parity(self.texts)
-
-    def test_negative_dropped_inner_loop_anchor_detected(self):
-        # Dropping one body's inner-loop anchor must make the parity check fail,
-        # proving it is load-bearing (not presence-only decoration).
-        mutated = dict(self.texts)
-        mutated[EN_CODER] = mutated[EN_CODER].replace("**Inner loop", "**Inner work")
-        self.assertNotEqual(mutated[EN_CODER], self.texts[EN_CODER])
-        with self.assertRaises(AssertionError):
-            self.assert_parity(mutated)
-
-
-class CoderParityTests(_CoderParityMixin, unittest.TestCase):
-    """D3 guards: the published EN coder asset carries the inner-loop bullet."""
-
-    ANCHORS = {EN_CODER: ("**Inner loop",)}
-    EVIDENCE = {EN_CODER: ("Evidence, not claims",)}
+        for label, base, old, new in cases:
+            with self.subTest(target=label, obligation=old[:60]):
+                mutated = base.replace(old, new)
+                self.assertNotEqual(mutated, base, "mutation had no effect")
+                plan = mutated if label == "plan" else self.plan
+                act = mutated if label == "act" else self.act
+                with self.assertRaises(AssertionError):
+                    self.assert_inner_loop_contract(plan, act)
 
 
 

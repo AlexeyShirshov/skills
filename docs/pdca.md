@@ -39,9 +39,16 @@ task, same `N`/`r`/`n`, DO does not start.
 
 `pdca` is caught by the phrases "by the cycle", "via PDCA", "run PDCA": the skill is the family's
 single entry, and its one PLAN classifies the goal into a form and picks the overlay instead of
-routing to a separate umbrella skill. Naming another skill explicitly (`pdca-dotnet`,
-`pdca-collection`, …) is a constraint the PLAN works inside rather than re-routes. The domain-neutral
-`pdca` stays the family's "reference": it does not redefine other skills' triggers.
+routing to a separate umbrella skill. A fresh entry is **form-undecided** (`contract: pdca`,
+`form: UNDECIDED`): one goal or deliverable does not make it an ordinary cycle, and the PLAN must
+name the already-justified method and volume bound — or the missing knowledge that decides the next
+action — before the same controller adopts the cycle or campaign context. A chosen collection is
+handed back by reference to the cheap primary/collection owner, which loads `pdca-collection`;
+batch-level ownership is not a lane, a single-lane batch stays normal, and the entry plan is reused
+at the existing PLAN → DO gate. Naming another skill explicitly
+(`pdca-dotnet`, `pdca-collection`, …) is a constraint the PLAN works inside rather than re-routes.
+The domain-neutral `pdca` stays the family's "reference": it does not redefine other skills'
+triggers.
 
 ## Who does what work
 
@@ -320,6 +327,7 @@ short preamble before the first `##` heading. The "claim → source" map:
 |---|---|
 | `pdca` is domain-neutral: it names only roles, phases and forms; what to verify with is decided by PLAN | `skills/pdca/SKILL.md:6-17` |
 | `pdca` is the single entry: one PLAN decides the form and the overlay; no separate umbrella and no second PLAN | `skills/pdca/SKILL.md §Entry: one PLAN decides the form` |
+| A fresh entry is `contract: pdca`, `form: UNDECIDED`; one deliverable is not a known method, and a chosen collection is handed to the cheap primary/collection owner | `skills/pdca/SKILL.md §Entry: one PLAN decides the form` |
 | The three forms and how they differ | `skills/pdca/SKILL.md §Forms` |
 | The overlays (`pdca-coder`, `pdca-dotnet` inheriting it) add differences, never a second cycle | `skills/pdca/SKILL.md §Overlays` |
 | Lens: probe, increment, step and what counts as credit | `skills/pdca/SKILL.md §Lens: probe, increment and step` |

@@ -18,11 +18,11 @@ The roles are **subagent names**. Every skill in the family is explicit about it
 
 | Skill | Roles it dispatches | Role assets shipped |
 |---|---|---|
-| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 files) |
-| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 files) |
-| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/opencode-agents/*.md` (7 files) |
-| `pdca-collection` | all of the above per item, plus the runner `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` |
-| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per step, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` |
+| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 files — the canonical shared set) |
+| `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 files — 6 byte-identical mirrors + specialist) |
+| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/opencode-agents/*.md` (7 files — 6 byte-identical mirrors + specialist) |
+| `pdca-collection` | all of the above per item, plus the runner `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` (mirror) |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per step, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` (mirror) |
 
 Every shipped agent id carries the `pdca-` prefix and is **the same across the base and the overlays**,
 so a skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
@@ -110,27 +110,43 @@ cp skills/pdca/assets/opencode-agents/*.md ~/.config/opencode/agents/
 cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 ```
 
-> **One overlay chain, one asset set.** The base and both overlays ship **the same six ids**
-> (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`, and — in
-> `pdca-coder`/`pdca-dotnet` — `pdca-security-auditor`) with **different bodies**: `pdca` is
-> domain-neutral, `pdca-coder` selects a toolchain per task, `pdca-dotnet` inherits the coder overlay
-> and carries the evidence contract and the inner-loop gate. Copying two of them into one directory
-> silently overwrites one with the other. Install one chain's assets, or keep a single shared set (§4).
+> **One shared set, generated mirrors.** The six shared roles (`pdca-planner`, `pdca-executor`,
+> `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-orchestrator`) have **one authoritative source**:
+> `skills/pdca/assets/opencode-agents/`. `pdca-coder` and `pdca-dotnet` ship byte-identical real-file
+> copies of those six (frontmatter, body and permissions), and `pdca-collection`/`pdca-incremental`
+> carry only the same `pdca-orchestrator` copy. Regenerate or verify the mirrors with
+> `python3 skills/pdca/scripts/sync_role_assets.py --check` (or `--fix`); the explicit allowlist
+> never touches `pdca-security-auditor` or hand-written files. `pdca-security-auditor` is the only
+> coder/.NET role that differs by design — it is a specialist gather role, not one of the shared six.
+> Copying `pdca`/`pdca-coder`/`pdca-dotnet` assets therefore yields the same six roles; a form package
+> (`pdca-collection`/`pdca-incremental`) contributes only the orchestrator and is combined with one of
+> those six-role packages.
 
-## 4. Keep one shared set when you use several families
+## 4. One authoritative source, host adapters kept separate
 
-The base and its overlays are **layers of one chain** (`pdca-dotnet` inherits `pdca-coder`, and both
-add to `pdca`), but their role ids coincide by design, so one deployed copy always wins. A third,
-richer copy may already live in your config repository. Pick one source of truth:
+The base `skills/pdca/assets/opencode-agents/` is the **single source of truth** for the shared
+roles. The overlay copies are generated from it, and a host config repository is an **adapter**, not
+another source: never copy host role files back into the skills. Host-specific descriptions, model
+tier bindings and frontmatter translation stay in that adapter/host profile and are applied when the
+agent files are deployed.
 
-- **one family** — copy that skill's `assets/opencode-agents/*.md`;
-- **shared host set** — keep the role files in your host config repository and mirror them into the
-  skill assets mechanically. The pack ships no mirroring script: if you keep one, put it in your
-  config repository and make it fail in CI on drift. This is what keeps a `.NET` host from silently
-  losing the `pdca-coder` bodies, and vice versa.
+- **one package** — copy `skills/pdca/assets/opencode-agents/*.md` (or the equivalent six-role
+  mirror in `pdca-coder`/`pdca-dotnet`); add the form package's orchestrator if you use a form;
+- **CI drift guard** — `python3 skills/pdca/scripts/sync_role_assets.py --check` fails on any
+  missing or drifted mirror; `--fix` writes only the allowlisted mirror paths. The canonical files
+  are never written by the generator.
 
 Either way the role files carry only a `# tier:` label and permissions. **Never put a `model:` into
 a role markdown** — model ids are bound by the host profile (§8).
+
+> **Downstream migration is a separate step.** Vendoring this source into a config repository does
+> **not** update an already deployed host. The current `opencode-config` `sync-roles` helper is tied
+> to the old `pdca-dotnet` mirror and compares frontmatter settings — including permissions — and
+> heading **levels**, but not instruction text. A heading-level mismatch may therefore be detected;
+> an instruction-only edit is not, and its `--fix` preserves the existing body, so it cannot migrate
+> instructions. After the source commit/push/vendor, the host role bodies must be migrated
+> deliberately and re-verified — do not assume `vendor-skills` or `sync_role_assets.py --fix` updated
+> them.
 
 ## 5. Install the runner `pdca-orchestrator`
 

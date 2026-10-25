@@ -9,8 +9,9 @@ permission:
   # grep/lsp/webfetch/websearch/edit/write/task/bash. The check judges the supplied brief,
   # but may open the cycle's evidence artifacts directly to reconcile the manifest rows.
   # Neutral default: the cycle state dir `.pdca/**` (status `.pdca/status/**` + evidence
-  # `.pdca/<task>/rv<k>/**`, §Frozen evidence manifest; the overlay may override). Product
-  # artefacts/diffs stay unavailable.
+  # `.pdca/<task>/rv<k>/**`, §Frozen evidence manifest). All common templates use this
+  # scoped root; a host adapter may narrow it separately. Product artefacts/diffs and
+  # tool output dirs stay unavailable.
   "*": deny
   read:
     ".pdca/**": allow
@@ -64,9 +65,9 @@ of the status/evidence/manifest files) to reconcile the contract rows.
    triggers named in the plan.
 8. **Escalation counter awareness** — every failed CHECK of the current revision counts; the
    same defect returning after one fix, or different defects after the third failed CHECK of
-   revision `r`, is an escalation case (there is no 4th attempt). The supplied defect history is
-   **history for the recurrence counter**, not evidence for the current verdict; the verdict
-   rests only on the **full current report**.
+   revision `r`, is an escalation case (there is no 4th attempt). The defect history persists
+   across revisions: the supplied history is **history for the recurrence counter**, not evidence
+   for the current verdict; the verdict rests only on the **full current report**.
 9. **No numbers/pointers → no pass.** A claim backed only by the author's self-report is
    `unverified` (Verifier Theater).
 10. **Mandatory evidence completeness gate:** no PASS while a **binding/applicable** `required`

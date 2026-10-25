@@ -107,7 +107,7 @@ CONFINED_CONTEXTS = frozenset(
 # and the compact-core ceiling that holds the base near its design target.
 SKILL_HARD_LIMIT = 50 * 1024
 REFERENCE_HARD_LIMIT = 45 * 1024
-# The design target for the base is ≤ 35 KiB; it currently sits at ~38.6 KiB. This is a
+# The design target for the base is ≤ 35 KiB; it now sits just under 40 KiB. This is a
 # *growth* ceiling, not the contract target: it is deliberately not raised in passing.
 BASE_COMPACT_CEILING = 40 * 1024
 
@@ -424,7 +424,7 @@ class ContractConsistencyTest(PhraseAssertions):
 
     def test_step_boundary_is_one_planner_call(self):
         self.assertPhrase("**Step boundary — one planner call**", self.lens)
-        self.assertPhrase("Total planner calls are at most", self.lens)
+        self.assertPhrase("Total planner calls: successful path", self.lens)
         self.assertPhrase("1 + number of steps", self.lens)
         self.assertPhrase("A **separate final check does not count as a", self.lens)
         self.assertPhrase("Separate DECIDE → brief → STOP turns on the same content are a repeated PLAN", self.lens)
@@ -487,6 +487,39 @@ class ContractConsistencyTest(PhraseAssertions):
                 self.assertPhrase(token, self.gate1)
         self.assertPhrase("references/plan.md", self.gate1)
         self.assertPhrase("the user's approval", self.gate1)
+
+    def test_gate_1_requires_form_rationale_and_verification_choice(self):
+        for token in (
+            "form rationale",
+            "justified method + bound",
+            "the missing knowledge that decides the next action",
+            "verification choice",
+            "a bespoke checker also needs its reason and bound",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.gate1)
+
+    def test_gate_1_fields_are_carried_by_reference_on_resume_or_replan(self):
+        phase = norm(between(self.raw, "## Phase contracts (generic)", "### Claims and veto"))
+        self.assertPhrase("gate-1 fields above (definitions there)", phase)
+        self.assertPhrase("still-valid rationale and verification choice are carried by reference",
+                          phase)
+        self.assertPhrase("not re-authored/re-classified", phase)
+
+    def test_red_flag_points_to_the_full_gate_1_list(self):
+        section = norm(between(self.raw, "## Red flags (self-check)", "## Normal-mode approval"))
+        self.assertPhrase("the full Gate 1 list in §Transition gates", section)
+        self.assertPhrase("mandatory plan field", section)
+
+    def test_planner_cap_treats_bounded_continuations_as_same_pending_plan(self):
+        for token in (
+            "successful path 1 + number of steps",
+            "bounded same-pending-PLAN continuations",
+            "count against the existing stop-loss",
+            "no hidden exempt calls",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.lens)
 
     def test_gate_2_blocker_is_not_done(self):
         gate2 = norm(between(self.raw, "2. **DO → CHECK**", "3. **CHECK → ACT**"))
@@ -727,8 +760,8 @@ class ContractConsistencyTest(PhraseAssertions):
                 self.assertLess(path.stat().st_size, SKILL_HARD_LIMIT, "over the 50 KiB hard limit")
 
     def test_base_holds_its_compact_core(self):
-        # Design target for the base is ≤ 35 KiB; it currently sits at ~38.6 KiB, so this
-        # guard holds the *growth* at the next whole-KiB step rather than lowering the bar.
+        # Design target for the base is ≤ 35 KiB; the protocol-complete core now sits just
+        # under 40 KiB, so this guard holds the *growth* at that ceiling rather than lowering it.
         size = BASE.stat().st_size
         self.assertLessEqual(size, BASE_COMPACT_CEILING, "base grew past its compact-core ceiling")
 
@@ -855,6 +888,75 @@ class AuditGateBoundaryTest(PhraseAssertions):
         # The veto detail lives in the CHECK reference; the phase contract must point at it.
         check = norm(between(read(BASE), "**CHECK** is independent", "**ACT** finalizes"))
         self.assertPhrase("Details and the veto: `references/check.md`", check)
+
+
+class PlanScopeAndVerificationEconomyTest(PhraseAssertions):
+    """PLAN selects the approach; DO develops it; verification stays proportionate.
+
+    Rule-presence only: this pins the contract wording, not a model's behaviour.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.plan_raw = read(REFERENCES / "plan.md")
+        cls.plan = norm(cls.plan_raw)
+        cls.planner = norm(read(ASSET_AGENTS / "pdca-planner.md"))
+
+    def test_form_reason_names_method_and_volume_or_missing_knowledge(self):
+        for token in (
+            "the method already justified and how the volume is bounded",
+            "the missing knowledge that decides the next action",
+            "one finished result, one file or a known format is not by itself a known method",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.plan)
+
+    def test_plan_selects_the_approach_and_do_develops_the_deliverable(self):
+        for token in (
+            "PLAN chooses the approach; DO develops the deliverable",
+            "does not pre-write the final artefact or solve every unresolved downstream choice",
+            "the first step resolves the leading unknown",
+            "later work stays conditional on its result rather than a full speculative backlog",
+            "one increment may finish the goal",
+            "Do not change to incremental merely to excuse a larger plan",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.plan)
+
+    def test_verification_economy_allows_manual_observation_and_recomputation(self):
+        for token in (
+            "verification choice",
+            "Independent manual observation or a focused recomputation can be sufficient",
+            '"verifiable evidence" does not require a new executable checker',
+            "why existing means and manual checking of the carrying claims are insufficient",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.plan)
+
+    def test_verification_economy_preserves_genuine_required_gates(self):
+        self.assertPhrase(
+            "a genuine required test, security or carrying-veto gate is never waived",
+            self.plan,
+        )
+
+    def test_command_contract_rows_are_conditional_on_an_actual_command(self):
+        for token in (
+            "conditional on an actual command",
+            "does not invent a command line",
+            "A plan whose decisive command cannot produce a valid result",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.plan)
+
+    def test_planner_output_carries_form_reason_and_verification_choice(self):
+        for token in (
+            "Form and overlay with a one-line reason naming the justified method and volume bound",
+            "Command contract — only for commands the plan actually freezes",
+            "Verification choice",
+            "why existing or manual means are insufficient and its bound",
+        ):
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.planner)
 
 
 class HelperStagingPrerequisiteTest(PhraseAssertions):

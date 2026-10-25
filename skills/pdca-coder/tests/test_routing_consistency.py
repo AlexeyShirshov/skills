@@ -125,7 +125,7 @@ class RoleAssetTest(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertIn(tool, check)
                 allowed = {k for k, v in check[tool].items() if v == "allow"}
-                self.assertEqual({".pdca/**", "TestResults/**", "StrykerOutput/**"}, allowed)
+                self.assertEqual({".pdca/**"}, allowed)
         self.assertNotIn("bash", check)
         self.assertNotIn("edit", check)
         self.assertNotIn("write", check)

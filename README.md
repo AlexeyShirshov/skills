@@ -52,9 +52,11 @@ Without `-g` the CLI targets the current project.
 
 Installing a skill is only half of the setup: the cycle dispatches **subagents**, so the host needs
 the role agents and the runner `pdca-orchestrator` (they ship in the skills' `assets/opencode-agents/`:
-`pdca` carries the six role files — `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`,
-`pdca-escalate`, `pdca-orchestrator` — `pdca-coder` and `pdca-dotnet` add `pdca-security-auditor`,
-while the forms `pdca-collection` and `pdca-incremental` carry only the runner prompt),
+the six shared roles — `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`,
+`pdca-orchestrator` — are canonical in `pdca` and byte-identical mirrors in the overlays;
+`pdca-coder` and `pdca-dotnet` add only the `pdca-security-auditor` specialist, while the forms
+`pdca-collection` and `pdca-incremental` carry only the runner mirror; check or regenerate the
+mirrors with `python3 skills/pdca/scripts/sync_role_assets.py --check` / `--fix`),
 nested delegation (`experimental.subagent_depth`) and `subagent` permissions. Every agent id is
 `pdca-`prefixed (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-scout`,
 `pdca-security-auditor`, `pdca-orchestrator`), so it cannot collide with an existing
