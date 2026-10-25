@@ -1,0 +1,160 @@
+{
+  "schema": "egg-drop-fixtures-v1",
+  "controls": 22,
+  "cases": [
+    {
+      "case": "known-good",
+      "path": "known-good/answer.md",
+      "expected_status": "PASS",
+      "expected_id": null,
+      "description": "handwritten arithmetic-consistent reference answer"
+    },
+    {
+      "case": "m01-missing-section",
+      "path": "controls/m01-missing-section/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G01",
+      "description": "section 6 removed"
+    },
+    {
+      "case": "m02-section-order",
+      "path": "controls/m02-section-order/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G01",
+      "description": "sections 5 and 6 swapped"
+    },
+    {
+      "case": "m03-missing-s4-item",
+      "path": "controls/m03-missing-s4-item/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G02",
+      "description": "section 4 weak points item and its pointer removed"
+    },
+    {
+      "case": "m04-mass-501",
+      "path": "controls/m04-mass-501/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "description": "one material mass raised so the total is 501 g"
+    },
+    {
+      "case": "m05-side-301",
+      "path": "controls/m05-side-301/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "description": "outer width 301 mm"
+    },
+    {
+      "case": "m06-volume-300-cube",
+      "path": "controls/m06-volume-300-cube/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "description": "outer dimensions 300x300x300 mm (V=0.027 m3)"
+    },
+    {
+      "case": "m07-budget-501",
+      "path": "controls/m07-budget-501/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "description": "material cost raised so the budget is $5.01"
+    },
+    {
+      "case": "m08-build-31",
+      "path": "controls/m08-build-31/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "description": "build time 31 min"
+    },
+    {
+      "case": "m09-metal-used",
+      "path": "controls/m09-metal-used/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G05",
+      "description": "metal bracket used in the project prose"
+    },
+    {
+      "case": "m10-egg-glued",
+      "path": "controls/m10-egg-glued/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G05",
+      "description": "egg declared glued"
+    },
+    {
+      "case": "m11-zero-stroke",
+      "path": "controls/m11-zero-stroke/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G06",
+      "description": "available braking stroke set to zero"
+    },
+    {
+      "case": "m12-wrong-velocity",
+      "path": "controls/m12-wrong-velocity/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "description": "declared impact velocity 12 m/s"
+    },
+    {
+      "case": "m13-wrong-energy",
+      "path": "controls/m13-wrong-energy/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "description": "declared kinetic energy 60 J"
+    },
+    {
+      "case": "m14-wrong-force",
+      "path": "controls/m14-wrong-force/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "description": "declared peak force 500 N"
+    },
+    {
+      "case": "m15-wrong-load",
+      "path": "controls/m15-wrong-load/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "description": "declared load factor 120 g"
+    },
+    {
+      "case": "m16-wrong-stress",
+      "path": "controls/m16-wrong-stress/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "description": "declared contact stress 3.5 MPa"
+    },
+    {
+      "case": "m17-wrong-eta",
+      "path": "controls/m17-wrong-eta/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G09",
+      "description": "residual energy 1.5 J, so eta <= 0.98"
+    },
+    {
+      "case": "m18-bad-probabilities",
+      "path": "controls/m18-bad-probabilities/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G10",
+      "description": "P3 = 1.3 (outside [0,1])"
+    },
+    {
+      "case": "m19-null-total-mass",
+      "path": "controls/m19-null-total-mass/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G03",
+      "description": "total mass is null instead of a number"
+    },
+    {
+      "case": "m20-unknown-material",
+      "path": "controls/m20-unknown-material/answer.md",
+      "expected_status": "FAIL",
+      "expected_id": "G05",
+      "description": "unknown material category"
+    },
+    {
+      "case": "p01-prohibition-only",
+      "path": "controls/p01-prohibition-only/answer.md",
+      "expected_status": "PASS",
+      "expected_id": null,
+      "description": "forbidden materials mentioned only as prohibitions/negations"
+    }
+  ]
+}

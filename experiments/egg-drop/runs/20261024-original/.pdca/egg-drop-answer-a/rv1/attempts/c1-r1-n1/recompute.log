@@ -1,0 +1,205 @@
+# C2 numeric — gate-1 probe on the SYNTHETIC FIXTURE (not the answer)
+# fixture: .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture.md
+# frozen argv = C2 with only --document replaced by the fixture path
+# numbers independently cross-checked by the closed-form constant-drag solution:
+#   vt=9.7737 m/s, t_fall=1.6801 s, v_impact=9.1255 m/s, E_k=14.9896 J, p=3.2852 kg*m/s
+
+### C2 positive (fixture, 58 recomputed checks)
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture.md --case numeric --read-only
+CASE numeric | document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture.md | repo /home/alex/sources/skills
+PASS A03.blocks — 9/9 required numeric blocks
+PASS A02.schema — schema ok
+PASS A04.materials — 6 declared components (>=4)
+PASS A04.forbidden_materials — no forbidden material names
+PASS A05.mass_sum — total 360.0 g vs egg+components 360.0 g
+PASS A05.mass_limit — total mass 360.0 g (limit 500 g)
+PASS A05.dims — dims {'dim_x_mm': 240.0, 'dim_y_mm': 240.0, 'dim_z_mm': 260.0} mm (limit 300 mm per side)
+PASS A05.volume — volume 0.01400 m3, bounding box 0.01498 m3, limit 0.02 m3
+PASS A05.cost — cost $3.75 (limit $5.00)
+PASS A05.time — assembly 22 min (limit 30 min)
+PASS A04.egg_not_glued — egg_glued=0 (0 required)
+PASS A04.all_sides — protected_sides=6 (6 required)
+PASS A04.travel — braking travel 137 mm (>=20 mm and <= smallest dimension 240 mm)
+PASS A06.scenario — H=10.00 m (scenario A: 10.0 m)
+PASS A06.constants — g=9.810 m/s2, rho=1.2250 kg/m3
+PASS A06.one_mass — impact mass 360.0 g vs design mass 360.0 g (one parameter set)
+PASS A06.drag_params — Cd=1.200, A=0.0503 m2 (constant over the fall)
+PASS A06.velocity_control — declared 14.007 m/s vs sqrt(2gH)=14.007 m/s
+PASS A06.velocity_drag — declared 9.127 m/s vs integrated 9.126 m/s (drag_mode=constant)
+PASS A06.velocity_order — v_impact 9.127 <= v_control 14.007 m/s
+PASS A06.fall_time — declared 1.680 s vs integrated 1.680 s
+PASS A07.energy — declared 14.994 J vs 0.5*M*v^2 = 14.994 J (M=0.360 kg)
+PASS A07.momentum — declared 3.2860 vs M*v = 3.2857 kg*m/s
+PASS A08.eta_range — eta=0.9650
+PASS A08.energy_to_egg — declared 0.5250 J vs E_k*(1-eta) = 0.5248 J (eta is the declared efficiency)
+PASS A08.E_crit — E_crit=0.800 J (primary conservative 0.8 J)
+PASS A08.eta_required — declared 0.9466 vs 1-E_crit/E_k = 0.9466
+PASS A08.gate_energy — E_egg=0.5250 J < E_crit=0.800 J; eta=0.9650 vs required 0.9466
+PASS A07.dt — braking time 0.0300 s
+PASS A07.a_avg_impulse — declared 304.2 m/s2 vs v/dt = 304.2 m/s2
+PASS A07.brake_kinematics — declared 304.2 m/s2 vs v^2/(2*t) = 304.0 m/s2 (t=137 mm)
+PASS A07.peak_factor — peak factor 1.700 (>=1, peak vs average stated)
+PASS A07.a_peak — declared 517.2 m/s2 vs a_avg*peak_factor = 517.1 m/s2
+PASS A07.n_peak — declared 52.70 g vs a_peak/g = 52.72 g
+PASS A07.n_crit — n_crit=100.0 g (operational reference 100 g)
+PASS A07.gate_dynamics — n_peak=52.70 g <= n_crit=100.0 g
+PASS A07.F_egg — declared 31.00 N vs m_egg*a_peak = 31.03 N (m_egg=0.060 kg; egg load, not M*a)
+PASS A07.F_sys_peak — declared 186.20 N vs M*a_peak = 186.19 N (system load)
+PASS A07.F_sys_avg — declared 109.50 N vs M*v/dt = 109.52 N (average, not peak)
+PASS A07.brake_distance — declared 137.0 mm vs v*dt/2 = 136.9 mm
+PASS A07.travel_consistent — brake distance 137.0 mm vs declared travel 137 mm
+PASS A07.brake_min — travel 137 mm vs dx_min=42.5 mm at n_crit=100 g
+PASS A07.binding — declared 'energy' vs computed 'energy' (margins energy 0.656, dynamics 0.527)
+PASS A08.sensitivity_crit — E_crit sensitivity 1.0 and 1.5 J
+PASS A08.sensitivity_eta — declared 0.9333/0.9000 vs 0.9333/0.9000
+PASS A07.sensitivity_n — mandatory 50 g sensitivity: n_crit_sens=50.0 g
+PASS A09.p_range — p_single=0.920, p_three=0.779
+PASS A09.p_three — p_mode=independent: declared 0.7790 vs p^3 = 0.7787
+PASS A10.h20 — H=20.00 m for the 20 m scenario
+PASS A05.mass_limit_20 — 20 m variant mass 360.0 g (limit 500 g)
+PASS A10.v20_control — declared 19.81 m/s vs sqrt(2gH)=19.81 m/s
+PASS A10.v20 — v_impact 9.69 <= v_control 19.81 m/s
+PASS A10.Ek20 — declared 16.91 J vs 0.5*M*v^2 = 16.91 J
+PASS A10.eta20 — eta(20 m)=0.9650
+PASS A10.energy20 — declared 0.5920 J vs E_k*(1-eta) = 0.5919 J
+PASS A10.scenario20_closes — E_egg(20 m)=0.5920 J < E_crit=0.800 J
+PASS A10.alternatives — 2 complete alternatives (2-3 required)
+PASS A10.alt_limits — alt1 340 g / $3.10 / p=0.88; alt2 420 g / $4.40 / p=0.90
+RESULT PASS checks=58 failed=0 exit=0
+EXIT=0
+
+### C2 expected-negative (fixture-corrupt.md: mass_total 361.5 g != egg+components) -> exit 1, A05.mass_sum
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture-corrupt.md --case numeric --read-only
+CASE numeric | document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture-corrupt.md | repo /home/alex/sources/skills
+PASS A03.blocks — 9/9 required numeric blocks
+PASS A02.schema — schema ok
+PASS A04.materials — 6 declared components (>=4)
+PASS A04.forbidden_materials — no forbidden material names
+FAIL A05.mass_sum — total 361.5 g vs egg+components 360.0 g
+PASS A05.mass_limit — total mass 361.5 g (limit 500 g)
+PASS A05.dims — dims {'dim_x_mm': 240.0, 'dim_y_mm': 240.0, 'dim_z_mm': 260.0} mm (limit 300 mm per side)
+PASS A05.volume — volume 0.01400 m3, bounding box 0.01498 m3, limit 0.02 m3
+PASS A05.cost — cost $3.75 (limit $5.00)
+PASS A05.time — assembly 22 min (limit 30 min)
+PASS A04.egg_not_glued — egg_glued=0 (0 required)
+PASS A04.all_sides — protected_sides=6 (6 required)
+PASS A04.travel — braking travel 137 mm (>=20 mm and <= smallest dimension 240 mm)
+PASS A06.scenario — H=10.00 m (scenario A: 10.0 m)
+PASS A06.constants — g=9.810 m/s2, rho=1.2250 kg/m3
+FAIL A06.one_mass — impact mass 360.0 g vs design mass 361.5 g (one parameter set)
+PASS A06.drag_params — Cd=1.200, A=0.0503 m2 (constant over the fall)
+PASS A06.velocity_control — declared 14.007 m/s vs sqrt(2gH)=14.007 m/s
+PASS A06.velocity_drag — declared 9.127 m/s vs integrated 9.126 m/s (drag_mode=constant)
+PASS A06.velocity_order — v_impact 9.127 <= v_control 14.007 m/s
+PASS A06.fall_time — declared 1.680 s vs integrated 1.680 s
+PASS A07.energy — declared 14.994 J vs 0.5*M*v^2 = 14.994 J (M=0.360 kg)
+PASS A07.momentum — declared 3.2860 vs M*v = 3.2857 kg*m/s
+PASS A08.eta_range — eta=0.9650
+PASS A08.energy_to_egg — declared 0.5250 J vs E_k*(1-eta) = 0.5248 J (eta is the declared efficiency)
+PASS A08.E_crit — E_crit=0.800 J (primary conservative 0.8 J)
+PASS A08.eta_required — declared 0.9466 vs 1-E_crit/E_k = 0.9466
+PASS A08.gate_energy — E_egg=0.5250 J < E_crit=0.800 J; eta=0.9650 vs required 0.9466
+PASS A07.dt — braking time 0.0300 s
+PASS A07.a_avg_impulse — declared 304.2 m/s2 vs v/dt = 304.2 m/s2
+PASS A07.brake_kinematics — declared 304.2 m/s2 vs v^2/(2*t) = 304.0 m/s2 (t=137 mm)
+PASS A07.peak_factor — peak factor 1.700 (>=1, peak vs average stated)
+PASS A07.a_peak — declared 517.2 m/s2 vs a_avg*peak_factor = 517.1 m/s2
+PASS A07.n_peak — declared 52.70 g vs a_peak/g = 52.72 g
+PASS A07.n_crit — n_crit=100.0 g (operational reference 100 g)
+PASS A07.gate_dynamics — n_peak=52.70 g <= n_crit=100.0 g
+PASS A07.F_egg — declared 31.00 N vs m_egg*a_peak = 31.03 N (m_egg=0.060 kg; egg load, not M*a)
+PASS A07.F_sys_peak — declared 186.20 N vs M*a_peak = 186.19 N (system load)
+PASS A07.F_sys_avg — declared 109.50 N vs M*v/dt = 109.52 N (average, not peak)
+PASS A07.brake_distance — declared 137.0 mm vs v*dt/2 = 136.9 mm
+PASS A07.travel_consistent — brake distance 137.0 mm vs declared travel 137 mm
+PASS A07.brake_min — travel 137 mm vs dx_min=42.5 mm at n_crit=100 g
+PASS A07.binding — declared 'energy' vs computed 'energy' (margins energy 0.656, dynamics 0.527)
+PASS A08.sensitivity_crit — E_crit sensitivity 1.0 and 1.5 J
+PASS A08.sensitivity_eta — declared 0.9333/0.9000 vs 0.9333/0.9000
+PASS A07.sensitivity_n — mandatory 50 g sensitivity: n_crit_sens=50.0 g
+PASS A09.p_range — p_single=0.920, p_three=0.779
+PASS A09.p_three — p_mode=independent: declared 0.7790 vs p^3 = 0.7787
+PASS A10.h20 — H=20.00 m for the 20 m scenario
+PASS A05.mass_limit_20 — 20 m variant mass 360.0 g (limit 500 g)
+PASS A10.v20_control — declared 19.81 m/s vs sqrt(2gH)=19.81 m/s
+PASS A10.v20 — v_impact 9.69 <= v_control 19.81 m/s
+PASS A10.Ek20 — declared 16.91 J vs 0.5*M*v^2 = 16.91 J
+PASS A10.eta20 — eta(20 m)=0.9650
+PASS A10.energy20 — declared 0.5920 J vs E_k*(1-eta) = 0.5919 J
+PASS A10.scenario20_closes — E_egg(20 m)=0.5920 J < E_crit=0.800 J
+PASS A10.alternatives — 2 complete alternatives (2-3 required)
+PASS A10.alt_limits — alt1 340 g / $3.10 / p=0.88; alt2 420 g / $4.40 / p=0.90
+RESULT FAIL checks=58 failed=2 exit=1
+EXIT=1
+
+
+================================================================
+# REAL DOCUMENT — experiments/egg-drop/answer-a.md (D1–D5 final, frozen)
+# answer sha256 4a74c62d905a41c294281b42a9596974fb386c045741b734386c94703fe33ab8
+# manifest/snapshot re-frozen for this hash
+================================================================
+
+### C2 (frozen argv) on the real document — case numeric
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer-a.md --case numeric --read-only
+CASE numeric | document experiments/egg-drop/answer-a.md | repo /home/alex/sources/skills
+PASS A03.blocks — 9/9 required numeric blocks
+PASS A02.schema — schema ok
+PASS A04.materials — 9 declared components (>=4)
+PASS A04.forbidden_materials — no forbidden material names
+PASS A05.mass_sum — total 460.0 g vs egg+components 460.0 g
+PASS A05.mass_limit — total mass 460.0 g (limit 500 g)
+PASS A05.dims — dims {'dim_x_mm': 270.0, 'dim_y_mm': 270.0, 'dim_z_mm': 260.0} mm (limit 300 mm per side)
+PASS A05.volume — volume 0.01890 m3, bounding box 0.01895 m3, limit 0.02 m3
+PASS A05.cost — cost $2.67 (limit $5.00)
+PASS A05.time — assembly 29 min (limit 30 min)
+PASS A04.egg_not_glued — egg_glued=0 (0 required)
+PASS A04.all_sides — protected_sides=6 (6 required)
+PASS A04.travel — braking travel 48 mm (>=20 mm and <= smallest dimension 260 mm)
+PASS A06.scenario — H=10.00 m (scenario A: 10.0 m)
+PASS A06.constants — g=9.810 m/s2, rho=1.2250 kg/m3
+PASS A06.one_mass — impact mass 460.0 g vs design mass 460.0 g (one parameter set)
+PASS A06.drag_params — deployment model: delay 0.350 s, CdA 0.07655 -> 0.23562
+PASS A06.velocity_control — declared 14.007 m/s vs sqrt(2gH)=14.007 m/s
+PASS A06.velocity_drag — declared 5.587 m/s vs integrated 5.587 m/s (drag_mode=deployment)
+PASS A06.velocity_order — v_impact 5.587 <= v_control 14.007 m/s
+PASS A06.fall_time — declared 2.164 s vs integrated 2.164 s
+PASS A07.energy — declared 7.179 J vs 0.5*M*v^2 = 7.179 J (M=0.460 kg)
+PASS A07.momentum — declared 2.5700 vs M*v = 2.5700 kg*m/s
+PASS A08.eta_range — eta=0.9890
+PASS A08.energy_to_egg — declared 0.0787 J vs E_k*(1-eta) = 0.0790 J (eta is the declared efficiency)
+PASS A08.E_crit — E_crit=0.800 J (primary conservative 0.8 J)
+PASS A08.eta_required — declared 0.8886 vs 1-E_crit/E_k = 0.8886
+PASS A08.gate_energy — E_egg=0.0787 J < E_crit=0.800 J; eta=0.9890 vs required 0.8886
+PASS A07.dt — braking time 0.0170 s
+PASS A07.a_avg_impulse — declared 328.1 m/s2 vs v/dt = 328.1 m/s2
+PASS A07.brake_kinematics — declared 328.1 m/s2 vs v^2/(2*t) = 327.9 m/s2 (t=48 mm)
+PASS A07.peak_factor — peak factor 1.337 (>=1, peak vs average stated)
+PASS A07.a_peak — declared 438.7 m/s2 vs a_avg*peak_factor = 438.7 m/s2
+PASS A07.n_peak — declared 44.72 g vs a_peak/g = 44.72 g
+PASS A07.n_crit — n_crit=100.0 g (operational reference 100 g)
+PASS A07.gate_dynamics — n_peak=44.72 g <= n_crit=100.0 g
+PASS A07.F_egg — declared 26.32 N vs m_egg*a_peak = 26.32 N (m_egg=0.060 kg; egg load, not M*a)
+PASS A07.F_sys_peak — declared 201.80 N vs M*a_peak = 201.80 N (system load)
+PASS A07.F_sys_avg — declared 150.90 N vs M*v/dt = 150.91 N (average, not peak)
+PASS A07.brake_distance — declared 47.6 mm vs v*dt/2 = 47.6 mm
+PASS A07.travel_consistent — brake distance 47.6 mm vs declared travel 48 mm
+PASS A07.brake_min — travel 48 mm vs dx_min=15.9 mm at n_crit=100 g
+PASS A07.binding — declared 'dynamics' vs computed 'dynamics' (margins energy 0.098, dynamics 0.447)
+PASS A08.sensitivity_crit — E_crit sensitivity 1.0 and 1.5 J
+PASS A08.sensitivity_eta — declared 0.8607/0.7911 vs 0.8607/0.7911
+PASS A07.sensitivity_n — mandatory 50 g sensitivity: n_crit_sens=50.0 g
+PASS A09.p_range — p_single=0.930, p_three=0.768
+PASS A09.p_three — p_mode=damage: declared p_three 0.7680 < p_single 0.9300
+PASS A10.h20 — H=20.00 m for the 20 m scenario
+PASS A05.mass_limit_20 — 20 m variant mass 480.0 g (limit 500 g)
+PASS A10.v20_control — declared 19.81 m/s vs sqrt(2gH)=19.81 m/s
+PASS A10.v20 — v_impact 5.71 <= v_control 19.81 m/s
+PASS A10.Ek20 — declared 7.83 J vs 0.5*M*v^2 = 7.83 J
+PASS A10.eta20 — eta(20 m)=0.9877
+PASS A10.energy20 — declared 0.0964 J vs E_k*(1-eta) = 0.0965 J
+PASS A10.scenario20_closes — E_egg(20 m)=0.0964 J < E_crit=0.800 J
+PASS A10.alternatives — 3 complete alternatives (2-3 required)
+PASS A10.alt_limits — alt1 470 g / $2.10 / p=0.62; alt2 430 g / $4.30 / p=0.71; alt3 435 g / $1.95 / p=0.78
+RESULT PASS checks=58 failed=0 exit=0
+EXIT=0
+

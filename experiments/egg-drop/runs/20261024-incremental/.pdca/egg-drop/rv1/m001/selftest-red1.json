@@ -1,0 +1,273 @@
+{
+  "schema": "egg-drop-gate-v1",
+  "suite": "selftest",
+  "selected_cases": 22,
+  "input_hashes": {
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/manifest.json": "adedef98e22ca68f47dbfc0deff3444fd703ee61b1305df10a931750976e33d0",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/known-good/answer.md": "16cdb204ef645fdb2c9178203bd9b2bd0e4e2d18d359cfce7dcc714f16e071be",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m01-missing-section/answer.md": "3a8d81b2917066d659c975d127b0df56b807508e900de318412ceb43855ff19c",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m02-section-order/answer.md": "e6186908508df614d713cf972d59c78172c91736577623a44ca4b897dd9c2dec",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m03-missing-s4-item/answer.md": "074d33cf45c5e42c99de7374977fd362bff051c6f9827f935bcf1339f7344e27",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m04-mass-501/answer.md": "09dde8bc857e5631de293c3ae33fbb80a0c7f0bb938f175510af0d6117b49e01",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m05-side-301/answer.md": "1552766802bc716209527156446d01df66df49ed04ce191cbcded3aff8b361e8",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m06-volume-300-cube/answer.md": "258ca1d6567abca3d0047cd73b0b8926347454d343830383a3fcf53d8ae3c846",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m07-budget-501/answer.md": "281e0a577ff12e00356c8d10c943b7c4e6fa07ab1a2c03ff76a1efd3f3e3e8e7",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m08-build-31/answer.md": "5a2746c1a1026b1f824950c4ed274bd9b49e41943de590189991af5d24cf3fc5",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m09-metal-used/answer.md": "2cf8bb40620c5ea917b9fede82a6ce815460f43575ecc1008844e0600d6177ca",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m10-egg-glued/answer.md": "cb37b1064e2fbf1372ab1fa23f2cabd46cd759427f052105bbd220352d4ef926",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m11-zero-stroke/answer.md": "6a7f3c50069647f33941a65dc81ca00732cb12cf16833c843fdf48130fba5bbb",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m12-wrong-velocity/answer.md": "b9ea34c5003defde57fb51cab42e4636cb8b53da768c5140f2d4477f56c0f8e6",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m13-wrong-energy/answer.md": "6b693cf944f12ca81f6be66fc78f22e7082ed1956cab07d5fd28e143b415f904",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m14-wrong-force/answer.md": "767367dedda870bb760b249b66d401038f20fe8483ab07c5405b0cbae6f64390",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m15-wrong-load/answer.md": "909a3fd87f89404534a79c8e90370b109a6418f42270eeaf778783e9f6b4b936",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m16-wrong-stress/answer.md": "5bda7bb3ccc9a6fce687830eb0fa96ab21cafd4a257b3448d3a1b0af50ac7a7a",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m17-wrong-eta/answer.md": "c03dbbe7410002e5871c27d619fc41eea0d1317cd5952ba198f75699ab37f73b",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m18-bad-probabilities/answer.md": "64a2114cc3eaf4ae38675ab59b2b98076ddc4adb603cb2b70e8e9a218c4a088c",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m19-null-total-mass/answer.md": "690c28b31fc483ca0db995a1cc4d6f6d30ecfde56dc9353a493430909d6a4991",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/m20-unknown-material/answer.md": "8f15c465eaba67a543c798af79d98c8c41e4dfb8f3e3181bbbdfbec82d93333e",
+    "/home/alex/sources/skills/experiments/egg-drop/fixtures/controls/p01-prohibition-only/answer.md": "2ca0297d8a465b99d9ea4f4357f3fec2dad2d25301c57e677a6831485a044514"
+  },
+  "checks": [],
+  "cases": [
+    {
+      "case": "known-good",
+      "expected_status": "PASS",
+      "expected_id": null,
+      "observed_status": "PASS",
+      "observed_ids": [],
+      "ok": true
+    },
+    {
+      "case": "m01-missing-section",
+      "expected_status": "FAIL",
+      "expected_id": "G01",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": true
+    },
+    {
+      "case": "m02-section-order",
+      "expected_status": "FAIL",
+      "expected_id": "G01",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": true
+    },
+    {
+      "case": "m03-missing-s4-item",
+      "expected_status": "FAIL",
+      "expected_id": "G02",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m04-mass-501",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m05-side-301",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m06-volume-300-cube",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m07-budget-501",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m08-build-31",
+      "expected_status": "FAIL",
+      "expected_id": "G04",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m09-metal-used",
+      "expected_status": "FAIL",
+      "expected_id": "G05",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m10-egg-glued",
+      "expected_status": "FAIL",
+      "expected_id": "G05",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m11-zero-stroke",
+      "expected_status": "FAIL",
+      "expected_id": "G06",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m12-wrong-velocity",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m13-wrong-energy",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m14-wrong-force",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m15-wrong-load",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m16-wrong-stress",
+      "expected_status": "FAIL",
+      "expected_id": "G07",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m17-wrong-eta",
+      "expected_status": "FAIL",
+      "expected_id": "G09",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m18-bad-probabilities",
+      "expected_status": "FAIL",
+      "expected_id": "G10",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m19-null-total-mass",
+      "expected_status": "FAIL",
+      "expected_id": "G03",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "m20-unknown-material",
+      "expected_status": "FAIL",
+      "expected_id": "G05",
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    },
+    {
+      "case": "p01-prohibition-only",
+      "expected_status": "PASS",
+      "expected_id": null,
+      "observed_status": "FAIL",
+      "observed_ids": [
+        "G01"
+      ],
+      "ok": false
+    }
+  ],
+  "gate": "FAIL",
+  "diagnostics": [
+    "case m03-missing-s4-item: expected FAIL at G02, observed FAIL ['G01']",
+    "case m04-mass-501: expected FAIL at G04, observed FAIL ['G01']",
+    "case m05-side-301: expected FAIL at G04, observed FAIL ['G01']",
+    "case m06-volume-300-cube: expected FAIL at G04, observed FAIL ['G01']",
+    "case m07-budget-501: expected FAIL at G04, observed FAIL ['G01']",
+    "case m08-build-31: expected FAIL at G04, observed FAIL ['G01']",
+    "case m09-metal-used: expected FAIL at G05, observed FAIL ['G01']",
+    "case m10-egg-glued: expected FAIL at G05, observed FAIL ['G01']",
+    "case m11-zero-stroke: expected FAIL at G06, observed FAIL ['G01']",
+    "case m12-wrong-velocity: expected FAIL at G07, observed FAIL ['G01']",
+    "case m13-wrong-energy: expected FAIL at G07, observed FAIL ['G01']",
+    "case m14-wrong-force: expected FAIL at G07, observed FAIL ['G01']",
+    "case m15-wrong-load: expected FAIL at G07, observed FAIL ['G01']",
+    "case m16-wrong-stress: expected FAIL at G07, observed FAIL ['G01']",
+    "case m17-wrong-eta: expected FAIL at G09, observed FAIL ['G01']",
+    "case m18-bad-probabilities: expected FAIL at G10, observed FAIL ['G01']",
+    "case m19-null-total-mass: expected FAIL at G03, observed FAIL ['G01']",
+    "case m20-unknown-material: expected FAIL at G05, observed FAIL ['G01']",
+    "case p01-prohibition-only: expected PASS at None, observed FAIL ['G01']"
+  ]
+}

@@ -1,0 +1,83 @@
+{
+ "scope": {
+  "family_sessions": 15,
+  "root": "ses_e91cedfe2ffenrzGxquhj3MxgF",
+  "orchestrator": "ses_e91ce51ecffeHc9ZSZNdxKC8Qq",
+  "direct_children": 13,
+  "baseline": "ses_e918ecc1dffe3LzsVPFwf7EAxM",
+  "audited_sessions": 16
+ },
+ "counts": {
+  "assistant_family": 348,
+  "assistant_all": "354",
+  "user_all": "17",
+  "tools_family": 411,
+  "tools_all": "415",
+  "tool_failures": "7",
+  "duplicate_message_ids": 0,
+  "missing_usage_messages": "2",
+  "zero_cost_messages": "7"
+ },
+ "tokens_family": {
+  "input": "1607051",
+  "output": "294556",
+  "reasoning": "328778",
+  "cache_read": "34487096",
+  "cache_write": "0"
+ },
+ "tokens_all": {
+  "input": "1625836",
+  "output": "300699",
+  "reasoning": "336020",
+  "cache_read": "34608824"
+ },
+ "cost": {
+  "flash_messages": "0.630133506",
+  "gemini_messages": "1.307796800",
+  "sol_messages": "unknown",
+  "root_hidden": "0.000036018",
+  "family_known_total": "1.937966324",
+  "baseline_hidden": "0.000606018",
+  "sol_hypothetical_reference": "0.2630624",
+  "invoice": "unknown"
+ },
+ "wall": {
+  "root_wall_s": "7725.421",
+  "root_own_s": "41.883",
+  "orchestrator_wall_s": "7683.538",
+  "orchestrator_own_upper_s": "293.652",
+  "children_additive_s": "7389.886",
+  "children_span_s": "7664.553",
+  "gaps_s": "274.667",
+  "timeouts_s": {
+   "planner": "979.245",
+   "do3": "905.237",
+   "sum": "1884.482"
+  }
+ },
+ "baseline": {
+  "wall_s": "543.652",
+  "first_deliverable_s": "391.667",
+  "clarification_s": "10.997",
+  "tokens": {
+   "input": "18785",
+   "output": "6143",
+   "reasoning": "7242",
+   "cache_read": "121728"
+  }
+ },
+ "validation": {
+  "assistant_sum_ok": true,
+  "tool_sum_ok": true,
+  "unique_ids_ok": true,
+  "children_serial": true,
+  "formula_c2_flash": "335/335",
+  "formula_c2_gemini": "10/10",
+  "session_message_cost_equal": "14/15 family (root hidden exception)"
+ },
+ "paths": {
+  "report": "/tmp/opencode/retro-egg-drop-cost-20261024T161904Z/report.md",
+  "results": "/tmp/opencode/retro-egg-drop-cost-20261024T161904Z/results.json",
+  "raw": "/tmp/opencode/retro-egg-drop-cost-20261024T161904Z/raw/"
+ }
+}

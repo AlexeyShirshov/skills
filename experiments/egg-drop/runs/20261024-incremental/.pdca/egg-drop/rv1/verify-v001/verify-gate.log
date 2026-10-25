@@ -1,0 +1,25 @@
+V2 — expanded argv and exit code (campaign final verify, mechanical part)
+=======================================================================
+cwd: /home/alex/sources/skills
+interpreter: /usr/bin/python3.10 (Python 3.10.12)
+timestamp: 2026-10-24T18:23:09Z
+selector: --suite answer --case candidate --answer .pdca/egg-drop/rv1/m001/answer.md
+  -> selected_cases = 1 (non-vacuous)
+expected outcome: exit 0, gate PASS, G01-G12 all present and PASS
+
+argv (argument array, as executed):
+["/usr/bin/python3.10", "experiments/egg-drop/check_answer.py",
+ "--repo", "/home/alex/sources/skills",
+ "--suite", "answer",
+ "--case", "candidate",
+ "--answer", ".pdca/egg-drop/rv1/m001/answer.md",
+ "--report", ".pdca/egg-drop/rv1/verify-v001/verify-gate.json"]
+
+stdout: 0 bytes (verify-gate.stdout)
+stderr: 0 bytes (verify-gate.stderr)
+exit code: 0 (verify-gate.exit)
+report: verify-gate.json — schema egg-drop-gate-v1, suite answer, selected_cases 1,
+        gate PASS, diagnostics [], 12 checks G01..G12 all PASS
+answer sha256 (from the report's input_hashes):
+  40a56cc82905a64da7d6104beec99565e5ef7b49d5fcfa29c94439a3882cd4c3
+spec sha256: 8a79d64b3b38c4b208c58863d6c7a25f5de3bf5127936d191ab219487b58db4e

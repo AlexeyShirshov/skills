@@ -1,0 +1,42 @@
+{
+  "schema": "egg-drop-verify-inputs-v1",
+  "measurement": "m001",
+  "rv": 1,
+  "purpose": "evaluation packet index: exactly the five files listed in 'files'; the second evaluator is pointed only at these and at nothing else in verify-v001/ or in the campaign package",
+  "repo": "/home/alex/sources/skills",
+  "files": [
+    {
+      "path": ".pdca/egg-drop/rv1/m001/egg-drop-test.md",
+      "sha256": "8a79d64b3b38c4b208c58863d6c7a25f5de3bf5127936d191ab219487b58db4e",
+      "bytes": 15194
+    },
+    {
+      "path": ".pdca/egg-drop/rv1/m001/answer.md",
+      "sha256": "40a56cc82905a64da7d6104beec99565e5ef7b49d5fcfa29c94439a3882cd4c3",
+      "bytes": 35049
+    },
+    {
+      "path": ".pdca/egg-drop/rv1/m001/manifest.json",
+      "sha256": "ee7c59bfd7fa984c49db01a0df60973680bd0523c2344127c35fd5bb84df11c6",
+      "bytes": 10538
+    },
+    {
+      "path": ".pdca/egg-drop/rv1/verify-v001/verify-gate.json",
+      "sha256": "9e1d1e2fa9e5699b8f94ad8925c0b04f87bcd98dd0e1d0870182ccb5e0815ee1",
+      "bytes": 3786
+    },
+    {
+      "path": ".pdca/egg-drop/rv1/verify-v001/selftest.json",
+      "sha256": "e697c6ffd0498d4975d41890ef7e092c9f83d070cc8f604f43708a5e1a2daff1",
+      "bytes": 8585
+    }
+  ],
+  "file_count": 5,
+  "notes": [
+    "paths are relative to /home/alex/sources/skills",
+    "m001/egg-drop-test.md is the frozen task spec, m001/answer.md the frozen candidate, m001/manifest.json the frozen measurement manifest",
+    "verify-v001/selftest.json is the V1 control-suite report (22 declared controls); verify-v001/verify-gate.json is the V2 answer-gate report (G01-G12)",
+    "packet contents are limited to the five frozen/mechanical files above; no other artifact is included or referenced, so the evaluation is blind to any surrounding material",
+    "the keys expected_status/observed_status inside the two report JSONs are the checker's own schema field names"
+  ]
+}

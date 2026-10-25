@@ -1,0 +1,141 @@
+{
+  "check": "selftest",
+  "selector": {
+    "check": "selftest",
+    "ids": [
+      "BASE_VALID",
+      "FIX_HEADING",
+      "FIX_MISSING_NUMBER",
+      "FIX_MASS_LIMIT",
+      "FIX_BUDGET_LIMIT",
+      "FIX_MATERIAL",
+      "FIX_STROKE",
+      "FIX_LANGUAGE",
+      "FIX_CHAIN",
+      "FIX_WALL_TABLE",
+      "FIX_LATERAL_STROKE",
+      "FIX_T_FAILURE_BULLETS",
+      "SELFTEST_COVERAGE"
+    ],
+    "min_selected": 1,
+    "argv": [
+      "--repo",
+      "/home/alex/sources/skills",
+      "--document",
+      "",
+      "--check",
+      "selftest",
+      "--log",
+      ".pdca/egg-drop/rv1/attempts/c1-r1-n2/selftest.json"
+    ]
+  },
+  "started_utc": "2026-10-24T14:59:00.199Z",
+  "repo": "/home/alex/sources/skills",
+  "document": null,
+  "status": "pass",
+  "counts": {
+    "selected": 13,
+    "passed": 13,
+    "failed": 0,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "id": "BASE_VALID",
+      "ok": true,
+      "expected": "the uncorrupted in-memory fixture passes every check",
+      "observed": "0 failures",
+      "detail": "selftest precondition"
+    },
+    {
+      "id": "FIX_HEADING",
+      "ok": true,
+      "expected": "corruption rejected with id HEADING",
+      "observed": "failing ids=HEADING,HEADING_COUNT,T_VERDICT",
+      "detail": "section 3 heading removed"
+    },
+    {
+      "id": "FIX_MISSING_NUMBER",
+      "ok": true,
+      "expected": "corruption rejected with id MISSING_NUMBER",
+      "observed": "failing ids=MISSING_NUMBER,TABLE_VS_MODEL,T_PHYSICS_ROWS,UNITS",
+      "detail": "v_impact row removed"
+    },
+    {
+      "id": "FIX_MASS_LIMIT",
+      "ok": true,
+      "expected": "corruption rejected with id MASS_LIMIT",
+      "observed": "failing ids=MASS_LIMIT,MASS_SUM",
+      "detail": "BOM total 620 g > 500 g"
+    },
+    {
+      "id": "FIX_BUDGET_LIMIT",
+      "ok": true,
+      "expected": "corruption rejected with id BUDGET_LIMIT",
+      "observed": "failing ids=BUDGET_LIMIT,BUDGET_SUM",
+      "detail": "budget 6.10 $ > 5.00 $"
+    },
+    {
+      "id": "FIX_MATERIAL",
+      "ok": true,
+      "expected": "corruption rejected with id MATERIAL",
+      "observed": "failing ids=MATERIAL,MATERIAL_ALLOWED",
+      "detail": "forbidden material in the BOM"
+    },
+    {
+      "id": "FIX_STROKE",
+      "ok": true,
+      "expected": "corruption rejected with id STROKE",
+      "observed": "failing ids=CHAIN,STROKE",
+      "detail": "stroke 80 mm < dx_min 100 mm"
+    },
+    {
+      "id": "FIX_LANGUAGE",
+      "ok": true,
+      "expected": "corruption rejected with id LANGUAGE",
+      "observed": "failing ids=EGG_ATTACH,LANGUAGE,T_ALTS,T_ATTACH,T_P1,T_STAGED,T_VERDICT",
+      "detail": "document translated to English"
+    },
+    {
+      "id": "FIX_CHAIN",
+      "ok": true,
+      "expected": "corruption rejected with id CHAIN",
+      "observed": "failing ids=CHAIN,F_AVG",
+      "detail": "F_avg doubled: momentum chain broken"
+    },
+    {
+      "id": "FIX_WALL_TABLE",
+      "ok": true,
+      "expected": "corruption rejected with id WALL_TABLE",
+      "observed": "failing ids=WALL_TABLE",
+      "detail": "panel 1.5 mm in the table while the model and the cavity say 5 mm"
+    },
+    {
+      "id": "FIX_LATERAL_STROKE",
+      "ok": true,
+      "expected": "corruption rejected with id LATERAL_STROKE",
+      "observed": "failing ids=LATERAL_STROKE",
+      "detail": "lateral stack with zero usable stroke: the old free-air side gap"
+    },
+    {
+      "id": "FIX_T_FAILURE_BULLETS",
+      "ok": true,
+      "expected": "corruption rejected with id T_FAILURE_BULLETS",
+      "observed": "failing ids=T_FAILURE_BULLETS",
+      "detail": "weak-point and failure-mode bullets merged into one list"
+    },
+    {
+      "id": "SELFTEST_COVERAGE",
+      "ok": true,
+      "expected": ">=11 fixtures, each rejected with its expected id",
+      "observed": "11 fixtures, missed=[]",
+      "detail": "an undetected corruption must fail the run"
+    }
+  ],
+  "limits": [
+    "Fixtures are generated in memory; no repository fixtures are used.",
+    "Three fixtures cover the attempt-1 CHECK defects: split wall thickness, side gap with no usable stroke, merged weak-point/failure lists.",
+    "The base fixture is a synthetic document, not the deliverable."
+  ],
+  "note": "11 deliberate corruptions must each be rejected with the expected id"
+}

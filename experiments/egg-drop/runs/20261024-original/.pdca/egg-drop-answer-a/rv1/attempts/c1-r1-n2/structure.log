@@ -1,0 +1,26 @@
+# C1 structure — attempt n2 (cycle c1, plan r1, contract rv1)
+# answer sha256 5d3ffbb4fa3a03f0abd2fde58de8a0bafbc37c93cb886fe82270d96719402236
+
+### C1 structure on the real document
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n2/recompute.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer-a.md --case structure --read-only
+CASE structure | document experiments/egg-drop/answer-a.md | repo /home/alex/sources/skills
+PASS A02.headings — 6/6 exact headings in order
+PASS A02.latex — 358 math delimiters found (>=6 required)
+PASS A02.russian — 18506 Cyrillic letters (>=200 required)
+PASS A02.no_script — no embedded code fences
+PASS A03.blocks — 9/9 required numeric blocks
+PASS A02.schema:design — ok
+PASS A02.schema:materials — ok
+PASS A02.schema:constraints — ok
+PASS A02.schema:impact — ok
+PASS A02.schema:criteria — ok
+PASS A02.schema:sensitivity — ok
+PASS A02.schema:reliability — ok
+PASS A02.schema:scenario20 — ok
+PASS A02.schema:alternatives — ok
+PASS A03.coverage — 23/23 spec bullets mapped
+PASS A12.manifest — frozen hashes match
+PASS A12.spec_hash — spec bytes unchanged
+PASS A01.inventory — only allowed paths changed
+RESULT PASS checks=18 failed=0 exit=0
+C1 EXIT=0

@@ -1,0 +1,111 @@
+# checks transcript — generation c1-r1-n2 (attempt 2 of plan revision r=1)
+# host UTC at start: 2026-10-24T14:58:58Z
+# python: Python 3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]
+# Runs are separated by a real pause and stamped to the millisecond, so every
+# log carries its own started_utc *after* the last edit of the document.
+
+## artifact fingerprint (taken BEFORE the runs, after the last edit of the document)
+$ sha256sum experiments/egg-drop/answer.md
+b254ced7db9ab14cb54779801a3a72c6131bc6836c63941667a6f6c4c53c25de  experiments/egg-drop/answer.md
+$ wc -l experiments/egg-drop/answer.md
+865 experiments/egg-drop/answer.md
+$ sha256sum /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py
+fb30f7a8a42631769f36397903a86cee112ab608d44d946b89df11c15cfd55bf  /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py
+
+## commands (expanded argv) and exit status
+
+### C1 probe
+$ python3 /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py --repo /home/alex/sources/skills  --check probe --log .pdca/egg-drop/rv1/attempts/c1-r1-n2/probe.json
+[probe] pass: 21/21 passed, 0 failed -> exit 0
+log: /home/alex/sources/skills/.pdca/egg-drop/rv1/attempts/c1-r1-n2/probe.json
+EXIT[C1 probe]=0
+
+### C2 selftest
+$ python3 /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py --repo /home/alex/sources/skills  --check selftest --log .pdca/egg-drop/rv1/attempts/c1-r1-n2/selftest.json
+[selftest] pass: 13/13 passed, 0 failed -> exit 0
+log: /home/alex/sources/skills/.pdca/egg-drop/rv1/attempts/c1-r1-n2/selftest.json
+EXIT[C2 selftest]=0
+
+### C3 structure
+$ python3 /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer.md --check structure --log .pdca/egg-drop/rv1/attempts/c1-r1-n2/structure.json
+[structure] pass: 7/7 passed, 0 failed -> exit 0
+log: /home/alex/sources/skills/.pdca/egg-drop/rv1/attempts/c1-r1-n2/structure.json
+EXIT[C3 structure]=0
+
+### C4 physics
+$ python3 /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer.md --check physics --log .pdca/egg-drop/rv1/attempts/c1-r1-n2/physics.json
+[physics] pass: 19/19 passed, 0 failed -> exit 0
+log: /home/alex/sources/skills/.pdca/egg-drop/rv1/attempts/c1-r1-n2/physics.json
+EXIT[C4 physics]=0
+
+### C5 constraints
+$ python3 /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer.md --check constraints --log .pdca/egg-drop/rv1/attempts/c1-r1-n2/constraints.json
+[constraints] pass: 13/13 passed, 0 failed -> exit 0
+log: /home/alex/sources/skills/.pdca/egg-drop/rv1/attempts/c1-r1-n2/constraints.json
+EXIT[C5 constraints]=0
+
+### C6 content
+$ python3 /home/alex/sources/skills/.pdca/egg-drop/rv1/verify.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer.md --check content --log .pdca/egg-drop/rv1/attempts/c1-r1-n2/content.json
+[content] pass: 21/21 passed, 0 failed -> exit 0
+log: /home/alex/sources/skills/.pdca/egg-drop/rv1/attempts/c1-r1-n2/content.json
+EXIT[C6 content]=0
+
+## hand recompute (independent of verify.py: the formulas were re-evaluated by hand)
+## Every line is formula -> value; the value must equal the one printed in answer.md.
+
+mass        65+130+30+30+20+45+13+16+20+8+4+6+5+12+8+24                    436 g
+budget      0.25+0.60+0.15+0.15+0.10+0.20+0.06+0.16+0.20+0.30+0.15+0.40+0.10+0.05+0.10+0.20 3.17 $
+v           sqrt(2*9.81*10)                                                14.0071 m/s
+E_k         0.5*0.436*14.0071^2                                            42.772 J
+dU_g        0.436*9.81*0.1596                                              0.6826 J (1.60% of E_k)
+E_tot       E_k + dU_g                                                     43.45 J
+a_avg       14.0071^2/(2*0.1596) + 9.81                                    624.5 m/s2 = 63.7 g
+F_avg       0.436*624.5                                                    272.3 N
+F_peak      1.5*272.3                                                      408.4 N
+n_peak      1.5*624.5/9.81                                                 95.5 g
+dt          2*0.1596/14.0071                                               0.02279 s
+momentum    (272.3 - 0.436*9.81)*0.02279 = 6.107 vs m*v = 6.107            equal
+mass ratio  65/436                                                         0.1491
+F_egg       0.1491*408.4                                                   60.9 N
+E_egg       0.065*936.7*0.010                                              0.609 J
+eta         1 - 0.6089/42.772                                              0.9858
+eta_req     1 - 1.0/42.772                                                 0.9766
+dx_min      14.0071^2/(2*100*9.81)                                         100.0 mm
+k*dx_min    1.5*100                                                        150.0 mm
+stroke      14*(15-3.6)                                                    159.6 mm
+lat X       (240-90)/2 = 75 = 5*15; usable 5*(15-3.6)                      57.0 mm
+lat Y       (240-80)/2 = 80 = 5*16; usable 5*(16-3.84)                     60.8 mm
+top         5*4 = 20; usable 5*(4-0.96)                                    15.2 mm
+vertical    bottom 210 + bed 60 + top 20                                   290 mm == 300 - 2*5
+h_cg        72660/412 (BOM moments)                                        176.4 mm
+theta_tip   atan(125/176.4)                                                35.3 deg
+side hit    196.2/(2*0.057) + 9.81                                         1731 m/s2 = 176 g
+inverted    196.2/(2*0.0152) + 9.81; peak = 1.5*avg                        6464 m/s2 -> 658.9 / 988.3 g
+residual    196.2/(2*0.010) + 9.81; peak = 1.5*avg                         9820 m/s2 -> 1001.0 / 1501.5 g
+rebound     v*sqrt(0.05); E=0.05*E_k; s=E/(150-m*g)                        3.13 m/s, 2.14 J, 14.7 mm
+v20         sqrt(2*9.81*20)                                                19.8 m/s
+E_k20       0.5*0.436*19.8091^2                                            85.54 J
+s_req20     1.5*392.4/(2*100*9.81)                                         300 mm
+n20         1.5*(392.4/0.3192 + 9.81)/9.81                                 189.5 g
+E_egg20     0.065*1.5*1239.1*0.010                                         1.208 J
+altB vt     sqrt(2*0.451*9.81/(1.225*1.2*0.070686))                        9.23 m/s
+altB v10    v_t*tanh(arccosh(exp(g h/v_t^2)))                              8.76 m/s; E_k 17.29 J; s_req 58.7 mm
+altB v20    same at h=20 m                                                 9.18 m/s; E_k 19.01 J; s_req 64.5 mm
+budget +    5.00/3.17                                                      1.577 (+57.7%)
+buckling    pi^2*2e9*21.9e-12/0.190^2                                      12.0 N
+
+Cross-check: every value above equals the corresponding number in answer.md (§2.1, §2.5,
+§3.4, §3.6, §3.7, §3.8, §5.1, §6.2) and in the machine block outputs (§6.3).
+
+## theta capacity (vector peak = 100 g), recomputed by bisection
+theta_max = 31.40 deg  (answer.md states 31 deg; at 32 deg the vector peak is 101.2 g)
+  15 deg: a_v=   875  a_l=   173  vector=   892  n= 90.9 g
+  30 deg: a_v=   706  a_l=   645  vector=   957  n= 97.5 g
+  31 deg: a_v=   692  a_l=   685  vector=   974  n= 99.3 g
+  32 deg: a_v=   678  a_l=   725  vector=   992  n=101.2 g
+
+## notes (display precision only, appended after the block above)
+- the `v20` line prints one decimal; the full value is 19.809 m/s and answer.md §6.2 states 19.81 m/s.
+- the `side hit` line is the *average* value (176.4 g); the peak quoted in §3.7 and §4.3 is
+  1.5 x 176.4 = 264.6 g.
+- `h_cg` uses the grouped BOM moments of §3.7 (reserve excluded, stated there).

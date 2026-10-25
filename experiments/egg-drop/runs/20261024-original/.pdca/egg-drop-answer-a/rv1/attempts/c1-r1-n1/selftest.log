@@ -1,0 +1,134 @@
+# C3 selftest — gate-1 probe (in-process suite over the synthetic document)
+# the suite is self-contained: base document built in memory, 44 checks, mandatory expected-negative mutants
+
+### C3 positive (selftest suite)
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture.md --case selftest --read-only
+PASS ST-01 positive structure — rc=0 checks=14 failed=0
+PASS ST-02 positive numeric — rc=0 checks=58 failed=0
+PASS ST-03 positive numeric reports both gates — energy and dynamics gates both evaluated
+PASS ST-10 NEG missing heading — rc=1 expected A02.headings, failing IDs: ['A02.headings']
+PASS ST-11 NEG extra heading — rc=1 expected A02.headings, failing IDs: ['A02.headings']
+PASS ST-12 NEG renamed heading — rc=1 expected A02.headings, failing IDs: ['A02.headings']
+PASS ST-13 NEG embedded script — rc=1 expected A02.no_script, failing IDs: ['A02.no_script']
+PASS ST-14 NEG malformed row — rc=1 expected A02.schema, failing IDs: ['A02.schema']
+PASS ST-15 NEG unknown block id — rc=1 expected A02.schema, failing IDs: ['A02.schema']
+PASS ST-16 NEG empty document — rc=1 expected A02.headings, failing IDs: ['A02.headings', 'A02.latex', 'A02.russian', 'A03.blocks']
+PASS ST-20 NEG mass sum — rc=1 expected A05.mass_sum, failing IDs: ['A05.mass_sum', 'A06.one_mass']
+PASS ST-21 NEG mass limit — rc=1 expected A05.mass_limit, failing IDs: ['A05.mass_sum', 'A05.mass_limit', 'A06.one_mass']
+PASS ST-22 NEG dimension limit — rc=1 expected A05.dims, failing IDs: ['A05.dims']
+PASS ST-23 NEG volume limit — rc=1 expected A05.volume, failing IDs: ['A05.volume']
+PASS ST-24 NEG cost limit — rc=1 expected A05.cost, failing IDs: ['A05.cost']
+PASS ST-25 NEG assembly limit — rc=1 expected A05.time, failing IDs: ['A05.time']
+PASS ST-26 NEG forbidden material — rc=1 expected A04.forbidden_materials, failing IDs: ['A04.forbidden_materials']
+PASS ST-27 NEG glued egg — rc=1 expected A04.egg_not_glued, failing IDs: ['A04.egg_not_glued']
+PASS ST-28 NEG side protection — rc=1 expected A04.all_sides, failing IDs: ['A04.all_sides']
+PASS ST-29 NEG travel vs brake distance — rc=1 expected A07.travel_consistent, failing IDs: ['A07.brake_kinematics', 'A07.travel_consistent']
+PASS ST-30 NEG mass basis substituted — rc=1 expected A06.one_mass, failing IDs: ['A06.one_mass', 'A06.velocity_drag', 'A06.fall_time', 'A07.energy', 'A07.momentum']
+PASS ST-31 NEG wrong impact velocity — rc=1 expected A06.velocity_drag, failing IDs: ['A06.velocity_drag', 'A07.energy', 'A07.momentum', 'A08.energy_to_egg', 'A08.eta_required']
+PASS ST-32 NEG wrong kinetic energy — rc=1 expected A07.energy, failing IDs: ['A07.energy']
+PASS ST-33 NEG wrong energy to egg — rc=1 expected A08.energy_to_egg, failing IDs: ['A08.energy_to_egg']
+PASS ST-34 NEG energy gate open — rc=1 expected A08.gate_energy, failing IDs: ['A08.gate_energy']
+PASS ST-35 NEG dynamics gate open — rc=1 expected A07.gate_dynamics, failing IDs: ['A07.n_peak', 'A07.gate_dynamics', 'A07.binding']
+PASS ST-36 NEG egg force uses system mass — rc=1 expected A07.F_egg, failing IDs: ['A07.F_egg']
+PASS ST-37 NEG wrong binding gate — rc=1 expected A07.binding, failing IDs: ['A07.binding']
+PASS ST-38 NEG wrong operational threshold — rc=1 expected A07.n_crit, failing IDs: ['A07.n_crit']
+PASS ST-39 NEG wrong eta sensitivity — rc=1 expected A08.sensitivity_eta, failing IDs: ['A08.sensitivity_eta']
+PASS ST-40 NEG unjustified p^3 — rc=1 expected A09.p_three, failing IDs: ['A09.p_three']
+PASS ST-41 NEG unknown probability mode — rc=1 expected A09.p_three, failing IDs: ['A09.p_three']
+PASS ST-42 NEG 20 m mass limit — rc=1 expected A05.mass_limit_20, failing IDs: ['A05.mass_limit_20', 'A10.Ek20', 'A10.energy20']
+PASS ST-43 NEG 20 m does not close — rc=1 expected A10.scenario20_closes, failing IDs: ['A10.energy20', 'A10.scenario20_closes']
+PASS ST-44 NEG missing block — rc=1 expected A03.blocks, failing IDs: ['A03.blocks']
+PASS ST-45 NEG incomplete alternatives — rc=1 expected A10.alternatives, failing IDs: ['A10.alt1_complete', 'A10.alternatives']
+PASS ST-46 NEG alternative over budget — rc=1 expected A10.alt_limits, failing IDs: ['A10.alt_limits']
+PASS ST-50 NEG zero selected checks -> exit 2 — final_rc(empty report)=2
+PASS ST-51 zero-check guard is exit 2 not a pass — rc=2
+PASS ST-52 NEG unknown case -> exit 2 — --case nope
+PASS ST-53 NEG missing --document -> exit 2 — required argument dropped
+PASS ST-54 NEG missing --read-only -> exit 2 — required flag dropped
+PASS ST-55 NEG path traversal -> exit 2 — ../etc/passwd rejected
+PASS ST-56 NEG missing document -> exit 2 — missing document rejected
+RESULT PASS checks=44 failed=0 exit=0
+EXIT=0
+
+### CLI expected-negative: unknown --case nope -> exit 2
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture.md --case nope --read-only
+usage: recompute.py [-h] --repo REPO --document DOCUMENT --case
+                    {structure,numeric,selftest} --read-only
+recompute.py: error: argument --case: invalid choice: 'nope' (choose from 'structure', 'numeric', 'selftest')
+EXIT=2
+
+### CLI expected-negative: missing --document -> exit 2
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --case structure --read-only
+usage: recompute.py [-h] --repo REPO --document DOCUMENT --case
+                    {structure,numeric,selftest} --read-only
+recompute.py: error: the following arguments are required: --document
+EXIT=2
+
+### CLI expected-negative: missing --read-only -> exit 2
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/fixture.md --case structure
+usage: recompute.py [-h] --repo REPO --document DOCUMENT --case
+                    {structure,numeric,selftest} --read-only
+recompute.py: error: the following arguments are required: --read-only
+EXIT=2
+
+### CLI expected-negative: missing document file -> exit 2
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer-a.md --case structure --read-only
+CANNOT document not found: experiments/egg-drop/answer-a.md
+EXIT=2
+
+
+================================================================
+# REAL DOCUMENT — experiments/egg-drop/answer-a.md (D1–D5 final, frozen)
+# answer sha256 4a74c62d905a41c294281b42a9596974fb386c045741b734386c94703fe33ab8
+# manifest/snapshot re-frozen for this hash
+================================================================
+
+### C3 (frozen argv) on the real document — case selftest
+$ python3 .pdca/egg-drop-answer-a/rv1/attempts/c1-r1-n1/recompute.py --repo /home/alex/sources/skills --document experiments/egg-drop/answer-a.md --case selftest --read-only
+PASS ST-01 positive structure — rc=0 checks=14 failed=0
+PASS ST-02 positive numeric — rc=0 checks=58 failed=0
+PASS ST-03 positive numeric reports both gates — energy and dynamics gates both evaluated
+PASS ST-10 NEG missing heading — rc=1 expected A02.headings, failing IDs: ['A02.headings']
+PASS ST-11 NEG extra heading — rc=1 expected A02.headings, failing IDs: ['A02.headings']
+PASS ST-12 NEG renamed heading — rc=1 expected A02.headings, failing IDs: ['A02.headings']
+PASS ST-13 NEG embedded script — rc=1 expected A02.no_script, failing IDs: ['A02.no_script']
+PASS ST-14 NEG malformed row — rc=1 expected A02.schema, failing IDs: ['A02.schema']
+PASS ST-15 NEG unknown block id — rc=1 expected A02.schema, failing IDs: ['A02.schema']
+PASS ST-16 NEG empty document — rc=1 expected A02.headings, failing IDs: ['A02.headings', 'A02.latex', 'A02.russian', 'A03.blocks']
+PASS ST-20 NEG mass sum — rc=1 expected A05.mass_sum, failing IDs: ['A05.mass_sum', 'A06.one_mass']
+PASS ST-21 NEG mass limit — rc=1 expected A05.mass_limit, failing IDs: ['A05.mass_sum', 'A05.mass_limit', 'A06.one_mass']
+PASS ST-22 NEG dimension limit — rc=1 expected A05.dims, failing IDs: ['A05.dims']
+PASS ST-23 NEG volume limit — rc=1 expected A05.volume, failing IDs: ['A05.volume']
+PASS ST-24 NEG cost limit — rc=1 expected A05.cost, failing IDs: ['A05.cost']
+PASS ST-25 NEG assembly limit — rc=1 expected A05.time, failing IDs: ['A05.time']
+PASS ST-26 NEG forbidden material — rc=1 expected A04.forbidden_materials, failing IDs: ['A04.forbidden_materials']
+PASS ST-27 NEG glued egg — rc=1 expected A04.egg_not_glued, failing IDs: ['A04.egg_not_glued']
+PASS ST-28 NEG side protection — rc=1 expected A04.all_sides, failing IDs: ['A04.all_sides']
+PASS ST-29 NEG travel vs brake distance — rc=1 expected A07.travel_consistent, failing IDs: ['A07.brake_kinematics', 'A07.travel_consistent']
+PASS ST-30 NEG mass basis substituted — rc=1 expected A06.one_mass, failing IDs: ['A06.one_mass', 'A06.velocity_drag', 'A06.fall_time', 'A07.energy', 'A07.momentum']
+PASS ST-31 NEG wrong impact velocity — rc=1 expected A06.velocity_drag, failing IDs: ['A06.velocity_drag', 'A07.energy', 'A07.momentum', 'A08.energy_to_egg', 'A08.eta_required']
+PASS ST-32 NEG wrong kinetic energy — rc=1 expected A07.energy, failing IDs: ['A07.energy']
+PASS ST-33 NEG wrong energy to egg — rc=1 expected A08.energy_to_egg, failing IDs: ['A08.energy_to_egg']
+PASS ST-34 NEG energy gate open — rc=1 expected A08.gate_energy, failing IDs: ['A08.gate_energy']
+PASS ST-35 NEG dynamics gate open — rc=1 expected A07.gate_dynamics, failing IDs: ['A07.n_peak', 'A07.gate_dynamics', 'A07.binding']
+PASS ST-36 NEG egg force uses system mass — rc=1 expected A07.F_egg, failing IDs: ['A07.F_egg']
+PASS ST-37 NEG wrong binding gate — rc=1 expected A07.binding, failing IDs: ['A07.binding']
+PASS ST-38 NEG wrong operational threshold — rc=1 expected A07.n_crit, failing IDs: ['A07.n_crit']
+PASS ST-39 NEG wrong eta sensitivity — rc=1 expected A08.sensitivity_eta, failing IDs: ['A08.sensitivity_eta']
+PASS ST-40 NEG unjustified p^3 — rc=1 expected A09.p_three, failing IDs: ['A09.p_three']
+PASS ST-41 NEG unknown probability mode — rc=1 expected A09.p_three, failing IDs: ['A09.p_three']
+PASS ST-42 NEG 20 m mass limit — rc=1 expected A05.mass_limit_20, failing IDs: ['A05.mass_limit_20', 'A10.Ek20', 'A10.energy20']
+PASS ST-43 NEG 20 m does not close — rc=1 expected A10.scenario20_closes, failing IDs: ['A10.energy20', 'A10.scenario20_closes']
+PASS ST-44 NEG missing block — rc=1 expected A03.blocks, failing IDs: ['A03.blocks']
+PASS ST-45 NEG incomplete alternatives — rc=1 expected A10.alternatives, failing IDs: ['A10.alt1_complete', 'A10.alternatives']
+PASS ST-46 NEG alternative over budget — rc=1 expected A10.alt_limits, failing IDs: ['A10.alt_limits']
+PASS ST-50 NEG zero selected checks -> exit 2 — final_rc(empty report)=2
+PASS ST-51 zero-check guard is exit 2 not a pass — rc=2
+PASS ST-52 NEG unknown case -> exit 2 — --case nope
+PASS ST-53 NEG missing --document -> exit 2 — required argument dropped
+PASS ST-54 NEG missing --read-only -> exit 2 — required flag dropped
+PASS ST-55 NEG path traversal -> exit 2 — ../etc/passwd rejected
+PASS ST-56 NEG missing document -> exit 2 — missing document rejected
+RESULT PASS checks=44 failed=0 exit=0
+EXIT=0
+
