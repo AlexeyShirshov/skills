@@ -1,1 +1,0 @@
-{"schema":"eggd-verify-decision-v1","run":"verify-v001","S_measure":"9.100","S_verify":"9.250","S_accept":"9.100","gate":"PASS","section7":"clean","threshold":"9.000","floor":"0.500","baseline":"0.000","delta":"+9.100","outcome":"met","disposition":"finalized","checkpoint":null}
