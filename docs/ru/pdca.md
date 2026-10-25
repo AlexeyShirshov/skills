@@ -124,11 +124,12 @@ PLAN → (normal: апрув плана пользователем) → DO → C
 **Закрытие PLAN.** План не `ready`, пока его решающие команды не сверены со средой: каждый
 идентификатор резолвится хотя бы в одну цель в заявленной области; вектор аргументов переживает
 харнесс (без shell-алиаса, редиректа и неразвёрнутого плейсхолдера); фаза легальна (boundary-only
-прогон не планируется как inner-работа); масштаб укладывается в заявленный бюджет; ожидаемый исход
+прогон не планируется как inner-работа); масштаб укладывается в заявленную ёмкость хоста; ожидаемый исход
 объявлен как `green`, `expected-negative` или `informational`. Нарушение — **дефект плана**: гейт 1
-не пройден, планировщик пересматривает план. Гейт 1 также фиксирует **stop-loss бюджет** —
-максимум ревизий, wall clock и время измерения; его исчерпание уводит в `pdca-escalate`/STOP, а не
-в незапланированную лишнюю попытку. Глубина планирования следует риску: маленькое понятное
+не пройден, планировщик пересматривает план. Гейт 1 фиксирует **оценку усилий** normal-режима
+(оценка, не cutoff); в автономном режиме учёт времени — опциональное наблюдение, не поле гейта 1.
+Никакой wall-clock, token, revision, step или measurement итог не обрывает задачу автономно. В normal-режиме пользователь может явно выбрать остановку на оценке;
+ни апрув плана, ни молчание её не включают. Глубина планирования следует риску: маленькое понятное
 изменение получает компактный план, а измеримая цель с недоказанным механизмом — сначала
 ограниченный probe, а не полный контракт приёмки.
 
@@ -164,8 +165,8 @@ PLAN → (normal: апрув плана пользователем) → DO → C
 
 1. **План → DO:** все обязательные поля на месте — включая объявленные **форму и оверлей** и
    **несущие утверждения** с ID, — **каждая замороженная команда прошла контракт
-   команд**, план записан в статус-файл, зафиксирован **stop-loss бюджет**, пользователь
-   **утвердил план** — либо автономный режим.
+   команд**, план записан в статус-файл, в normal-режиме предъявлена **оценка усилий** (никогда не автономный
+   cutoff; автономный учёт — опционален), пользователь **утвердил план** — либо автономный режим.
 2. **DO → CHECK:** все активные, не вытесненные единицы `done` со свидетельствами.
 3. **CHECK → ACT:** все критерии `met` на фактических данных, ни одного `unmet`/`unverified`, и
    вердикт не блокирует ни одно несущее утверждение.
@@ -333,7 +334,7 @@ CHECK в ревизии r1 даёт по критерию «методика в�
 | Кандидат DO → PLAN; аддитивное предусловие vs замена области | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
 | Гейты 1–5 и финализация STOP | `skills/pdca/SKILL.md §Transition gates` |
 | Несущие утверждения и вето | `skills/pdca/SKILL.md §Claims and veto`; `skills/pdca/references/check.md §Carrying claims and the veto` |
-| Контракт команд плана, vacuous и `expected-negative` прогоны, каталог исключений, re-anchor на входе DO, пропорциональное планирование со stop-loss бюджетом и единая привязка evidence | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding` |
+| Контракт команд плана, vacuous и `expected-negative` прогоны, каталог исключений, re-anchor на входе DO, пропорциональное планирование и политика усилий, единая привязка evidence | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy · §One evidence location binding` |
 | Фазовые контракты PLAN/DO/CHECK/ACT/STOP, критерий, зависящий от состояния, и возврат после `incomplete` | `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | Замороженный манифест доказательств и каталог `.pdca/<task>/rv<k>/` | `skills/pdca/references/plan.md §Frozen evidence manifest` |
 | Режимы normal (апрув плана) и autonomous (`Notice:`, без вопросов) | `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval` |

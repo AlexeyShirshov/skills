@@ -23,6 +23,10 @@ permission:
     "stat *": allow
     "git status": allow
     "git status --short": allow
+    "git status --short -- *": allow
+    "git status --porcelain": allow
+    "git status --porcelain -- *": allow
+    "git rev-parse *": allow
     "git diff --stat": allow
     "git diff --name-only": allow
     "git diff --no-color": allow

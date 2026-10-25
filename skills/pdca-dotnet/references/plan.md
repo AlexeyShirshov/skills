@@ -198,7 +198,7 @@ a source-copy mismatch, or a real functional/security variant stays on the norma
 route, and a finite audit goal the user explicitly agreed as a **separate** audit task stays
 **binding**. The scope basis and reason are checked by the role decision, not merely asserted by the
 author; an extra gate does not acquire normative force from the word `frozen`. The applicability
-budget is not a tuning knob: an absent audit-only row consumes no gather/replan budget, while a
+allowance is not a tuning knob: an absent audit-only row consumes no gather/replan allowance, while a
 missing *mandatory* direct result still goes through bounded re-gather.
 
 ### Contract revision

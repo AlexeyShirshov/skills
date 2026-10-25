@@ -44,7 +44,7 @@ BLOCKS = {
         ("Spike", "needed? · tool · PoC", "medium"),
         ("Unit mode", "sequence · tree · worktrees", "medium"),
         ("Command contract", "resolve · argv · outcome", "medium"),
-        ("Stop-loss budget", "revisions · time · measurement", "medium"),
+        ("Effort policy", "accounting · not a cutoff", "medium"),
     ],
     "D": [
         ("DO", "journal · plan until approval", "weak"),

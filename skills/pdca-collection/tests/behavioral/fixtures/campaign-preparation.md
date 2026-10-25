@@ -7,7 +7,7 @@ item: U1
 form: campaign
 Allowed surface: app.py only; bench.py is protected (the measurement recipe) and frozen
 Protected/foreign: bench.py frozen/inspect-only; README.md belongs to U2
-Budget: 6 measurements and 3 plan revisions, fixed before DO — never renewed
+Effort accounting: elapsed time/measurements recorded as accounting only — no autonomous cutoff; a normal-mode user stop choice, if made, is carried by reference with its original anchor
 commit_policy: none (no autocommit/merge right granted for this run; the outer collection completion commit is separate)
 scope: preparation only. No baseline measured, no runtime campaign status, no step plans/step count/step overlays, no product changes.
 

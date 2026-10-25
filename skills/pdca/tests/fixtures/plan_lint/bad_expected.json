@@ -1,0 +1,23 @@
+{
+  "task": "T905",
+  "plan_r": 1,
+  "commands": [
+    {
+      "id": "NEG",
+      "phase": "boundary",
+      "kind": "integration",
+      "argv": ["dotnet", "test", "tests/Proj/Proj.csproj", "--filter", "FullyQualifiedName~SampleTests"],
+      "expected": "expected-negative",
+      "timeout_s": 600
+    },
+    {
+      "id": "ZERO",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["dotnet", "test", "tests/Proj/Proj.csproj", "--filter", "FullyQualifiedName~SampleTests"],
+      "expected": "green",
+      "min_selected": 0,
+      "timeout_s": 600
+    }
+  ]
+}

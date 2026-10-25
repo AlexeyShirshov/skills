@@ -11,7 +11,7 @@ disable-model-invocation: true
 **This is a form contract, not an overlay and not a second cycle.** It carries only what a campaign
 adds to the base: the campaign unit and its credit, the shared campaign state, the step boundary's
 bookkeeping, the baseline bootstrap and the stop rules. The state machine, gates, roles, counters
-(`N`/`r`/`n`/`rv`), approval, escalation, budgets, security and recovery are the base's and are not
+(`N`/`r`/`n`/`rv`), approval, escalation, effort accounting, security and recovery are the base's and are not
 restated here.
 
 **Load order.** `../pdca/SKILL.md` first, then this file; the phase references
@@ -48,7 +48,7 @@ the order may change after an accepted result.
 **`campaign-control` is a context of the existing cheap `pdca-orchestrator`, not a new role**
 (base §Control modes and the campaign owner). In it the owner:
 
-- holds the durable campaign status, the shared counters, the accumulated knowledge and the budget;
+- holds the durable campaign status, the shared counters, the accumulated knowledge and the effort accounting;
 - executes each step's cycle **inline** in its own session with the existing role delegation
   (`pdca-planner`/`pdca-executor`/`pdca-scout`/`pdca-check`), without recursively spawning a new
   `pdca-orchestrator` per step or per tool call;
@@ -56,7 +56,7 @@ the order may change after an accepted result.
 - owns recovery of the campaign state (§Recovery).
 
 It does not classify the task, does not replan, does not judge in place of `pdca-check`, and cannot
-waive a gate, a budget or a permission. A step's cycle is not handed to a separate cycle-control
+waive a gate, a counter or a permission. A step's cycle is not handed to a separate cycle-control
 controller: the campaign's sequence belongs to this one context.
 
 **Normal mode.** The flat cheap primary drives and **the user approves each step's plan** before
@@ -98,7 +98,7 @@ gains no extra rights from being composed (§Campaign invariants).
 6. **Discovery feeds, the planner decides.** A fresh gap map and a ranked seed are gathered before
    each step; the decision on the next step stays with `pdca-planner` at the boundary.
 7. **State carries over.** The deferred register with triggers, blocked arms, open tickets, accepted
-   knowledge, protected/foreign changes and the budget live in the campaign status and pass to every
+   knowledge, protected/foreign changes and the effort accounting live in the campaign status and pass to every
    next step. "We forgot" is not a status.
 8. **Conservative accounting.** Foreign and protected changes are excluded from the credit; a
    forecast is never written into the accepted column; denominator drift is explained separately.
@@ -134,7 +134,7 @@ content from the reports and passes it in the brief — the owner does not write
 
 Beyond the base's mandatory status content, the campaign file carries the accepted steps and their
 credit, the current step (`cycle_id`, `N`, `r`, `n`), the increment unit and its expected
-observable, the accepted knowledge register, the deferred rows with triggers, the budget, the
+observable, the accepted knowledge register, the deferred rows with triggers, the effort accounting, the
 checkpoint of the last step boundary and the commit policy. `references/status.md` has the full
 template, the field rules and the records.
 
@@ -188,7 +188,7 @@ blocks — the proven minimum that keeps a step from re-opening what is closed:
 ```text
 1. GOAL: the campaign predicate + the step's place in the chain (accepted basis → the observable).
 2. CURRENT STATE: the exact accepted basis, the composition of the last accepted result or the
-   accepted knowledge, the remaining budget.
+   accepted knowledge, the remaining accounting.
 3. HARD CONSTRAINTS: thresholds and their provisional marks, the allowed surface, protected/foreign
    areas, the commit policy (`Commit policy` from the status: under `auto` only the accepted step
    and only its paths; `push` forbidden always), what counts as a valid increment.
@@ -233,7 +233,7 @@ either a brief or a STOP:
   follow the base loop-back rules, the independent CHECK is never rewritten to `met`, and no
   increment is credited for bypassing a failed CHECK. A failed step never closes the rest of the
   campaign by itself: the blast radius is one step, and the route stays the planner's.
-- **a new step** — distinct from revising: history, state and shared budgets are preserved, every
+- **a new step** — distinct from revising: history, counters and accounting are preserved, every
   actual cost and attempt counts, and an unaccepted red step is never converted into extra accepted
   progress.
 
@@ -244,9 +244,10 @@ non-PASS is a planner loop-back. STOP with `met`/`limited` requires the whole-go
 with the increment's CHECK or separate (base §Transition gates, gate 3); `unreachable` requires the
 proven remainder (§Stop).
 
-Total planner calls are at most `1 + number of steps`, plus legitimate revisions (§Strategic
-revision) and the current step's loop-backs. Separate DECIDE → brief → STOP turns on the same
-content are a repeated PLAN and are not allowed. Example for one increment: initial PLAN → local
+Planner calls are **accounted**, not capped: the successful path is `1 + number of steps`, plus
+genuine revisions (§Strategic revision), the current step's loop-backs and bounded same-pending-PLAN
+clarifications/probe refinements. Separate DECIDE → brief → STOP turns on the same content are a
+repeated PLAN and are not allowed. Example for one increment: initial PLAN → local
 CHECK → step boundary (acceptance + final-check brief with the STOP condition) → final CHECK PASS →
 STOP — two calls.
 
@@ -285,7 +286,7 @@ brief recorded by the owner without a new call.
 | the whole-goal CHECK passed: the goal predicate is true on the **accepted** state, no carrying claim blocks, the original requirements are verified | `met` | the final result, the remainder, the evidence |
 | the remainder is provably unreachable | `unreachable` | per cluster: why, how it was proven, where it was redistributed |
 | an external blocker (ticket, environment, access) | `blocked` | the blocker and which goals it closes |
-| a budget/limit/user stop | `stopped` | what is done, what remains, where to continue |
+| a verified blocker, security boundary or user stop | `stopped` | what is done, what remains, where to continue |
 | a carrying-claim block is removed by an explicit narrowing of the result inside the original goal | `limited` | what was narrowed, why, the blocking finding |
 
 `met` is the only success — the campaign record's `done` — and needs the whole-goal CHECK: a set of
@@ -314,14 +315,22 @@ the last accepted basis, and invariant 9 decides whether the campaign is paused 
 - Credit does not replace the check. Evidence is bound to the inputs of the claim, not to their
   transitive closure; an unconfirmed claim is `unverified`, never `met`.
 
-## Budgets and safety
+## Effort accounting and safety
 
-Budgets are fixed **before DO** and are **never renewed** — not on a new step, not on a strategy
-change, not after a controller loss; in the campaign the owner accounts for them. The no-4th-pass
-rule, security/permissions boundaries and the protection of irreversible actions are the base's
-(§Budgets, §Generic operating constraints) and this contract does not relax them. No new universal
-minutes or costs; the commit policy of invariant 10 is the only campaign-specific permission, and
-`push` is never part of it.
+There is **no autonomous cutoff**: no wall-clock, token, cost, compute, revision, step or measurement
+total is fixed before DO to terminate the campaign; elapsed time/cost is accounting only, an
+estimate is not a stop condition, and no legacy/plan/resume budget is revived. An accepted whole goal
+closes the campaign normally. Otherwise work stops early only for a verified irreducible blocker for
+the **agreed goal**, a security/permission boundary or explicit user cancellation; a failed candidate
+or incomplete evidence alone is not a blocker — it returns to the step boundary. In
+normal mode the driver presents the planner's estimate and asks whether to stop at it; only an
+explicit user answer enables that stop, recorded in the existing approval record; the same cutoff
+persists across a normal-mode resume or genuine replan (not renewed) until the user changes or
+revokes it, and only a switch to autonomous drops it. Per-command timeouts, host capacity and user deadlines stay in
+force. The no-4th-pass rule, security/permissions boundaries and the protection of irreversible
+actions are the base's (§Effort and time policy, §Generic operating constraints) and this contract
+does not relax them. No new universal minutes or costs; the commit policy of invariant 10 is the
+only campaign-specific permission, and `push` is never part of it.
 
 ## Economics and sizing
 
@@ -353,7 +362,7 @@ The base list still governs; campaign-specific:
 - I let DECIDE turn into a second planner call on the same content, or let the reviewer choose the
   route.
 - I declared `met` on a step-local or partial check, or on accepted increments alone.
-- I repeated an accepted step after a controller loss, or reset a counter or a budget.
+- I repeated an accepted step after a controller loss, or reset a counter or the history.
 - I built a "full plan" or a projected backlog before acting.
 - I edited outside the allowed surface, or committed/pushed outside the commit policy.
 
@@ -362,9 +371,9 @@ The base list still governs; campaign-specific:
 The base's recovery order and the campaign-recovery rule (§Recovery) apply; campaign-specific:
 
 - A **checkpoint is recorded at every step boundary**: the accepted basis, the current step, the
-  counters, the remaining budget and the next-step seed.
+  counters, the remaining accounting and the next-step seed.
 - After a lost controller, a host restart, a provider timeout or compaction, the owner restores from
-  the status. **Accepted steps are never repeated**, `N`/`r`/`n` and the budget are **not reset**,
+  the status. **Accepted steps are never repeated**, `N`/`r`/`n`, the accounting and the defect history are **not reset**,
   and the work continues from the last checkpoint. An interrupted dispatch is retried no more than
   the base retry rules allow.
 - Context compression/exhaustion of the campaign-control session is a special case of controller
@@ -382,7 +391,7 @@ at 50 KiB / 2000 lines):
 - `references/status.md` — campaign status template and field rules, the preparation document, the
   baseline-bootstrap record and the checkpoint. Load at bootstrap and at every status write.
 - `../pdca/SKILL.md` — the base: one PLAN and the forms, control modes and the campaign owner,
-  lens/probe/increment and the step boundary, gates, counters, claims and veto, budgets, overlays,
+  lens/probe/increment and the step boundary, gates, counters, claims and veto, effort policy, overlays,
   strategic revision, recovery, escalation, generic constraints, red flags.
 - `../pdca/references/plan.md`, `../pdca/references/check.md`, `../pdca/references/act.md` — phase
   detail (plan fields and calibration, the verdict and the veto, the status schema and the progress

@@ -96,7 +96,7 @@ unit states, lifetime, progress log). On top of them a .NET cycle records:
 
 - the **contract revision `rv`** and its pinned rows (with their evidence expectations, owner stream
   and applicability predicate), the frozen evidence manifest path and the finite CHECK re-gather
-  budget with its owner;
+  re-gather plan with its owner;
 - the **`PLAN-LINT`** row: the `plan_lint.py check` receipt path and exit code;
 - the **attempt identity** `task/N/r/n`, the frozen snapshot hash and the authoritative
   `manifest.json` path of the current attempt child, plus the evidence root

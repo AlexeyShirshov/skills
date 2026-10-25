@@ -21,7 +21,7 @@ stay in `../SKILL.md`.
   (§Verification economy);
 - means and access;
 - risks and stop conditions;
-- stop-loss budget (wall clock / revisions / measurements).
+- effort estimate and accounting (elapsed time/tokens/cost; an estimate, never a stop condition).
 
 For a campaign step the same fields are narrowed to that step, while the whole goal, requirements
 and constraints stay stored; a full backlog is not imitated. On a resume/replan, a still-valid form
@@ -54,7 +54,8 @@ still runs that PLAN; a persisted `plan_handoff`/resume is never re-planned. A n
 existing brief/status suffices — no new state file, schema or counter.
 
 **Bounded choice probe.** The planner may authorize one bounded probe before the form is settled:
-name the open decision, observable outcomes and budget, and keep `form: UNDECIDED`. A choice probe
+name the open decision, the observable outcomes and the evidence that closes it, and keep
+`form: UNDECIDED`. A choice probe
 opens its decision with an observable outcome before dependent work is fixed; validating a known
 method is legitimate. Do not make every design task incremental; permissible assumptions may bound a
 calculation-only result but do not evidence a decision-critical mechanism. `pdca-executor` runs
@@ -76,9 +77,9 @@ incomplete pending PLAN to the same planner and does not judge necessity.
 
 **Planner-call accounting.** Successful path: `1 + number of steps`, plus legitimate
 revisions/loop-backs, **and** bounded same-pending-PLAN continuations (clarification or probe
-refinement). Continuations are not new strategic decisions, count against the existing stop-loss
-(probe budget fixed before the run), are never unchanged confirmations or routing calls, and create
-no hidden exempt calls.
+refinement). Continuations are not new strategic decisions; the call count is recorded state, not a
+task limit. They are never unchanged confirmations or routing calls and create no hidden exempt
+calls.
 
 ### Gap closure
 
@@ -138,13 +139,49 @@ valid result is **not `ready`**:
   expanded form, never as a shell alias or an unexpanded placeholder;
 - **phase is legal** — an inner-phase command is not a boundary-only sweep, and a boundary-only
   command is not planned as inner work;
-- **scope matches the declared budget** — the affected surface rather than the whole workspace when
-  the host cannot carry the whole workspace;
+- **scope matches the declared host capacity** — the affected surface rather than the whole
+  workspace when the host cannot carry the whole workspace;
 - **expected outcome is declared** — `green`, `expected-negative`, or `informational`; "green unless
   it happens to be red" is not a declaration.
 
 A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises the plan. It is never
 absorbed as a recorded exception, a substituted command or a `Notice`.
+
+## Machine projection: `commands.json` and `plan_lint.py`
+
+The prose command block is not machine-checkable, so a plan that freezes commands also emits a
+**projection** at `<evidence-dir>/inputs/commands.json` (same attempt child as the contract):
+
+- `task` and `plan_r` (required); `checkout`, `evidence_root`, `units`, `host_budget`,
+  `integration_boundary_runs` (optional);
+- one object per command: `id`, `phase` (`inner | boundary | any`), `kind`
+  (`unit | integration | build | mutation | docs | other`), `argv[]`, `cwd`, `env`, `expected`
+  (`green | expected-negative | informational`), `expected_identity`, `log`, `timeout_s`, `covers`,
+  and for a mutation row a `harness_probe` or a declared `fallback`.
+
+`pdca-executor` stages `plan_lint.py` into `.pdca/scripts/` (§Helper staging) and runs it **before
+gate 1** and **again on DO entry** after re-anchoring:
+
+- `python3 .pdca/scripts/plan_lint.py check --repo <checkout> --commands <projection> --receipt
+  <evidence-dir>/plan_lint.json` — schema, argv shape, phase and scope legality, expected outcome,
+  evidence binding to the linted checkout, unit coverage;
+- `python3 .pdca/scripts/plan_lint.py probe …` — additionally runs each `harness_probe` from an
+  allow-list (`git`, `python3`, `go`, `gofmt`), timeout-bounded, never the planned command.
+
+Exit codes `0` ok, `2` violation, `1` usage/operational. A nonzero `check` **is** a gate-1 failure;
+the receipt is the evidence row `PLAN-LINT` (path + exit). The check proves a command is well-formed
+and resolvable, not that its row passes — that stays with CHECK. A plan that freezes no command
+(§Plan command contract) emits no projection.
+
+A language overlay may extend the schema and the probe allow-list; it never narrows these rows.
+
+## Workspace tracking
+
+The status files under `.pdca/status/` are the durable record and belong in the index — a status
+file that never leaves the working tree has no handoff. Evidence and staged helpers are local
+by-products: `.pdca/*/rv*/` (frozen manifests, logs, per-row artifacts) and `.pdca/scripts/`
+(runtime copies of the installed helpers) stay out of the index. The install docs ship the ignore
+snippet.
 
 ## Vacuous and expected-negative runs
 
@@ -188,11 +225,10 @@ first edit, `pdca-executor` re-resolves every planned anchor and records the res
 
 A plan may not execute stale anchors, and cosmetic drift may not manufacture a revision.
 
-## Proportional planning and stop-loss
+## Proportional planning and effort policy
 
-PLAN depth follows risk, not ceremony: a small, well-understood change gets a compact plan; the
-full contract and the measurement budget belong to a change whose mechanism is unproven or whose
-blast radius is wide.
+PLAN depth follows risk, not ceremony: a small, well-understood change gets a compact plan; the full
+contract belongs to a change whose mechanism is unproven or whose blast radius is wide.
 
 **PLAN chooses the approach; DO develops the deliverable.** The plan fixes the approach, the
 nearest justified action, criteria/evidence, bounds and stop condition. It may carry the reasoning
@@ -202,16 +238,69 @@ unknown, later work stays conditional on its result rather than a full speculati
 increment may finish the goal. Do not change to incremental merely to excuse a larger plan; a
 compact ordinary plan is still correct for a known bounded task.
 
+**Order of work.** The nearest action resolves the decision-critical feasibility question —
+mechanism, geometry, envelope, algorithm — before dependent artefacts expand, **when the decision
+actually depends on it**. This is an ordering rule, not an extra gate: a known method or a
+theoretical request needs no additional feasibility phase, and no physical experiment is forced.
+Carry assumptions as assumptions, not as evidence that the mechanism works; a newly refuted
+mechanism or feasible-region conflict is returned to PLAN promptly instead of polishing an unchanged
+plan. One candidate class or prototype never proves the whole goal impossible.
+
 For a measurable target whose mechanism is **not yet demonstrated**, PLAN first authorises a
-**bounded probe** — one question, one observable answer, a fixed budget — and writes the acceptance
-contract only afterwards. A campaign whose measured result cannot reach the target STOPs with the
-measured gap; it does not buy another revision hoping for a different number.
+**bounded probe** — one question, one observable answer, the evidence that decides it — and writes
+the acceptance contract only afterwards. A campaign whose measured result cannot reach the target
+STOPs only on a verified irreducible gap for the **agreed goal**, not because one candidate class
+failed and not merely because the current mechanism failed; if alternatives remain, that is
+decision-relevant knowledge → PLAN before another full rewrite, not a STOP. It does not buy another
+revision hoping for a different number.
 
 **Revision accounting.** A revision is genuine only when the tasks/remediation actions actually
 change while the original criterion is preserved; a rename, a session reset or a rejected candidate
 is not a revision and does not reset `n`. Each revision records the outgoing failed attempt first.
-A new step does not reset the global budget or history, and an unaccepted red step is never
+A new step resets no counter, history or accounting entry, and an unaccepted red step is never
 converted into extra accepted progress.
+
+## Effort and time policy
+
+**Autonomous mode has no task cutoff.** The planner does not generate a wall-clock, token, cost,
+compute, revision, step or measurement quota that terminates the task, and no legacy plan, resume or
+probe budget is revived as one. Elapsed time, tokens and cost are recorded accounting only: an
+estimate (for example `~45 min`) is not a stop condition, and reaching it does not stop work.
+
+Work ends normally on an accepted result and goal completion; otherwise it stops only for a verified
+irreducible blocker, a security/permission boundary, or explicit user cancellation. A failed
+candidate or incomplete evidence is **not** an irreducible blocker: it goes to the step boundary —
+repair, a genuinely revised plan, or a STOP recorded on the actual evidence.
+
+**Normal mode: estimate, ask, record.** The driver presents the planner's effort estimate and asks
+the user, as a **separate choice**, whether to stop at it. Approving the plan is not opting into that
+stop, and no answer means no cap. An explicit opt-in is recorded in the existing approval record
+(reason field) and persists as **the same cutoff** across a normal-mode resume or genuine replan —
+it is not renewed and does not authorize an extension. A genuine replan gets a **fresh approval
+ref**, but the new record carries the original user stop choice and its **original clock
+anchor/deadline by reference**; a new estimate never resets or changes that deadline, and the old
+plan approval never authorizes the new plan. The user may change or revoke it explicitly.
+Only switching to autonomous mode drops it; autonomous mode never inherits a normal or legacy
+cutoff.
+
+Per-command timeouts, memory limits, host/parallel capacity, domain constraints and user deadlines
+in a pressure scenario stay in force. A process timeout is failed-command evidence for that
+command, not a terminal workflow STOP. The no-4th rule and recurrence escalation stay per defect;
+they are never converted into an overall work quota. No new budget schema, role or mode is added.
+
+This policy orders work and records effort; it is **not** an unconditional feasibility gate. A known
+or theoretical task is not forced into a physical experiment, and the absence of a cutoff never
+means endless work: an accepted result ends the task normally.
+
+## Plan-to-DO fidelity
+
+The initial admission **and every follow-up DO handoff** carry the plan's verification choice,
+prohibitions and scope by reference to the frozen plan — never an invented criterion, method or
+rationale. A brief that needs another means (a checker, script, experiment or wider scope), or a
+**refuted assumption or wrong method**, is a pending PLAN decision until the planner revises the
+plan; the executor returns the exact mismatch rather than obeying newly-added scope. The driver
+returns such a request to the planner and does not reinterpret the goal or judge whether a custom
+checker is necessary. No new report schema or general validator is introduced for this.
 
 ## Frozen evidence manifest
 

@@ -28,7 +28,7 @@ and is decided by `pdca-planner` for that step; the campaign itself is governed 
 `../pdca-incremental/SKILL.md`.
 
 The base is **not duplicated or overridden** here: gates, counters, roles, host requirements,
-approval mechanics, escalation, recovery, budgets and the generic operating constraints are the
+approval mechanics, escalation, recovery, effort accounting and the generic operating constraints are the
 base's (§Generic operating constraints, §Red flags (self-check)); the campaign's step semantics are
 the incremental contract's. This skill adds only the batch level: the barrier, the clustering, the
 lanes, the merge decision and the collection status file.
@@ -67,7 +67,7 @@ silent switch to another run mode. The absence of authorization is **not** an au
   and returns the result; it does not advance the campaign, the queue or anything else.
 - An item with the form **`campaign`** has its campaign state owned by **one designated existing
   cheap `pdca-orchestrator` in campaign-control** (base §Control modes and the campaign owner),
-  designated when the schedule is bound: it holds the campaign record, the budgets and the
+  designated when the schedule is bound: it holds the campaign record, the effort accounting and the
   recovery, and it is the only writer of that record. **No competing writers** — the collection
   owner never writes or advances a campaign; a pause and a stop are durable in the campaign record
   and in the item's `disposition`.
@@ -165,7 +165,7 @@ analysis of the descriptions (`pdca-scout`) is by itself **not** a PLAN and does
 
    **A collection is a batch, not a licence to skip plan hygiene.** The item's own PLAN validates
    its command contract before `plan_state=ready` (`../pdca/references/plan.md` §Plan command
-   contract), names a stop-loss budget, and — for an unproven mechanism — plans a bounded probe
+   contract), names its verification choice and effort estimate/accounting, and — for an unproven mechanism — plans a bounded probe
    before the full acceptance contract. A plan whose decisive command cannot run is a gap at the
    barrier, not a lane surprise.
 3. **ALL-barrier.** The DAG, the groups and the order are **not built** until the requirement of its
@@ -454,7 +454,7 @@ Loaded **at the start of its phase**, not up front (the host truncates tool outp
 2000 lines, so a truncated contract would lose the tail — usually the CHECK/ACT/STOP rules):
 
 - `../pdca/SKILL.md` — the base: entry and forms, control modes and the campaign owner, gates,
-  counters, claims and veto, budgets, overlays, escalation, recovery, normal-mode approval.
+  counters, claims and veto, effort accounting, overlays, escalation, recovery, normal-mode approval.
 - `../pdca-incremental/SKILL.md` — a campaign item: invariants, charter and status file, bootstrap,
   the step boundary, acceptance, the stop rules.
 - `../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md` — the overlays applied to the relevant work.

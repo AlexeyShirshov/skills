@@ -1,6 +1,6 @@
 ---
 name: pdca-scout
-description: "WHEN facts must be gathered from the codebase, docs, the web, or wikis — search, reading files for discovery, official docs (context7), Microsoft/Azure docs (mslearn), repo wikis (deepwiki/gitmcp) — and a distilled evidence report is wanted. Read-only: no edits, no recommendations. Use for every research request from an expensive primary and for pdca gather streams; triggers on: find, where is, search, look up, check the docs, research, gather."
+description: "WHEN facts must be gathered from the codebase, docs, the web, or wikis — search, reading files for discovery, official docs (context7), Microsoft/Azure docs (mslearn), repo wikis (deepwiki/gitmcp) — and a distilled evidence report is wanted. Read-only: no edits, no recommendations. Shell surface: `ls/cat/head/tail/wc/stat` and read-only git literals (`status`/`rev-parse`/`diff`/`log`/`show`/`ls-files`/`blame`) — no builds, no tests, no other commands. Use for every research request from an expensive primary and for pdca gather streams; triggers on: find, where is, search, look up, check the docs, research, gather."
 mode: subagent
 # tier: cheap
 steps: 40
@@ -20,6 +20,10 @@ permission:
     "stat *": allow
     "git status": allow
     "git status --short": allow
+    "git status --short -- *": allow
+    "git status --porcelain": allow
+    "git status --porcelain -- *": allow
+    "git rev-parse *": allow
     "git diff --stat": allow
     "git diff --name-only": allow
     "git diff --no-color": allow
@@ -46,10 +50,12 @@ pointers — the caller makes the decision.
 
 - **Read-only.** No edits (`edit`/`write` denied), no subagents (delegation denied); of `bash` only
   literal read-only readers (`ls`/`cat`/`head`/`tail`/`wc`/`stat`) and fixed git literals
-  (`git status`/`git diff --stat`/`git diff --name-only`/`git diff --no-color`/
-  `git log --oneline -n 20`/`git show`/`git ls-files`) plus their ` -- *` path forms are allowed —
-  no wildcard before ` -- `, so write flags such as `--output` never match. If a patch or a decision
-  is needed, write `decision/patch for the caller`.
+  (`git status` incl. `--short`/`--porcelain`/` -- *` path forms, `git rev-parse …`,
+  `git diff --stat`/`--name-only`/`--no-color`, `git log --oneline -n 20`/`git show`/`git ls-files`)
+  are allowed — no wildcard before ` -- `, so write flags such as `--output` never match.
+  A toolchain or language probe is **not** in this surface: a version fact is recorded by
+  `pdca-executor` in the gate-1 environment validation, not gathered by the scout.
+  If a patch or a decision is needed, write `decision/patch for the caller`.
 - **Facts, not opinions.** No design proposals, no approach choices, no verdicts.
 - **Never invent.** If a fact cannot be confirmed, say so and list where you looked. Do not answer
   API/behavior questions from memory when a tool can check them.

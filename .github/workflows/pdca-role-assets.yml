@@ -21,6 +21,8 @@ on:
       - "skills/pdca/tests/test_entry_forms.py"
       - "skills/pdca/tests/test_contract_consistency.py"
       - "skills/pdca/tests/test_routing_consistency.py"
+      - "skills/pdca/tests/test_execution_repair.py"
+      - "skills/pdca/tests/fixtures/execution_repair/**"
       - ".github/workflows/pdca-role-assets.yml"
   pull_request:
     paths:
@@ -36,6 +38,8 @@ on:
       - "skills/pdca/tests/test_entry_forms.py"
       - "skills/pdca/tests/test_contract_consistency.py"
       - "skills/pdca/tests/test_routing_consistency.py"
+      - "skills/pdca/tests/test_execution_repair.py"
+      - "skills/pdca/tests/fixtures/execution_repair/**"
       - ".github/workflows/pdca-role-assets.yml"
 
 permissions:
@@ -62,3 +66,5 @@ jobs:
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_contract_consistency.py' -v
       - name: Run routing guards
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_routing_consistency.py' -v
+      - name: Run execution-repair guards
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_execution_repair.py' -v

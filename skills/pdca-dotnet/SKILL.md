@@ -121,7 +121,7 @@ step: `dotnet-solid-principles`, `type-design-performance`, `analyzing-dotnet-pe
 
 ## .NET plan deltas
 
-Gate 1 fields, carrying claims, the form and the budget stay the base ones; on top of the coder's
+Gate 1 fields, carrying claims, the form and the effort policy stay the base ones; on top of the coder's
 code plan, a .NET plan carries these **decisions with their evidence**, or gate 1 fails. The six
 lenses stay the coder's; their .NET skill binding and the concrete look-at items are in
 `references/plan.md` (§PLAN lenses and .NET skills).
@@ -129,7 +129,7 @@ lenses stay the coder's; their .NET skill binding and the concrete look-at items
 - **Versioned evidence contract, pinned in the status file before DO.** Stable requirement/row IDs,
   expected evidence kinds and sources, the exact command with exit-code/log requirements, planned
   artifact locations (or a justified N/A), the owner stream, an observable applicability predicate,
-  the contract revision `rv`, a **`PLAN-LINT` row**, a finite CHECK re-gather budget with its owner,
+  the contract revision `rv`, a **`PLAN-LINT` row**, a finite CHECK re-gather plan with its owner,
   and the frozen manifest path. No optional slots: the layout is the plan's, the obligations are not.
   Detail — contract rows, the attempt child `attempts/c<N>-r<r>-n<n>/`, the DO ledger, the frozen
   manifest and its two-helper gate, the `pdca_evidence.py` pipeline, the append-only
@@ -199,12 +199,12 @@ triggered security stream; .NET binds each stream to its agent and adds the evid
   integration run inside DO, missing commands/phase/exit codes, a zero or missing `selected_count`, an
   invented result for a run that never finished, stale `--no-build` artifacts, an unamended scope
   widening, a relabelled boundary, an omitted started execution and a boundary integration count
-  above the planned budget. Unlimited unfiltered **unit** runs are legitimate.
+  above the planned boundary runs. Unlimited unfiltered **unit** runs are legitimate.
   `references/check.md` (§Inner-loop evidence gate).
 - **Evidence completeness.** Before PASS, the pinned contract is reconciled with the frozen manifest
   (contract row → evidence by reference), both helpers must exit `0`, every applicable required row
   is `met` or `na`, and a retained `diagnostic_nonbinding` audit row is reported separately without
-  blocking. Missing evidence is re-gathered inside the pinned budget — not a product defect, not a DO
+  blocking. Missing evidence is re-gathered within the declared re-gather plan — not a product defect, not a DO
   iteration. `references/check.md` (§CHECK completeness gate).
 - **Reviewer pack reconciliation.** CHECK reads row-level evidence addressably, confirms
   staged-vs-source fidelity with the gather's actual finding, and treats a missing body, a mismatch
@@ -220,7 +220,7 @@ triggered security stream; .NET binds each stream to its agent and adds the evid
   integration run, not on report entries: unit tests are unlimited in DO, expensive integration runs
   happen at the DO → CHECK boundary within the planned scope. Every started run is recorded
   (`start` at launch, result appended) and the CHECK report is **projected** from the raw journal, so
-  an omitted execution is a completeness failure and an over-budget run stays in the journal.
+  an omitted execution is a completeness failure and a run beyond the planned boundary stays in the journal.
   `references/act.md` (§Execution journal and the unit/integration policy).
 - **Cleanup receipt.** Only on a genuine terminal closure, gated by
   `validate_inner_loop.py cleanup <receipt.json>`: approved terminal closure + independent final
@@ -245,7 +245,7 @@ triggered security stream; .NET binds each stream to its agent and adds the evid
 | Control modes, approval, campaign/cycle control | base | inherits unchanged |
 | State machine, counters (`N`, `r`, `n/3`, `rv`), status file | base | inherits unchanged — no local counters, no execution-variant enum |
 | Lens / probe / increment / step boundary | base | inherits; a .NET increment is one code question with its own check |
-| Gates 1–4, claims and veto, evidence chain, budgets, recovery, escalation | base | inherits; gate 1 gains the .NET decisions above, gate 3 the .NET streams |
+| Gates 1–4, claims and veto, evidence chain, effort policy, recovery, escalation | base | inherits; gate 1 gains the .NET decisions above, gate 3 the .NET streams |
 | Generic constraints, red flags | base | inherits; no .NET addition to the lists |
 | Toolchain/lens selection, code anti-patterns, parallel DO streams, worktree sub-tasks, security boundaries, optional specialists | coder | inherits unchanged |
 | .NET commands, Roslyn-first, versioned evidence, inner loop, completeness gate, reviewer pack, cleanup receipt | this file | adds |

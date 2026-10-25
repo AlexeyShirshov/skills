@@ -83,7 +83,9 @@ FORBIDDEN_WORDS = (
     "dotnet-",
 )
 # Tokens whose punctuation makes a word boundary awkward; matched literally.
-FORBIDDEN_LITERALS = ("asp.net", "plan-lint", "validate_inner_loop",
+# `plan-lint` left this list when `plan_lint.py` became a family-wide gate (§Machine
+# projection in `references/plan.md`): it is a projection check, not a stack linter.
+FORBIDDEN_LITERALS = ("asp.net", "validate_inner_loop",
                       ".csproj", ".slnx", ".sln", "dotnet test", "dotnet build")
 
 # The base must *name* the overlays and the forms to select them. Those mentions are
@@ -125,7 +127,7 @@ REQUIRED_SECTIONS = (
     "### Claims and veto",
     "## Evidence over assertion",
     "## Workspace and durable status",
-    "## Budgets",
+    "## Effort and time policy",
     "## Overlays",
     "## Strategic revision",
     "## Recovery",
@@ -198,6 +200,12 @@ def boundary_regex(token: str) -> "re.Pattern":
     return re.compile(r"(?<!\w)%s(?!\w)" % re.escape(token), re.IGNORECASE)
 
 
+# `plan_lint.py` and its `PLAN-LINT` receipt row are family-wide artifacts of the command
+# projection, not a stack-linter obligation. They are masked before the word scan so the
+# `lint` guard keeps its meaning for prose ("run a linter", "dotnet format --verify").
+FAMILY_ARTIFACTS = re.compile(r"plan[-_]lint", re.IGNORECASE)
+
+
 def scan_forbidden() -> list:
     hits = []
     for path in runtime_files():
@@ -205,8 +213,9 @@ def scan_forbidden() -> list:
             text = read(path)
         except OSError:
             continue
+        scanned = FAMILY_ARTIFACTS.sub("plan-projection", text)
         for token in FORBIDDEN_WORDS:
-            if boundary_regex(token).search(text):
+            if boundary_regex(token).search(scanned):
                 hits.append((str(path), token))
         low = text.lower()
         for token in FORBIDDEN_LITERALS:
@@ -345,9 +354,11 @@ class ContractConsistencyTest(PhraseAssertions):
                 self.assertPhrase(token, self.entry)
 
     def test_explicit_contract_is_a_constraint(self):
-        self.assertPhrase("that is a constraint", self.entry)
+        # Naming `pdca` is family entry, not a form constraint; a named form/overlay is.
+        self.assertPhrase("Naming `pdca` is entry to this family, not a form", self.entry)
+        self.assertPhrase("is a constraint", self.entry)
         self.assertPhrase("does not silently re-route", self.entry)
-        for name in ("`pdca`", "`pdca-coder`", "`pdca-dotnet`", "`pdca-collection`", "`pdca-incremental`"):
+        for name in ("`pdca-coder`", "`pdca-dotnet`", "`pdca-collection`", "`pdca-incremental`"):
             with self.subTest(name=name):
                 self.assertPhrase(name, self.raw)
 
@@ -393,7 +404,7 @@ class ContractConsistencyTest(PhraseAssertions):
 
     def test_missing_role_is_a_resource_blocker_not_a_silent_run(self):
         self.assertPhrase("resource blocker", self.skill)
-        self.assertPhrase("never a silent run without the role", self.skill)
+        self.assertPhrase("never a silent run", self.skill)
 
     # --- control modes and the campaign owner -----------------------------
 
@@ -417,7 +428,7 @@ class ContractConsistencyTest(PhraseAssertions):
             "**Increment** — a completed opening of the chosen part/question",
             "Several cheap related probes may form **one** increment",
             "the whole project may not be inflated into",
-            "is credited as a **knowledge increment**, not as the rejected candidate",
+            "is a **knowledge increment**",
         ):
             with self.subTest(token=token):
                 self.assertPhrase(token, self.lens)
@@ -441,7 +452,7 @@ class ContractConsistencyTest(PhraseAssertions):
         self.assertPhrase("Revision updates the working plan and result under the **same step identity**", self.lens)
         self.assertPhrase("the step number does not grow without", self.lens)
         self.assertPhrase("the independent CHECK is never rewritten to `met`", self.lens)
-        self.assertPhrase("A new step does not reset the global budget or", self.lens)
+        self.assertPhrase("A new step resets no counter or history", self.lens)
 
     # --- counters N / r / n / rv ------------------------------------------
 
@@ -461,7 +472,7 @@ class ContractConsistencyTest(PhraseAssertions):
     def test_revision_is_only_a_genuine_revised_plan(self):
         self.assertPhrase("grows only when pdca-planner **actually issued a revised", self.counters)
         self.assertPhrase("A rejected candidate or a clarification with the plan unchanged is **not** a revision", self.counters)
-        self.assertPhrase("Gate 1 fixes a **stop-loss budget**", self.counters)
+        self.assertPhrase("No revision, step or measurement total caps the task", self.counters)
 
     def test_no_fourth_attempt(self):
         self.assertPhrase("After the **third failed CHECK of the same revision**", self.counters)
@@ -481,7 +492,7 @@ class ContractConsistencyTest(PhraseAssertions):
             "a verification method",
             "**carrying claims with IDs**",
             "risks and stop conditions",
-            "budget",
+            "effort estimate",
         ):
             with self.subTest(token=token):
                 self.assertPhrase(token, self.gate1)
@@ -515,7 +526,7 @@ class ContractConsistencyTest(PhraseAssertions):
         for token in (
             "successful path 1 + number of steps",
             "bounded same-pending-PLAN continuations",
-            "count against the existing stop-loss",
+            "accounting entries, not a quota",
             "no hidden exempt calls",
         ):
             with self.subTest(token=token):
@@ -640,11 +651,15 @@ class ContractConsistencyTest(PhraseAssertions):
 
     # --- budgets, overlays, strategic revision ---------------------------
 
-    def test_budgets_are_fixed_before_do_and_never_renewed(self):
-        section = norm(between(self.raw, "## Budgets", "## Overlays"))
-        self.assertPhrase("Stop-loss budgets are fixed **before DO**", section)
-        self.assertPhrase("are **not renewed**", section)
-        self.assertPhrase("There are no new universal", section)
+    def test_effort_policy_forbids_autonomous_cutoffs(self):
+        section = norm(between(self.raw, "## Effort and time policy", "## Overlays"))
+        self.assertPhrase("No autonomous cutoff", section)
+        self.assertPhrase("estimate is not a stop condition", section)
+        self.assertPhrase("Work ends on an accepted result", section)
+        self.assertPhrase("Failed candidates or incomplete evidence are not blockers", section)
+        self.assertPhrase("plan approval is not that opt-in", section)
+        self.assertPhrase("persists as the same cutoff across normal-mode resume/replan", section)
+        self.assertPhrase("No-4th and recurrence stay per defect", section)
 
     def test_overlays_are_differences_not_a_second_cycle(self):
         self.assertPhrase("`pdca-coder` is the generic programming **overlay**", self.overlays)
@@ -658,7 +673,7 @@ class ContractConsistencyTest(PhraseAssertions):
         section = norm(between(self.raw, "## Strategic revision", "## Recovery"))
         self.assertPhrase("controlled re-evaluation on new facts", section)
         self.assertPhrase("not by an unconditional second classification", section)
-        self.assertPhrase("resetting counters/budgets to bypass limits are forbidden", section)
+        self.assertPhrase("resetting counters or history to bypass limits are forbidden", section)
 
     # --- recovery and escalation -----------------------------------------
 
@@ -668,7 +683,7 @@ class ContractConsistencyTest(PhraseAssertions):
         self.assertPhrase("Recovery order:", section)
         self.assertPhrase("Campaign recovery", section)
         self.assertPhrase("Recovered after compaction", section)
-        self.assertPhrase("budgets/counters are not reset", section)
+        self.assertPhrase("counters and the defect history are not reset", section)
 
     def test_escalation_triggers_and_routing(self):
         section = norm(between(self.raw, "## Escalation", "## Generic operating constraints"))

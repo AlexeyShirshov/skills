@@ -262,9 +262,10 @@ class EntryStageTest(unittest.TestCase):
     def test_planner_brief_carries_the_discriminators_not_just_names(self):
         self.assertIn("base ### Forms discriminators themselves", self.body)
         self.assertIn("names alone are not a brief for a read-denied planner", self.body)
-        for token in ("facts", "decision-relevant unknowns", "user-named form/contract"):
+        for token in ("facts", "decision-relevant unknowns", "user-named form"):
             with self.subTest(token=token):
                 self.assertIn(token, self.body)
+        self.assertIn("a bare pdca is family entry only", self.body)
 
     def test_same_controller_adopts_the_decided_role(self):
         self.assertIn("same controller loads the decided contract and adopts the matching role",
@@ -349,7 +350,7 @@ class EntryStageTest(unittest.TestCase):
     def test_bounded_choice_probe_keeps_form_undecided_without_a_new_cycle(self):
         for token in (
             "authorization for one bounded choice probe",
-            "open decision, observable outcomes and budget",
+            "open decision, observable outcomes and the evidence that closes it",
             "same planner refines the same pending PLAN",
             "form stays UNDECIDED until the planner chooses",
             "not an independent cycle",

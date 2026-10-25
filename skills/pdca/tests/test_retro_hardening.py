@@ -66,7 +66,7 @@ class BaseContractHardeningTest(unittest.TestCase):
             "## Vacuous and expected-negative runs",
             "## Recorded exceptions: catalog and repetition threshold",
             "## Re-anchoring at DO entry",
-            "## Proportional planning and stop-loss",
+            "## Proportional planning and effort policy",
             "## One evidence location binding",
         ):
             with self.subTest(section=section):
@@ -107,7 +107,9 @@ class BaseContractHardeningTest(unittest.TestCase):
         self.assertIn("cosmetic drift", self.text)
         self.assertIn("semantic drift", self.text)
         self.assertIn("bounded probe", self.text)
-        self.assertIn("stop-loss budget", norm(read(BASE)))
+        base = norm(read(BASE))
+        self.assertIn("No autonomous cutoff", base)
+        self.assertIn("estimate is not a stop condition", base)
 
     def test_single_evidence_binding(self) -> None:
         self.assertIn("the same checkout the checks run in", self.text)
@@ -122,7 +124,7 @@ class OverlayInheritanceHardeningTest(unittest.TestCase):
         "## Vacuous and expected-negative runs",
         "## Recorded exceptions: catalog and repetition threshold",
         "## Re-anchoring at DO entry",
-        "## Proportional planning and stop-loss",
+        "## Proportional planning and effort policy",
     )
 
     def test_overlays_point_at_the_base_references(self) -> None:

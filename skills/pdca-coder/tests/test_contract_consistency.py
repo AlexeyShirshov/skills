@@ -158,7 +158,7 @@ class OverlayArchitectureTest(unittest.TestCase):
         "Roles and host requirements",
         "Claims and veto",
         "Evidence over assertion",
-        "Budgets",
+        "Effort and time policy",
         "Recovery",
         "Escalation",
         "Normal-mode approval",
@@ -253,7 +253,7 @@ class OverlayArchitectureTest(unittest.TestCase):
             "Gate 1",
             "Gate 3",
             "Claims and veto",
-            "Budgets",
+            "Effort accounting",
             "Recovery",
             "Escalation",
         ):
@@ -435,7 +435,7 @@ class ContractConsistencyTest(unittest.TestCase):
 
     def test_gate1_conditions(self):
         for token in ("acceptance criteria", "verification method", "carrying claims",
-                      "form", "budget", "the user's approval"):
+                      "form", "effort estimate", "the user's approval"):
             self.assertIn(token, self.gate1)
         self.assertIn("Normal mode with no acceptance criteria", self.gate1)
         self.assertIn("autonomous → route through", self.gate1)

@@ -97,8 +97,8 @@
 <rect x="25" y="969" width="3" height="36" rx="1.5" fill="#4f46e5"/>
 <rect x="162" y="969" width="50" height="18" rx="6" fill="#4f46e5"/>
 <text x="187.0" y="981.5" class="bm" fill="#cbd5e1" text-anchor="middle">medium</text>
-<text x="37" y="985" class="t">Stop-loss budget</text>
-<text x="37" y="1004" class="s">revisions · time · measurement</text>
+<text x="37" y="985" class="t">Effort policy</text>
+<text x="37" y="1004" class="s">accounting · not a cutoff</text>
 <polyline points="122.0,330 122.0,342" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
 <polyline points="122.0,392 122.0,404" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
 <polyline points="122.0,454 122.0,466" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>

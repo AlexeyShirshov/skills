@@ -161,7 +161,7 @@ class OwnershipTests(unittest.TestCase):
             "the durable campaign status",
             "the shared counters",
             "the accumulated knowledge",
-            "the budget",
+            "the effort accounting",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.section)
@@ -181,7 +181,7 @@ class OwnershipTests(unittest.TestCase):
         self.assertIn("does not classify the task", self.section)
         self.assertIn("does not replan", self.section)
         self.assertIn("does not judge in place of pdca-check", self.section)
-        self.assertIn("cannot waive a gate, a budget or a permission", self.section)
+        self.assertIn("cannot waive a gate, a counter or a permission", self.section)
 
     def test_a_step_is_not_handed_to_cycle_control(self) -> None:
         self.assertIn(
@@ -264,7 +264,7 @@ class CampaignInvariantTests(unittest.TestCase):
             "open tickets",
             "accepted knowledge",
             "protected/foreign changes",
-            "the budget",
+            "the effort accounting",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.invariants)
@@ -374,7 +374,7 @@ class CampaignStatusTests(unittest.TestCase):
             "Target:",
             "Preparation ref:",
             "Commit policy: none | auto",
-            "Budget:",
+            "Effort accounting:",
             "Current step:",
             "Baseline evidence:",
             "Next-step seed:",
@@ -421,7 +421,7 @@ class CampaignStatusTests(unittest.TestCase):
             "a provisional mark on every threshold that has no measured baseline",
             "the candidate list for the first step",
             "the carrying claims and the definition of done",
-            "the budget fixed before DO, and the commit policy",
+            "the effort accounting (accounting only, no autonomous cap) and the commit policy",
             "A change to any of it is a new revision of the document",
             "The document is never copied into the status",
             "## Baseline bootstrap record",
@@ -549,7 +549,7 @@ class StepBoundaryTests(unittest.TestCase):
         self.assertIn("the route stays the planner's", self.section)
 
     def test_a_new_step_preserves_history_budgets_and_attempts(self) -> None:
-        self.assertIn("history, state and shared budgets are preserved", self.section)
+        self.assertIn("history, counters and accounting are preserved", self.section)
         self.assertIn("every actual cost and attempt counts", self.section)
         self.assertIn(
             "an unaccepted red step is never converted into extra accepted progress", self.section
@@ -562,8 +562,10 @@ class StepBoundaryTests(unittest.TestCase):
         self.assertIn("routing a pre-approved decision, not its own verdict", self.section)
         self.assertIn("a non-PASS is a planner loop-back", self.section)
 
-    def test_the_planner_call_budget_is_one_plus_steps(self) -> None:
-        self.assertIn("Total planner calls are at most 1 + number of steps", self.section)
+    def test_the_planner_call_accounting_is_one_plus_steps_without_a_cap(self) -> None:
+        self.assertIn("Planner calls are accounted, not capped", self.section)
+        self.assertIn("the successful path is 1 + number of steps", self.section)
+        self.assertIn("genuine revisions", self.section)
         self.assertIn("Separate DECIDE → brief → STOP turns on the same content are a repeated PLAN", self.section)
         self.assertIn("two calls", self.section)
 
@@ -647,7 +649,7 @@ class StopTests(unittest.TestCase):
 class VerificationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.text = _plain(SKILL.read_text(encoding="utf-8"))
-        self.section = _section(self.text, "## Verification", "## Budgets and safety")
+        self.section = _section(self.text, "## Verification", "## Effort accounting and safety")
 
     def test_a_step_check_is_local_and_the_whole_goal_check_is_separate(self) -> None:
         self.assertIn("A step check is local", self.section)
@@ -676,12 +678,17 @@ class VerificationTests(unittest.TestCase):
 class BudgetAndSafetyTests(unittest.TestCase):
     def setUp(self) -> None:
         self.text = _plain(SKILL.read_text(encoding="utf-8"))
-        self.section = _section(self.text, "## Budgets and safety", "## Economics and sizing")
+        self.section = _section(self.text, "## Effort accounting and safety", "## Economics and sizing")
 
-    def test_budgets_are_fixed_before_do_and_never_renewed(self) -> None:
-        self.assertIn("Budgets are fixed before DO and are never renewed", self.section)
-        self.assertIn("not on a new step, not on a strategy change, not after a controller loss", self.section)
-        self.assertIn("the owner accounts for them", self.section)
+    def test_no_autonomous_cutoff_and_explicit_normal_opt_in(self) -> None:
+        self.assertIn("There is no autonomous cutoff", self.section)
+        self.assertIn("no legacy/plan/resume budget is revived", self.section)
+        self.assertIn("An accepted whole goal closes the campaign normally", self.section)
+        self.assertIn("verified irreducible blocker for the agreed goal", self.section)
+        self.assertIn("failed candidate or incomplete evidence alone is not a blocker", self.section)
+        self.assertIn("the same cutoff", self.section)
+        self.assertIn("persists across a normal-mode resume or genuine replan", self.section)
+        self.assertIn("only a switch to autonomous drops it", self.section)
 
     def test_the_base_safety_rules_are_not_relaxed(self) -> None:
         self.assertIn("The no-4th-pass rule, security/permissions boundaries", self.section)
@@ -732,7 +739,7 @@ class RedFlagTests(unittest.TestCase):
             "I built a \"full plan\" or a projected backlog before acting",
             "I demanded a second increment after the goal was satisfied and checked",
             "I let a rubric score or a threshold margin outvote a carrying-claim finding",
-            "I repeated an accepted step after a controller loss, or reset a counter or a budget",
+            "I repeated an accepted step after a controller loss, or reset a counter or the history",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.flags)
@@ -752,7 +759,7 @@ class RecoveryTests(unittest.TestCase):
             "the accepted basis",
             "the current step",
             "the counters",
-            "the remaining budget",
+            "the remaining accounting",
             "the next-step seed",
         ):
             with self.subTest(token=token):
@@ -760,7 +767,7 @@ class RecoveryTests(unittest.TestCase):
 
     def test_accepted_steps_are_never_repeated_and_counters_are_not_reset(self) -> None:
         self.assertIn("Accepted steps are never repeated", self.section)
-        self.assertIn("N/r/n and the budget are not reset", self.section)
+        self.assertIn("N/r/n, the accounting and the defect history are not reset", self.section)
         self.assertIn("the work continues from the last checkpoint", self.section)
 
     def test_a_context_exhaustion_is_a_handover_to_the_same_role(self) -> None:
@@ -867,7 +874,7 @@ class ArchitectureGuardTests(unittest.TestCase):
         stop = _section(self.text, "## Stop", "## Verification")
         self.assertIn("needs the whole-goal CHECK", stop)
         self.assertIn("against a carrying claim", stop)
-        verification = _section(self.text, "## Verification", "## Budgets and safety")
+        verification = _section(self.text, "## Verification", "## Effort accounting and safety")
         self.assertIn("The whole-goal check is separate", verification)
         base = _plain(self.base_raw)
         self.assertIn("Claims and veto", base)

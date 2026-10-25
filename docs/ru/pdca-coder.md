@@ -121,10 +121,10 @@ scoped read артефактов цикла), у `pdca-escalate` и `pdca-securi
 **Закрытие плана общее с базовым циклом.** Гейт 1 требует также, чтобы каждая **замороженная
 команда** прошла контракт команд плана: идентификатор резолвится хотя бы в одну цель в заявленной
 области, argv переживает харнесс (без shell-алиаса, редиректа и неразвёрнутого плейсхолдера),
-фаза легальна (boundary-only прогон — не inner-работа), масштаб укладывается в заявленный бюджет,
+фаза легальна (boundary-only прогон — не inner-работа), масштаб укладывается в заявленную ёмкость хоста,
 ожидаемый исход объявлен как `green`, `expected-negative` или `informational`. Нарушение —
-**дефект плана**, а не runtime-исключение. Гейт также фиксирует **stop-loss бюджет** (ревизии,
-wall clock, время измерения); прогон, выбравший ноль целей, — провал независимо от кода выхода, а
+**дефект плана**, а не runtime-исключение. Гейт также фиксирует **оценку/учёт усилий** (никогда
+автономный wall-clock/token/revision cutoff); прогон, выбравший ноль целей, — провал независимо от кода выхода, а
 решающая негативная ветка объявляется `expected-negative` с точной идентичностью отказа.
 Записанные исключения берутся из фиксированного каталога — класс, встретившийся в трёх и более
 единицах одной кампании, системен. На входе в DO исполнитель заново резолвит якоря плана до первой
@@ -259,7 +259,7 @@ binding unmet-строки и audit-notes показываются раздел�
 | Состояние: статус-файл — источник истины и единственное зеркало прогресса | `skills/pdca/SKILL.md §Phase progress mirror · §Workspace and durable status` |
 | Три счётчика `N`, `r`, `n/3` | `skills/pdca/SKILL.md §State machine and counters` |
 | Гейты 1–4 (PLAN → DO → CHECK → ACT) | `skills/pdca/SKILL.md §Transition gates` |
-| Контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO и stop-loss бюджет | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss` |
+| Контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO и политика усилий | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy` |
 | Кандидат `DO → PLAN`, аддитивное предусловие vs замена объёма, состояния единиц | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
 | Повторный вход после терминального `incomplete`/STOP | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | Три параллельных потока DO (код ∥ тесты ∥ прозаические доки), замороженный общий контракт | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |

@@ -10,6 +10,30 @@ observation; the checker may open the cycle's own evidence artifacts under `.pdc
 (status, manifest, logs) — never the product artefact. The author's own restatement is not
 evidence.
 
+## Premises and inference scope
+
+Before arithmetic or content consistency, CHECK validates the **central definitions, units, model
+assumptions and inference scope**: which quantities come from the supplied model and which are new
+assumptions. An independent family or model alone does not guarantee independent premises.
+Agreement of arithmetic proves only the arithmetic: an invalid equality or an assumed relationship
+that the supplied model does not support is a finding, never proof that the specification is
+impossible. An unverified model or premise stays `unverified`; estimates are legitimate when the
+source allows them, and empirical proof is not demanded for every estimate. Scope claims must match
+the evidence class: a ceiling, failure or impossibility shown for one candidate class or prototype
+limits **that class** only, never the whole goal without evidence covering the goal.
+
+## Decisions already made
+
+A decision recorded by escalation — including an audit or metadata gate classified
+`diagnostic_nonbinding` under the existing rules — stays decided. A later CHECK, planner call or
+driver does not resurrect it; reopening requires new evidence and the planner's explicit revision.
+Applicability dispositions never waive a genuine required test, security check or direct evidence.
+
+A denied specific operation proves only that the operation was rejected — not that a capability or
+tool is absent. Inspect the role's known permissions and its directly available built-in tools; do
+not reattempt the denied operation, do not hunt MCP servers for a substitute, and do not widen any
+role. Assign the evidence to a role whose known permissions can satisfy it.
+
 ## Criteria matrix
 
 For **every** criterion: `met | unmet | unverified`, with the evidence pointer that resolves it and,
@@ -91,4 +115,5 @@ report is re-gathered, not counted as an invented defect.
 When confirmation is impossible, the verdict says so: `unverified`, `blocked` or STOP under the
 existing rules — without an invented probability and without weakening the criterion. A requirement
 the observer's permissions cannot satisfy is marked `unverified-by-design` by the PLAN, or assigned
-to a role that can satisfy it.
+to a role that can satisfy it; a denied specific operation proves only that operation was rejected,
+not that the tool is absent, and it is not retried or worked around by widening permissions.

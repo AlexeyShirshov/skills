@@ -35,7 +35,8 @@ Increment unit: <what one credited increment is for this campaign>
 Floor: <increment floor, or — when credit is knowledge>   Target: <baseline + floor | next decision>
 Preparation ref: <preparation_ref@r<k> — a reference only, no charter copy>
 Commit policy: none | auto (<who allowed it: overlay / explicit request>)
-Budget: <wall clock / revisions / measurements, fixed before DO — never renewed>
+Effort accounting: <elapsed time/tokens/cost, observed only — never a stop condition; a normal-mode
+                    user stop choice, when made, is recorded here and in the approval record>
 
 | step | basis | target | accepted | credited | verdict | commit | evidence |
 | ---- | ----- | ------ | -------- | -------- | ------- | ------ | -------- |
@@ -77,7 +78,7 @@ mode is normal, not a gap.
   self-assessment and not the campaign's route.
 - **`commit`** is filled only under `Commit policy: auto`; `no commit` plus the reason otherwise.
 - **`Checkpoint` is written at every step boundary**, in the same turn as the boundary event: the
-  accepted basis, the current step, the counters, the remaining budget, the next-step seed.
+  accepted basis, the current step, the counters, the remaining accounting, the next-step seed.
 - **Divergence between the status and the evidence:** the evidence wins, and the divergence is
   recorded — the number is never repaired by memory.
 - **The knowledge register is append-only as a fact history.** Accepted conclusions may be
@@ -101,7 +102,7 @@ explicit dispatch and holds:
 - the allowed surface and the protected/foreign areas;
 - the candidate list for the first step — not a plan of the whole volume;
 - the carrying claims and the definition of done (which whole-goal check closes the campaign);
-- the budget fixed before DO, and the commit policy with who granted it;
+- the effort accounting (accounting only, no autonomous cap) and the commit policy with who granted it;
 - `preparation_state` and `preparation_ref` (the revision the status will reference).
 
 A change to any of it is a **new revision** of the document, never an edit in place: the status
@@ -130,11 +131,11 @@ At every step boundary the owner records the checkpoint before the next step is 
 1. the accepted basis after the boundary acceptance, or the unchanged basis after a rejected
    candidate;
 2. the current step identity (`cycle_id`, `N`, `r`, `n`) and the step's state;
-3. the counters and the remaining budget — values are carried forward, never recomputed lower;
+3. the counters and the remaining accounting — values are carried forward, never recomputed lower;
 4. the next-step seed and what the planner decided it opens;
 5. the knowledge added since the previous checkpoint, with its evidence pointers;
 6. the next resume point in one line: what a new session of the same controller must do first.
 
 The checkpoint is what a new session of the same cheap `pdca-orchestrator` restores after a
-controller loss or context exhaustion; accepted steps are not repeated and no counter or budget is
+controller loss or context exhaustion; accepted steps are not repeated and no counter or accounting is
 reset.

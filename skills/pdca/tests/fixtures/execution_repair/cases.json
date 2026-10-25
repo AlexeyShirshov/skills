@@ -1,0 +1,225 @@
+{
+  "note": "Toy adapted traces for the test-only auditor. The premise flags (relationship_supported, scope) are human-review labels, not physical truth; the model is not executed.",
+  "cases": [
+    {
+      "id": "manual-plan-then-checker-dispatch",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "dispatch", "verification": "manual", "scope": ["answer"]},
+        {"type": "dispatch", "verification": "checker", "scope": ["answer"]}
+      ],
+      "expected": {"outcome": "plan_return", "violations": ["unauthorized_plan_drift"]}
+    },
+    {
+      "id": "checker-authorized-by-plan-revision",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "plan_revision", "revision": 2, "verification": "checker", "scope": ["answer"], "approval_ref": "A2"},
+        {"type": "dispatch", "verification": "checker", "scope": ["answer"]}
+      ],
+      "expected": {"outcome": "continue", "violations": []}
+    },
+    {
+      "id": "refuted-assumption-rewrite-unchanged",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "observation", "refutes": "assumed stroke", "evidence": "M1"},
+        {"type": "rewrite", "plan_revision": 1}
+      ],
+      "expected": {"outcome": "plan_return", "violations": ["missing_return_before_rewrite"]}
+    },
+    {
+      "id": "refuted-assumption-returned-before-rewrite",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "observation", "refutes": "assumed stroke", "evidence": "M1"},
+        {"type": "plan_revision", "revision": 2, "verification": "manual", "scope": ["answer"], "approval_ref": "A2"},
+        {"type": "rewrite", "plan_revision": 2}
+      ],
+      "expected": {"outcome": "continue", "violations": []}
+    },
+    {
+      "id": "class-ceiling-generalised-to-goal",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "claim", "id": "eta", "source": "new_assumption", "relationship_supported": false,
+         "scope": "class", "conclusion": "goal_impossible", "evidence": "E1"}
+      ],
+      "expected": {"outcome": "finding", "violations": ["invalid_inference"]}
+    },
+    {
+      "id": "class-ceiling-stays-local",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "claim", "id": "ceiling", "source": "supplied_model", "relationship_supported": true,
+         "scope": "class", "conclusion": "class_limited", "evidence": "E2"}
+      ],
+      "expected": {"outcome": "continue", "violations": []}
+    },
+    {
+      "id": "pdca-invocation-asserts-cycle",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "entry", "named": "pdca", "asserted_form": "ordinary"}
+      ],
+      "expected": {"outcome": "finding", "violations": ["family_entry_is_not_form"]}
+    },
+    {
+      "id": "pdca-invocation-leaves-form-undecided",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "entry", "named": "pdca"}
+      ],
+      "expected": {"outcome": "continue", "violations": []}
+    },
+    {
+      "id": "normal-optin-stop",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "estimate", "minutes": 45},
+        {"type": "plan_approved"},
+        {"type": "user_stop", "answer": "yes"},
+        {"type": "terminal_stop", "reason": "estimate", "approval_ref": "A1"}
+      ],
+      "expected": {"outcome": "stopped_estimate", "violations": [],
+                   "cutoff": {"enabled": true, "minutes": 45, "anchor": "T0", "ref": "A1", "ignored": false}}
+    },
+    {
+      "id": "normal-explicit-no-then-stop",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "estimate", "minutes": 45},
+        {"type": "plan_approved"},
+        {"type": "user_stop", "answer": "no"},
+        {"type": "terminal_stop", "reason": "estimate", "approval_ref": "A1"}
+      ],
+      "expected": {"outcome": "need_plan_return", "violations": ["normal_stop_without_optin"]}
+    },
+    {
+      "id": "normal-plan-approval-alone-then-stop",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "estimate", "minutes": 45},
+        {"type": "plan_approved"},
+        {"type": "terminal_stop", "reason": "estimate", "approval_ref": "A1"}
+      ],
+      "expected": {"outcome": "need_plan_return", "violations": ["normal_stop_without_optin"]}
+    },
+    {
+      "id": "normal-optin-survives-new-plan-ref-and-estimate",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "estimate", "minutes": 45},
+        {"type": "plan_approved"},
+        {"type": "user_stop", "answer": "yes"},
+        {"type": "plan_revision", "revision": 2, "verification": "manual", "scope": ["answer"],
+         "estimate": 90, "approval_ref": "A2"},
+        {"type": "terminal_stop", "reason": "estimate", "approval_ref": "A2"}
+      ],
+      "expected": {"outcome": "stopped_estimate", "violations": [],
+                   "cutoff": {"enabled": true, "minutes": 45, "anchor": "T0", "ref": "A2", "ignored": false}}
+    },
+    {
+      "id": "normal-to-autonomous-drops-legacy-cap",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "estimate", "minutes": 45},
+        {"type": "user_stop", "answer": "yes"},
+        {"type": "mode_switch", "mode": "autonomous"}
+      ],
+      "expected": {"outcome": "continue", "violations": [], "cutoff": {"enabled": false, "ignored": true}}
+    },
+    {
+      "id": "autonomous-legacy-budget-stop",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "legacy_budget", "kind": "wall_clock", "minutes": 30},
+        {"type": "terminal_stop", "reason": "legacy_budget"}
+      ],
+      "expected": {"outcome": "need_plan_return", "violations": ["autonomous_terminal_stop"]}
+    },
+    {
+      "id": "autonomous-per-command-timeout-is-not-a-workflow-stop",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "command_timeout", "command": "sleep 1", "timeout_s": 10},
+        {"type": "accepted_result", "verification": "manual", "scope": ["answer"]}
+      ],
+      "expected": {"outcome": "done", "violations": [], "failed_commands": 1}
+    },
+    {
+      "id": "autonomous-irreducible-blocker",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "terminal_stop", "reason": "blocker", "verified": true, "evidence": "E3"}
+      ],
+      "expected": {"outcome": "stopped_blocker", "violations": []}
+    },
+    {
+      "id": "normal-accepted-result",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "accepted_result", "verification": "manual", "scope": ["answer"]}
+      ],
+      "expected": {"outcome": "done", "violations": []}
+    },
+    {
+      "id": "return-to-normal-does-not-revive-stale-optin",
+      "mode": "normal",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "estimate", "minutes": 45},
+        {"type": "user_stop", "answer": "yes"},
+        {"type": "mode_switch", "mode": "autonomous"},
+        {"type": "mode_switch", "mode": "normal"},
+        {"type": "terminal_stop", "reason": "estimate", "approval_ref": "A1"}
+      ],
+      "expected": {"outcome": "need_plan_return", "violations": ["normal_stop_without_optin"],
+                   "cutoff": {"enabled": false, "ignored": true}}
+    },
+    {
+      "id": "manual-plan-checker-claims-same-revision",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "dispatch", "verification": "checker", "plan_revision": 1, "scope": ["answer"]}
+      ],
+      "expected": {"outcome": "plan_return", "violations": ["unauthorized_plan_drift"]}
+    },
+    {
+      "id": "manual-plan-checker-claims-unrecorded-new-revision",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "dispatch", "verification": "checker", "plan_revision": 2, "scope": ["answer"]}
+      ],
+      "expected": {"outcome": "plan_return", "violations": ["unauthorized_plan_drift"]}
+    },
+    {
+      "id": "unknown-event-fails-closed",
+      "mode": "autonomous",
+      "plan": {"revision": 1, "verification": "manual", "scope": ["answer"], "approval_ref": "A1"},
+      "events": [
+        {"type": "mystery"}
+      ],
+      "expected": {"outcome": "need_plan_return", "violations": ["unknown_event"]}
+    }
+  ]
+}

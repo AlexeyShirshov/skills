@@ -137,7 +137,7 @@ CHECK detail: `references/check.md`.
 ### Build and test command forms
 
 The base command contract (selector resolves, argv survives the harness, phase is legal, scope matches
-the budget, expected outcome declared) applies unchanged. Code-specific additions:
+the host capacity, expected outcome declared) applies unchanged. Code-specific additions:
 
 - **Inner loop = the affected subset.** Build the affected project once when compilable inputs change,
   then run it: `dotnet test <project> --no-build --filter <selector>`, `pytest -k <expr> <path>`,
@@ -295,7 +295,7 @@ The overlay composes with the base by addition only.
 | Gate 4 / ACT | inherits; adds only the status rows and handoff lines above |
 | Claims and veto | inherits unchanged — a code finding against a carrying claim blocks PASS |
 | Evidence over assertion | inherits; adds what a code run must return |
-| Budgets | inherits unchanged — the overlay adds no new minutes/costs and no renewal |
+| Effort accounting | inherits unchanged — no autonomous cutoff; the overlay adds no new minutes/costs and no renewal |
 | Recovery | inherits; after compaction the code state (unit mode, worktree branches, streams) is rebuilt from the same status file |
 | Escalation | inherits the triggers and the no-4th rule; code adds the trigger examples (public API/compat, concurrency, migrations, crypto) and the rule that an ordinary security finding is an ordinary failed stream, while a **hard security trade-off** escalates immediately |
 | Generic constraints, red flags | inherits; code-specific red flags are added below |

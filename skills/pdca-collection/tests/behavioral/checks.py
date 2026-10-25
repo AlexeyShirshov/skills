@@ -304,7 +304,7 @@ _PREPARATION_BLOCKS = (
     ("first-step candidate list", re.compile(r"(?i)candidate list", re.I)),
     ("carrying claims", re.compile(r"(?i)carrying claims?", re.I)),
     ("definition of done", re.compile(r"(?i)definition of done", re.I)),
-    ("budget", re.compile(r"(?i)^budget:", re.M)),
+    ("effort accounting", re.compile(r"(?i)^effort accounting:", re.M)),
     ("commit policy", re.compile(r"(?i)commit_policy|commit policy", re.I)),
     ("preparation_state", re.compile(r"(?i)preparation_state", re.I)),
     ("preparation_ref", re.compile(r"(?i)preparation_ref", re.I)),

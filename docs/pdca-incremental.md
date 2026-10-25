@@ -109,7 +109,7 @@ consequences (one lane, commit policy, pause as a checkpoint) are covered in §3
 6. **Goals are opened, not planned in advance** — first a fresh gap map, then selection by expected
    yield, taking blockers, the deferred register and protected areas into account.
 7. **State moves along** — deferred rows with triggers, blocked arms, tickets, protected areas and
-   budgets live in one status file and are passed to every step.
+   effort accounting live in one status file and are passed to every step.
 8. **One step at a time and an immovable threshold** — parallel increments break the chain; lowering
    the threshold, changing the filter or deleting tests does not close the campaign.
 
@@ -121,7 +121,7 @@ append-only; when the status and the evidence disagree, the evidence wins.
 A step is a bounded campaign unit with an observable result and a stop condition — there are no step
 "kinds". A shortfall is a **loop-back of the same step identity** (a corrected brief, `r`/`n` per the
 base rules), not a second kind of step and not "the next step with the shortfall"; a genuinely distinct
-step preserves history, state and budgets. The final whole-goal check is **not** a step: its brief and
+step preserves history, state and accounting. The final whole-goal check is **not** a step: its brief and
 its pre-set stop condition are issued at the last step boundary. More in §4.2.
 
 **Stopping** is explicit and records the remainder:
@@ -131,7 +131,7 @@ its pre-set stop condition are issued at the last step boundary. More in §4.2.
 | `met` | the whole-goal check passed: the predicate is true on the **accepted** state, no carrying claim blocks and the original requirements are verified; the only success |
 | `unreachable` | the remainder is proven with numbers for every cluster and redistributed |
 | `blocked` | an external blocker: a ticket, the environment, access |
-| `stopped` | budget, a limit or a user stop; the remainder is preserved for continuation |
+| `stopped` | a verified blocker, security boundary or user stop; the remainder is preserved for continuation |
 | `limited` | a carrying-claim block removed by an explicit narrowing of the result inside the original goal |
 
 `met` needs the whole-goal check, combined with the increment's check or run separately: a set of
@@ -338,7 +338,7 @@ failed CHECK, and the number of the step does not grow without acceptance. The s
 base loop-back rules; an exhausted revision is `pdca-escalate` or `unreachable`, never a fourth attempt
 and never a silent move to "the next step with the shortfall".
 
-**A new step is distinct from revising.** History, state and the shared budgets are preserved, every
+**A new step is distinct from revising.** History, state and the shared accounting are preserved, every
 actual cost and attempt counts, and an unaccepted red step is never converted into extra accepted
 progress. The latest step takes the whole remainder when the remainder is small.
 
@@ -460,7 +460,7 @@ One cycle looks like this:
 4. **BOUNDARY** — exactly one credited full run under `dotnet-coverage` plus a `reportgenerator` report
    with `NextORM.Core.InMemory*` excluded;
 5. **CHECK** — a separate role checks the contract row by row against evidence, not against the author's
-   story; it has a limited budget for gathering additional facts and no right to edit tests;
+   story; it has a limited scope for gathering additional facts and no right to edit tests;
 6. **PASS → ACT** or **loop-back to PLAN** with the exact failed contract row.
 
 The discipline that kept the campaign together:

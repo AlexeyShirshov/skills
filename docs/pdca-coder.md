@@ -116,10 +116,10 @@ criterion is reformulated against a reproducible oracle.
 **The plan close is shared with the base cycle.** Gate 1 also requires every **frozen command** to
 pass the plan command contract: the identifier resolves to at least one target in the declared
 scope, the argv survives the harness (no shell alias, redirection or unexpanded placeholder), the
-phase is legal (a boundary-only sweep is not inner work), the scope fits the declared budget, and
+phase is legal (a boundary-only sweep is not inner work), the scope fits the declared host capacity, and
 the expected outcome is `green`, `expected-negative` or `informational`. A violation is a **plan
-defect**, not a runtime exception. The gate also fixes a **stop-loss budget** (revisions, wall
-clock, measurement time); a run that selects zero targets is a failure whatever its exit code, and
+defect**, not a runtime exception. The gate also records the **effort estimate/accounting** (never an
+autonomous wall-clock/token/revision cutoff); a run that selects zero targets is a failure whatever its exit code, and
 a decisive negative arm is declared `expected-negative` with its exact failure identity. Recorded
 exceptions come from a fixed catalog — a class appearing in three or more units of one campaign is
 systemic. On DO entry the executor re-resolves the plan's anchors before the first edit: cosmetic
@@ -251,7 +251,7 @@ configuration repository.
 | State: the status file is the source of truth and the only progress mirror | `skills/pdca/SKILL.md §Phase progress mirror · §Workspace and durable status` |
 | The three counters `N`, `r`, `n/3` | `skills/pdca/SKILL.md §State machine and counters` |
 | Gates 1–4 (PLAN → DO → CHECK → ACT) | `skills/pdca/SKILL.md §Transition gates` |
-| The plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring and the stop-loss budget | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss` |
+| The plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring and the effort policy | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy` |
 | The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
 | Re-entry after a terminal `incomplete`/STOP | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |

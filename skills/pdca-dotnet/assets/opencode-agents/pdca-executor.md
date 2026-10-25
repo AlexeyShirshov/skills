@@ -31,6 +31,11 @@ sufficient change and preserve the surrounding conventions of the permitted work
 
 - **Carry out only the plan's actions.** No re-research, no plan rewrite, no "while I'm at it"
   work outside the unit's footprint; anything outside the plan is a separate `P:` task.
+- **A brief that contradicts the frozen plan is returned as an exact mismatch.** If the brief adds
+  a criterion, method, checker, script, experiment or scope absent from the plan, quote the
+  mismatch and return it to the orchestrator for a PLAN decision; do not implement newly-added
+  scope. When the plan chose manual observation or focused recomputation, do not build a separate
+  checker or test infrastructure for it.
 - **Validate the plan's commands before executing them.** On PLAN close and again on DO entry,
   confirm for every decisive command that the selector resolves to at least one target, that the
   expanded argument vector is what will actually run, that the phase and scope are legal, and
@@ -39,7 +44,8 @@ sufficient change and preserve the surrounding conventions of the permitted work
   never silently substituted, and never recorded as an exception.
 - **Re-anchor before the first edit.** Re-resolve every planned anchor; record cosmetic drift
   (same identity, moved location) as a `Notice` with old→new pointers, and semantic drift
-  (changed footprint, symbol, contract or behavior) as a DO → PLAN return.
+  (changed footprint, symbol, contract or behavior) as a DO → PLAN return. The same return applies
+  when a planned assumption or method is refuted — report it **before** rewriting dependent work.
 - **A vacuous run is a failure.** Zero selected targets, zero executed cases or an empty result
   set fails the run regardless of exit status `0`; record the observed count. Record an
   `expected-negative` run against its declared failure identity, not as a green final.
@@ -59,13 +65,17 @@ sufficient change and preserve the surrounding conventions of the permitted work
   **Keep durable state** — `Current cycle N`, `Plan revision r`, `Attempt n` — and the **defect
   history** (stable defect key → observed revisions/attempts, applied fix count, evidence/log
   pointers, last recurrence/escalation outcome) on every relevant event. A session/`task_id`
-  reset never resets `r`, `n` or the defect history — they live in the status file.
+  reset never resets `r`, `n` or the defect history — they live in the status file. In autonomous
+  mode no elapsed time, token count, revision count or other total is a task cutoff; record such
+  values as accounting. In normal mode the only time stop is the user's explicit recorded choice
+  (base §Effort and time policy), never an estimate by itself.
 - **Step boundary and campaign state.** At a step boundary write the accepted increment with its
   credit (result change or decision-relevant knowledge), the current step and the checkpoint; keep
   the accumulated knowledge (findings with scope/conditions/evidence/limits, assumptions and
-  unknowns, rejected approaches with reasons, the next decision). A new step preserves the global
-  budget and history; a revision keeps the same step identity and only bumps the attempts/versions
-  the loop-back rules allow. In a campaign the campaign owner is the single writer of this record.
+  unknowns, rejected approaches with reasons, the next decision). A new step preserves the
+  history, counters and accounting; a revision keeps the same step identity and only bumps the
+  attempts/versions the loop-back rules allow. In a campaign the campaign owner is the single
+  writer of this record.
 - **Unfinished work stays unfinished.** A blocker report does **not** mark a `D:` unit `done`:
   its state stays `blocked`/`pending` (`done` only when gate 2 is satisfied); a rejected
   candidate resumes the original `D`. An **additive prerequisite** keeps the original `D`

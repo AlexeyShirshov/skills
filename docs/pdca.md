@@ -128,11 +128,13 @@ unchanged — either show that it is now obtainable, or redefine the scope.
 **PLAN close.** A plan is not `ready` until its decisive commands are checked against the
 environment: every identifier resolves to at least one target in the declared scope, the argument
 vector survives the harness (no shell alias, redirection or unexpanded placeholder), the phase is
-legal (a boundary-only sweep is not planned as inner work), the scope fits the declared budget, and
-the expected outcome is declared as `green`, `expected-negative` or `informational`. A violation is
-a **plan defect**: gate 1 fails and the pdca-planner revises. Gate 1 also fixes a **stop-loss
-budget** — maximum revisions, wall clock and measurement time; its exhaustion routes to
-`pdca-escalate`/STOP, never to an unplanned extra attempt. Planning depth follows risk: a small,
+legal (a boundary-only sweep is not planned as inner work), the scope fits the declared host
+capacity, and the expected outcome is declared as `green`, `expected-negative` or `informational`. A
+violation is a **plan defect**: gate 1 fails and the pdca-planner revises. Gate 1 records the
+normal-mode **effort estimate** (an estimate, not a cutoff); in autonomous mode elapsed accounting
+is optional observation, not a gate-1 field. No wall-clock, token, revision, step or measurement
+total caps the task autonomously. In normal mode the user may explicitly
+opt into a stop at the estimate; neither plan approval nor silence enables it. Planning depth follows risk: a small,
 well-understood change gets a compact plan, and a measurable target whose mechanism is unproven
 first gets a bounded probe, not a full acceptance contract.
 
@@ -168,8 +170,8 @@ replacement" mapping covering all the original criteria).
 
 1. **Plan → DO:** all mandatory fields are in place — including the declared **form and overlay** and
    the **carrying claims** with IDs — **every frozen command has passed the plan
-   command contract**, the plan is written into the status file, a **stop-loss budget** is fixed,
-   and the user **has approved the plan** — or autonomous mode.
+   command contract**, the plan is written into the status file, in normal mode the **effort
+   estimate** is presented (never an autonomous cutoff; autonomous accounting is optional), and the user **has approved the plan** — or autonomous mode.
 2. **DO → CHECK:** all active, non-superseded units are `done` with evidence.
 3. **CHECK → ACT:** all criteria are `met` on actual data, none `unmet`/`unverified`, and no carrying
    claim blocks the verdict.
@@ -341,7 +343,7 @@ short preamble before the first `##` heading. The "claim → source" map:
 | The DO candidate → PLAN; an additive precondition vs a scope replacement | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
 | Gates 1–5 and the STOP finalization | `skills/pdca/SKILL.md §Transition gates` |
 | The carrying claims and the veto | `skills/pdca/SKILL.md §Claims and veto`; `skills/pdca/references/check.md §Carrying claims and the veto` |
-| The plan command contract, vacuous and `expected-negative` runs, the exception catalog, DO-entry re-anchoring, proportional planning with a stop-loss budget, and one evidence location binding | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding` |
+| The plan command contract, vacuous and `expected-negative` runs, the exception catalog, DO-entry re-anchoring, proportional planning and the effort policy, and one evidence location binding | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy · §One evidence location binding` |
 | The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `skills/pdca/references/plan.md §Frozen evidence manifest` |
 | The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval` |

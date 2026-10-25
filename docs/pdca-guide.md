@@ -271,8 +271,8 @@ so" but a concrete artifact: a status-file record, an exit code, a log path, a g
 
 | What | Content |
 |---|---|
-| **Entry condition** | The pdca-planner's answer contains **all the mandatory plan fields**; **every frozen command has passed the plan command contract** (an identifier resolves to at least one target, the argv survives the harness, the phase/scope is legal, the expected outcome is declared); a **stop-loss budget** is fixed; the plan is **written into the status file**; in normal mode the user's **approval of the plan** has been received — or we are in autonomous mode, where no approval is required and DO starts right after PLAN |
-| **Evidence** | A status file with the plan and the record `PLAN ready — awaiting user approval`; the textual plan with its fields; the **plan-command validation receipt** (in `pdca-dotnet` — the `PLAN-LINT` row with exit `0`); the stop-loss budget; the user's approval (normal) |
+| **Entry condition** | The pdca-planner's answer contains **all the mandatory plan fields**; **every frozen command has passed the plan command contract** (an identifier resolves to at least one target, the argv survives the harness, the phase/scope is legal, the expected outcome is declared); in normal mode the **effort estimate** is presented — never an autonomous cutoff (autonomous accounting is optional observation); the plan is **written into the status file**; in normal mode the user's **approval of the plan** has been received — or we are in autonomous mode, where no approval is required and DO starts right after PLAN |
+| **Evidence** | A status file with the plan and the record `PLAN ready — awaiting user approval`; the textual plan with its fields; the **plan-command validation receipt** (in `pdca-dotnet` — the `PLAN-LINT` row with exit `0`); the effort estimate/accounting; the user's approval (normal), with a stop-at-estimate choice only if the user explicitly opted in |
 | **Responsible** | The pdca-planner formulates; the `pdca-executor` validates the frozen commands and writes the plan into the status file; the orchestrator checks that the items are present and returns an incomplete answer to the pdca-planner |
 | **Permitted next step** | DO; if acceptance criteria are missing, in normal mode ask the user, in autonomous mode route through pdca-planner/pdca-escalate and STOP |
 
@@ -431,10 +431,12 @@ It is exactly this construction that makes "the same defect came back" a separat
 signal than "three different failures": a recurrence after one fix is no longer a hypothesis but a
 suspicion about the architecture, and there is no need to spend a second fix on it.
 
-The number of revisions has no cap, but the **stop-loss budget** fixed at gate 1 does: maximum
-revisions, wall clock and measurement time. Its exhaustion routes to escalation/STOP — never to an
-unplanned extra attempt. Planning depth is proportional to risk: a compact plan for a small,
-well-understood change; a bounded probe first when the mechanism of a measurable target is unproven.
+The number of revisions has no cap, and gate 1 no longer fixes a wall-clock, token or measurement
+total either: effort is accounting, not a stop condition. Autonomous work ends on an accepted result
+or a verified irreducible blocker; in normal mode the user may explicitly opt into stopping at the
+planner's estimate, and that choice (not plan approval) persists as the same cutoff across resume or
+replan. Planning depth is proportional to risk: a compact plan for a small, well-understood change;
+a bounded probe first when the mechanism of a measurable target is unproven.
 
 ## 7. When the plan stopped matching reality
 
@@ -821,7 +823,7 @@ gates.
   compilable change (`source_revision != artifact_revision` or no preceding build with a matching
   revision); the scope was widened without a pre-validated amendment; the boundary was relabelled/
   invented; a projection dropped a started execution; or the boundary integration count exceeds the
-  planned budget.
+  planned boundary runs.
 - **The evidence contract and the directory.** PLAN fixes in the status file a versioned contract of
   rows (row ID, the required check, the expected evidence, the command/exit code, the artifacts and
   their paths, the owner, the applicability predicate, the revision `rv`) and the manifest path; the
@@ -834,7 +836,7 @@ gates.
   binding**. A self-imposed extra *audit* row that follows from no agreed goal is not rewritten or
   deleted: CHECK appends a `diagnostic_nonbinding` disposition (stable row ID + reason) in the same
   manifest, and the receipt separates binding unmet rows from audit notes. Missing evidence is a
-  **re-gather** (within the fixed budget), not a product defect. A re-entry after a terminal
+  **re-gather** (within the declared re-gather plan), not a product defect. A re-entry after a terminal
   `incomplete`/STOP is a mandatory PLAN input (the criterion cannot be re-run unchanged).
 - **The reviewer evidence pack and the ACT cleanup receipt.** The full bodies a reviewer needs are
   **staged** into the task's `rv<k>` directory (a copy, not a move), with a cheap read-only
@@ -1295,7 +1297,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 
 **Gates and escalation**
 - gates 1–5 → `skills/pdca/SKILL.md §Transition gates`
-- the plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring, the stop-loss budget, one evidence binding → `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and stop-loss · §One evidence location binding`
+- the plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring, the effort policy, one evidence binding → `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy · §One evidence location binding`
 - the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
 - re-entry after a terminal `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
   `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`

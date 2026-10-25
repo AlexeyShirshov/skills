@@ -111,7 +111,8 @@ criterion is forbidden — otherwise the task again remains a gap.
 
 Plan hygiene is not skipped because planning is parallel: before `plan_state=ready`, the task's own
 PLAN validates its command contract (identifiers resolve to at least one target, argv survives the
-harness, phase/scope legal, expected outcome declared), fixes a stop-loss budget, and — for an
+harness, phase/scope legal, expected outcome declared), records the effort estimate/accounting (never
+an autonomous cutoff), and — for an
 unproven mechanism — plans a bounded probe before the full acceptance contract. A plan whose
 decisive command cannot run is a gap at the barrier, not a lane surprise.
 
@@ -433,7 +434,7 @@ precedence.
 | The top-level role and stack-neutrality; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `skills/pdca-collection/SKILL.md §Role · §Ownership` |
 | Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `skills/pdca-collection/SKILL.md §Role` |
 | Items: form (`cycle` | `campaign`), contract (`pdca`) and overlay (`none` | `coder` | `coder+.NET`); a campaign item has no item-level contract; the recursion ban | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay` |
-| P: each item's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle; plan hygiene (command contract, stop-loss) before `plan_state=ready` | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
+| P: each item's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle; plan hygiene (command contract, effort policy) before `plan_state=ready` | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: the status file as the only progress mirror (per-group and per-item tables), one group → one lane, an empty input | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: the barrier by item forms (`plan_state` for `cycle`, the preparation document for `campaign`) | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-incremental/references/status.md §Preparation document` |
 | D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status; width as a schedule objective and the host budget | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |

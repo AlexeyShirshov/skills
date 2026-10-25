@@ -149,7 +149,7 @@ receipt — квитанции, делающие удаление тяжёлог
 слоты или ослаблять обязательные проверки. Планируемое расположение артефактов —
 это ожидание, а не доказательство; выдумывать будущие тестовые символы или
 `file:line` запрещено — только проверенные существующие ссылки или явно
-запланированные источники. PLAN также закрепляет **конечный бюджет re-gather**
+запланированные источники. PLAN также закрепляет **конечный план re-gather**
 (досбора доказательств) в CHECK и его владельца.
 
 Рядом с контрактом доказательств PLAN замораживает **проекцию команд** `commands.json` (скилл
@@ -248,7 +248,7 @@ extra-audit-требования, не вытекающие из согласо�
 
 **Отсутствие доказательства — не дефект продукта.**
 Недостающие отчёты, логи, артефакты или результаты проверок дособираются **внутри
-CHECK** у назначенного владельца, в пределах закреплённого бюджета и существующих
+CHECK** у назначенного владельца, в пределах заявленного плана re-gather и существующих
 полномочий. Из-за этого нельзя возвращаться в DO, накручивать DO-итерацию или
 выносить product FAIL. Нельзя и выдумывать evidence или править продукт в ходе
 дособора. Но **доказанный продуктовый дефект** по-прежнему требует FAIL и обычного
@@ -256,7 +256,7 @@ loop-back, а новый обязательный вариант — обосн�
 supersession. CHECK не вправе молча добавлять, удалять или ослаблять строки
 контракта.
 
-Если бюджет исчерпан, а обязательные доказательства всё ещё открыты, CHECK
+Если план re-gather исчерпан, а обязательные доказательства всё ещё открыты, CHECK
 остаётся неразрешённым: перечисляются открытые ID строк и причины, далее работают
 обычные правила блокеров/эскалации. **PASS запрещён, пока применимая binding-строка
 открыта.** Этот гейт не добавляет новую фазу машины состояний и не
@@ -358,10 +358,10 @@ DO-отчёт приходит с четырьмя строками evidence. В
 невалидно — валидатор отклонил отчёт (два solution-прогона на границе вместо
 одного, stale `--no-build`-артефакт), поэтому валидного evidence у строки нет —
 в манифесте она `open` с причиной. Это **не** product FAIL, а досбор в CHECK у
-потока-владельца (тест-линза), в пределах бюджета. Только после получения
+потока-владельца (тест-линза), в пределах заявленного плана re-gather. Только после получения
 настоящего boundary-прогона со свежим артефактом
 (`source_revision == artifact_revision`) и `selected_count ≥ 1` строка
-закрывается; если бюджет исчерпан — CHECK остаётся неразрешённым с
+закрывается; если план re-gather исчерпан — CHECK остаётся неразрешённым с
 перечислением открытых ID, а не PASS.
 
 Гейт отличает «работа сделана, отчёт неполон» (дособрать) от «продукт
@@ -457,13 +457,13 @@ SKILL и phase-референсах этого оверлея, а не в тел
 | Экономика по факту (стоимость/токены по фазам и тирам, без имён моделей) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
 | Обязательный `test scope` (конверт `unit`+`scope`, поля, широкие селекторы, docs-only/`rebuild`, граница) | `skills/pdca-dotnet/SKILL.md §.NET plan deltas`; `skills/pdca-dotnet/references/plan.md §Mandatory \`test scope\` envelope` |
 | Валидатор: режимы `brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`, сверка `--journal`, коды `0`/`2`/`1`, «ничего не исполняет» | `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
-| Правила scope/executions: широкие селекторы, выдуманный rebuild, `selected_count ≥ 1` для finished-прогона, shell-обёртки, политика kind/phase (интеграция внутри DO, плановый граничный бюджет, `unit`-мислейбл), расширение scope, свежесть, финальный зелёный; структурные нарушения — раньше правил свежести/границы | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
+| Правила scope/executions: широкие селекторы, выдуманный rebuild, `selected_count ≥ 1` для finished-прогона, shell-обёртки, политика kind/phase (интеграция внутри DO, плановые граничные прогоны, `unit`-мислейбл), расширение scope, свежесть, финальный зелёный; структурные нарушения — раньше правил свежести/границы | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
 | Замороженный манифест: путь, заморозка на DO → CHECK, append-only, поля, агрегация по ссылкам; схема и покрытие строк в валидаторе | `skills/pdca-dotnet/references/plan.md §Frozen evidence manifest`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
 | Механический конвейер доказательств: `generate`/`lint`, замороженное синтетическое дерево, атомарная публикация, двустороннее покрытие `required_rows` ↔ `rows[]` в lint | `skills/pdca-dotnet/references/plan.md §Mechanical evidence pipeline (\`.pdca/scripts/pdca_evidence.py\`, stdlib only)`; `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather budget, ревизия/supersession | `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §.NET documentation owners` |
+| Versioned evidence contract: слоты строк, «No optional slots», DO ledger, re-gather plan, ревизия/supersession | `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §.NET documentation owners` |
 | Контракт команд плана: проекция `commands.json`, `plan_lint.py check`/`probe`, обязательная строка `PLAN-LINT`, единая привязка evidence | `skills/pdca-dotnet/references/plan.md §Machine projection: \`commands.json\` + \`plan_lint.py\``; `skills/pdca/references/plan.md §Plan command contract (PLAN close)`; `skills/pdca-dotnet/scripts/plan_lint.py:1-70` |
 | Inner-loop evidence gate: CHECK падает, а не предупреждает; список условий, включая отклонение проекции с потерянным прогоном | `skills/pdca-dotnet/references/check.md §Inner-loop evidence gate (mandatory, fails closed)` |
-| CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, бюджет | `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`; `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
+| CHECK completeness gate: сверка contract↔манифест, missing evidence = re-gather, запрет PASS при **binding** `open`, план re-gather | `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`; `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
 | Заход после терминального `incomplete`/STOP: прежняя причина — вход PLAN | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | Гейты качества: ноль предупреждений; покрытие/ветки/мутации/CRAP; безопасность прогонов тестов | `skills/pdca-dotnet/references/plan.md §.NET test strategy deltas · §Test run safety (memory + streaming) — every phase`; `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`; `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | `dotnet-*`-линзы PLAN/CHECK | `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)`; `skills/pdca-dotnet/references/plan.md §PLAN lenses and .NET skills`; `skills/pdca-dotnet/references/check.md §Streams and audit items` |

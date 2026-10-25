@@ -78,6 +78,8 @@ BASE_LITERAL_ALLOW = (
 GIT_LITERAL_ALLOW = (
     "git status",
     "git status --short",
+    "git status --porcelain",
+    "git rev-parse *",
     GIT_DIFF + " --stat",
     GIT_DIFF + " --name-only",
     GIT_DIFF + " --no-color",
@@ -94,6 +96,8 @@ PATHSPEC_ALLOW = (
     "git log --oneline -n 20 -- *",
     "git ls-files -- *",
     "git blame -- *",
+    "git status --short -- *",
+    "git status --porcelain -- *",
 )
 GIT_ALLOW = GIT_LITERAL_ALLOW + PATHSPEC_ALLOW
 # The shared read-only roles are not interchangeable: scout and the security
@@ -147,6 +151,9 @@ GIT_POSITIVE_PROBES = GIT_LITERAL_ALLOW + (
     "git log --oneline -n 20 -- src/foo.py",
     "git ls-files -- src/foo.py",
     "git blame -- src/foo.py",
+    "git rev-parse --show-toplevel",
+    "git status --porcelain -- src/foo.py",
+    "git status --short -- src/foo.py",
 )
 
 

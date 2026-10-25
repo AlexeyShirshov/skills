@@ -61,7 +61,7 @@ BLOCKS = {
         ("Средства · доступ", "чем и куда", "medium"),
         ("Риски · стоп-условия", "когда остановиться", "medium"),
         ("Контракт команд", "резолв · argv · исход", "medium"),
-        ("Stop-loss бюджет", "ревизии · время · замер", "medium"),
+        ("Политика усилий", "оценка · учёт · не cutoff", "medium"),
     ],
     "D": [
         ("Исполнение units", "по принятому плану", "weak"),
@@ -177,7 +177,7 @@ _TR_EN = {
     "когда остановиться": "when to stop",
     "Контракт команд": "Command contract",
     "резолв · argv · исход": "resolve · argv · outcome",
-    "Stop-loss бюджет": "Stop-loss budget",
+    "Политика усилий": "Effort policy",
     "ревизии · время · замер": "revisions · time · measurement",
     # DO cards
     "Исполнение units": "Execute units",

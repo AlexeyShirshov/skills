@@ -127,7 +127,7 @@ class OverlayArchitectureTest(unittest.TestCase):
         "Roles and host requirements",
         "Claims and veto",
         "Evidence over assertion",
-        "Budgets",
+        "Effort and time policy",
         "Recovery",
         "Escalation",
         "Normal-mode approval",
@@ -413,16 +413,17 @@ class ContractConsistencyTest(unittest.TestCase):
         self.assertIn("same defect came back after one fix", self.escalation)
         self.assertIn("escalate before the second fix", self.escalation)
 
-    def test_replan_cap_is_the_declared_stop_loss_budget(self):
-        # A universal "N revisions" cap would be an unplanned extra rule; the bound
-        # is the plan's own stop-loss budget, fixed at gate 1 and never renewed.
+    def test_replan_cap_is_per_defect_not_a_total_quota(self):
+        # A universal "N revisions" cap or a wall-clock budget would be an unplanned extra
+        # rule; the bound is the per-defect no-4th/recurrence rule, not a total quota.
         self.assertNotIn("No cap on revisions", self.counters)
         self.assertNotIn("maximum of 3 revisions", self.base)
-        self.assertIn("stop-loss budget", self.counters)
-        self.assertIn("maximum revisions", self.counters)
-        self.assertIn("never to an unplanned extra attempt", self.counters)
-        budgets = norm(between(self.base_raw, "## Budgets", "## Overlays"))
-        self.assertIn("are not renewed", budgets)
+        self.assertIn("No revision, step or measurement total caps the task", self.counters)
+        self.assertIn("the no-4th rule stays per defect", self.counters)
+        self.assertIn("the no-4th rule stays per defect", self.counters)
+        effort = norm(between(self.base_raw, "## Effort and time policy", "## Overlays"))
+        self.assertIn("No autonomous cutoff", effort)
+        self.assertIn("no planner-generated", effort.lower())
 
     def test_no_global_iteration_on_every_loopback(self):
         self.assertNotIn("grows on every loop-back", self.counters)
@@ -791,7 +792,7 @@ class ContractConsistencyTest(unittest.TestCase):
         # The driver forwards the request/evidence; the planner authors the single
         # PLAN; the executor writes. No "every primary" authority wording.
         entry = norm(between(self.base_raw, "## Entry: one PLAN decides the form", "### Forms"))
-        workspace = norm(between(self.base_raw, "## Workspace and durable status", "## Budgets"))
+        workspace = norm(between(self.base_raw, "## Workspace and durable status", "## Effort and time policy"))
         self.assertTrue(entry, "entry section not found")
         self.assertIn("The driver does not classify and does not plan", entry)
         self.assertIn("hands the task to the configured pdca-planner once", entry)

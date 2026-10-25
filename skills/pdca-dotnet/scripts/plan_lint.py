@@ -75,11 +75,15 @@ KINDS = ("unit", "integration", "build", "mutation", "docs", "other")
 EXPECTED = ("green", "expected-negative", "informational")
 
 SHELLS = {"sh", "bash", "zsh", "dash", "cmd", "cmd.exe", "powershell", "pwsh"}
-PROBE_BINARIES = {"dotnet", "dotnet.exe", "git", "python3", "python"}
+PROBE_BINARIES = {"dotnet", "dotnet.exe", "git", "python3", "python", "go", "gofmt"}
 SHELL_TOKENS = {"|", "||", "&&", ";", ">", ">>", "<", "2>&1", "2>", "&>", "1>"}
 
 SELECTOR_FLAGS = ("-class", "--class", "-method", "--method", "--filter", "-filter")
 PATH_FLAGS = ("--repo", "--output", "--manifest", "--scope-root", "--results", "--logs")
+
+# The base contract fixes the evidence root: `.pdca/<task>/rv<k>` (kebab task slug,
+# criteria/contract revision). A plan that pins any other directory has drifted.
+EVIDENCE_ROOT_RE = re.compile(r"^\.pdca/[A-Za-z0-9][\w.-]*/rv\d+$")
 
 PLACEHOLDER_VAR = re.compile(r"^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$")
 PLACEHOLDER_ANGLE = re.compile(r"^<[^<>]+>$")
@@ -332,6 +336,10 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
             v.add("-", "evidence_root", "must be a non-empty string when present")
             evidence_root = None
         else:
+            root_rel = evidence_root.replace(os.sep, "/").strip("/")
+            if not EVIDENCE_ROOT_RE.match(root_rel):
+                v.add("-", "evidence_root",
+                      "must be the contract root `.pdca/<task>/rv<k>`, got %r" % evidence_root)
             evidence_root = _resolve(repo, evidence_root)
             if not _inside(repo, evidence_root):
                 v.add("-", "evidence_root", "escapes the repository root")

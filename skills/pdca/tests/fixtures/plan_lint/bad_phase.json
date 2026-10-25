@@ -1,0 +1,14 @@
+{
+  "task": "T902",
+  "plan_r": 1,
+  "integration_boundary_runs": 1,
+  "commands": [
+    {
+      "id": "I",
+      "phase": "inner",
+      "kind": "integration",
+      "argv": ["dotnet", "test", "tests/Proj/Proj.csproj", "--filter", "FullyQualifiedName~SampleTests"],
+      "expected": "green"
+    }
+  ]
+}

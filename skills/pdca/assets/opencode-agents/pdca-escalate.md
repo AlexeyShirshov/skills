@@ -81,6 +81,9 @@ before the second fix.
 
 - No file edits, no state-changing commands. Read-only inspection only; the permitted `bash`
   commands are inspection-only.
+- **No task cutoff.** Your decision never creates a wall-clock, token or total-revision limit; the
+  no-4th rule and the same-defect recurrence rule stay per defect and are not converted into a
+  total-work quota. A per-command timeout is failed-command evidence, not a workflow STOP.
 - **Facts only via `pdca-scout`** (or from the pdca-scout pack in the brief). Repository-wide search
   (broad grep/glob) is forbidden; locally read a single file only to confirm a specific
   `file:line` from the brief.

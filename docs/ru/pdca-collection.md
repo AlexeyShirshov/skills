@@ -117,7 +117,8 @@ PLAN лишь **заявляет** footprint записи и его неопре
 
 Гигиена плана не отменяется параллельностью планирования: до `plan_state=ready` собственный PLAN
 задачи валидирует контракт команд (идентификаторы резолвятся хотя бы в одну цель, argv переживает
-харнесс, фаза/масштаб легальны, ожидаемый исход объявлен), фиксирует stop-loss бюджет и — для
+харнесс, фаза/масштаб легальны, ожидаемый исход объявлен), фиксирует учёт/оценку усилий (никогда
+автономный cutoff) и — для
 недоказанного механизма — планирует ограниченный probe до полного контракта приёмки. План, чья
 решающая команда не может выполниться, — gap на барьере, а не сюрприз в лейне.
 
@@ -440,7 +441,7 @@ resource stop прогона; недоступный **контракт цикл
 | Роль верхнего уровня и стек-нейтральность; собственный PLAN останавливается на границе PLAN→DO и продолжается в лейне; primary не правит файлы | `skills/pdca-collection/SKILL.md §Role · §Ownership` |
 | Автокоммит только по проектному оверлею или явному запросу; `push` никогда; режим одной группы | `skills/pdca-collection/SKILL.md §Role` |
 | Пункты: форма (`cycle` | `campaign`), контракт (`pdca`) и оверлей (`none` | `coder` | `coder+.NET`); у пункта `campaign` контракта уровня пункта нет; запрет рекурсии | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay` |
-| P: собственный PLAN каждого пункта до DAG, ALL-barrier, gap без `ready`-placeholder, группы у `pdca-planner`, вектор ревизий, аллокация лейнов только после привязки расписания; параллельные PLAN'ы до `plan_cap`, не фиксирующие расписание, сериализованная запись статус-файла; повторный заход после терминального `incomplete`/STOP требует доказательства или нового оракула; гигиена плана (контракт команд, stop-loss) до `plan_state=ready` | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
+| P: собственный PLAN каждого пункта до DAG, ALL-barrier, gap без `ready`-placeholder, группы у `pdca-planner`, вектор ревизий, аллокация лейнов только после привязки расписания; параллельные PLAN'ы до `plan_cap`, не фиксирующие расписание, сериализованная запись статус-файла; повторный заход после терминального `incomplete`/STOP требует доказательства или нового оракула; гигиена плана (контракт команд, политика усилий) до `plan_state=ready` | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: файл статуса как единственное зеркало прогресса (таблицы групп и пунктов), одна группа → один лейн, пустой вход | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: барьер по формам пунктов (`plan_state` для `cycle`, preparation document для `campaign`) | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-incremental/references/status.md §Preparation document` |
 | D: worktree и ветки, cap, привязка расписания, барьер merge, `done → merged`, `#<n>` в сообщении merge, `incomplete` не мержится, конфликт/abort/эскалация; пять статусов группы, `skipped` — примечание интеграции, `blocked` — не статус; ширина как цель расписания и бюджет хоста | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |

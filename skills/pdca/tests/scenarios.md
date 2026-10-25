@@ -201,7 +201,7 @@ post-decision loader берёт форму/оверлей из решения pl
 
 **Вход:** незавершённая clarification или choice-probe refinement после начального PLAN.
 **Требуемый исход:** это продолжения **того же pending PLAN**, а не новые strategic decisions; они
-считаются в существующий stop-loss (probe budget фиксируется до запуска), без unchanged
+считаются учётными записями усилий (границы probe задаются открытым решением, наблюдаемыми исходами и evidence, а не минутным капом), без unchanged
 confirmation/restart/unbounded retry и без лишнего вызова ради routing; успешный обычный путь
 остаётся `1 + number of steps`.
 **Оперативные источники:** SKILL §Lens; `pdca-planner` §Step boundary.
@@ -268,7 +268,7 @@ semantic drift → DO → PLAN и настоящая ревизия.
 **Требуемый исход:** сначала bounded probe (один вопрос, один ответ, фиксированный бюджет),
 затем контракт; если измеренный результат не достигает цели — STOP с зафиксированным разрывом,
 а не ещё одна ревизия в надежде на другое число.
-**Оперативные источники:** SKILL §Proportional planning and stop-loss.
+**Оперативные источники:** SKILL §Proportional planning and effort policy.
 
 ### R7. Работа идёт во вторичном checkout
 
@@ -283,3 +283,15 @@ semantic drift → DO → PLAN и настоящая ревизия.
 **Требуемый исход:** ширина — цель кластеризации: компонент режется на footprint-disjoint группы;
 иначе деградация до одной полосы обосновывается в статусе; `cap` выводится из бюджета хоста.
 **Оперативные источники:** `pdca-collection` §P.4; §Parameters.
+
+### R9. Машинная проекция плана не проходит проверку
+
+**Вход:** `commands.json` с коротким идентификатором селектора, integration-прогон, запланированный
+как inner-работа, сборка всего workspace на ограниченном хосте или путь свидетельств вне binding
+checkout.
+**Требуемый исход:** `plan_lint.py check` выходит с `2`, печатает `<id>: <field>: <message>`, пишет
+receipt, и гейт 1 не пройден — план ревизуется, команда не подменяется. Провал
+`plan_lint.py probe` означает, что объявленный harness не запускается: несовместимость
+инструмента, а не green.
+**Оперативные источники:** `references/plan.md` §Machine projection: `commands.json` and
+`plan_lint.py`; строка контракта `PLAN-LINT`.

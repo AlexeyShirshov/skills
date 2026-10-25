@@ -64,7 +64,7 @@ An item with the form `campaign` is led by the **designated existing cheap `pdca
 campaign-control** — one controller per campaign item, chosen when the schedule is bound, with no
 competing writers (`../SKILL.md` §Ownership, `../../pdca/SKILL.md` §Control modes and the campaign
 owner). It holds the campaign state/status, the shared counters, the accumulated knowledge and the
-budget, owns recovery, starts the next step **only on the planner's decision**, and runs the
+effort accounting, owns recovery, starts the next step **only on the planner's decision**, and runs the
 current step's cycle inline in its own session. A campaign is always single-threaded: one step at a
 time, one lane, no internal parallelism.
 

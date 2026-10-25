@@ -1,0 +1,26 @@
+{
+  "task": "T907",
+  "plan_r": 1,
+  "units": ["D1", "D2"],
+  "commands": [
+    {
+      "id": "U1",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["dotnet", "test", "tests/Proj/Proj.csproj", "--filter", "FullyQualifiedName~SampleTests"],
+      "expected": "green",
+      "min_selected": 1,
+      "timeout_s": 600,
+      "covers": ["D1", "D3"]
+    },
+    {
+      "id": "U1",
+      "phase": "inner",
+      "kind": "unit",
+      "argv": ["dotnet", "test", "tests/Proj/Proj.csproj", "--filter", "FullyQualifiedName~SampleTests"],
+      "expected": "green",
+      "min_selected": 1,
+      "timeout_s": 600
+    }
+  ]
+}

@@ -341,7 +341,7 @@ footprint, symbol and contract are unchanged.
 **Required outcome:** a bounded probe first (one question, one observable answer, fixed budget),
 then the contract; a measured result that misses the target STOPs with the gap rather than buying
 another revision.
-**Operative sources:** SKILL §Proportional planning and stop-loss.
+**Operative sources:** SKILL §Proportional planning and effort policy.
 
 ### R7. Checks run in a secondary checkout
 

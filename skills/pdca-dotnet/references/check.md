@@ -122,7 +122,7 @@ whose tree does not reconcile, a missing required row, an undeclared row, or a d
 reference is an open evidence gate — never a reason to reclassify the row.
 
 **Missing evidence is not a product defect:** re-gather reports, logs, artifacts, or missing check
-results from the designated owner inside CHECK, within the pinned budget and existing permissions. Do
+results from the designated owner inside CHECK, within the declared re-gather plan and existing permissions. Do
 not return to DO, count a DO iteration, or issue product FAIL solely because reporting is missing. Do
 not invent evidence or edit the product as part of re-gathering.
 
@@ -130,7 +130,7 @@ A verified product defect still requires FAIL and the existing loop-back. A newl
 variant requires a justified CHECK → PLAN contract revision with explicit supersession and preserved
 obligations; CHECK must not silently add, remove, or weaken contract rows.
 
-**Bounded gathering:** if the budget is exhausted with required evidence still open, leave CHECK
+**Bounded gathering:** if the re-gather plan is exhausted with required evidence still open, leave CHECK
 unresolved, report the open row IDs and reasons, and follow the existing blocker/escalation rules.
 Never issue PASS while a binding/applicable required row is open. This gate adds no state-machine
 phase and does not lower existing priorities or replace existing correctness checks.

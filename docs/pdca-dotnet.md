@@ -109,7 +109,7 @@ Among other things, the validator checks:
 - a final green result in every group.
 
 **Every actually-started run is recorded**, regardless of exit code, cancellation, retry or
-over-budget status: the report is **projected** from the raw journal, and a projection that drops a
+a status beyond the planned boundary: the report is **projected** from the raw journal, and a projection that drops a
 started execution is rejected (`projection incomplete`). The execution states are explicit —
 `finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` | `not-started`;
 exit code and selected count are nullable and are never invented for a run that did not finish, and
@@ -140,8 +140,8 @@ rather than set up a competing contract of their own. Every row requires:
 **"No optional slots"**: PLAN is free to choose the representation but may not omit slots or weaken
 mandatory checks. The planned artifact locations are an expectation, not evidence; inventing future
 test symbols or `file:line` references is forbidden — only verified existing references or
-explicitly planned sources. PLAN also fixes the **final re-gather budget** (a supplementary
-evidence gathering) in CHECK and its owner.
+explicitly planned sources. PLAN also fixes the **final re-gather plan** (a supplementary
+evidence gathering, per defect — not a task cutoff) in CHECK and its owner.
 
 Alongside the evidence contract PLAN freezes the **command projection** `commands.json` (skill
 §Plan command contract): the task, plan revision, checkout and evidence root, host budget, the
@@ -238,13 +238,13 @@ variant.
 
 **Missing evidence is not a product defect.**
 Missing reports, logs, artifacts or check results are gathered **inside CHECK** from the assigned
-owner, within the fixed budget and the existing permissions. Because of that, one cannot return to
+owner, within the declared re-gather plan and the existing permissions. Because of that, one cannot return to
 DO, spin up a DO iteration, or render a product FAIL. Nor may evidence be invented or the product
 edited during the supplementary gathering. But a **proven product defect** still requires a FAIL
 and the usual loop-back, and a new mandatory variant requires a justified CHECK → PLAN with an
 explicit supersession. CHECK may not silently add, remove or weaken contract rows.
 
-If the budget is exhausted while mandatory evidence is still open, CHECK remains unresolved: the
+If the re-gather plan is exhausted while mandatory evidence is still open, CHECK remains unresolved: the
 open row IDs and the reasons are listed, and then the usual blocker/escalation rules apply. **PASS
 is forbidden while a binding/applicable mandatory row is open.** This gate adds no new phase to the
 state machine, does not lower priorities and does not replace the existing correctness checks.
@@ -338,9 +338,9 @@ In addition, the CHECK completeness gate sees that the contract row "boundary: t
 rejected the report (two whole-solution boundary sweeps instead of one, a stale `--no-build`
 artifact), so the row has no valid evidence — in the manifest it is `open` with a reason. This is
 **not** a product FAIL but a supplementary gathering in CHECK from the owning stream (the test
-lens), within the budget. Only after a real boundary run with a fresh artifact
-(`source_revision == artifact_revision`) and `selected_count ≥ 1` does the row close; if the budget
-is exhausted, CHECK remains unresolved with the open IDs listed rather than a PASS.
+lens), within the declared re-gather plan. Only after a real boundary run with a fresh artifact
+(`source_revision == artifact_revision`) and `selected_count ≥ 1` does the row close; if the re-gather
+plan is exhausted, CHECK remains unresolved with the open IDs listed rather than a PASS.
 
 The gate distinguishes "the work is done, the report is incomplete" (gather more) from "the product
 is defective" (FAIL and loop-back) — and in both cases it does not let a "green by eye" through.
@@ -433,13 +433,13 @@ The article's normative claims were reconciled with the repository's current fil
 | The economics in practice (cost/tokens by phase and tier, no model names) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
 | The mandatory `test scope` (the `unit`+`scope` envelope, fields, wide selectors, docs-only/`rebuild`, the boundary) | `skills/pdca-dotnet/SKILL.md §.NET plan deltas`; `skills/pdca-dotnet/references/plan.md §Mandatory \`test scope\` envelope` |
 | The validator modes (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`), the `--journal` reconciliation, the `0`/`2`/`1` codes, "executes nothing" | `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
-| The scope/execution rules: wide selectors, an invented rebuild, `selected_count ≥ 1` for a finished run, shell wrappers, the kind/phase policy (integration inside DO, the planned boundary budget, a mislabelled `unit`), scope expansion, freshness, final green; structural violations before the freshness/boundary rules | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
+| The scope/execution rules: wide selectors, an invented rebuild, `selected_count ≥ 1` for a finished run, shell wrappers, the kind/phase policy (integration inside DO, the planned boundary runs, a mislabelled `unit`), scope expansion, freshness, final green; structural violations before the freshness/boundary rules | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
 | The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `skills/pdca-dotnet/references/plan.md §Frozen evidence manifest`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
 | The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `skills/pdca-dotnet/references/plan.md §Mechanical evidence pipeline (\`.pdca/scripts/pdca_evidence.py\`, stdlib only)`; `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather budget, revision/supersession | `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §.NET documentation owners` |
+| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather plan, revision/supersession | `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §.NET documentation owners` |
 | The plan command contract: the `commands.json` projection, `plan_lint.py check`/`probe`, the mandatory `PLAN-LINT` row, one evidence location binding | `skills/pdca-dotnet/references/plan.md §Machine projection: \`commands.json\` + \`plan_lint.py\``; `skills/pdca/references/plan.md §Plan command contract (PLAN close)`; `skills/pdca-dotnet/scripts/plan_lint.py:1-70` |
 | The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `skills/pdca-dotnet/references/check.md §Inner-loop evidence gate (mandatory, fails closed)` |
-| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the budget | `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`; `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
+| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the re-gather plan | `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`; `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
 | A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `skills/pdca-dotnet/references/plan.md §.NET test strategy deltas · §Test run safety (memory + streaming) — every phase`; `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`; `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
 | The `dotnet-*` lenses of PLAN/CHECK | `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)`; `skills/pdca-dotnet/references/plan.md §PLAN lenses and .NET skills`; `skills/pdca-dotnet/references/check.md §Streams and audit items` |

@@ -37,8 +37,8 @@ Lifecycle:
 
 1. **Creation, last step of PLAN before the start signal:** the plan (goal, criteria with
    verification methods, carrying claims, form/overlay, constraints, assumptions, decomposition and
-   dependencies, means and access, risks/stop conditions, budget) plus the log opened with
-   `PLAN ready — awaiting user approval`.
+   dependencies, means and access, risks/stop conditions, effort estimate and accounting) plus the
+   log opened with `PLAN ready — awaiting user approval`.
 2. **Progress — every event** of DO/CHECK.
 3. **Replan** (CHECK → PLAN / DO → PLAN): a real revised plan bumps `r`, resets `n` to 1; an
    unchanged plan does not. The **same** file's plan section is rewritten; the outgoing failed
@@ -103,13 +103,17 @@ rejected).
 - **Progress log** (above).
 
 For a campaign, the same file (or the campaign record it points to) additionally holds: accepted
-steps with their credit, the current step, the shared counters, the budget and the checkpoint of the
-last step boundary. One writer only.
+steps with their credit, the current step, the shared counters, the effort accounting and the
+checkpoint of the last step boundary. One writer only.
 
 **Approval slots (normal mode only).** Two canonical fields, written by `pdca-executor`: `Pending
 approval ref` — the durable pointer binding the stable task/`cycle_id`, the cycle `N`, plan revision
 `r` and the acceptance-criteria set (the same pointer a caller-driven `plan_handoff` carries);
-`Approval record` — the approval against that ref: approver, time, reason and the same identity. A
+`Approval record` — the approval against that ref: approver, time, reason and the same identity,
+including the user's stop-at-estimate choice when one was made (absent = no cutoff). A replan's
+fresh ref points **by reference** to the original stop choice and its original clock
+anchor/deadline; a new estimate does not reset that deadline, and the old plan approval authorizes
+nothing new. No extra field or table is added. A
 brief or a chat message is not the record. Both slots are absent in autonomous mode — an absent
 value there is normal, not a gap or a blocker.
 

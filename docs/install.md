@@ -75,13 +75,22 @@ For the PDCA family the global skills root is enough — OpenCode discovers
 in a custom `skills` source; if the family lives there, add the five ids to that list and rebuild it.
 
 The helpers under the installed skill's `scripts/` are the **source** of the runtime copies — the
-package you installed determines which ones exist (`pdca` and `pdca-coder` ship `pdca_cost.py`;
-`pdca-dotnet` also ships `validate_inner_loop.py`, `pdca_evidence.py` and `plan_lint.py`). Before the first helper run,
+package you installed determines which ones exist (`pdca` and `pdca-coder` ship `pdca_cost.py` and
+`plan_lint.py`; `pdca-dotnet` also ships `validate_inner_loop.py` and `pdca_evidence.py`). Before the first helper run,
 `pdca-executor` stages them into the project's `.pdca/scripts/` as byte-identical copies, and every
 command runs from the project root (`python3 .pdca/scripts/<helper>.py …`); a helper is never
 executed from the installed skill directory. The `.pdca/` workspace itself is created by the cycle in
 the project it runs in. `tests/` and the diagram generators under `assets/diagram/` are
 development-only and not needed at runtime.
+
+Keep the durable record and drop the local by-product — add once, in the project that runs cycles:
+
+```gitignore
+# PDCA: the status file is the durable record; evidence and staged helpers stay local
+.pdca/*/rv*/
+.pdca/scripts/
+```
+
 
 ## 3. Install the role agents
 

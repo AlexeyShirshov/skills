@@ -116,7 +116,7 @@ class OnePlanTest(unittest.TestCase):
             "the overlay",
             "the nearest useful step",
             "the carrying claims",
-            "the stop-loss budget",
+            "the effort estimate/accounting",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, self.entry)
@@ -357,10 +357,10 @@ class PlannerFormRationaleTest(unittest.TestCase):
         self.assertIn("do not make every design task incremental", self.planner)
         self.assertIn("validating an already-known method is legitimate", self.planner)
 
-    def test_probe_authorization_names_decision_outcomes_and_budget(self):
+    def test_probe_authorization_names_decision_outcomes_and_evidence(self):
         for token in (
             "authorize one bounded probe",
-            "name the open decision, the observable outcomes and the budget",
+            "name the open decision, the observable outcomes and the evidence that closes it",
             "leave the form undecided until its facts refine this same pending PLAN",
         ):
             with self.subTest(token=token):
@@ -395,7 +395,7 @@ class PlannerFormRationaleTest(unittest.TestCase):
         for token in (
             "successful path 1 + number of steps",
             "bounded same-pending-PLAN continuations",
-            "count against the existing stop-loss",
+            "The count is recorded state, not a task limit",
             "no hidden exempt calls",
         ):
             with self.subTest(token=token):
