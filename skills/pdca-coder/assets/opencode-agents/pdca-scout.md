@@ -60,7 +60,10 @@ pointers — the caller makes the decision.
   `echo` for a one-line label, plus `command -v` for a tool's presence and path) and fixed git
   literals (`git status` incl. `--short`/`--porcelain`/` -- *` path forms, `git rev-parse …`,
   `git diff --stat`/`--name-only`/`--no-color`, `git log --oneline -n 20`/`git show`/`git ls-files`)
-  are allowed — no wildcard before ` -- `, so write flags such as `--output` never match.
+  are allowed — no wildcard before ` -- `, so write flags such as `--output` never match. `git log`
+  has exactly one accepted form, `git log --oneline -n 20`; take the first lines you need with
+  `head`, because `-n 3` is not a literal and the wildcard that would admit it also admits
+  `--output`.
   `sha256sum` is how the pack binds its observation to the frozen result identity; without it the
   identity is `unverified` by construction.
 - **One command per call.** No `cd` (the shell tool takes `workdir`), no `;`/`&&`/`||`, no loops or
@@ -71,7 +74,8 @@ pointers — the caller makes the decision.
   where, without running it. The version itself is not in this surface — `pdca-executor` records it
   in the gate-1 environment validation. Presence comes from `command -v`, which reads `PATH`; a pair
   of `ls` probes only proves those two paths are empty, and a tool installed outside the standard
-  prefixes is common.
+  prefixes is common. A brief that orders a build, a test, a helper run or a version query is a
+  brief defect: answer `unconfirmed — outside the scout surface` and do not retry it.
 - **The action journal is `.git/logs/HEAD`** (with `.git/HEAD` for the current branch): the reflog
   records the actions between commits, including a reset or a branch switch that left no commit, and
   it is read with `tail -n <n>` / `cat`. `git log` lists commits, not actions — it is not the journal,

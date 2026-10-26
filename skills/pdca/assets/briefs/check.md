@@ -6,8 +6,9 @@ reference** — the checker reads `.pdca/**` itself, so a restated table adds no
 - **identity**: task / `N` / `r` / `n/3` / `rv` / form / overlay
 - **plan**: `<status path>` and the criterion IDs of this round — **by reference**: the rows live in
   the status file; a restated table adds no reach and drifts from it. Read its **durable state,
-  carrying claims and progress log**; the plan text inside it is a copy of the plan file you already
-  hold by reference
+  carrying claims and progress log** and its fenced plan copy (the criteria's verification methods) —
+  that copy **is** the plan document; open `plan-r<n>.md` only if a criterion names a line the copy
+  lacks, never both
 - **manifest**: `<path>` — the index CHECK opens first
 - **observation pack**: `<path>` — the scout's per-criterion `observed | assumed | unverified` rows,
   bound to the frozen result identity; the **only** channel for anything outside `.pdca/**`, the

@@ -1218,9 +1218,25 @@ class BriefTemplateTest(PhraseAssertions):
 
     def test_do_template_carries_the_evidence_slots(self):
         text = norm(read(SKILL_DIR / "assets/briefs/do.md"))
-        for token in ("<stem>.out", "<stem>.rc", "manifest", "commands.json", "plan_lint"):
+        for token in ("<stem>.out", "<stem>.rc", "manifest", "commands.json", "plan_lint",
+                      "documented commands"):
             with self.subTest(token=token):
                 self.assertPhrase(token, text)
+
+    def test_check_template_reads_the_status_copy_once(self):
+        text = norm(read(SKILL_DIR / "assets/briefs/check.md"))
+        self.assertPhrase("that copy is the plan document", text)
+        self.assertPhrase("never both", text)
+
+    def test_scout_template_bounds_the_facts_to_its_surface(self):
+        text = norm(read(SKILL_DIR / "assets/briefs/scout.md"))
+        self.assertPhrase("unconfirmed — outside the scout surface", text)
+
+    def test_scout_role_names_the_journal_and_the_single_log_form(self):
+        scout = norm(read(ASSET_AGENTS / "pdca-scout.md"))
+        self.assertPhrase(".git/logs/HEAD", scout)
+        self.assertPhrase("git log --oneline -n 20", scout)
+        self.assertPhrase("take the first lines you need with head", scout)
 
     def test_orchestrator_points_at_the_templates(self):
         agent = norm(read(ASSET_AGENTS / "pdca-orchestrator.md"))

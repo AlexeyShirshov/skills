@@ -168,10 +168,12 @@ valid result is **not `ready`**:
   input digests the sorted `<sha256>  <path>` lines of its regular files, the same method for every
   executor; the plan may name a file DO creates, because gate 1 checks the shape and the capture is
   what fails if the input is still missing.
-- **a documented command is a frozen command** — when the result's README or help text shows a
-  command, that command is copied from a frozen row's `argv`; a paraphrase is a defect. A criterion
-  whose negative case names a documented command verifies that command by running it, never by
-  reading it — a README line that has never been executed is a claim, not evidence.
+- **a documented command is a frozen command** — a user-facing invocation the result documents (a
+  README's run block, a usage line, a help text) is decided in PLAN as a row of this contract, even
+  though the document itself is written in DO: the command block is written *from* the row's `argv`,
+  never the other way round. A criterion whose negative case names a documented command verifies it
+  by running it, never by reading it — a README line that has never been executed is a claim, not
+  evidence, and a documented invocation that was not run is a defect, not a limitation.
 - **caches stay outside the evidence root** — a command that needs a cache, home or temp area
   (`GOCACHE`, `GOPATH`, `HOME`, `TMPDIR`, a package cache) names it in `env` outside the checkout
   (`$TMPDIR/<task>-<n>-cache` is the default target), never under the evidence root: the root holds
@@ -249,7 +251,10 @@ and **again in ACT before finalization**:
 
 A `##` heading inside a fenced block is body text: the plan document copied into `## Plan` carries
 its own headings, and none of them may shadow a required section. The copy is fenced with at least
-four backticks (longer than any fence inside it), so section order in the file never matters.
+four backticks (longer than any fence inside it), so section order in the file never matters. A role
+that appends or reads state, claims or the log opens the file at `## Durable state`; the fenced copy
+above is the plan for the one reader that needs its verification methods, and the others do not
+re-read it.
 
 Exit codes `0` ok, `2` violation, `1` usage/IO; the receipt is the evidence row `STATUS-LINT`. The
 helper is structural: it proves the durable record is machine-readable and consistent with itself,

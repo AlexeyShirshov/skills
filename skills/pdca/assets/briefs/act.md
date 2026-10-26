@@ -4,7 +4,8 @@ Bookkeeping only: no product, test or checked artifact changes.
 
 - **identity**: task / `N` / `r` / `n` / `rv`
 - **accepted verdict**: the check verdict pointer and the matrix it accepted
-- **record**: conclusions, limitations, accepted assumptions, decisions, handoff
+- **record**: conclusions, limitations, accepted assumptions, decisions, handoff — a documented
+  command the run never executed is a defect to route, never a limitation to record
 - **manifest**: the same evidence generation; append the dispositions CHECK returned, never rewrite
   or delete a row
 - **status file**: append the verdict and the ACT section, finalize `Phase: EXIT`, keep the file

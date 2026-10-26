@@ -147,12 +147,15 @@ the skill-loading fallback to an **authorized role** (`pdca-scout`), which reads
 
 Fill the matching template from the installed `pdca` skill — `assets/briefs/` with `scout`, `plan`,
 `do`, `check`, `act` — instead of composing a brief from memory. The plan travels **by reference**
-wherever the role can read `.pdca/**` (check reads its scoped status and manifest; the executor reads
-the status and the plan document); `pdca-planner` reads nothing, so its brief carries the facts and
-the form discriminators verbatim, and it **returns the plan text while writing it to the pinned plan
-document** — you pass the path on, never a re-typed copy. Every slot is either filled or explicitly
-`none`: a missing mandatory slot — capture shape, manifest path, `commands.json` plus the
-`plan_lint` receipt — is exactly what turns the round into a re-gather.
+wherever the role can read `.pdca/**` (check reads its scoped status and manifest — the status carries
+the plan verbatim in a fence, so the plan document is not a second CHECK slot; the executor reads the
+status and, on the first DO, the plan document); `pdca-planner` reads nothing, so its brief carries
+the facts and the form discriminators verbatim, and it **returns the plan text while writing it to the
+pinned plan document** — you pass the path on, never a re-typed copy. A scout brief asks only for
+what the scout's read-only surface yields — listings, reads, `command -v`, the read-only git literals;
+a build, a test, a helper run or a tool-version query belongs to the executor's V row. Every slot is
+either filled or explicitly `none`: a missing mandatory slot — capture shape, manifest path,
+`commands.json` plus the `plan_lint` receipt — is exactly what turns the round into a re-gather.
 
 **CHECK dispatch gate.** Before dispatching `pdca-check`, confirm two slots from the role reports —
 never by reading yourself: the frozen `manifest.json` exists with a row per `required` ID, and a

@@ -5,7 +5,8 @@ what turns the next round into a re-gather.
 
 - **identity**: task / `N` / `r` / `n/3` / `rv` / overlay / mode
 - **plan**: `<status path>` plus the unit/step IDs this DO serves — **by reference**: the criteria,
-  their rationale and the plan rows stay in the status file, which the executor reads
+  their rationale and the plan rows stay in the status file, which the executor reads from
+  `## Durable state`; the fenced plan copy above that heading is not re-read on a follow-up DO
 - **persistence** (first DO dispatch only): include the plan document `<plan-r<n>.md>` **verbatim**
   in the status file (a file copy, never a re-typed copy) inside a fence of at least four backticks,
   longer than any fence inside it, so the plan's own `##` headings never shadow a status section;
@@ -25,6 +26,9 @@ what turns the next round into a re-gather.
   the projection comes from `plan_lint.py fork-attempt`, never from editing its paths by hand
 - **commands**: verbatim from the plan (`argv`, cwd, expected outcome); a substitution is a PLAN
   question, not a DO decision
+- **documented commands**: every command block this DO puts into a doc (README, usage, help) is a
+  frozen row — run it once with real arguments and capture it. A block with no row is a PLAN defect
+  to report, not a row to invent and not a line to leave unrun
 - **report**: changed / completed / evidence (exit status from `.rc`, key numbers, paths) / blockers
   / unfinished
 - **delta**: only what changed since the previous DO of this cycle

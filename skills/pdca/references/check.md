@@ -18,17 +18,19 @@ reaches the verdict. A brief that asks the checker to read such a path is incomp
 deliverable moved into `.pdca/**` to fit the scope is a changed goal — the planner's `limited`
 decision, never a CHECK workaround.
 
-Reading is **targeted**, and the budget is hard: the manifest, the observation pack and **one
-decisive row per criterion** (the row PLAN marked decisive, `decisive: true` in the manifest) — at
-most about eight files for a five-criterion cycle. A log is searched at the line a criterion names; a
+Reading is **targeted**, and the budget is hard: the manifest, the observation pack, the status and
+**one decisive row per criterion** (the row PLAN marked decisive, `decisive: true` in the manifest) —
+at most about eight files for a five-criterion cycle. A log is searched at the line a criterion names; a
 source file is opened only for the equation a finding depends on. Ingesting the whole evidence tree
 per dispatch buys the verdict nothing and is itself a finding about that round; the verdict **names
 the files it opened**, so the round's read economy is auditable. A re-check after a bounded repair
 judges the **delta** plus the same pack, in a **fresh session**: the previous verdict travels by
 pointer, and continuing the old session re-sends its whole context at full price for the same delta.
 
-Read the status file's **durable state, carrying claims and progress log**; the plan text inside it
-is a copy of the plan file already held by reference, and reading it again buys nothing.
+Read the status file once: its **durable state, carrying claims and progress log**, and the fenced
+plan copy for each criterion's verification method — that copy **is** the plan document, so opening
+`plan-r<n>.md` as a second read pays twice for the same bytes. A criterion that names a plan line the
+copy lacks is the only reason to open the file, and the copy is taken from it byte-for-byte.
 
 Pass the plan **by reference** (the pinned status file and manifest path) and spend the brief on the
 delta; a brief that restates the plan tables adds no reach to the verdict.

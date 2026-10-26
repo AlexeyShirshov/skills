@@ -443,6 +443,7 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
     covers_declared: list[tuple[str, str]] = []
     covers_by_command: dict[str, set[str]] = {}
     decisive_by_criterion: dict[str, list[str]] = {}
+    missing_identity: dict[str, list[str]] = {}
 
     for idx, cmd in enumerate(commands):
         if not isinstance(cmd, dict):
@@ -583,8 +584,7 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
                         v.add(ident, "identity", "path %r escapes the linted checkout" % raw)
                         identity_ok = False
                     elif not os.path.exists(resolved):
-                        v.warn("%s: identity input %r does not exist yet — the capture step fails if "
-                               "it is still missing when the run starts" % (ident, raw))
+                        missing_identity.setdefault(raw, []).append(ident)
 
         decisive = cmd.get("decisive")
         if decisive is not None:
@@ -649,6 +649,13 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
     if decisive_by_criterion and not criteria_ids:
         v.warn("commands.json marks decisive rows but declares no `criteria`: the one-row-per-criterion "
                "rule cannot be checked against the plan's criteria")
+
+    # One line per path, not per (command, path): B and T name the same sources, and a receipt with
+    # the same sentence eleven times buries the six facts it carries.
+    for raw in sorted(missing_identity):
+        idents = ", ".join(sorted(set(missing_identity[raw])))
+        v.warn("identity input %r does not exist yet (named by %s) — the capture step fails if it "
+               "stays missing" % (raw, idents))
 
     if covers_declared and not unit_ids:
         v.warn("`covers` declared without `units`: covers names units; the plan's criteria belong in "

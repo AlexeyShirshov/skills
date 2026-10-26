@@ -225,6 +225,20 @@ class CheckTest(PlanLintCase):
         self.assertEqual(2, result.returncode)
         self.assertIn("escapes the linted checkout", self.messages(result))
 
+    def test_a_missing_identity_input_warns_once_across_commands(self) -> None:
+        # B and T name the same sources; the receipt carries one line per path, not the same
+        # sentence once per command.
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        for cmd in data["commands"][1:3]:
+            cmd["identity"] = ["tests/Proj/NoSuchFile.cs"]
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(0, result.returncode, result.stdout)
+        warnings = [w for w in self.payload(result)["warnings"] if "does not exist yet" in w]
+        self.assertEqual(1, len(warnings), warnings)
+        self.assertIn("NoSuchFile.cs", warnings[0])
+        self.assertIn("UNIT", warnings[0])
+        self.assertIn("RED", warnings[0])
+
     def test_empty_decisive_array_is_the_same_as_omitting_it(self) -> None:
         # "This row decides nothing" is spelled `[]` by every author who reads the schema; treating
         # the empty array as a declaration turned a correct projection into a gate-1 defect.
@@ -413,6 +427,8 @@ class SkillWiringTest(unittest.TestCase):
             "plan_lint.py schema",
             "plan_lint.py fork-attempt",
             "One row decides a criterion",
+            "a documented command is a frozen command",
+            "is decided in PLAN as a row of this contract",
             "caches stay outside the evidence root",
             "`PLAN-LINT`",
             "Exit codes `0` ok, `2` violation",

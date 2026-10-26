@@ -117,8 +117,10 @@ DO (§Normal-mode approval). The incremental form is allowed, but the primary do
 campaign in the campaign-control sense: every step is approved by the user.
 
 **Autonomous mode** has no pauses and no questions: the cheap primary delegates to the existing
-cheap `pdca-orchestrator`; the host-policy fallback (§Roles and host requirements) carries `Notice:`
-and a durable summary, never silently.
+cheap `pdca-orchestrator` with a dispatch carrying the contract, `form` (`UNDECIDED` on a fresh
+entry), the requested overlay or `none`, the mode and the goal path — the orchestrator loads its own
+role and the `assets/briefs/` templates, so the primary does not read the role asset; the host-policy
+fallback (§Roles and host requirements) carries `Notice:` and a durable summary, never silently.
 
 **Campaign owner.** The owner is the **same existing cheap `pdca-orchestrator`**, without a new
 agent: `campaign-control` is a **context** of that role, not a new role. It holds the durable
