@@ -26,18 +26,8 @@ That PLAN returns, together (or after one bounded choice probe):
 - the **overlay**, when the work is code (coder, or coder+.NET);
 - the **carrying claims** with IDs and the acceptance criteria with verification methods.
 
-There is **no cheap semantic classifier** and **no second PLAN on the same content**. A confirmation
-or restatement of the same plan is not a new PLAN. Naming `pdca` is entry to this family, not a form:
-**a fresh, unclassified task enters as `contract: pdca`, `form: UNDECIDED`**; one deliverable is not `form=cycle`; no `cycle-control`/`campaign-control` is named before PLAN (an
-existing-dispatcher stage, not a fourth context/role). A named form/overlay (`pdca-collection`,
-`pdca-incremental`, `pdca-coder`, `pdca-dotnet`) is a constraint: the PLAN works inside it and does
-not silently re-route, while still deciding the method and volume; routing follows it, not a driver
-choice. A missing method/volume rationale is an incomplete PLAN clarified with the same
-planner (no `r`/`n` bump). Details: `references/plan.md` §Entry routing and bounded continuations.
-
-After that PLAN the driver loads exactly one execution contract and passes the plan to it by
-reference. A chosen collection is handed by reference to the cheap primary/collection owner;
-cycle/campaign stay with the same controller:
+After `pdca-planner` classifies the goal, the driver selects the corresponding
+execution rules and delegates execution to the responsible agent.
 
 | Decided form | Execution contract | Owner |
 |---|---|---|
