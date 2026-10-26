@@ -13,6 +13,15 @@ and checks the results against explicit acceptance criteria.
 
 **Driver** is the agent responsible for coordinating PDCA execution. It can be either the primary agent or a delegated orchestration subagent.
 
+**Control modes** determine how PDCA execution is coordinated and whether user approval
+is required. They are independent of the execution form:
+
+- **Normal mode** — the user approves the planner's decisions for each cycle or
+  incremental step before DO begins.
+- **Autonomous mode** — PDCA proceeds without intermediate user approvals or questions.
+  The driver coordinates execution while respecting all permissions, acceptance
+  criteria, verification requirements, and stop conditions.
+
 ## Entry: one PLAN decides the form
 
 The driver first delegates the user's goal to `pdca-planner`. The planner classifies the goal,
@@ -80,9 +89,10 @@ and the blocker must be reported.
 ## Roles and host requirements
 
 A **role** is the combination of responsibilities, permissions, and a required model tier.
-A named subagent implements each role. Roles describe agents' duties, not additional PDCA
-phases: auxiliary roles may support multiple phases. The skill creates no agents and assigns
-no models; the host provides them.
+A role is performed by an agent: a configured subagent, or the primary agent in the
+case of DRIVER. Roles describe agents' duties, not additional PDCA phases: auxiliary
+roles may support multiple phases. The skill creates no agents and assigns no models;
+the host provides them.
 
 **Model tiers** classify models by relative capability and cost, not by model name:
 
@@ -96,9 +106,7 @@ by that host binding, not by an agent name or its label.
 
 **Orchestration is cheap-only:** the driver is the cheap-tier primary, or the cheap
 `pdca-orchestrator` it dispatches. A primary may drive the cycle **only when its effective
-host-profile tier is cheap** — by effective tier, not by agent name. A medium/strong primary does
-**not** drive the cycle: it hands the design to the cheap primary, preserving refs, and keeps its
-decision role outside the cycle.
+host-profile tier is cheap** — by effective tier, not by agent name.
 
 | Role | Agent | Responsibilities | Permissions | Tier | Fallback if missing |
 |---|---|---|---|---|---|
@@ -107,7 +115,7 @@ decision role outside the cycle.
 | DO (hands) | `pdca-executor` | Execute the task, apply fixes, gather run evidence, and record cycle state | `edit`/`bash`/`read` allowed within the host and cycle constraints | cheap | resource blocker |
 | CHECK (verdict) | `pdca-check` | Independently judge evidence against acceptance criteria and route findings | Default-deny; scoped read of `.pdca/**` evidence, no delegation or writes | medium | resource blocker |
 | ESCALATE | `pdca-escalate` | Resolve difficult, disputed, or high-risk decisions within existing gates | Read-only inspection, restricted non-mutating commands, facts via permitted `pdca-scout` delegation; no state-changing execution | strong | resource blocker |
-| RUNNER | `pdca-orchestrator` | Coordinate delegation, handoffs, and cycle/campaign state without deciding or judging | Delegation to allowed subagents only; no edits, writes, or shell execution | cheap | flat cheap primary + `Notice:` |
+| DRIVER | cheap-tier primary agent or `pdca-orchestrator` | Coordinate delegation, handoffs, and cycle/campaign state without deciding or judging | Delegate to authorized subagents; the `pdca-orchestrator` implementation has no edits, writes, or shell execution | cheap | flat cheap primary + `Notice:` if `pdca-orchestrator` is unavailable |
 
 ACT is finalized through the existing driver and executor responsibilities; it has no separate
 subagent role.
@@ -116,9 +124,9 @@ Ready-made agent definitions ship in `assets/opencode-agents/` with the `# tier:
 above. Model bindings belong only in the host profile, never in a role markdown file.
 
 **Setup (once):** copy `assets/opencode-agents/*.md` into the host's agent directory and restart;
-allow the primary to dispatch the roles above plus `pdca-orchestrator`, and allow nested delegation
-so the runner may delegate. A runner that drives a child cycle needs the same allowlist and may
-**not** widen the expensive roles' permissions.
+allow the primary to dispatch the listed subagents, including `pdca-orchestrator`, and allow
+nested delegation so a delegated driver may delegate. A driver that coordinates a child cycle
+needs the same allowlist and may **not** widen the expensive roles' permissions.
 
 A required-but-unavailable role is a **resource blocker** (normal: report to the user; autonomous:
 `Notice:` plus a recorded summary), never a silent run without the role; a host that denies the
