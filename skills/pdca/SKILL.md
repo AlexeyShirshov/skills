@@ -39,7 +39,7 @@ For **Bounded Execution**, the planner selects task-specific skills when needed:
 
 - Non-coding tasks: no coding skill.
 - General programming tasks (including Go or Rust): `pdca-coder`.
-- .NET programming tasks: `pdca-coder` and `pdca-dotnet`.
+- .NET programming tasks: `pdca-dotnet`.
 
 This selection does not change the execution form.
 
