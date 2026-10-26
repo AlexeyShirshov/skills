@@ -49,6 +49,10 @@ This selection does not change the execution form.
   sufficiently known and bounded before DO. The method may come from the user's specification
   or facts gathered by `pdca-scout` at the planner's request. No incremental execution or
   decomposition into independent goals is needed.
+  The planner also determines whether a specialized skill is required: no additional coding
+  skill for non-coding tasks, `pdca-coder` for general programming tasks, or `pdca-dotnet` only
+  for .NET programming tasks. The driver loads the selected skill. This does not change the
+  execution form.
 - **Incremental Execution** — the method is unknown **or** the volume is unknown, or the composition/choice
   of the next actions genuinely depends on knowledge not yet obtained and cannot be justified now.
 - **Collection** — a set of independent goals.
