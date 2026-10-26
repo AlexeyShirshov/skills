@@ -53,12 +53,7 @@ This selection does not change the execution form.
   of the next actions genuinely depends on knowledge not yet obtained and cannot be justified now.
 - **Collection** — a set of independent goals.
   Each goal is processed by a separate, complete
-  invocation of the PDCA skill, including its own
-  classification, execution, verification, and completion.
-
-**One deliverable is not a known method.** A finished result, file or format does not establish the
-method; name the justified method and bound. Permissible assumptions may bound a calculation-only
-result but do not evidence a decision-critical mechanism.
+  invocation of the PDCA skill.
 
 The PLAN does not have to prove feasibility up front or plan all the unknown work: when facts are
 missing, a **bounded probe** is allowed and the form is refined from what it returns — a probe is
