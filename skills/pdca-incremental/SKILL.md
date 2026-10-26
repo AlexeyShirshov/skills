@@ -1,6 +1,6 @@
 ---
 name: pdca-incremental
-description: "Incremental campaign contract of the PDCA family: one verifiable goal whose method or volume is unknown, or whose next action depends on knowledge not yet obtained, advanced as a sequence of credited steps by the existing cheap `pdca-orchestrator` in campaign-control. Loaded by the base PLAN when the form is incremental; the user explicitly names `pdca-incremental` to force it."
+description: "Incremental campaign contract of the PDCA family: one verifiable goal whose method or volume is unknown, or whose next action depends on knowledge not yet obtained, advanced as a sequence of credited steps by the designated cheap driver. Loaded by the base PLAN when the form is incremental; the user explicitly names `pdca-incremental` to force it."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
@@ -43,31 +43,44 @@ decomposition chosen after the previous result. A ready list of grilled tasks is
 of candidates, never a campaign plan: every goal still goes through discovery and its own PLAN, and
 the order may change after an accepted result.
 
-## Ownership
+## Driver coordination
 
-**`campaign-control` is a context of the existing cheap `pdca-orchestrator`, not a new role**
-(base §Control modes and the campaign owner). In it the owner:
+The DRIVER role is defined in the base (§Execution coordination) and applies to every execution
+form. In Incremental Execution, the designated cheap driver coordinates durable state, accepted
+results, counters, accumulated knowledge, effort accounting, and recovery across all steps.
+It dispatches the existing roles for each step's cycle inline, without spawning a new
+`pdca-orchestrator` per step. Only `pdca-planner` decides when the next step begins, and
+`pdca-executor` performs the status-file writes.
 
-- holds the durable campaign status, the shared counters, the accumulated knowledge and the effort accounting;
-- executes each step's cycle **inline** in its own session with the existing role delegation
-  (`pdca-planner`/`pdca-executor`/`pdca-scout`/`pdca-check`), without recursively spawning a new
-  `pdca-orchestrator` per step or per tool call;
-- starts the next step **only on the planner's decision** at the step boundary;
-- owns recovery of the campaign state (§Recovery).
+The driver neither classifies the task, replans, nor judges in place of `pdca-check`. It
+cannot waive any gate, counter, or permission.
 
-It does not classify the task, does not replan, does not judge in place of `pdca-check`, and cannot
-waive a gate, a counter or a permission. A step's cycle is not handed to a separate cycle-control
-controller: the campaign's sequence belongs to this one context.
+**Normal mode.** The cheap-tier primary drives; the user approves each step's plan before
+that step's DO (base §Normal-mode approval). Missing or mismatched approval is an
+**approval-needed checkpoint**, never permission to start DO or a reason for a fresh PLAN.
+Autonomous mode has no intermediate plan-approval gate.
 
-**Normal mode.** The flat cheap primary drives and **the user approves each step's plan** before
-that step's DO (base §Normal-mode approval). The primary does not take on campaign-control
-semantics: the campaign record is still written by `pdca-executor` from the reports, every step is
-approved, and a missing or mismatched approval is an **approval-needed checkpoint** — never DO and
-never a fresh PLAN. Autonomous mode has no approval slots and no questions.
+**A campaign as a collection item.** One designated cheap driver coordinates its steps and
+state without competing coordinators. The collection's batch/lane coordination remains
+separate, and the item gains no extra rights from being composed (§Campaign invariants).
 
-**A campaign as a collection item.** One **designated** existing cheap controller owns its campaign
-state — no competing writers; the collection's batch/lane ownership stays as it is, and the campaign
-gains no extra rights from being composed (§Campaign invariants).
+## Lens: probe, increment and step
+
+A **lens** is the depth and breadth at which the goal is understood sufficiently to act:
+what is known, which boundary opens now, and what remains unknown.
+
+- **Probe** — a bounded computation, measurement, or action within a step. A tool call
+  does not start a new PLAN or require its own CHECK. A probe is bounded by the decision
+  it investigates, its observable outcomes, and supporting evidence, not by a minute cap.
+- **Increment** — a completed opening of the chosen part or question: a justified change
+  to the result **or** decision-relevant knowledge. Several cheap, related probes may
+  produce one increment; the entire project must not be treated as one step.
+- **Step** — a bounded unit of incremental execution with an observable result and a stop
+  condition. Its credit is a result change or knowledge that affects the next decision.
+
+A rejected candidate can produce a **knowledge increment** if its findings meaningfully
+change the next choice; the rejected candidate itself is not credited. Numeric gain is a
+specialization of measurable goals, not a universal requirement.
 
 ## Campaign invariants
 
@@ -77,7 +90,7 @@ gains no extra rights from being composed (§Campaign invariants).
    refinement: it is **a new campaign with a new baseline**, and the old revisions and accepted
    results are kept — backfill is forbidden. The one exception is a provisional threshold, which
    follows §Threshold calibration.
-2. **One credited increment per step.** Credit is the base's (§Lens): a justified change of the
+2. **One credited increment per step.** Credit follows §Lens: a justified change of the
    result **or** confirmed knowledge that changes the next choice or reduces relevant uncertainty.
    A negative candidate that yields such knowledge is credited as the **knowledge increment**, not
    as the rejected candidate. For a measurable goal the credit is one valid measurement by the
@@ -214,16 +227,16 @@ interfere with the step's gates. The dispatch selection rule is the base's: the 
 it) applies when the step's work is code — a step that touches no code runs without an overlay. The
 form is never re-decided per step, and the overlay never opens a second PLAN or a second status.
 
-If the step falls short, this is a loop-back **inside the step** — the base §Lens revision of the
+If the step falls short, this is a loop-back **inside the step** — the §Step boundary revision of the
 same step identity — not "a next step with a shortfall". A red result is kept. Exhausting revisions
 and attempts follows the base: escalation or a STOP with the recorded remainder, never a silent move
 to the next step.
 
 ## Step boundary
 
-The base rule (§Lens, "step boundary — one planner call") governs; the campaign adds only its
-bookkeeping. After the step's CHECK, **one** planner call decides and, in the same turn, emits
-either a brief or a STOP:
+At the boundary after the step's CHECK, **one** planner call decides and, in the same
+turn, emits either the next brief or a STOP. The driver's work is routing and
+bookkeeping, not a second PLAN:
 
 - **accept the increment** — on a positive independent CHECK: a change of the result **or**
   decision-relevant knowledge, including an accepted negative candidate (credited as a knowledge
@@ -237,19 +250,24 @@ either a brief or a STOP:
   actual cost and attempt counts, and an unaccepted red step is never converted into extra accepted
   progress.
 
-**A separate final check adds no planner call.** It is not a step: its brief and its **pre-set STOP
-condition** are issued at the last step boundary. On PASS the campaign owner records the STOP from
-that condition without a new planner call — routing a pre-approved decision, not its own verdict; a
-non-PASS is a planner loop-back. STOP with `met`/`limited` requires the whole-goal CHECK — combined
-with the increment's CHECK or separate (base §Transition gates, gate 3); `unreachable` requires the
-proven remainder (§Stop).
+**Whole-goal verification.** A STOP with `met`/`limited` requires a whole-goal CHECK,
+combined with the increment's CHECK when it already covers every original requirement and
+carrying claim, or performed separately when the last CHECK was local (base §Transition
+gates, gate 3). After a local CHECK, the planner issues the final-check brief and a
+**pre-set completion condition in the same boundary call**. A whole-goal PASS on all
+carrying claims and applicable original requirements permits the designated outcome;
+otherwise the result loops back to the planner. On PASS, the driver routes the
+pre-approved STOP to `pdca-executor` for recording — without a new planner call or an
+independent verdict. A separate final CHECK is not a step and adds no planner call.
+`unreachable` still requires the proven remainder (§Stop).
 
 Planner calls are **accounted**, not capped: the successful path is `1 + number of steps`, plus
-genuine revisions (§Strategic revision), the current step's loop-backs and bounded same-pending-PLAN
-clarifications/probe refinements. Separate DECIDE → brief → STOP turns on the same content are a
-repeated PLAN and are not allowed. Example for one increment: initial PLAN → local
-CHECK → step boundary (acceptance + final-check brief with the STOP condition) → final CHECK PASS →
-STOP — two calls.
+genuine revisions (base §Strategic revision), the current step's loop-backs, and bounded
+continuations of the **same pending PLAN** for clarification or probe refinement. There are
+no hidden exempt planner calls: separate DECIDE → brief → STOP turns on unchanged content
+are a repeated PLAN and are not allowed. Example for one increment: initial PLAN → local
+CHECK → step boundary (acceptance + final-check brief with the STOP condition) → final
+CHECK PASS → STOP — **two calls**.
 
 ## Acceptance and carry-over
 
@@ -376,7 +394,7 @@ The base's recovery order and the campaign-recovery rule (§Recovery) apply; cam
   the status. **Accepted steps are never repeated**, `N`/`r`/`n`, the accounting and the defect history are **not reset**,
   and the work continues from the last checkpoint. An interrupted dispatch is retried no more than
   the base retry rules allow.
-- Context compression/exhaustion of the campaign-control session is a special case of controller
+- Context compression/exhaustion of the driver's incremental execution session is a special case of controller
   loss: a **planned handover to a new session of the same cheap `pdca-orchestrator`** restores from
   the status at the last checkpoint — not a new role and not a second writer (the previous session
   is finished by then).
@@ -390,9 +408,10 @@ at 50 KiB / 2000 lines):
 
 - `references/status.md` — campaign status template and field rules, the preparation document, the
   baseline-bootstrap record and the checkpoint. Load at bootstrap and at every status write.
-- `../pdca/SKILL.md` — the base: one PLAN and the forms, control modes and the campaign owner,
-  lens/probe/increment and the step boundary, gates, counters, claims and veto, effort policy, overlays,
-  strategic revision, recovery, escalation, generic constraints, red flags.
+- `../pdca/SKILL.md` — the base: one PLAN and the forms, control modes and driver coordination,
+  gates, counters, claims and veto, effort policy, overlays, strategic revision, recovery,
+  escalation, generic constraints, red flags. Lens/probe/increment definitions and step
+  boundaries are governed by this incremental contract.
 - `../pdca/references/plan.md`, `../pdca/references/check.md`, `../pdca/references/act.md` — phase
   detail (plan fields and calibration, the verdict and the veto, the status schema and the progress
   log).
