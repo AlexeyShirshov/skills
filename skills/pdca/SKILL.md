@@ -134,7 +134,7 @@ fallback must **never** be bypassed. If `pdca-orchestrator` is unavailable (abse
 forbidden or too shallow) in autonomous mode, fall back to the flat cheap primary with `Notice:` and
 the durable reason; in normal mode, report to the user.
 
-## Control modes and execution
+## Control modes
 
 **Normal mode.** The cheap-tier primary agent acts as the driver.
 The user approves the planner's decisions before each cycle's
@@ -143,15 +143,15 @@ or incremental step's DO (§Normal-mode approval).
 **Autonomous mode.** The primary agent delegates PDCA coordination
 to `pdca-orchestrator` when available. The driver invokes the
 required agents, manages execution state, and advances the process
-based on the planner's decisions and CHECK results.
-
-No intermediate user approval is required. All permissions,
+based on the planner's decisions and CHECK results. In autonomous
+mode, no intermediate user approval is required. All permissions,
 phase gates, verification requirements, and stop conditions
 remain in force. If delegation is unavailable, follow the
 fallback rules in §Roles and host requirements.
 
-**Execution coordination.** The driver manages execution state
-in every execution form.
+## Execution coordination
+
+The driver manages execution state in every execution form.
 
 For Incremental Execution, the same driver coordinates the
 entire sequence of steps without spawning a new driver for
