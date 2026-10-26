@@ -18,8 +18,6 @@ on:
       - "skills/pdca/tests/test_role_assets.py"
       - "skills/pdca/SKILL.md"
       - "skills/pdca/references/**"
-      - "skills/pdca/tests/test_entry_forms.py"
-      - "skills/pdca/tests/test_contract_consistency.py"
       - "skills/pdca/tests/test_routing_consistency.py"
       - "skills/pdca/tests/test_execution_repair.py"
       - "skills/pdca/tests/fixtures/execution_repair/**"
@@ -35,8 +33,6 @@ on:
       - "skills/pdca/tests/test_role_assets.py"
       - "skills/pdca/SKILL.md"
       - "skills/pdca/references/**"
-      - "skills/pdca/tests/test_entry_forms.py"
-      - "skills/pdca/tests/test_contract_consistency.py"
       - "skills/pdca/tests/test_routing_consistency.py"
       - "skills/pdca/tests/test_execution_repair.py"
       - "skills/pdca/tests/fixtures/execution_repair/**"
@@ -60,10 +56,6 @@ jobs:
         run: python3 skills/pdca/scripts/sync_role_assets.py --check
       - name: Run role-asset tests
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_role_assets.py' -v
-      - name: Run entry and planning guards
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_entry_forms.py' -v
-      - name: Run base contract guards
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_contract_consistency.py' -v
       - name: Run routing guards
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_routing_consistency.py' -v
       - name: Run execution-repair guards

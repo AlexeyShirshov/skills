@@ -10,7 +10,7 @@ recorded exceptions, and the same exception classes repeated across units.
 After the family redesign these rules live **once** in the base contract and its
 phase references; the coder and .NET overlays inherit them and must not copy
 them.  This module pins both facts.  It is a *presence* guard over the runtime
-text, like `test_contract_consistency.py`; it does not execute a cycle.
+text, like the other presence guards; it does not execute a cycle.
 
 Run:
     python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
