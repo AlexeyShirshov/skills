@@ -48,8 +48,7 @@ This selection does not change the execution form.
 - **Bounded Execution** — execution of a single goal for which the method and scope are
   sufficiently known and bounded before DO. The method may come from the user's specification
   or facts gathered by `pdca-scout` at the planner's request. No incremental execution or
-  decomposition into independent goals is needed. Sequential dependencies and known bounded
-  branches do not by themselves make execution incremental.
+  decomposition into independent goals is needed.
 - **Incremental Execution** — the method is unknown **or** the volume is unknown, or the composition/choice
   of the next actions genuinely depends on knowledge not yet obtained and cannot be justified now.
   Mere output→input chaining and a known algorithm with a fixed volume are not incremental.
