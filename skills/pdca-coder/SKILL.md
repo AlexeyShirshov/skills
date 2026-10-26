@@ -121,8 +121,8 @@ CHECK detail: `references/check.md`.
 
 ### Code evidence requirements
 
-- **Every run**: exit status, key numbers (passed/failed/skipped, warnings, coverage), and the path to
-  the full log — never the log in the message.
+- **Every run**: exit status (read from `<stem>.rc`, never from prose), key numbers (passed/failed/
+  skipped, warnings, coverage), and the path to the full log — never the log in the message.
 - **Diff facts** come from a non-author (`pdca-scout`: changed files, `git diff --stat`, `file:line`).
 - **A regression test is red↔green** — it failed without the fix and passes with it, both runs by
   `pdca-executor`, both exit codes reported. "Passed once" proves nothing.
@@ -133,6 +133,10 @@ CHECK detail: `references/check.md`.
 - **A report ≠ a result**: "build should pass", "tests look green", a self-written summary — order the
   run. The base evidence chain (re-run → observe → judge) is unchanged; this overlay only fixes what
   a code run must return.
+- **The candidate carries its own index**: the plan-pinned `manifest.json` with a row per `required`
+  criterion (evidence pointers, not restatements) and the staged `plan_lint` receipt for the
+  `commands.json` projection. DO writes both before reporting the candidate; without them there is
+  no candidate, and CHECK spends the round re-gathering instead of judging.
 
 ### Build and test command forms
 
@@ -153,8 +157,11 @@ the host capacity, expected outcome declared) applies unchanged. Code-specific a
   editor/agent stack.
 - **A run that selects zero targets is a failed run** whatever its exit status (base vacuous-run rule;
   in code: zero discovered tests, zero executed cases, an empty result set).
-- **Logs are streamed, not buffered**: `… 2>&1 | tee <log>` (or `| tail -f`), keeping
-  `rc=${PIPESTATUS[0]}`; piping the run through `| tail` buffers to EOF and looks hung.
+- **Every run leaves three artifacts, not one log**: `cmd > <stem>.out 2> <stem>.err; printf
+  '%s\n' $? > <stem>.rc`. A merged stream (`2>&1`) erases exactly what a negative criterion claims
+  (empty stdout, non-empty stderr), and an empty log without `.rc` cannot be told apart from a run
+  that never started. Don't pipe the run through `| tail` (it buffers to EOF and looks hung); a
+  `| tee` is optional for visibility and never replaces the artifacts.
 - **Never record a run that did not start**; every started run is reported, including failed and
   cancelled ones.
 

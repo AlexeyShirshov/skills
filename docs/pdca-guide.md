@@ -173,10 +173,10 @@ Five principles explain that table.
    the status file**.
 4. **The checker is independent of the author.** The check did not produce the result and does not
    examine the product artifact/diff itself: it judges by the aggregated brief, which includes
-   fresh run results and facts from a non-author (`pdca-scout`). At the same time it **may open the
-   cycle's own evidence** — with a limited `read` of the status file, the evidence directory and
-   the manifest (never the product artifact) — to reconcile the contract's rows against the
-   references.
+   fresh run results and the **observation pack** of a non-author (`pdca-scout`) — mandatory before
+   every CHECK. At the same time it **may open the cycle's own evidence** — with a limited, targeted
+   `read` of the status file, the evidence directory and the manifest (never the product artifact) —
+   to reconcile the contract's rows against the references.
 5. **Facts are separated from decisions.** Gathering is on the cheap tier (`pdca-scout`), judgement on
    the medium tier (`pdca-planner`/`pdca-check`), and an expensive escalation only by trigger. This is
    economics: expensive roles are not expanded and do not substitute for cheap ones.
@@ -184,7 +184,8 @@ Five principles explain that table.
 **A tier ≠ an authority.** `pdca-escalate` sits on the strong tier, but its permissions are narrow:
 read and `pdca-scout` only, no edits and no state-changing commands. `pdca-executor` is on the cheap
 tier, yet it is exactly the one allowed `edit` and `bash`. `pdca-planner` and `pdca-check` are
-medium but default-deny: they need neither files nor search, their only input is the brief. The
+medium but default-deny: they need neither edits nor search, their input is the brief and, for the
+check, the scoped `.pdca/**` evidence the brief names. The
 orchestrator is cheap and may call subagents, yet it neither reads nor writes itself. In other
 words, the tier determines **which model to call**, while the permission rules determine **what a
 role is allowed to do**.
@@ -646,9 +647,14 @@ evidence itself: it builds the chain.
 - **A re-run — the executor:** name the proving action and perform it **again**; return the exit
   code, the key numbers and the **path** to the log, not the log.
 - **Facts — `pdca-scout`:** the changed artifacts and what changed (pointers), from a non-author.
+  Before **every** CHECK it delivers the **observation pack**: one `observed | assumed | unverified`
+  row per criterion, bound to the frozen result identity. That pack is the only channel for a
+  deliverable the checker cannot read (its scope is `.pdca/**`), so the deliverable is observed where
+  it lives and never moved to fit the scope.
 - **Judgement — the check:** the reports go to the check (gates 2/3); it decides whether they prove
   the assertion. To reconcile rows it may open the **cycle's own evidence** (status/evidence/
-  manifest), but not the product artifact.
+  manifest), but not the product artifact, and then only the rows it disputes — a targeted lookup,
+  not an ingestion of the evidence tree.
 - **A report ≠ a result.** "The agent said it succeeded" and "it should pass" are not evidence.
 - **A regression test is red↔green:** it fails without the fix and passes with it; the executor
   reports both runs and both exit codes. "It passed once" proves nothing.

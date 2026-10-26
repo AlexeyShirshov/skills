@@ -3,3 +3,8 @@ opencode/plugins/*/*.tgz
 # Python bytecode left behind by the skill test suites
 __pycache__/
 *.pyc
+
+# PDCA: `.pdca/status/**` is the durable record and stays in the index; evidence
+# and staged helpers are local by-products of a run (docs/install.md).
+.pdca/*/rv*/
+.pdca/scripts/

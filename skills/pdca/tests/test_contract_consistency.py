@@ -1016,5 +1016,168 @@ class HelperStagingPrerequisiteTest(PhraseAssertions):
         self.assertPhrase("installed skill directory", self.executor)
 
 
+class ManifestGateTest(PhraseAssertions):
+    """The evidence index is a gate, not a habit: CHECK reconciles the pinned manifest, and a
+    missing one is a re-gather rather than an implementation defect.
+
+    Rule-presence only: this pins the contract wording, not a model's behaviour.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.check = norm(read(REFERENCES / "check.md"))
+        cls.check_asset = norm(read(ASSET_AGENTS / "pdca-check.md"))
+        cls.plan = norm(read(REFERENCES / "plan.md"))
+
+    def test_check_reference_opens_the_manifest_first(self):
+        self.assertPhrase("## Frozen manifest", self.check)
+        self.assertPhrase("opens it first", self.check)
+        self.assertPhrase("prose tables and the author's summary are not a substitute", self.check)
+        self.assertPhrase("missing required report, not an implementation defect", self.check)
+        self.assertPhrase("does not grow n/3", self.check)
+
+    def test_check_role_carries_the_same_gate(self):
+        self.assertPhrase("Open the pinned manifest.json first", self.check_asset)
+        self.assertPhrase("does not grow n/3", self.check_asset)
+
+    def test_brief_carries_the_plan_by_reference(self):
+        self.assertPhrase("by reference", self.check_asset)
+        self.assertPhrase("a brief that restates the plan tables adds no reach", self.check)
+
+    def test_plan_makes_the_projection_mandatory(self):
+        self.assertPhrase("ships no projection is a PLAN defect", self.plan)
+        self.assertPhrase("until it exists there is no candidate to check", self.plan)
+
+    def test_plan_requires_the_manifest_before_the_candidate(self):
+        self.assertPhrase("no manifest is not reported as a candidate", self.plan)
+
+
+class CheckObservationGateTest(PhraseAssertions):
+    """CHECK is dispatched on a manifest and a non-author observation, not on a reading tour.
+
+    A check that re-reads the whole evidence tree pays for the verdict twice; and for a deliverable
+    outside `.pdca/**` it has no legal read at all, which is how a result gets moved out of the path
+    the goal names. Rule-presence only: this pins the contract wording, not a model's behaviour.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.raw_skill = read(BASE)
+        cls.skill = norm(cls.raw_skill)
+        cls.check = norm(read(REFERENCES / "check.md"))
+        cls.plan = norm(read(REFERENCES / "plan.md"))
+        cls.check_asset_raw = read(ASSET_AGENTS / "pdca-check.md")
+        cls.check_asset = norm(cls.check_asset_raw)
+        cls.orch = norm(read(ASSET_AGENTS / "pdca-orchestrator.md"))
+        cls.check_brief = norm(read(SKILL_DIR / "assets/briefs/check.md"))
+        cls.scout_brief = norm(read(SKILL_DIR / "assets/briefs/scout.md"))
+
+    def test_gate_requires_manifest_and_observation_before_check(self):
+        gate = norm(between(self.raw_skill, "2. **DO → CHECK**", "3. **CHECK → ACT**"))
+        self.assertPhrase("frozen manifest.json exists with a row per required ID", gate)
+        self.assertPhrase("observation pack", gate)
+        self.assertPhrase("re-gather, not a CHECK round", gate)
+
+    def test_observation_is_mandatory_for_every_check(self):
+        self.assertPhrase("required for every CHECK, not only for a probe", self.skill)
+        self.assertPhrase("observed / assumed / unverified", self.skill)
+        self.assertPhrase("never moved to fit the scope", self.skill)
+
+    def test_check_reads_targeted_and_never_the_product(self):
+        self.assertPhrase("Read economy", self.check_asset)
+        self.assertPhrase("targeted", self.check_asset)
+        self.assertPhrase("never moved into", self.check_asset)
+        self.assertPhrase("re-check after a bounded repair judges the delta", self.check_asset)
+        self.assertPhrase("observation pack is mandatory for every step and every re-check", self.check)
+
+    def test_check_role_grants_a_scoped_grep(self):
+        self.assertRegex(self.check_asset_raw, r'(?m)^  grep:\n    "\.pdca/\*\*": allow$')
+        self.assertIn('"*": deny', self.check_asset_raw, "the scoped allow-list stays default-deny")
+
+    def test_orchestrator_has_the_check_dispatch_gate(self):
+        self.assertPhrase("CHECK dispatch gate", self.orch)
+        self.assertPhrase("observation pack", self.orch)
+        self.assertPhrase("names no path outside that scope", self.orch)
+        self.assertPhrase("does not grow n/3", self.orch)
+
+    def test_plan_pins_the_manifest_and_the_deliverable_path(self):
+        self.assertPhrase("gate-1 field", self.plan)
+        self.assertPhrase("observation route", self.plan)
+        self.assertPhrase("deliverable keeps the path the goal names", self.plan)
+        self.assertPhrase("changed goal", self.plan)
+
+    def test_briefs_carry_the_pack_and_the_read_scope(self):
+        self.assertPhrase("observation pack", self.check_brief)
+        self.assertPhrase("read scope", self.check_brief)
+        self.assertPhrase("is in scope", self.scout_brief)
+        self.assertPhrase("the checker cannot read it", self.scout_brief)
+
+    def test_executor_records_the_pack_and_never_moves_the_result(self):
+        executor = norm(read(ASSET_AGENTS / "pdca-executor.md"))
+        self.assertPhrase("Observation pack and manifest", executor)
+        self.assertPhrase("kind: observation", executor)
+        self.assertPhrase("is not a cosmetic anchor", executor)
+
+
+class CaptureShapeTest(PhraseAssertions):
+    """A run leaves three artifacts: the exit status and both streams are evidence, not prose.
+
+    Rule-presence only: this pins the contract wording, not a model's behaviour.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.plan = norm(read(REFERENCES / "plan.md"))
+        cls.check = norm(read(REFERENCES / "check.md"))
+        cls.coder = norm(read(FAMILY / "pdca-coder/SKILL.md"))
+        cls.dotnet = norm(read(FAMILY / "pdca-dotnet/SKILL.md"))
+        cls.dotnet_plan = norm(read(FAMILY / "pdca-dotnet/references/plan.md"))
+
+    def test_plan_contract_declares_the_capture(self):
+        self.assertPhrase("capture is declared", self.plan)
+        self.assertPhrase("<stem>.out, <stem>.err, <stem>.rc", self.plan)
+        self.assertPhrase("cannot be told apart from a run that never started", self.plan)
+
+    def test_no_overlay_prescribes_a_merged_stream(self):
+        for name, text in (("coder", self.coder), ("dotnet", self.dotnet),
+                           ("dotnet/references/plan.md", self.dotnet_plan)):
+            with self.subTest(doc=name):
+                self.assertNotIn("2>&1 | tee", text, "a merged capture is not evidence")
+
+    def test_coder_overlay_states_the_three_artifacts(self):
+        self.assertPhrase("Every run leaves three artifacts, not one log", self.coder)
+        self.assertPhrase("cmd > <stem>.out 2> <stem>.err", self.coder)
+        self.assertPhrase("read from <stem>.rc", self.coder)
+
+    def test_check_reads_the_artifact_not_the_value_field(self):
+        self.assertPhrase("the manifest's value/exit fields point at evidence", self.check)
+
+
+class BriefTemplateTest(PhraseAssertions):
+    """Every dispatch has a filled-to-shape brief; the evidence slots cannot be silently dropped."""
+
+    ROLES = {"scout": "facts wanted", "plan": "form discriminators", "do": "capture",
+             "check": "manifest", "act": "Bookkeeping only"}
+
+    def test_every_cycle_role_has_a_small_template(self):
+        for role, anchor in self.ROLES.items():
+            path = SKILL_DIR / "assets/briefs" / ("%s.md" % role)
+            with self.subTest(role=role):
+                self.assertTrue(path.is_file(), "missing brief template for %s" % role)
+                self.assertLessEqual(path.stat().st_size, 4096, "brief template grew past one screen")
+                self.assertPhrase(anchor, norm(read(path)))
+
+    def test_do_template_carries_the_evidence_slots(self):
+        text = norm(read(SKILL_DIR / "assets/briefs/do.md"))
+        for token in ("<stem>.out", "<stem>.rc", "manifest", "commands.json", "plan_lint"):
+            with self.subTest(token=token):
+                self.assertPhrase(token, text)
+
+    def test_orchestrator_points_at_the_templates(self):
+        agent = norm(read(ASSET_AGENTS / "pdca-orchestrator.md"))
+        self.assertPhrase("assets/briefs/", agent)
+        self.assertPhrase("missing mandatory slot", agent)
+
+
 if __name__ == "__main__":
     unittest.main()

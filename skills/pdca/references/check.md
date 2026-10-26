@@ -5,10 +5,39 @@ what the verdict must contain and how a finding is bound.
 
 ## What CHECK receives
 
-The brief (criteria, carrying claims, the frozen result identity) plus the `pdca-scout`
-observation; the checker may open the cycle's own evidence artifacts under `.pdca/**` directly
-(status, manifest, logs) — never the product artefact. The author's own restatement is not
-evidence.
+The brief (criteria, carrying claims, the frozen result identity, the pinned manifest) plus the
+`pdca-scout` **observation pack**; the checker may open the cycle's own evidence artifacts under
+`.pdca/**` directly (status, manifest, logs) — never the product artefact. The author's own
+restatement is not evidence.
+
+The observation pack is **mandatory for every step and every re-check, before the dispatch**: for
+each criterion it states `observed | assumed | unverified` with a pointer, and it binds the
+observation to the frozen result identity (SHA-256, size and line count; for a document, the lines
+the criterion rests on). It is the only channel by which a deliverable living outside `.pdca/**`
+reaches the verdict. A brief that asks the checker to read such a path is incomplete, and a
+deliverable moved into `.pdca/**` to fit the scope is a changed goal — the planner's `limited`
+decision, never a CHECK workaround.
+
+Reading is **targeted**: the manifest first, then only the rows the verdict disputes; a log is
+searched at the line a criterion names, a source file is opened only for the equation a finding
+depends on. Ingesting the whole evidence tree per dispatch costs the verdict nothing and is itself a
+finding about that round. A re-check after a bounded repair judges the **delta** plus the same pack.
+
+Pass the plan **by reference** (the pinned status file and manifest path) and spend the brief on the
+delta; a brief that restates the plan tables adds no reach to the verdict.
+
+## Frozen manifest
+
+PLAN pins one `manifest.json` (`../references/plan.md` §Frozen evidence manifest); CHECK opens it
+first and reconciles every `required` ID against its row. The status file's prose tables and the
+author's summary are **not** a substitute for it. No manifest, a `required` ID with no row, or a row
+still `open` leaves the criterion `unverified`: the verdict is a re-gather carrying the exact append
+instruction — never `met`. A missing manifest is a missing required report, not an implementation
+defect, so it does not grow `n/3`.
+
+For an exit status or a stream criterion the resolving artifact is the capture itself
+(`<stem>.rc`, `<stem>.err`, `<stem>.out`): the manifest's `value`/`exit` fields point at evidence,
+they do not replace it.
 
 ## Premises and inference scope
 

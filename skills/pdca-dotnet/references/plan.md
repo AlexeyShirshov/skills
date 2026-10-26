@@ -302,9 +302,11 @@ Any test invocation (`dotnet test`/`dotnet run` on a test project) in DO or CHEC
 - **Serialize heavyweight suites:** never two test projects in parallel (e.g. `core` + `sqlite`), and
   never beside the editor/agent stack (agent workers, VS Code, LSPs); run the affected project alone.
   A DB/provider suite runs at the stream boundary, not per edit.
-- **Stream the log, never `| tail`:** a long run piped through `| tail` buffers to EOF and looks hung.
-  Use `… 2>&1 | tee <log>` (`stdbuf -oL` for live progress) or `| tail -f`; keep
-  `rc=${PIPESTATUS[0]}`. Always return the log path **and** the exit code.
+- **Capture three artifacts, never a merged log:** `cmd > <stem>.out 2> <stem>.err; printf '%s\n'
+  $? > <stem>.rc` (base §Plan command contract). A merged `2>&1` stream erases what a negative
+  criterion claims, and an empty log without `.rc` cannot be told apart from a run that never
+  started. Never `| tail` (buffers to EOF and looks hung); `| tee` is for visibility only. Always
+  return the three paths **and** the exit code.
 
 A run that selects zero targets is a failed run whatever its exit status (base vacuous-run rule; in
 code: zero discovered tests, zero executed cases), and every decisive run names its minimum selected

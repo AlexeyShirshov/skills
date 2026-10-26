@@ -140,6 +140,28 @@ Load a contract through the host's skill mechanism by exact ID. If the host cann
 the skill-loading fallback to an **authorized role** (`pdca-scout`), which reads the installed
 `SKILL.md` and returns it; that is not a read-wildcard and not workspace discovery.
 
+## Dispatch briefs
+
+Fill the matching template from the installed `pdca` skill — `assets/briefs/` with `scout`, `plan`,
+`do`, `check`, `act` — instead of composing a brief from memory. The plan travels **by reference**
+wherever the role can read `.pdca/**` (check reads its scoped status and manifest); `pdca-planner`
+reads nothing, so its brief carries the facts and the form discriminators verbatim. Every slot is
+either filled or explicitly `none`: a missing mandatory slot — capture shape, manifest path,
+`commands.json` plus the `plan_lint` receipt — is exactly what turns the round into a re-gather.
+
+**CHECK dispatch gate.** Before dispatching `pdca-check`, confirm two slots from the role reports —
+never by reading yourself: the frozen `manifest.json` exists with a row per `required` ID, and a
+`pdca-scout` **observation pack** for this step exists, per criterion `observed | assumed |
+unverified`, bound to the frozen result identity (SHA-256, size, line count) of what it observed.
+Missing either is a **re-gather** — the executor writes the missing manifest row, the scout observes
+— not a CHECK round, and a missing required report does not grow `n/3`. A re-check after a bounded
+repair carries the delta and the same pack, not a fresh ingestion of the evidence tree.
+
+The check reads `.pdca/**` only. The brief therefore names no path outside that scope and asks for
+no product artefact: when a criterion's evidence lives outside it — the deliverable itself, for
+example — the observation pack carries it. A deliverable moved into `.pdca/**` to fit the scope is a
+changed goal: route it to `pdca-planner` as a `limited` decision, never as a reading convenience.
+
 ## Input 1 — `COLLECTION TASK PLAN` (phase P of a collection)
 
 Input: an absolute `collection_status_path`, a stable `task_id`, the unit's form and the original

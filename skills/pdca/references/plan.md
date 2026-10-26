@@ -142,7 +142,11 @@ valid result is **not `ready`**:
 - **scope matches the declared host capacity** — the affected surface rather than the whole
   workspace when the host cannot carry the whole workspace;
 - **expected outcome is declared** — `green`, `expected-negative`, or `informational`; "green unless
-  it happens to be red" is not a declaration.
+  it happens to be red" is not a declaration;
+- **capture is declared** — each frozen command names a capture stem and writes three artifacts:
+  `<stem>.out`, `<stem>.err`, `<stem>.rc`. A single merged log is not evidence for an exit status or
+  for a negative stream criterion (empty stdout, non-empty stderr), and an empty log without `.rc`
+  cannot be told apart from a run that never started.
 
 A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises the plan. It is never
 absorbed as a recorded exception, a substituted command or a `Notice`.
@@ -157,7 +161,8 @@ The prose command block is not machine-checkable, so a plan that freezes command
 - one object per command: `id`, `phase` (`inner | boundary | any`), `kind`
   (`unit | integration | build | mutation | docs | other`), `argv[]`, `cwd`, `env`, `expected`
   (`green | expected-negative | informational`), `expected_identity`, `log`, `timeout_s`, `covers`,
-  and for a mutation row a `harness_probe` or a declared `fallback`.
+  and for a mutation row a `harness_probe` or a declared `fallback` — `log` is the capture **stem**,
+  and the `.out`/`.err`/`.rc` artifacts beside it carry the facts a criterion claims.
 
 `pdca-executor` stages `plan_lint.py` into `.pdca/scripts/` (§Helper staging) and runs it **before
 gate 1** and **again on DO entry** after re-anchoring:
@@ -171,7 +176,9 @@ gate 1** and **again on DO entry** after re-anchoring:
 Exit codes `0` ok, `2` violation, `1` usage/operational. A nonzero `check` **is** a gate-1 failure;
 the receipt is the evidence row `PLAN-LINT` (path + exit). The check proves a command is well-formed
 and resolvable, not that its row passes — that stays with CHECK. A plan that freezes no command
-(§Plan command contract) emits no projection.
+(§Plan command contract) emits no projection; a plan that freezes a command and ships **no**
+projection is a PLAN defect and fails gate 1, never an accepted variation — the `PLAN-LINT` receipt
+is part of the plan's evidence, and until it exists there is no candidate to check.
 
 A language overlay may extend the schema and the probe allow-list; it never narrows these rows.
 
@@ -305,8 +312,14 @@ checker is necessary. No new report schema or general validator is introduced fo
 ## Frozen evidence manifest
 
 One object reconciles CHECK with DO: a single machine-readable **evidence manifest**. DO writes it
-at the path PLAN pins in the status file; CHECK reads it first. It is **frozen at the DO→CHECK
-boundary** and bound to the frozen result identity (plan revision `r` + the frozen
+at the path PLAN pins in the status file; CHECK reads it first. The path is a **gate-1 field**: a plan
+that pins no manifest path does not pass gate 1, and no CHECK is dispatched until DO has written the
+manifest. The plan also names the **observation route** — which role observes a deliverable that
+lives outside `.pdca/**` (it is `pdca-scout`, at the deliverable's own path, and the executor records
+its pack under the evidence root). A candidate with no manifest is not reported as a candidate — the
+same rule as the `PLAN-LINT` receipt, and for the same reason: the index is what makes the evidence
+reachable without the author's summary. It is **frozen at the
+DO→CHECK boundary** and bound to the frozen result identity (plan revision `r` + the frozen
 input/artefact identity, e.g. commit/tree or output hash) **and to an immutable evidence generation**
 keyed by `task/N/r/n` + that frozen identity. The generation is an evidence-snapshot identity, **not**
 the criterion revision `rv`: `rv` belongs to criteria/plan, the generation distinguishes successive
@@ -324,12 +337,18 @@ criterion ID** to its evidence **by reference, not by copy**:
   / unit criteria) of the pinned plan;
 - `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
   `evidence[]` of `{kind, path, command?, exit?, value?}` (path, command, exit status, key number);
-  for `open` a `reason`; for `na` an observed `predicate`.
+  for `open` a `reason`; for `na` an observed `predicate`. A row whose evidence is a `pdca-scout`
+  observation uses `kind: observation` and the pack's path.
 
 Every `required` ID must appear; a criterion without a resolving reference is `open`, never dropped,
 and logs stay references — the manifest is a thin index, not a copy. **No PASS while any
 BINDING/APPLICABLE `required` entry is `open`.** If the project ships a manifest validator, run it
 (row completeness + shape).
+
+**The deliverable keeps the path the goal names.** Moving it into `.pdca/**` so that the checker can
+read it is a **changed goal**: the planner records a `limited` decision (normal mode: the user
+approves the narrowing), the observation route covers the original path instead. A DO convenience or
+a CHECK workaround never relocates the result.
 
 **Binding/applicability disposition (append-only).** The frozen manifest is never rewritten and no
 row is ever deleted: a pre-existing, self-imposed extra *audit* row stays in place with its original
