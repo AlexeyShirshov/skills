@@ -6,7 +6,6 @@
   "host_budget": {"max_lanes": 1, "max_solution_builds": 0},
   "integration_boundary_runs": 1,
   "units": ["D1", "D2"],
-  "criteria": ["C1", "C2"],
   "commands": [
     {
       "id": "BUILD",
@@ -26,9 +25,7 @@
       "min_selected": 1,
       "log": ".pdca/T900/rv1/attempts/c1-r1-n1/unit.log",
       "timeout_s": 600,
-      "covers": ["D1"],
-      "decisive": ["C1"],
-      "identity": ["tests/Proj/Proj.csproj", "tests/Proj/Tests.cs"]
+      "covers": ["D1"]
     },
     {
       "id": "RED",
@@ -40,9 +37,7 @@
       "min_selected": 1,
       "log": ".pdca/T900/rv1/attempts/c1-r1-n1/red.log",
       "timeout_s": 600,
-      "covers": ["D2"],
-      "decisive": ["C2"],
-      "identity": ["tests/Proj/Proj.csproj"]
+      "covers": ["D2"]
     }
   ]
 }

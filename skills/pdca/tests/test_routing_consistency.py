@@ -72,12 +72,7 @@ RUNNER_ALLOWLIST = {
 GIT_INSPECTION = frozenset(
     ("status", "log", "diff", "show", "blame", "ls-files", "grep", "rev-parse", "branch")
 )
-INSPECTION_STEMS = frozenset(
-    # `sha256sum` binds an observation to the frozen result identity; `echo` prints a one-line
-    # label in a capture; `command -v` reports a tool's presence and path without running it —
-    # all read-only, none can write.
-    ("cd", "ls", "cat", "sed", "head", "tail", "wc", "stat", "file", "sha256sum", "echo", "command")
-)
+INSPECTION_STEMS = frozenset(("cd", "ls", "cat", "sed", "head", "tail", "wc", "stat", "file"))
 WRITE_STEMS = frozenset(
     ("build", "make", "test", "run", "pytest", "tox", "npm", "yarn", "pnpm", "cargo",
      "gradle", "mvn", "go", "python", "python3", "bash", "sh", "exec", "sudo", "install",
@@ -305,9 +300,7 @@ class EntryStageTest(unittest.TestCase):
     def test_entry_owned_plan_is_reused_by_reference_at_the_existing_gate(self):
         for token in (
             "The returned plan is the initial plan",
-            "The planner writes it to the plan document",
-            "folds that",
-            "verbatim",
+            "pdca-executor persists it by the existing rules",
             "continues at the current PLAN → DO gate",
             "Do not run Input 2's",
             "again for an entry-owned plan",
@@ -445,46 +438,13 @@ class SourcePermissionBoundaryTest(unittest.TestCase):
                         self.assertNotEqual("allow", perm.get(action),
                                             "%s/%s must not grant `%s`" % (skill, role, action))
 
-    def test_the_two_producer_writes_are_pinned(self):
-        # Every write is the executor's, except the plan document (planner) and the observation
-        # pack (scout) — each pinned to one evidence path, never a directory wildcard.
-        narrow = {
-            "pdca-planner": {".pdca/**/plan-r*.md": "allow"},
-            "pdca-scout": {".pdca/**/observation-pack.md": "allow"},
-        }
-        for skill in FAMILY_SKILLS:
-            for role in READ_ONLY_ROLES:
-                path = asset_path(skill, role)
-                if not path.is_file():
-                    continue
-                with self.subTest(skill=skill, role=role):
-                    write = permission(path).get("write")
-                    if role in narrow:
-                        self.assertEqual(
-                            narrow[role], write,
-                            "%s: the producer write must stay pinned to its one path" % role,
-                        )
-                    else:
-                        self.assertNotEqual("allow", write)
-                        self.assertFalse(
-                            isinstance(write, dict)
-                            and any(effect == "allow" for effect in write.values()),
-                            "%s must not grant any write" % role,
-                        )
-
-    def test_planner_is_default_deny_with_one_pinned_plan_write(self):
+    def test_planner_is_default_deny(self):
         for skill in FAMILY_SKILLS:
             path = asset_path(skill, "pdca-planner")
             if not path.is_file():
                 continue
             with self.subTest(skill=skill):
-                perm = permission(path)
-                self.assertEqual("deny", perm.get("*"))
-                self.assertEqual(
-                    {"write": {".pdca/**/plan-r*.md": "allow"}},
-                    {key: value for key, value in perm.items() if key != "*"},
-                    "planner may carry exactly one pinned plan-document write",
-                )
+                self.assertEqual({"*": "deny"}, permission(path))
 
     def test_check_reads_only_the_cycle_evidence(self):
         # The common CHECK template is exactly the cycle state dir: no .NET/tool output
