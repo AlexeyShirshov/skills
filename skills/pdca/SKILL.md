@@ -11,20 +11,20 @@ A **goal** is the result the user wants to achieve.
 goal in a verifiable way. It plans actions, executes them,
 and checks the results against explicit acceptance criteria.
 
-**Driver** is the agent responsible for coordinating PDCA execution and delegating work to specialized agents.
+**Driver** is the agent responsible for coordinating PDCA execution. It can be either the primary agent or a delegated orchestration subagent.
 
 ## Entry: one PLAN decides the form
 
-**The driver does not classify and does not plan.** It gathers the minimum facts needed to plan
-(`pdca-scout`, pointers only) and hands the task to the configured `pdca-planner` **once**. That
-single PLAN returns, together (or one bounded choice probe):
+The driver first delegates the user's goal to `pdca-planner`. The planner classifies the goal,
+selects its execution form and applicable overlay, and defines acceptance criteria and verification
+methods; it does not choose execution actions. If additional facts are needed, the planner requests
+them through the driver, who calls `pdca-scout` and returns its findings to the same pending PLAN.
+
+That PLAN returns, together (or after one bounded choice probe):
 
 - the **form of execution** — ordinary cycle, incremental campaign or collection (§Forms);
 - the **overlay**, when the work is code (coder, or coder+.NET);
-- the **nearest useful step** — the first bounded action with an observable result, or the batch
-  decomposition for a collection;
-- the **carrying claims** with IDs, the acceptance criteria with verification methods, and the
-  effort estimate/accounting (§Effort and time policy).
+- the **carrying claims** with IDs and the acceptance criteria with verification methods.
 
 There is **no cheap semantic classifier** and **no second PLAN on the same content**. A confirmation
 or restatement of the same plan is not a new PLAN. Naming `pdca` is entry to this family, not a form:
