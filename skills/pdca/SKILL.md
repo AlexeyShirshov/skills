@@ -51,7 +51,6 @@ This selection does not change the execution form.
   decomposition into independent goals is needed.
 - **Incremental Execution** — the method is unknown **or** the volume is unknown, or the composition/choice
   of the next actions genuinely depends on knowledge not yet obtained and cannot be justified now.
-  Mere output→input chaining and a known algorithm with a fixed volume are not incremental.
 - **Collection** — a list of **independent goals** (not an internal split of one goal). Each item
   gets its own form by these same rules; a batch may be heterogeneous; a single-lane collection is
   the normal case, not a degradation.
