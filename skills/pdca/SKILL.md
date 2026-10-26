@@ -22,27 +22,35 @@ them through the driver, who calls `pdca-scout` and returns its findings to the 
 
 That PLAN returns, together (or after one bounded choice probe):
 
-- the **form of execution** — ordinary cycle, incremental campaign or collection (§Forms);
-- the **overlay**, when the work is code (coder, or coder+.NET);
+- the **form of execution** — Bounded Execution, Incremental Execution or Collection (§Forms);
+- the task-specific coding skill for Bounded Execution, if applicable;
 - the **carrying claims** with IDs and the acceptance criteria with verification methods.
 
 After `pdca-planner` classifies the goal, the driver selects the corresponding
 execution rules and delegates execution to the responsible agent.
 
-| Decided form | Execution contract | Owner |
-|---|---|---|
-| ordinary cycle | this skill | cheap primary (normal) / `pdca-orchestrator` in cycle-control (autonomous) |
-| incremental campaign | `pdca-incremental` | cheap `pdca-orchestrator` in campaign-control (§Campaign owner) |
-| collection | `pdca-collection` | the collection owner; each item is classified by the same PLAN rules |
-| coder / .NET overlay | `pdca-coder` / `pdca-dotnet` applied **to** the chosen form | the same driver — an overlay adds facts, never a second cycle |
+| Execution form | Execution contract |
+|---|---|
+| Bounded Execution | `pdca` |
+| Incremental Execution | `pdca-incremental` |
+| Collection | `pdca-collection` |
+
+For **Bounded Execution**, the planner selects task-specific skills when needed:
+
+- Non-coding tasks: no coding skill.
+- General programming tasks (including Go or Rust): `pdca-coder`.
+- .NET programming tasks: `pdca-coder` and `pdca-dotnet`.
+
+This selection does not change the execution form.
 
 ### Forms
 
-- **Ordinary cycle** — the method and the volume are sufficiently known and bounded. Sequential
-  **dependent** operations with known actions and limits belong here: passing one operation's
-  result into another, and known branchings with a fixed bounded volume, are **data dependency**,
-  not uncertainty.
-- **Incremental** — the method is unknown **or** the volume is unknown, or the composition/choice
+- **Bounded Execution** — execution of a single goal for which the method and scope are
+  sufficiently known and bounded before DO. The method may come from the user's specification
+  or facts gathered by `pdca-scout` at the planner's request. No incremental execution or
+  decomposition into independent goals is needed. Sequential dependencies and known bounded
+  branches do not by themselves make execution incremental.
+- **Incremental Execution** — the method is unknown **or** the volume is unknown, or the composition/choice
   of the next actions genuinely depends on knowledge not yet obtained and cannot be justified now.
   Mere output→input chaining and a known algorithm with a fixed volume are not incremental.
 - **Collection** — a list of **independent goals** (not an internal split of one goal). Each item
