@@ -161,50 +161,6 @@ For Collection, coordination of the collection remains separate
 from the execution of its individual goals. Each goal has its
 designated driver, without competing state coordinators.
 
-## Lens: probe, increment and step
-
-A **lens** is the depth/breadth at which the goal is understood enough to act: what is known, which
-boundary opens now, what remains unknown.
-
-- **Probe** — a bounded computation/measurement/action inside one step. A tool call does not start
-  a new PLAN and does not owe a CHECK.
-- **Increment** — a completed opening of the chosen part/question: a justified change **or**
-  decision-relevant knowledge. Several cheap related probes may form **one** increment; the whole
-  project may not be inflated into "one step".
-- **Step** — a bounded campaign unit with an observable result and a stop condition; its **credit**
-  is a change of the result **or** knowledge that changes the next choice.
-
-A negative finding may be progress: a rejected candidate yielding decision-relevant knowledge is a
-**knowledge increment**. A numeric gain specialises measurable goals, not a universal gate.
-
-**Step boundary — one planner call.** After the step's CHECK the planner decides and emits either a
-brief or a STOP in the same turn:
-
-- **accept the increment** — on a positive independent CHECK → the next step's brief, or STOP when
-  the whole-goal end conditions are met. A STOP with `done`/`limited` needs a CHECK of the whole goal
-  (combined with the increment's CHECK or a separate final one): after a local step CHECK the planner
-  issues, in the same turn, the **final-check brief with a pre-set completion condition** — final
-  CHECK PASS on all carrying claims and the original requirements → `done`, otherwise another step
-  boundary. On PASS the driver routes the pre-approved STOP to `pdca-executor` for recording, without a
-  new planner call or an independent verdict; a non-PASS is a planner loop-back. A negative
-  candidate with accepted knowledge credits the knowledge increment, not the rejected candidate.
-- **revise/reject an unaccepted step** — a corrected brief of the **same** step (repair/loop-back)
-  or a justified STOP. No new increment and no credit for bypassing a failed CHECK. Revision updates
-  the working plan and result under the **same step identity**; attempts follow the loop-back rules,
-  the step number does not grow without acceptance, and the independent CHECK is never rewritten to
-  `met`.
-- **new step** — all actual costs and attempts count. A new step resets no counter or history and
-  never converts an unaccepted red step into extra accepted progress.
-
-Separate DECIDE → brief → STOP turns on the same content are a repeated PLAN and are not allowed.
-Total planner calls: successful path `1 + number of steps`, **plus** legitimate revisions/loop-backs
-under §Strategic revision **and** bounded same-pending-PLAN continuations (clarification or probe
-refinement) — accounting entries, not a quota, never unchanged confirmations or routing calls, no
-hidden exempt calls; a bounded probe is bounded by its open decision, observable outcomes and
-evidence, not by a minute cap. A **separate final check does not count as a step** and adds no
-planner call. Example for one increment: initial PLAN → local CHECK → step boundary (acceptance +
-final-check brief with the STOP condition) → final CHECK PASS → STOP — **two calls**.
-
 ## State machine and counters
 
 Cycle: `PLAN → (normal mode: the user reads and approves the plan) → DO → CHECK → ACT → (EXIT |
