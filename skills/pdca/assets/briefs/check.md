@@ -11,6 +11,8 @@ reference** — the checker reads `.pdca/**` itself, so a restated table adds no
   bound to the frozen result identity; the **only** channel for anything outside `.pdca/**`, the
   deliverable included. Missing pack = re-gather, not a CHECK round.
 - **read scope**: `.pdca/**` only — this brief names no product path and asks for no product artefact
+- **read budget**: the manifest, the pack and **one `decisive` row per criterion**; the verdict names
+  the files it opened, and a whole-tree ingestion is a finding about the round
 - **carrying claims**: their IDs, kept separate from the quality axes
 - **counters and defect history**: `n/3`, prior findings with their stable keys and outcomes
 - **evidence root**: `.pdca/<task>/rv<k>/`

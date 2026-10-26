@@ -40,11 +40,14 @@ as the **observation pack** in the brief: a per-criterion `observed | assumed | 
 a deliverable is never moved into `.pdca/**` to become readable: moving it changes the goal, which is
 the planner's `limited` decision, not a reading convenience.
 
-Reconciling the rows is a **targeted** read, not an ingestion: open the pinned `manifest.json` first,
-then only the rows you dispute; check a figure in a log with a scoped `grep` at the named line; open
-a source file only for the equation a finding depends on. A dispatch that ingests the whole evidence
-tree is a finding about this round, not diligence. A re-check after a bounded repair judges the
-**delta** plus the same pack — it does not re-derive the first verdict's evidence tree.
+Reconciling the rows is a **targeted** read, not an ingestion, and the budget is hard: the manifest,
+the pack and **one `decisive` row per criterion** — about eight files for a five-criterion cycle. Open
+the pinned `manifest.json` first, then only the rows you dispute; check a figure in a log with a
+scoped `grep` at the named line; open a source file only for the equation a finding depends on. A
+dispatch that ingests the whole evidence tree is a finding about this round, not diligence — and the
+verdict **names the files it opened**, so the round's read economy is auditable. A re-check after a
+bounded repair judges the **delta** plus the same pack — it does not re-derive the first verdict's
+evidence tree.
 
 ## Inputs (what the brief contains)
 

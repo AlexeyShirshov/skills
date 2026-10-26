@@ -81,6 +81,22 @@ refinement). Continuations are not new strategic decisions; the call count is re
 task limit. They are never unchanged confirmations or routing calls and create no hidden exempt
 calls.
 
+### Plan document and status persistence
+
+The planner returns the plan **and writes the same text** to the plan document the brief pins
+(`.pdca/<task>/rv<k>/plan-r<n>.md`) — its one permitted write. Persistence is then mechanical, not a
+second authoring pass:
+
+- `pdca-executor` creates the status file by **including the plan document verbatim** (a file copy,
+  never a re-typed copy) plus the status schema and counters; the document stays the reference for
+  the plan text.
+- This happens in the **first DO dispatch**, together with the `commands.json` projection, the
+  staged `plan_lint`/`status_lint` receipts and gate 1 — on a gate-1 failure the dispatch stops
+  before DO and reports the PLAN defect. A separate "persist the plan" dispatch is a wasted context,
+  not a checkpoint.
+- The status file remains the durable record: it carries the plan text, the counters and the log,
+  and the plan document is its frozen source for a re-read.
+
 ### Gap closure
 
 Every gap in the statement closes one of three ways: evidence, an explicit
@@ -181,6 +197,23 @@ projection is a PLAN defect and fails gate 1, never an accepted variation — th
 is part of the plan's evidence, and until it exists there is no candidate to check.
 
 A language overlay may extend the schema and the probe allow-list; it never narrows these rows.
+
+### Status lint: `status_lint.py`
+
+The same staging rule covers the durable status file. The plan stages `status_lint.py` into
+`.pdca/scripts/` and freezes a `STATUS-LINT` command row, run **after the status file is written**
+and **again in ACT before finalization**:
+
+- `python3 .pdca/scripts/status_lint.py check --repo <checkout> --status
+  .pdca/status/<task>-<N>.md --receipt <evidence-dir>/status_lint.txt` — required sections, the
+  durable-state block (`N`/`r`/`n`/`rv`/form/overlay/mode/`Status`/`Phase`), the closed-cycle
+  sections once the cycle closes, one claims row per claim ID, and every progress-log line in the
+  frozen shape `<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>`.
+
+Exit codes `0` ok, `2` violation, `1` usage/IO; the receipt is the evidence row `STATUS-LINT`. The
+helper is structural: it proves the durable record is machine-readable and consistent with itself,
+never that its conclusions are true. A violation is corrected as bookkeeping in the same edit, and
+the corrected file is checked again.
 
 ## Workspace tracking
 
@@ -315,8 +348,9 @@ One object reconciles CHECK with DO: a single machine-readable **evidence manife
 at the path PLAN pins in the status file; CHECK reads it first. The path is a **gate-1 field**: a plan
 that pins no manifest path does not pass gate 1, and no CHECK is dispatched until DO has written the
 manifest. The plan also names the **observation route** — which role observes a deliverable that
-lives outside `.pdca/**` (it is `pdca-scout`, at the deliverable's own path, and the executor records
-its pack under the evidence root). A candidate with no manifest is not reported as a candidate — the
+lives outside `.pdca/**` (it is `pdca-scout`, at the deliverable's own path; the scout **writes its
+pack itself** at the pinned path `.pdca/<task>/rv<k>/attempts/<c-r-n>/observation-pack.md`, so no
+other role copies it). A candidate with no manifest is not reported as a candidate — the
 same rule as the `PLAN-LINT` receipt, and for the same reason: the index is what makes the evidence
 reachable without the author's summary. It is **frozen at the
 DO→CHECK boundary** and bound to the frozen result identity (plan revision `r` + the frozen
@@ -336,9 +370,11 @@ criterion ID** to its evidence **by reference, not by copy**:
 - `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria
   / unit criteria) of the pinned plan;
 - `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
-  `evidence[]` of `{kind, path, command?, exit?, value?}` (path, command, exit status, key number);
-  for `open` a `reason`; for `na` an observed `predicate`. A row whose evidence is a `pdca-scout`
-  observation uses `kind: observation` and the pack's path.
+  `evidence[]` of `{kind, path, command?, exit?, value?, decisive?}` (path, command, exit status, key
+  number, and `decisive: true` on the row that decides the criterion); for `open` a `reason`; for
+  `na` an observed `predicate`. A row whose evidence is a `pdca-scout` observation uses
+  `kind: observation` and the pack's path. Exactly one evidence entry per criterion is marked
+  `decisive`; the rest stay pointers.
 
 Every `required` ID must appear; a criterion without a resolving reference is `open`, never dropped,
 and logs stay references — the manifest is a thin index, not a copy. **No PASS while any

@@ -24,7 +24,9 @@ sufficient change and preserve the surrounding conventions of the permitted work
 ## Inputs (what the brief contains)
 
 - The permitted workspace and the exact actions to carry out (from the plan).
-- The status-file content to write when the brief asks for a plan/replan/finalization.
+- The status-file content to write when the brief asks for a plan/replan/finalization; on the first
+  DO dispatch you **include the plan document verbatim** (a file copy, never a re-typed copy) and
+  run `plan_lint` / `status_lint` before DO.
 - The evidence each action must return (exit status, key numbers, log path).
 
 ## Rules
@@ -48,11 +50,11 @@ sufficient change and preserve the surrounding conventions of the permitted work
   path is not a cosmetic anchor:** moving the result to another path is a PLAN decision (`limited`),
   never a `Notice`. The same return applies
   when a planned assumption or method is refuted — report it **before** rewriting dependent work.
-- **Observation pack and manifest.** When the brief carries a `pdca-scout` observation of the
-  deliverable, record it verbatim as the step's pack in the evidence root with the observed
-  artefact's SHA-256, size and line count, and enter the matching `kind: observation` manifest row.
-  The pack is evidence, not a summary, and it is what makes a result outside `.pdca/**` reachable to
-  CHECK; the result itself stays at the path the goal names.
+- **Observation pack and manifest.** The `pdca-scout` writes its own pack at the pinned evidence
+  path; when its report reaches you, enter the matching `kind: observation` manifest row — do not
+  copy the pack, do not re-word its rows, and do not re-hash what it recorded. The pack is evidence,
+  not a summary, and it is what makes a result outside `.pdca/**` reachable to CHECK; the result
+  itself stays at the path the goal names.
 - **A vacuous run is a failure.** Zero selected targets, zero executed cases or an empty result
   set fails the run regardless of exit status `0`; record the observed count. Record an
   `expected-negative` run against its declared failure identity, not as a green final.

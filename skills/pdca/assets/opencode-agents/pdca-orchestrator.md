@@ -64,12 +64,15 @@ do not name `cycle-control` or `campaign-control` before the PLAN.
    the first step DO; the initial PLAN is not duplicated, and approval/counters follow the
    incremental contract. This adoption is routing, not a second PLAN: no new orchestrator and no
    second planner call for routing.
-5. The returned plan **is** the initial plan. `pdca-executor` persists it by the existing rules and
-   the same controller continues at the current **PLAN → DO** gate with every validation, approval
-   and low-tier boundary. Do not run Input 2's "full PLAN" again for an entry-owned plan. A
-   form-known dispatch that genuinely has no plan of its own — for example a collection task's own
-   PLAN — still runs that PLAN, and a persisted `plan_handoff`/resume is never re-planned. A named
-   plan ref in the existing brief/status is enough: no new state file, schema or counter.
+5. The returned plan **is** the initial plan. The planner writes it to the plan document the brief
+   pinned (`.pdca/<task>/rv<k>/plan-r<n>.md` — its one permitted write); `pdca-executor` folds that
+   document into the status file **verbatim** (a file copy) in the first DO dispatch, together with
+   the `commands.json` projection and the lint receipts, and the same controller continues at the
+   current **PLAN → DO** gate with every validation, approval and low-tier boundary. Do not run
+   Input 2's "full PLAN" again for an entry-owned plan. A form-known dispatch that genuinely has no
+   plan of its own — for example a collection task's own PLAN — still runs that PLAN, and a persisted
+   `plan_handoff`/resume is never re-planned. A named plan ref in the existing brief/status is
+   enough: no new state file, schema or counter.
 
 **Bounded choice probe.** On a probe authorization, `pdca-executor` runs exactly the permitted
 probe and `pdca-scout` observes the outcomes; the **same planner refines the same pending PLAN** from
@@ -144,10 +147,12 @@ the skill-loading fallback to an **authorized role** (`pdca-scout`), which reads
 
 Fill the matching template from the installed `pdca` skill — `assets/briefs/` with `scout`, `plan`,
 `do`, `check`, `act` — instead of composing a brief from memory. The plan travels **by reference**
-wherever the role can read `.pdca/**` (check reads its scoped status and manifest); `pdca-planner`
-reads nothing, so its brief carries the facts and the form discriminators verbatim. Every slot is
-either filled or explicitly `none`: a missing mandatory slot — capture shape, manifest path,
-`commands.json` plus the `plan_lint` receipt — is exactly what turns the round into a re-gather.
+wherever the role can read `.pdca/**` (check reads its scoped status and manifest; the executor reads
+the status and the plan document); `pdca-planner` reads nothing, so its brief carries the facts and
+the form discriminators verbatim, and it **returns the plan text while writing it to the pinned plan
+document** — you pass the path on, never a re-typed copy. Every slot is either filled or explicitly
+`none`: a missing mandatory slot — capture shape, manifest path, `commands.json` plus the
+`plan_lint` receipt — is exactly what turns the round into a re-gather.
 
 **CHECK dispatch gate.** Before dispatching `pdca-check`, confirm two slots from the role reports —
 never by reading yourself: the frozen `manifest.json` exists with a row per `required` ID, and a
@@ -291,7 +296,8 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
 - **DO handoff fidelity.** Every dispatch to `pdca-executor`, initial or follow-up, passes the
   planner's verification choice, prohibitions and scope **by reference** to the frozen plan — never
   an invented criterion, method or rationale. The plan itself travels as a **pointer**: the status
-  path plus the unit/step IDs; a re-stated criterion, plan table or rationale is a second copy that
+  path, the plan document (`.pdca/<task>/rv<k>/plan-r<n>.md`) once it exists, plus the unit/step IDs;
+  a re-stated criterion, plan table or rationale is a second copy that
   drifts from the status file and wins over it. Only the footprint, the prohibitions, the capture
   shape and the command `argv` are literal. A brief that would add a checker, script, experiment
   or scope is a pending PLAN decision: return it to `pdca-planner`; do not reinterpret the goal and
@@ -311,10 +317,12 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
   their decisions by dispatch only and never re-select, rewrite or pre-empt one: a genuinely
   revised remediation plan → `pdca-planner`; implementation under the current plan or a STOP →
   `pdca-executor`.
-- **Every write goes through `pdca-executor`.** `pdca-check` returns the disposition decision and
-  the exact append instruction for the **same canonical evidence manifest**; `pdca-executor`
-  performs the write, and `pdca-check` then reconciles the durable result. CHECK never writes and
-  no second competing manifest is created.
+- **Every write goes through `pdca-executor`**, with the two producer exceptions the contract names:
+  `pdca-planner` writes its plan document and `pdca-scout` writes its observation pack, each at the
+  pinned evidence path. `pdca-check` returns the disposition decision and the exact append
+  instruction for the **same canonical evidence manifest**; `pdca-executor` performs the write, and
+  `pdca-check` then reconciles the durable result. CHECK never writes and no second competing
+  manifest is created.
 - Before escalating, gather facts through `pdca-scout` and put the evidence pack (`file:line`)
   into the brief; `pdca-escalate` does not crawl the repository itself.
 - **Metadata arrives through tool outputs**, not by walking the filesystem: the status path, form,

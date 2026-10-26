@@ -388,6 +388,7 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
     solution_builds = 0
     covered: set[str] = set()
     covers_declared: list[tuple[str, str]] = []
+    covers_by_command: dict[str, set[str]] = {}
 
     for idx, cmd in enumerate(commands):
         if not isinstance(cmd, dict):
@@ -492,6 +493,7 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
             else:
                 covered.update(covers)
                 covers_declared.extend((ident, c) for c in covers)
+                covers_by_command.setdefault(ident, set()).update(covers)
 
         probe = cmd.get("harness_probe")
         fallback = cmd.get("fallback")
@@ -530,6 +532,17 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
         missing = [u for u in unit_ids if u not in covered]
         for unit in missing:
             v.add(unit, "covers", "unit has no command/evidence owner")
+        # Parallel DO dispatches follow units, never files: a unit covered only by commands shared
+        # with other units has no verification of its own, so it is not a separate dispatch.
+        if len(unit_ids) > 1:
+            for unit in unit_ids:
+                own = any(units == {unit} for units in covers_by_command.values())
+                if own:
+                    continue
+                v.warn(
+                    "unit %r has no command of its own: parallel DO units need their own covering "
+                    "command, otherwise they are one dispatch (pdca-coder §Parallel DO streams)" % unit
+                )
 
     return v, len(commands)
 

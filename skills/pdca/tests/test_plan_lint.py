@@ -149,6 +149,24 @@ class CheckTest(PlanLintCase):
         self.assertIn("unknown unit id", text)
         self.assertIn("unit has no command/evidence owner", text)
 
+    def test_units_sharing_one_verification_get_a_warning_not_a_violation(self) -> None:
+        # A "stream" whose only proof is the shared suite is not a unit: the lint says so, but the
+        # plan stays admissible — the overlay decides the dispatch count.
+        raw = (FIXTURES / "ok.json").read_text(encoding="utf-8").replace("__REPO__", str(self.repo))
+        data = json.loads(raw)
+        data["units"] = ["code", "tests", "docs"]
+        for command in data["commands"]:
+            command["covers"] = ["code", "tests", "docs"]
+        plan = self.write_plan("shared_units.json", data)
+        result = self.run_lint(plan)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        payload = self.payload(result)
+        self.assertEqual([], payload["violations"])
+        self.assertTrue(
+            any("has no command of its own" in warning for warning in payload["warnings"]),
+            payload["warnings"],
+        )
+
     def test_malformed_json_is_an_operational_error(self) -> None:
         plan = self.tmp / "broken.json"
         plan.write_text("{ not json", encoding="utf-8")

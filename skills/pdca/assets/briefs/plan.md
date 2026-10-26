@@ -14,3 +14,6 @@ and the form discriminators arrive verbatim.
   with IDs, criteria each with a verification method, verification choice, constraints, assumptions,
   decomposition or a decision not to split, means/access, risks and stop conditions — or a replan
   with the reason the previous revision failed
+- **plan document**: `<path>` — your one permitted write (`.pdca/<task>/rv<k>/plan-r<n>.md`): put the
+  same plan text there, and mark the **decisive** command per criterion (the row that decides it)
+  so DO can mark it `decisive: true` in the manifest

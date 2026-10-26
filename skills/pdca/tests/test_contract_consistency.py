@@ -200,10 +200,11 @@ def boundary_regex(token: str) -> "re.Pattern":
     return re.compile(r"(?<!\w)%s(?!\w)" % re.escape(token), re.IGNORECASE)
 
 
-# `plan_lint.py` and its `PLAN-LINT` receipt row are family-wide artifacts of the command
-# projection, not a stack-linter obligation. They are masked before the word scan so the
-# `lint` guard keeps its meaning for prose ("run a linter", "dotnet format --verify").
-FAMILY_ARTIFACTS = re.compile(r"plan[-_]lint", re.IGNORECASE)
+# `plan_lint.py` and its `PLAN-LINT` receipt row, and `status_lint.py` with its `STATUS-LINT` row,
+# are family-wide artifacts of the command projection and the durable record — not a stack-linter
+# obligation. They are masked before the word scan so the `lint` guard keeps its meaning for prose
+# ("run a linter", "dotnet format --verify").
+FAMILY_ARTIFACTS = re.compile(r"(?:plan|status)[-_ ]lint", re.IGNORECASE)
 
 
 def scan_forbidden() -> list:
@@ -630,7 +631,9 @@ class ContractConsistencyTest(PhraseAssertions):
         self.assertPhrase("Everything this skill writes lives under **one** project-local root", self.status)
         self.assertPhrase("`.pdca/`", self.status)
         self.assertPhrase("**Every write is by `pdca-executor`**", self.status)
-        self.assertPhrase("planner, check, escalate and the driver have no file", self.status)
+        self.assertPhrase("the plan document written by `pdca-planner`", self.status)
+        self.assertPhrase("the observation pack written by `pdca-scout`", self.status)
+        self.assertPhrase("no other file permissions", self.status)
         self.assertPhrase("Append-only log; history is never silently deleted", self.status)
 
     def test_status_lifetime_and_no_storage_limitation(self):

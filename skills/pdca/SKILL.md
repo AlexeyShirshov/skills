@@ -372,8 +372,9 @@ Everything this skill writes lives under **one** project-local root, `.pdca/`, i
 
 - **Status** — `.pdca/status/<task>-<N>.md`; **evidence** — `.pdca/<task>/rv<k>/`
   (`references/plan.md`).
-- **Every write is by `pdca-executor`** — planner, check, escalate and the driver have no file
-  permissions; the driver composes content from reports and passes it in the brief.
+- **Every write is by `pdca-executor`**, except the plan document written by `pdca-planner` and the
+  observation pack written by `pdca-scout`; planner, check, escalate and the driver have no other
+  file permissions, and the driver composes content from reports and passes it in the brief.
 - **Append-only log; history is never silently deleted.** Progress, attempts and the defect history
   accumulate; accepted conclusions may be superseded with a reason, but facts are not backfilled.
 - **Contents:** goal, expected result, criteria with verification methods; carrying claims; form

@@ -6,6 +6,12 @@ sentence copied from ``skills/pdca/SKILL.md``, in the order it appears, with its
 The document keeps the generated block between two markers, and ``--check`` compares that
 block with a fresh extraction, so a contract edit cannot leave the inventory silently stale.
 
+Each row also carries **practice** from ``skills/pdca/assets/rule-evidence.json``: a documented
+incident (``источник``) or a counterfactual (``контрфакт``). Entries are keyed by the sha1 of the
+rule text, not by ``R-NNN``: a reworded rule loses its practice and ``--check`` fails until the
+evidence is reviewed. Citations must be durable — a commit, an in-repo **git-tracked** file, or a
+``nextorm:`` status record; an untracked run artefact is rejected.
+
 Usage::
 
     python3 skills/pdca/scripts/skill_rule_inventory.py            # check (default)
@@ -19,15 +25,21 @@ Output carries no timestamps and no absolute paths, so it is stable in CI.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 SOURCE = REPO / "skills/pdca/SKILL.md"
 DOC = REPO / "docs/ru/pdca-rules.md"
+EVIDENCE = REPO / "skills/pdca/assets/rule-evidence.json"
 BEGIN = "<!-- rules:begin -->"
 END = "<!-- rules:end -->"
+
+KINDS = {"src": "источник", "cf": "контрфакт", "both": "источник"}
 
 ABBREV = ("e.g.", "i.e.", "cf.", "vs.", "no.", "Nos.", "Art.", "Fig.", "etc.", "approx.",
           "resp.", "incl.", "Ref.", "Sec.")
@@ -147,8 +159,75 @@ def _section_heading(section: tuple[int, str]) -> str:
     return "%s §%s" % ("#" * (level + 1), title)
 
 
-def render(source: Path) -> str:
+def _sha(text: str) -> str:
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()
+
+
+def load_evidence() -> dict[str, dict]:
+    data = json.loads(EVIDENCE.read_text(encoding="utf-8"))
+    if data.get("schema") != 1:
+        raise ValueError("unsupported evidence schema: %r" % (data.get("schema"),))
+    entries = data.get("entries")
+    if not isinstance(entries, dict):
+        raise ValueError("evidence entries must be an object")
+    return entries
+
+
+def _tracked(path: str) -> bool:
+    """A citation must survive the working tree: only git-tracked files are durable."""
+    try:
+        done = subprocess.run(["git", "-C", str(REPO), "ls-files", "--error-unmatch", path],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        return False
+    return done.returncode == 0
+
+
+def _ref_problem(ref: str) -> str | None:
+    """None if the citation is well-formed and, for in-repo paths, durable."""
+    if not ref:
+        return None
+    if ref.startswith("nextorm:"):
+        path = ref[len("nextorm:"):].split(":", 1)[0]
+        if not path.startswith("docs/"):
+            return "external citation must point into docs/: %s" % ref
+        return None
+    if ref.startswith("commit:"):
+        sha = ref.split(":", 1)[1]
+        if not re.fullmatch(r"[0-9a-f]{7,40}", sha):
+            return "bad commit sha: %s" % ref
+        return None
+    path = ref.split(":", 1)[0]
+    if not path or path.startswith("/"):
+        return "internal citation must be repo-relative: %s" % ref
+    if not (REPO / path).is_file():
+        return "cited path does not exist: %s" % ref
+    if not _tracked(path):
+        return "cited path is not tracked (a local run artefact is not durable): %s" % ref
+    return None
+
+
+def practice_cell(entry: dict | None) -> str:
+    if entry is None:
+        return "**нет подтверждения**"
+    kind = entry.get("kind")
+    if kind not in KINDS:
+        return "**неверный вид: %r**" % (kind,)
+    text = _cell(entry.get("practice", ""))
+    ref = entry.get("ref", "")
+    label = KINDS[kind]
+    body = "%s: %s" % (label, text)
+    if ref:
+        body += " `%s`" % ref
+    return body
+
+
+def render(source: Path, entries: dict[str, dict] | None = None,
+           problems: list[str] | None = None,
+           used: set[str] | None = None) -> str:
     """The generated block, without the markers."""
+    if entries is None:
+        entries = load_evidence()
     raw = source.read_text(encoding="utf-8").splitlines()
     lines, offset = _scrub_frontmatter(raw)
     rows: list[tuple[tuple[int, str], str, int, int, str]] = []
@@ -197,16 +276,39 @@ def render(source: Path) -> str:
            "| **Предложений в прозе** | **%d** |" % sentences,
            "| Строк исходных таблиц в инвентаре | %d |" % table_cells,
            "| Блоков кода в инвентаре | %d |" % code_blocks,
-           "| **Строк в инвентаре** | **%d** |" % len(rows)]
+           "| **Строк в инвентаре** | **%d** |" % len(rows),
+           "| С источником (документированный случай) | %d |" % sum(
+               1 for row in rows if entries.get(_sha(row[4]), {}).get("ref")),
+           "| С контрфактом | %d |" % sum(
+               1 for row in rows if _sha(row[4]) in entries
+               and not entries[_sha(row[4])].get("ref")),
+           "| Без подтверждения | %d |" % sum(
+               1 for row in rows if _sha(row[4]) not in entries)]
 
     current: tuple[int, str] | None = None
     for number, (section, kind, lo, hi, text) in enumerate(rows, 1):
         if section != current:
             current = section
             out += ["", _section_heading(section), "",
-                    "| ID | Строка | Вид | Правило (verbatim) |", "|---|---|---|---|"]
+                    "| ID | Строка | Вид | Правило (verbatim) | Практика (источник или контрфакт) |",
+                    "|---|---|---|---|---|"]
         loc = str(lo) if lo == hi else "%d–%d" % (lo, hi)
-        out.append("| R-%03d | %s | %s | %s |" % (number, loc, kind, text))
+        entry = entries.get(_sha(text))
+        if used is not None:
+            used.add(_sha(text))
+        if entry is None and problems is not None:
+            problems.append("R-%03d: no practice entry (sha1 %s): %s"
+                            % (number, _sha(text), text[:70]))
+        if entry is not None and problems is not None:
+            if entry.get("kind") not in KINDS:
+                problems.append("R-%03d: bad kind %r" % (number, entry.get("kind")))
+            problem = _ref_problem(entry.get("ref", ""))
+            if problem:
+                problems.append("R-%03d: %s" % (number, problem))
+            if not entry.get("practice", "").strip():
+                problems.append("R-%03d: empty practice" % number)
+        out.append("| R-%03d | %s | %s | %s | %s |"
+                   % (number, loc, kind, text, practice_cell(entry)))
     return "\n".join(out).strip("\n") + "\n"
 
 
@@ -224,12 +326,23 @@ def main() -> int:
     group.add_argument("--fix", action="store_true", help="regenerate the inventory")
     args = parser.parse_args()
 
-    for path in (SOURCE, DOC):
+    for path in (SOURCE, DOC, EVIDENCE):
         if not path.is_file():
             print("error: missing %s" % path.relative_to(REPO), file=sys.stderr)
             return 2
 
-    fresh = render(SOURCE)
+    try:
+        entries = load_evidence()
+    except (ValueError, json.JSONDecodeError) as exc:
+        print("error: %s: %s" % (EVIDENCE.relative_to(REPO), exc), file=sys.stderr)
+        return 2
+
+    problems: list[str] = []
+    used: set[str] = set()
+    fresh = render(SOURCE, entries, problems, used)
+    for sha in sorted(set(entries) - used):
+        problems.append("orphan evidence entry sha1 %s (id %s): no rule carries it"
+                        % (sha[:12], entries[sha].get("id", "?")))
     doc = DOC.read_text(encoding="utf-8")
     current = extract(doc)
     if current is None:
@@ -241,10 +354,18 @@ def main() -> int:
             DOC.write_text(doc.split(BEGIN, 1)[0] + BEGIN + "\n" + fresh + END
                            + doc.split(END, 1)[1], encoding="utf-8")
             print("fixed: %s" % DOC.relative_to(REPO))
+        if problems:
+            for problem in problems:
+                print("error: %s" % problem, file=sys.stderr)
+            return 1
         return 0
     if current != fresh:
         print("error: drift: %s does not match %s — run --fix"
               % (DOC.relative_to(REPO), SOURCE.relative_to(REPO)), file=sys.stderr)
+        return 1
+    if problems:
+        for problem in problems:
+            print("error: %s" % problem, file=sys.stderr)
         return 1
     return 0
 

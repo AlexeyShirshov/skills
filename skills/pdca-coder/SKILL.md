@@ -134,9 +134,10 @@ CHECK detail: `references/check.md`.
   run. The base evidence chain (re-run → observe → judge) is unchanged; this overlay only fixes what
   a code run must return.
 - **The candidate carries its own index**: the plan-pinned `manifest.json` with a row per `required`
-  criterion (evidence pointers, not restatements) and the staged `plan_lint` receipt for the
-  `commands.json` projection. DO writes both before reporting the candidate; without them there is
-  no candidate, and CHECK spends the round re-gathering instead of judging.
+  criterion (evidence pointers, not restatements), the staged `plan_lint` receipt for the
+  `commands.json` projection and the `status_lint` receipt for the durable status file. DO writes
+  them before reporting the candidate; without them there is no candidate, and CHECK spends the
+  round re-gathering instead of judging.
 
 ### Build and test command forms
 
@@ -241,14 +242,20 @@ then code", not "docs later". There is no TDD ordering in DO; the only red→gre
 
 - **Shared contract first, only if the streams need it**: signatures and types without implementation,
   then frozen — only PLAN changes it.
-- Then three streams in one turn: code, tests, prose docs. Code depends only on the plan (+ the
-  frozen contract), not on tests/docs; tests only on the plan, not on code/docs; prose docs only on the
-  plan, not on code/tests. Anything writing the **same file** from two streams is not parallelized —
-  it moves into the contract or the task stays single.
+- **A stream is a unit only when it owns its verification**: a frozen command whose `covers` names
+  that stream alone. The shared full-suite run does not turn one change into three streams — files
+  whose only proof is that run are written in **one dispatch, in one turn**.
+- **Dispatches follow units, never files.** Units with disjoint footprints and their own covering
+  commands may run as parallel dispatches; every other combination — one module, three files, one
+  suite — is a single dispatch. Fresh contexts for one small module are not parallelism, they are
+  three fixed overheads.
+- Code depends only on the plan (+ the frozen contract), not on tests/docs; tests only on the plan,
+  not on code/docs; prose docs only on the plan, not on code/tests. Anything writing the **same file**
+  from two streams is not parallelized — it moves into the contract or the task stays single.
 - **Generated/API docs follow the finished code** — they live in the files the code stream owns, so
   they are written after it, and only when mandated or requested.
-- **The streams never write the status file**: each stream report is logged by a separate short
-  `pdca-executor` dispatch, one at a time.
+- **The streams never write the status file**: the DO report is logged by the dispatch that produced
+  it — one entry per stream in the same log write, never a dispatch per stream.
 - Stream divergence (tests ↔ code, docs ↔ behavior) is a defect found by **CHECK**, not by DO.
 - Independent **units** (not streams) launch in parallel the same way, in one tree or per worktree.
 

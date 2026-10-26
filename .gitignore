@@ -4,6 +4,10 @@ opencode/plugins/*/*.tgz
 __pycache__/
 *.pyc
 
+# MSBuild output from the `plan_lint` fixture repos (left behind by dotnet test runs)
+skills/*/tests/fixtures/**/bin/
+skills/*/tests/fixtures/**/obj/
+
 # PDCA: `.pdca/status/**` is the durable record and stays in the index; evidence
 # and staged helpers are local by-products of a run (docs/install.md).
 .pdca/*/rv*/
