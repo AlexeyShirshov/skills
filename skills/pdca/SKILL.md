@@ -5,6 +5,12 @@ description: "PDCA for a task with a verifiable result and the single entry of t
 
 # PDCA: entry, form and the base cycle
 
+A **goal** is the result the user wants to achieve.
+
+**PDCA** is an algorithm designed to achieve a user-defined
+goal in a verifiable way. It plans actions, executes them,
+and checks the results against explicit acceptance criteria.
+
 **The skill is loaded — the task is now driven strictly by this contract.** Without it the
 contract does not apply and ordinary tasks are done directly.
 
