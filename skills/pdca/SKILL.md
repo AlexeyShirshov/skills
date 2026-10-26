@@ -134,29 +134,32 @@ fallback must **never** be bypassed. If `pdca-orchestrator` is unavailable (abse
 forbidden or too shallow) in autonomous mode, fall back to the flat cheap primary with `Notice:` and
 the durable reason; in normal mode, report to the user.
 
-## Control modes and execution contexts
+## Control modes and execution
 
-**Normal mode keeps the existing control:** a flat cheap primary drives, and **the user approves each step/cycle plan** before
-DO (§Normal-mode approval). The incremental form is allowed, but the primary does not own a
-campaign in the campaign-control sense: every step is approved by the user.
+**Normal mode.** The cheap-tier primary agent acts as the driver.
+The user approves the planner's decisions before each cycle's
+or incremental step's DO (§Normal-mode approval).
 
-**Autonomous mode.** The primary agent delegates PDCA coordination to `pdca-orchestrator`
-when available. The driver invokes the required agents, manages execution state, and advances
-the process based on the planner's decisions and CHECK results. No intermediate user approval
-is required. All permissions, phase gates, verification requirements, and stop conditions
-remain in force. If delegation is unavailable, follow the fallback rules in
-§Roles and host requirements.
+**Autonomous mode.** The primary agent delegates PDCA coordination
+to `pdca-orchestrator` when available. The driver invokes the
+required agents, manages execution state, and advances the process
+based on the planner's decisions and CHECK results.
 
-**Two contexts, never mixed:**
+No intermediate user approval is required. All permissions,
+phase gates, verification requirements, and stop conditions
+remain in force. If delegation is unavailable, follow the
+fallback rules in §Roles and host requirements.
 
-- **campaign-control** — owns one incremental campaign's step sequence (or a campaign item inside a
-  collection).
-- **cycle-control** — receives one already-planned ordinary cycle (standalone or a collection item
-  with the cycle form), executes it and returns the result; it does not own campaign advancement.
-  A separate cycle-control is **not** spawned per campaign step.
+**Execution coordination.** The driver manages execution state
+in every execution form.
 
-In a collection the batch/lane ownership is unchanged; a campaign item's state has **one**
-designated cheap owner — no competing writers.
+For Incremental Execution, the same driver coordinates the
+entire sequence of steps without spawning a new driver for
+each step. The next step starts only on the planner's decision.
+
+For Collection, coordination of the collection remains separate
+from the execution of its individual goals. Each goal has its
+designated driver, without competing state coordinators.
 
 ## Lens: probe, increment and step
 
@@ -463,7 +466,7 @@ phase without re-opening PLAN/CHECK, and have the executor append `Recovered aft
 **Campaign recovery.** After controller loss (host restart, provider timeout) the driver
 restores goal, accepted steps, current step, accounting and counters from the status: continuation
 is from the last recorded checkpoint, accepted steps are not repeated, counters and the defect
-history are not reset. Context compression/exhaustion of the campaign-control session is a
+history are not reset. Context compression/exhaustion of the driver's incremental execution session is a
 controller loss: a planned handover to a **new session of the same `pdca-orchestrator`** is
 allowed, restoring from the status at the last checkpoint — not a new role and not a second writer
 (the previous session is finished by then).
