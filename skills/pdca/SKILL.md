@@ -11,7 +11,7 @@ A **goal** is the result the user wants to achieve.
 goal in a verifiable way. It plans actions, executes them,
 and checks the results against explicit acceptance criteria.
 
-**Driver** is the agent responsible for coordinating PDCA execution. It can be either the primary agent or a delegated orchestration subagent.
+**Driver** is the agent responsible for coordinating PDCA execution. It can be either the primary agent or a delegated orchestration subagent. Across Bounded Execution, Incremental Execution, and Collection, the driver manages the execution state, progress, evidence references, and recovery; `pdca-executor` performs the required status-file writes.
 
 **Control modes** determine how PDCA execution is coordinated and whether user approval
 is required. They are independent of the execution form:
@@ -134,23 +134,18 @@ fallback must **never** be bypassed. If `pdca-orchestrator` is unavailable (abse
 forbidden or too shallow) in autonomous mode, fall back to the flat cheap primary with `Notice:` and
 the durable reason; in normal mode, report to the user.
 
-## Control modes and the campaign owner
+## Control modes and execution contexts
 
 **Normal mode keeps the existing control:** a flat cheap primary drives, and **the user approves each step/cycle plan** before
 DO (§Normal-mode approval). The incremental form is allowed, but the primary does not own a
 campaign in the campaign-control sense: every step is approved by the user.
 
-**Autonomous mode** has no pauses and no questions: the cheap primary delegates to the existing
-cheap `pdca-orchestrator` with a dispatch carrying the contract, `form` (`UNDECIDED` on a fresh
-entry), the requested overlay or `none`, the mode and the goal path — the orchestrator loads its own
-role and the `assets/briefs/` templates, so the primary does not read the role asset; the host-policy
-fallback (§Roles and host requirements) carries `Notice:` and a durable summary, never silently.
-
-**Campaign owner.** The owner is the **same existing cheap `pdca-orchestrator`**, without a new
-agent: `campaign-control` is a **context** of that role, not a new role. It holds the durable
-state/status, counters, knowledge and effort accounting, owns recovery (§Recovery), and starts the
-next step **only on the planner's decision**, executing the current step's cycle **inline**. It
-does not classify semantically, does not replan, does not judge and cannot waive a gate.
+**Autonomous mode.** The primary agent delegates PDCA coordination to `pdca-orchestrator`
+when available. The driver invokes the required agents, manages execution state, and advances
+the process based on the planner's decisions and CHECK results. No intermediate user approval
+is required. All permissions, phase gates, verification requirements, and stop conditions
+remain in force. If delegation is unavailable, follow the fallback rules in
+§Roles and host requirements.
 
 **Two contexts, never mixed:**
 
@@ -187,8 +182,8 @@ brief or a STOP in the same turn:
   (combined with the increment's CHECK or a separate final one): after a local step CHECK the planner
   issues, in the same turn, the **final-check brief with a pre-set completion condition** — final
   CHECK PASS on all carrying claims and the original requirements → `done`, otherwise another step
-  boundary. On PASS the campaign owner records the STOP without a new planner call — routing a
-  pre-approved decision, not its own verdict; a non-PASS is a planner loop-back. A negative
+  boundary. On PASS the driver routes the pre-approved STOP to `pdca-executor` for recording, without a
+  new planner call or an independent verdict; a non-PASS is a planner loop-back. A negative
   candidate with accepted knowledge credits the knowledge increment, not the rejected candidate.
 - **revise/reject an unaccepted step** — a corrected brief of the **same** step (repair/loop-back)
   or a justified STOP. No new increment and no credit for bypassing a failed CHECK. Revision updates
@@ -465,7 +460,7 @@ provides them — the status file wins; (4) re-read the gates and §Red flags; (
 recovery questions from the scout report; (6) reconstruct the state; (7) continue from the current
 phase without re-opening PLAN/CHECK, and have the executor append `Recovered after compaction`.
 
-**Campaign recovery.** After controller loss (host restart, provider timeout) the campaign owner
+**Campaign recovery.** After controller loss (host restart, provider timeout) the driver
 restores goal, accepted steps, current step, accounting and counters from the status: continuation
 is from the last recorded checkpoint, accepted steps are not repeated, counters and the defect
 history are not reset. Context compression/exhaustion of the campaign-control session is a
