@@ -59,14 +59,23 @@ This selection does not change the execution form.
   Each goal is processed by a separate, complete
   invocation of the PDCA skill.
 
-The PLAN does not have to prove feasibility up front or plan all the unknown work: when facts are
-missing, a **bounded probe** is allowed and the form is refined from what it returns — a probe is
-not a separate cycle, and uncertainty is no reason to imagine a "complete plan". An explicit user
-preference of form is respected as a constraint.
+The planner does not create an implementation plan or define implementation steps. These
+are determined by the responsible executor during DO.
 
-**Auxiliary code does not reclassify the goal.** A checker, script or utility written to verify an
-otherwise non-coding result makes **that component** coding work; it does not turn the whole goal
-into a coding task and does not apply the coder/.NET overlay to the whole campaign (§Overlays).
+Feasibility does not have to be proven during PLAN. When critical facts are missing, a
+**bounded probe** may be used to clarify feasibility, execution form, or acceptance criteria.
+The results may refine these decisions.
+
+A probe is not a separate PDCA cycle. An explicit user preference of execution form is
+respected as a constraint.
+
+**Auxiliary code does not change the nature of the goal.** A prototype, checker, script, or
+utility used to investigate feasibility or verify a non-coding goal does not turn the entire
+goal into a coding task.
+
+However, findings from such work may affect execution decisions. If sufficient evidence
+demonstrates that the goal is infeasible under the current constraints, execution must stop
+and the blocker must be reported.
 
 ## Roles and host requirements
 
