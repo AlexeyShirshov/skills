@@ -11,9 +11,13 @@ What it proves:
 * the durable-state block carries every counter and a legal ``Status``/``Phase``;
 * every claim ID named by the plan has a row in the carrying-claims table;
 * every progress-log line matches the frozen shape
-  ``<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>``;
+  ``<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>``; a leading list
+  bullet is decoration and is tolerated;
 * no event restates the number of this file's log lines (``9 log lines``): such a line goes stale
   with the next append, so the receipt carries the counts and the line carries the pointer.
+
+A ``##`` heading inside a fenced block is body text, never a section: the plan document copied into
+``## Plan`` carries its own headings, and none of them may shadow a required section.
 
 The shape check is what catches a hand-edited log: ``iteration n=3``, ``revision 1``, a missing
 pointer, a shell-escaped arrow left by ``sed``.
@@ -94,16 +98,36 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+FENCE = re.compile(r"^\s*(?P<marker>`{3,}|~{3,})(?P<info>.*)$")
+
+
 def split_sections(text: str) -> dict[str, list[str]]:
-    """Map ``## <Heading>`` -> body lines, keeping the heading order."""
+    """Map ``## <Heading>`` -> body lines, keeping the heading order.
+
+    Headings inside a fenced block are body text: the verbatim plan copy carries its own ``##``
+    headings, and a section of the plan may never shadow a required section of the status.
+    """
     sections: dict[str, list[str]] = {}
     current: str | None = None
+    fence: tuple[str, int] | None = None
     for line in text.splitlines():
-        match = re.match(r"^##\s+(?P<title>.+?)\s*$", line)
-        if match and not line.startswith("###"):
-            current = match.group("title")
-            sections.setdefault(current, [])
+        marker = FENCE.match(line)
+        if marker:
+            run = marker.group("marker")
+            if fence is None:
+                fence = (run[0], len(run))
+            elif (run[0] == fence[0] and len(run) >= fence[1]
+                  and not marker.group("info").strip()):
+                fence = None
+            if current is not None:
+                sections[current].append(line)
             continue
+        if fence is None:
+            match = re.match(r"^##\s+(?P<title>.+?)\s*$", line)
+            if match and not line.startswith("###"):
+                current = match.group("title")
+                sections.setdefault(current, [])
+                continue
         if current is not None:
             sections[current].append(line)
     return sections
@@ -198,12 +222,12 @@ def lint(text: str, where: str) -> tuple[Violations, dict]:
         for offset, raw in enumerate(log_body, start=1):
             line = raw.rstrip()
             stripped = line.strip()
-            if not stripped or stripped.startswith("```") or stripped.startswith("#"):
+            if not stripped or FENCE.match(stripped) or stripped.startswith("#"):
                 continue
             if " | " not in stripped:
                 continue  # prose in the section is not a log line
             facts["log_lines"] += 1
-            match = LOG_LINE.match(stripped)
+            match = LOG_LINE.match(re.sub(r"^[-*]\s+", "", stripped))
             if not match:
                 v.add(where, "S006", "progress-log line does not match the frozen shape: %r" % stripped[:120])
                 continue
@@ -237,8 +261,11 @@ def schema_text() -> str:
         "durable state keys: " + ", ".join(STATE_KEYS[key][0] for key in order),
         "status values: " + ", ".join(sorted(STATUS_VALUES)),
         "phase values: " + ", ".join(sorted(PHASE_VALUES)),
-        "claims table: one `| <ID> | <claim> | <status> |` row per claim ID the plan names",
-        "progress log line: <UTC> | <PHASE> | revision r<n> | iteration <n>/3 | <event> | <pointer>",
+        "section match: a title equals the name or starts with `<name> ` / `<name> —`; a `##`",
+        "  heading inside a fenced block is body text, not a section",
+        "claims rows: `| <ID> | <claim> | <status> |`, ID = [A-Z]\\d+, one per claim ID the plan names",
+        "progress log line (column 0; a leading `- ` bullet is tolerated):",
+        "  <UTC> | <PHASE> | revision r<n> | iteration <n>/3 | <event> | <pointer>",
         "  <event> carries no count of this file's log lines: the receipt carries them",
     ]
     return "\n".join(lines) + "\n"

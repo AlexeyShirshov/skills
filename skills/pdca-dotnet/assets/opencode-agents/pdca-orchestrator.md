@@ -160,7 +160,14 @@ never by reading yourself: the frozen `manifest.json` exists with a row per `req
 unverified`, bound to the frozen result identity (SHA-256, size, line count) of what it observed.
 Missing either is a **re-gather** — the executor writes the missing manifest row, the scout observes
 — not a CHECK round, and a missing required report does not grow `n/3`. A re-check after a bounded
-repair carries the delta and the same pack, not a fresh ingestion of the evidence tree.
+repair carries the delta and the same pack, not a fresh ingestion of the evidence tree, and it is a
+**new** `pdca-check` session: the previous verdict travels by pointer, while continuing the old
+session re-sends its whole context at full price for the same delta.
+
+A CHECK that returns PASS on **every** criterion and **every** carrying claim *is* the whole-goal
+check when the plan has one unit: record the STOP, do not dispatch a second whole-goal CHECK over the
+same evidence. A separate final CHECK is for a plan whose last CHECK was scoped to a step, a unit or
+a campaign increment.
 
 The check reads `.pdca/**` only. The brief therefore names no path outside that scope and asks for
 no product artefact: when a criterion's evidence lives outside it — the deliverable itself, for

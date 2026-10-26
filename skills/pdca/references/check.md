@@ -24,7 +24,11 @@ most about eight files for a five-criterion cycle. A log is searched at the line
 source file is opened only for the equation a finding depends on. Ingesting the whole evidence tree
 per dispatch buys the verdict nothing and is itself a finding about that round; the verdict **names
 the files it opened**, so the round's read economy is auditable. A re-check after a bounded repair
-judges the **delta** plus the same pack.
+judges the **delta** plus the same pack, in a **fresh session**: the previous verdict travels by
+pointer, and continuing the old session re-sends its whole context at full price for the same delta.
+
+Read the status file's **durable state, carrying claims and progress log**; the plan text inside it
+is a copy of the plan file already held by reference, and reading it again buys nothing.
 
 Pass the plan **by reference** (the pinned status file and manifest path) and spend the brief on the
 delta; a brief that restates the plan tables adds no reach to the verdict.

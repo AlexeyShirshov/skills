@@ -164,7 +164,14 @@ valid result is **not `ready`**:
   for a negative stream criterion (empty stdout, non-empty stderr), and an empty log without `.rc`
   cannot be told apart from a run that never started. A **decisive** command also writes
   `<stem>.identity`: the SHA-256 of the input paths it declares in `identity`, taken immediately
-  before the run, so the capture and the frozen snapshot resolve to the same bytes.
+  before the run, so the capture and the frozen snapshot resolve to the same bytes. A directory
+  input digests the sorted `<sha256>  <path>` lines of its regular files, the same method for every
+  executor; the plan may name a file DO creates, because gate 1 checks the shape and the capture is
+  what fails if the input is still missing.
+- **a documented command is a frozen command** — when the result's README or help text shows a
+  command, that command is copied from a frozen row's `argv`; a paraphrase is a defect. A criterion
+  whose negative case names a documented command verifies that command by running it, never by
+  reading it — a README line that has never been executed is a claim, not evidence.
 - **caches stay outside the evidence root** — a command that needs a cache, home or temp area
   (`GOCACHE`, `GOPATH`, `HOME`, `TMPDIR`, a package cache) names it in `env` outside the checkout
   (`$TMPDIR/<task>-<n>-cache` is the default target), never under the evidence root: the root holds
@@ -192,9 +199,11 @@ The prose command block is not machine-checkable, so a plan that freezes command
 **One row decides a criterion**, the rest are pointers — a plan whose prose calls `T2`, `T3` and `T4`
 decisive for the same criterion has drifted, and the projection is where that becomes checkable:
 `plan_lint` rejects a criterion decided by two rows, a declared criterion with no deciding row, an
-`informational` row marked decisive, a decisive row without a capture stem, and a decisive row that
-declares no `identity` (or names an input that is missing or outside the checkout). `covers` keeps
-naming units, so a plan with no unit table declares its criteria in `criteria`, never in `covers`.
+`informational` row marked decisive, and a decisive row without a capture stem or without `identity`.
+An empty `decisive` array is the same as omitting the key, and a declared input that does not exist
+yet is only a warning: the plan names what the run consumes, and DO creates it before the capture.
+`covers` keeps naming units, so a plan with no unit table declares its criteria in `criteria`, never
+in `covers`.
 
 `pdca-executor` stages `plan_lint.py` into `.pdca/scripts/` (§Helper staging) and runs it **before
 gate 1** and **again on DO entry** after re-anchoring:
@@ -205,7 +214,11 @@ gate 1** and **again on DO entry** after re-anchoring:
 - `python3 .pdca/scripts/plan_lint.py probe …` — additionally runs each `harness_probe` from an
   allow-list (`git`, `python3`, `go`, `gofmt`), timeout-bounded, never the planned command;
 - `python3 .pdca/scripts/plan_lint.py schema` — prints the projection shape, so the executor writes
-  `commands.json` from it instead of reverse-engineering the helper source.
+  `commands.json` from it instead of reverse-engineering the helper source;
+- `python3 .pdca/scripts/plan_lint.py fork-attempt --commands <old projection> --output <new
+  projection> --from c<N>-r<r>-n<old> --to c<N>-r<r>-n<new>` — copies a frozen projection into the
+  next attempt child, rewriting only the `attempts/<old>` segment. A new attempt keeps the frozen
+  plan; re-deriving the paths by hand is how a capture lands in the previous attempt.
 
 Exit codes `0` ok, `2` violation, `1` usage/operational. A nonzero `check` **is** a gate-1 failure;
 the receipt is the evidence row `PLAN-LINT` (path + exit). The check proves a command is well-formed
@@ -226,10 +239,17 @@ and **again in ACT before finalization**:
   .pdca/status/<task>-<N>.md --receipt <evidence-dir>/status_lint.txt` — required sections, the
   durable-state block (`N`/`r`/`n`/`rv`/form/overlay/mode/`Status`/`Phase`), the closed-cycle
   sections once the cycle closes, one claims row per claim ID, every progress-log line in the frozen
-  shape `<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>`, and no event that
+  shape `<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>` (a leading list
+  bullet is tolerated), and no event that
   restates the file's own log-line count (`9 log lines`): such a line is stale the moment the next
   event is appended, so the receipt carries the counts and the line carries the pointer;
-- `python3 .pdca/scripts/status_lint.py schema` — prints the durable-status shape.
+- `python3 .pdca/scripts/status_lint.py schema` — prints the durable-status shape, including the
+  section-matching rule and the log-line column rule, so the executor writes the file from it
+  instead of reading the helper source.
+
+A `##` heading inside a fenced block is body text: the plan document copied into `## Plan` carries
+its own headings, and none of them may shadow a required section. The copy is fenced with at least
+four backticks (longer than any fence inside it), so section order in the file never matters.
 
 Exit codes `0` ok, `2` violation, `1` usage/IO; the receipt is the evidence row `STATUS-LINT`. The
 helper is structural: it proves the durable record is machine-readable and consistent with itself,
@@ -385,7 +405,9 @@ attempts. During CHECK the **same generation** is append-only: a re-gather adds 
 A new plan revision starts a new manifest generation; the superseded one is kept. A **CHECK → DO**
 return under an **unchanged plan** also starts a **new immutable generation** for the new
 attempt/snapshot — the prior generation is retained — even though `r`/`n` follow the base counters
-(no fake replan or reset is introduced for the sake of a new file). Each entry maps one **required
+(no fake replan or reset is introduced for the sake of a new file). The new attempt child's
+projection is produced by `plan_lint.py fork-attempt`, never by editing paths by hand; the plan
+text, criteria and `argv` semantics stay frozen. Each entry maps one **required
 criterion ID** to its evidence **by reference, not by copy**:
 
 - `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria

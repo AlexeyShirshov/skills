@@ -229,6 +229,33 @@ class LintTest(StatusLintCase):
         text = OPEN_CYCLE.replace("DO started", "DO started with the plan folded in")
         self.assertEqual(0, self.run_lint(self.write(text)).returncode)
 
+    def test_fenced_plan_copy_does_not_shadow_a_section(self) -> None:
+        # The plan copied into `## Plan` carries its own `## Carrying claims — …`; a heading inside
+        # a fence is body text, so the real claims table is the one that is read.
+        text = OPEN_CYCLE.replace(
+            "Goal: demo. Carrying claims C1 and C2; units S1/P1 are not claims.",
+            "Goal: demo.\n\n````markdown\n# demo plan\n\n## Carrying claims — отдельно от качества\n\n"
+            "| K9 | plan-local | pending |\n````",
+        )
+        result = self.run_lint(self.write(text))
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn("claims: 2 (C1, C2)", result.stdout)
+
+    def test_bullet_prefixed_log_line_is_tolerated(self) -> None:
+        # A markdown list bullet is decoration; the frozen shape starts at the timestamp.
+        text = OPEN_CYCLE.replace("2026-10-26T06:01:00Z | DO |",
+                                  "- 2026-10-26T06:01:00Z | DO |")
+        self.assertEqual(0, self.run_lint(self.write(text)).returncode)
+
+    def test_schema_subcommand_prints_the_matching_semantics(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "schema"], capture_output=True, text=True, timeout=120
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("heading inside a fenced block", result.stdout)
+        self.assertIn("[A-Z]", result.stdout)
+        self.assertIn("leading `- ` bullet is tolerated", result.stdout)
+
     def test_schema_subcommand_prints_the_durable_shape(self) -> None:
         result = subprocess.run(
             [sys.executable, str(SCRIPT), "schema"], capture_output=True, text=True, timeout=120
@@ -251,6 +278,8 @@ class DocumentationTest(unittest.TestCase):
             "Status lint: `status_lint.py`",
             "status_lint.py check --repo",
             "status_lint.py schema",
+            "fenced block is body text",
+            "a leading list",
             "`STATUS-LINT`",
             "Exit codes `0` ok, `2` violation",
             "iteration <n>/3",

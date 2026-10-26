@@ -6,10 +6,14 @@ never the Markdown status file, and answers one question: *can this plan's
 decisive commands produce a valid result in this environment?*  It does not
 run the planned work and it does not judge whether the rows prove the goal.
 
-Three subcommands:
+Four subcommands:
 
 ``schema`` print the projection schema below and exit — the shape an executor
            needs, without reading this file's source.
+
+``fork-attempt`` copy a frozen projection into the next attempt child, rewriting
+           only the ``attempts/<old>`` path segment; text-level, so the file's
+           formatting and every other value survive byte-for-byte.
 
 ``check``  static only (the gate-1 form): schema, argv shape, phase/scope
            legality, build scope against the declared host budget, selector
@@ -64,9 +68,11 @@ Input schema (all paths repo-relative unless stated)::
 
 ``decisive`` names the criteria a row decides: exactly one row decides a
 criterion, the rest stay pointers.  A row may decide several criteria; an
-``informational`` row and a row without a capture stem decide none.
-``identity`` binds a decisive row's capture to the sources it consumed, so a
-frozen snapshot hash and a capture artefact resolve to the same bytes.
+``informational`` row and a row without a capture stem decide none, and an
+empty ``decisive`` array is the same as omitting the key.  ``identity`` binds a
+decisive row's capture to the sources it consumed, so a frozen snapshot hash and
+a capture artefact resolve to the same bytes; a declared input that does not exist
+yet is a warning, because DO creates it and the capture step is what must find it.
 
 Run from the project root::
 
@@ -577,8 +583,8 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
                         v.add(ident, "identity", "path %r escapes the linted checkout" % raw)
                         identity_ok = False
                     elif not os.path.exists(resolved):
-                        v.add(ident, "identity", "path %r does not exist" % raw)
-                        identity_ok = False
+                        v.warn("%s: identity input %r does not exist yet — the capture step fails if "
+                               "it is still missing when the run starts" % (ident, raw))
 
         decisive = cmd.get("decisive")
         if decisive is not None:
@@ -586,7 +592,7 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
                 isinstance(c, str) and c.strip() for c in decisive
             ):
                 v.add(ident, "decisive", "must be an array of criterion ids")
-            else:
+            elif decisive:
                 for cid in decisive:
                     decisive_by_criterion.setdefault(cid.strip(), []).append(ident)
                 if expected == "informational":
@@ -770,6 +776,53 @@ def emit(v: Violations, checked: int, as_json: bool, receipt: str, extra: dict) 
         print("plan-lint: OK (%d commands checked)" % checked)
 
 
+ATTEMPT_RE = re.compile(r"c\d+-r\d+-n\d+")
+
+
+def fork_attempt(args) -> int:
+    """Rewrite the ``attempts/<old>`` segment of a frozen projection into the new attempt child.
+
+    Text-level substitution: the projection's formatting and every other value survive, and the
+    result must still parse as JSON.  A projection that carries no reference to the old attempt, or
+    one where a reference survives, is refused rather than silently half-rewritten.
+    """
+    for flag, value in (("--from", args.old), ("--to", args.new)):
+        if not ATTEMPT_RE.fullmatch(value):
+            print("plan-lint: %s %r is not an attempt name like c1-r1-n2" % (flag, value),
+                  file=sys.stderr)
+            return 2
+    if args.old == args.new:
+        print("plan-lint: --from and --to name the same attempt", file=sys.stderr)
+        return 2
+    source = Path(args.commands)
+    if not source.is_file():
+        print("plan-lint: %s does not exist" % source, file=sys.stderr)
+        return 2
+    destination = Path(args.output)
+    if destination.exists() and not args.force:
+        print("plan-lint: %s exists; pass --force to overwrite" % destination, file=sys.stderr)
+        return 2
+    token_old = "attempts/%s" % args.old
+    raw = source.read_text(encoding="utf-8")
+    count = raw.count(token_old)
+    if not count:
+        print("plan-lint: no %r reference in %s" % (token_old, source), file=sys.stderr)
+        return 2
+    forked = raw.replace(token_old, "attempts/%s" % args.new)
+    if token_old in forked:
+        print("plan-lint: a %r reference survived the rewrite" % token_old, file=sys.stderr)
+        return 2
+    try:
+        json.loads(forked)
+    except json.JSONDecodeError as exc:
+        print("plan-lint: the forked projection is not valid JSON: %s" % exc, file=sys.stderr)
+        return 2
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(forked, encoding="utf-8")
+    print("forked: %s -> %s (%d path reference(s) rewritten)" % (source, destination, count))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="plan_lint.py",
@@ -777,6 +830,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("schema", help="print the commands.json schema and exit")
+
+    fork = sub.add_parser(
+        "fork-attempt",
+        help="copy a frozen projection into the next attempt child (path segment only)",
+    )
+    fork.add_argument("--commands", required=True, help="the frozen projection to copy")
+    fork.add_argument("--output", required=True, help="the new attempt child's projection")
+    fork.add_argument("--from", dest="old", required=True, help="attempt segment to replace, e.g. c1-r1-n1")
+    fork.add_argument("--to", dest="new", required=True, help="new attempt segment, e.g. c1-r1-n2")
+    fork.add_argument("--force", action="store_true", help="overwrite an existing projection")
 
     for name, help_text in (
         ("check", "static validation (gate 1)"),
@@ -796,6 +859,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "schema":
             sys.stdout.write(schema_text())
             return 0
+        if args.command == "fork-attempt":
+            return fork_attempt(args)
         repo = os.path.realpath(args.repo)
         if not os.path.isdir(repo):
             raise UsageError("--repo %r is not a directory" % args.repo)

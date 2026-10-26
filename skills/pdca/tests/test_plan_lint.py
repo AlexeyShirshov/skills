@@ -210,17 +210,69 @@ class CheckTest(PlanLintCase):
         self.assertEqual(2, result.returncode)
         self.assertIn("declares `identity`", self.messages(result))
 
-    def test_identity_path_must_exist_inside_the_checkout(self) -> None:
+    def test_identity_shape_is_checked_but_not_existence(self) -> None:
+        # The decisive test's real inputs are created by DO, so gate 1 cannot require them to
+        # exist: a declared path that is missing is a warning, and the capture step is what fails.
         data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
         data["commands"][1]["identity"] = ["tests/Proj/NoSuchFile.cs"]
         result = self.run_lint(self.write_plan(data=data))
-        self.assertEqual(2, result.returncode)
-        self.assertIn("does not exist", self.messages(result))
+        self.assertEqual(0, result.returncode, result.stdout)
+        warnings = self.payload(result)["warnings"]
+        self.assertTrue(any("does not exist yet" in w for w in warnings), warnings)
 
         data["commands"][1]["identity"] = ["../outside.cs"]
         result = self.run_lint(self.write_plan(data=data))
         self.assertEqual(2, result.returncode)
         self.assertIn("escapes the linted checkout", self.messages(result))
+
+    def test_empty_decisive_array_is_the_same_as_omitting_it(self) -> None:
+        # "This row decides nothing" is spelled `[]` by every author who reads the schema; treating
+        # the empty array as a declaration turned a correct projection into a gate-1 defect.
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][0]["decisive"] = []
+        data["commands"][0]["expected"] = "informational"
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertEqual([], self.payload(result)["violations"])
+
+    def test_fork_attempt_rewrites_only_the_attempt_segment(self) -> None:
+        source = self.write_plan()
+        destination = self.tmp / "c1-r1-n2" / "commands.json"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "fork-attempt", "--commands", str(source),
+             "--output", str(destination), "--from", "c1-r1-n1", "--to", "c1-r1-n2"],
+            capture_output=True, text=True, timeout=120,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        before = source.read_text(encoding="utf-8")
+        after = destination.read_text(encoding="utf-8")
+        self.assertEqual(before.replace("c1-r1-n1", "c1-r1-n2"), after)
+        self.assertNotIn("c1-r1-n1", after)
+        json.loads(after)
+
+    def test_fork_attempt_refuses_a_projection_without_the_old_segment(self) -> None:
+        source = self.write_plan()
+        destination = self.tmp / "fork.json"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "fork-attempt", "--commands", str(source),
+             "--output", str(destination), "--from", "c9-r9-n9", "--to", "c1-r1-n2"],
+            capture_output=True, text=True, timeout=120,
+        )
+        self.assertEqual(2, result.returncode)
+        self.assertIn("no 'attempts/c9-r9-n9' reference", result.stderr)
+        self.assertFalse(destination.exists())
+
+    def test_fork_attempt_refuses_to_overwrite_without_force(self) -> None:
+        source = self.write_plan()
+        destination = self.tmp / "taken.json"
+        destination.write_text("{}", encoding="utf-8")
+        base = [sys.executable, str(SCRIPT), "fork-attempt", "--commands", str(source),
+                "--output", str(destination), "--from", "c1-r1-n1", "--to", "c1-r1-n2"]
+        result = subprocess.run(base, capture_output=True, text=True, timeout=120)
+        self.assertEqual(2, result.returncode)
+        self.assertIn("exists; pass --force", result.stderr)
+        result = subprocess.run(base + ["--force"], capture_output=True, text=True, timeout=120)
+        self.assertEqual(0, result.returncode, result.stderr)
 
     def test_decisive_rows_without_criteria_only_warn(self) -> None:
         data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
@@ -359,6 +411,7 @@ class SkillWiringTest(unittest.TestCase):
             "plan_lint.py check --repo",
             "plan_lint.py probe",
             "plan_lint.py schema",
+            "plan_lint.py fork-attempt",
             "One row decides a criterion",
             "caches stay outside the evidence root",
             "`PLAN-LINT`",

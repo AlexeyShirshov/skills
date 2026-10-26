@@ -543,7 +543,8 @@ class ContractConsistencyTest(PhraseAssertions):
         self.assertPhrase("all criteria `met` on **actual", self.gate3)
         self.assertPhrase("evidence", self.gate3)
         self.assertPhrase("no carrying claim is `confirmed`/`unverified` against it", self.gate3)
-        self.assertPhrase("A separate final CHECK of the whole goal is required for", self.gate3)
+        self.assertPhrase("PASS on every criterion and every carrying claim **is**", self.gate3)
+        self.assertPhrase("dispatch a separate final CHECK only when the last verdict was scoped", self.gate3)
 
     def test_gate_4_is_bookkeeping_only(self):
         self.assertPhrase("ACT is bookkeeping only", self.gate4)

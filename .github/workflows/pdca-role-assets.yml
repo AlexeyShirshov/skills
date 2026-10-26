@@ -31,6 +31,12 @@ on:
       - "skills/pdca/tests/test_plan_lint.py"
       - "skills/pdca/tests/test_status_lint.py"
       - "skills/pdca/tests/fixtures/plan_lint/**"
+      - "skills/pdca/tests/test_cost_accounting.py"
+      - "skills/pdca/scripts/pdca_cost.py"
+      - "skills/pdca-coder/tests/**"
+      - "skills/pdca-coder/scripts/**"
+      - "skills/pdca-collection/tests/**"
+      - "skills/pdca-incremental/tests/**"
       - "docs/ru/pdca-rules.md"
       - ".github/workflows/pdca-role-assets.yml"
   pull_request:
@@ -57,6 +63,12 @@ on:
       - "skills/pdca/tests/test_plan_lint.py"
       - "skills/pdca/tests/test_status_lint.py"
       - "skills/pdca/tests/fixtures/plan_lint/**"
+      - "skills/pdca/tests/test_cost_accounting.py"
+      - "skills/pdca/scripts/pdca_cost.py"
+      - "skills/pdca-coder/tests/**"
+      - "skills/pdca-coder/scripts/**"
+      - "skills/pdca-collection/tests/**"
+      - "skills/pdca-incremental/tests/**"
       - "docs/ru/pdca-rules.md"
       - ".github/workflows/pdca-role-assets.yml"
 
@@ -92,3 +104,13 @@ jobs:
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_rule_inventory.py' -v
       - name: Run helper-lint guards (plan projection and durable status)
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_*lint.py' -v
+      - name: Run cost-accounting guards
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_cost_accounting.py' -v
+      # The overlay suites are pure Python and need no host. `pdca-dotnet` is not run here: its
+      # suite executes the .NET SDK, which this bounded job does not install.
+      - name: Run the coder overlay suite
+        run: python3 -m unittest discover -s skills/pdca-coder/tests -p 'test_*.py' -v
+      - name: Run the collection overlay suite
+        run: python3 -m unittest discover -s skills/pdca-collection/tests -p 'test_*.py' -v
+      - name: Run the incremental overlay suite
+        run: python3 -m unittest discover -s skills/pdca-incremental/tests -p 'test_*.py' -v

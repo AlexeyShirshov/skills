@@ -253,8 +253,9 @@ rewritten. Only a genuinely **new** item that makes the plan unimplementable —
 3. **CHECK → ACT** — only if `pdca-check` gives a verdict of all criteria `met` on **actual
    evidence**, **no carrying claim is `confirmed`/`unverified` against it** (§Claims and veto), and
    cross-part consistency is verified. Otherwise loop back: implementation defect → DO; wrong plan →
-   PLAN via `pdca-planner`. A separate final CHECK of the whole goal is required for `done` unless
-   it is combined with the increment's CHECK.
+   PLAN via `pdca-planner`. A `pdca-check` PASS on every criterion and every carrying claim **is**
+   the whole-goal check; dispatch a separate final CHECK only when the last verdict was scoped to a
+   step, a unit or a campaign increment.
 4. **ACT → EXIT** — only if the accepted result is finalized, the status file is finalized and kept,
    no product/test/checked artifact changed after the accepted CHECK snapshot (ACT is bookkeeping
    only), and in normal mode the next-session message is printed.

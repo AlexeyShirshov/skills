@@ -816,8 +816,9 @@ gates.
   binding, one decisive row per criterion with its declared inputs, and unit coverage — and rejects a
   cache/home/temp area inside the evidence root; it exits `0`/`2`/`1`. `probe` additionally runs each
   allow-listed `harness_probe` (never the planned command); `schema` prints the projection shape so the
-  executor does not read the helper source. Every plan carries a **`PLAN-LINT`** row with the
-  receipt and exit `0`.
+  executor does not read the helper source, and `fork-attempt` copies a frozen projection into the next
+  attempt child, rewriting only the `attempts/<c-r-n>` segment. Every plan carries a **`PLAN-LINT`** row
+  with the receipt and exit `0`.
 - **Explicit execution states.** Every actually-started run is recorded regardless of outcome:
   `finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` |
   `not-started`. Exit code and selected count are nullable and are never invented for a run that did

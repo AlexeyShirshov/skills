@@ -72,7 +72,12 @@ pointers — the caller makes the decision.
   in the gate-1 environment validation. Presence comes from `command -v`, which reads `PATH`; a pair
   of `ls` probes only proves those two paths are empty, and a tool installed outside the standard
   prefixes is common.
-  If a patch or a decision is needed, write `decision/patch for the caller`.
+- **The action journal is `.git/logs/HEAD`** (with `.git/HEAD` for the current branch): the reflog
+  records the actions between commits, including a reset or a branch switch that left no commit, and
+  it is read with `tail -n <n>` / `cat`. `git log` lists commits, not actions — it is not the journal,
+  and one rejected call is not evidence that the journal is unreadable.
+- **A patch or a decision belongs to the caller.** When one is needed, return it under
+  `decision/patch for the caller`; you never apply it.
 - **Facts, not opinions.** No design proposals, no approach choices, no verdicts.
 - **Never invent.** If a fact cannot be confirmed, say so and list where you looked. Do not answer
   API/behavior questions from memory when a tool can check them.
