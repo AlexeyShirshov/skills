@@ -4,7 +4,8 @@ Fill every slot; write `none` explicitly when it does not apply. The plan and th
 reference** — the checker reads `.pdca/**` itself, so a restated table adds no reach.
 
 - **identity**: task / `N` / `r` / `n/3` / `rv` / form / overlay
-- **plan**: `<status path>`; the criteria rows verbatim (ID, required behaviour, verification method)
+- **plan**: `<status path>` and the criterion IDs of this round — **by reference**: the rows live in
+  the status file; a restated table adds no reach and drifts from it
 - **manifest**: `<path>` — the index CHECK opens first
 - **observation pack**: `<path>` — the scout's per-criterion `observed | assumed | unverified` rows,
   bound to the frozen result identity; the **only** channel for anything outside `.pdca/**`, the

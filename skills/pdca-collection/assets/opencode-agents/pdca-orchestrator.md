@@ -290,7 +290,10 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
 
 - **DO handoff fidelity.** Every dispatch to `pdca-executor`, initial or follow-up, passes the
   planner's verification choice, prohibitions and scope **by reference** to the frozen plan — never
-  an invented criterion, method or rationale. A brief that would add a checker, script, experiment
+  an invented criterion, method or rationale. The plan itself travels as a **pointer**: the status
+  path plus the unit/step IDs; a re-stated criterion, plan table or rationale is a second copy that
+  drifts from the status file and wins over it. Only the footprint, the prohibitions, the capture
+  shape and the command `argv` are literal. A brief that would add a checker, script, experiment
   or scope is a pending PLAN decision: return it to `pdca-planner`; do not reinterpret the goal and
   do not let the executor implement it. The same return applies when DO refutes a planned assumption
   or method: report it **before** dependent artefacts are rewritten.

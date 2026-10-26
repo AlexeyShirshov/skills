@@ -294,9 +294,13 @@ or scope absent from the frozen plan is returned as an exact mismatch to the pla
 Make the minimal sufficient change in the surrounding conventions. Every run returns the exit
 status, the key numbers and the log path.
 
-**Brief scope.** A brief carries mechanics (paths, order, capture, log names) plus the plan's rows
-**verbatim**. A new criterion, example or rationale is a PLAN decision that returns to
-`pdca-planner`; a claim the plan does not make never enters a brief.
+**Brief scope.** A brief carries mechanics (paths, order, capture, log names) and the plan **by
+reference** — the status path plus the unit/step IDs — wherever the role can read `.pdca/**`; the
+criteria, their rationale and the plan rows stay in the status file, which the executor and the
+checker read themselves. Only what must be literal travels **verbatim**: the footprint, the
+prohibitions, the capture shape and the command `argv`. A re-stated row is a second copy of the plan
+that can drift from the status file and win. A new criterion, example or rationale is a PLAN decision
+that returns to `pdca-planner`; a claim the plan does not make never enters a brief.
 
 **CHECK** is independent of the author: it tests **every** criterion on actual evidence and verifies
 cross-part consistency. It first validates the central definitions, units, model assumptions and

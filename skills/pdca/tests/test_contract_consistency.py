@@ -1119,6 +1119,51 @@ class CheckObservationGateTest(PhraseAssertions):
         self.assertPhrase("is not a cosmetic anchor", executor)
 
 
+class BriefScopeTest(PhraseAssertions):
+    """The brief points at the frozen plan; it does not re-type it.
+
+    A second copy of the criteria in the brief drifts from the status file and, being the document
+    the executor is told to obey, wins over it. Only what must be literal stays literal.
+    """
+
+    LITERAL = ("footprint", "prohibitions", "capture", "argv")
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.skill = norm(read(BASE))
+        cls.do_brief = norm(read(SKILL_DIR / "assets/briefs/do.md"))
+        cls.check_brief = norm(read(SKILL_DIR / "assets/briefs/check.md"))
+        cls.orch = norm(read(ASSET_AGENTS / "pdca-orchestrator.md"))
+
+    def test_base_sends_the_plan_by_reference(self):
+        self.assertPhrase("the plan by reference", self.skill)
+        self.assertPhrase("stay in the status file, which the executor and the checker read", self.skill)
+        self.assertPhrase("second copy of the plan", self.skill)
+
+    def test_base_names_the_literal_parts(self):
+        self.assertPhrase("Only what must be literal travels", self.skill)
+        for token in self.LITERAL:
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.skill)
+
+    def test_do_brief_no_longer_retypes_the_criteria(self):
+        self.assertNotIn("criteria rows this DO serves", self.do_brief)
+        self.assertPhrase("by reference", self.do_brief)
+        self.assertPhrase("literal only", self.do_brief)
+        for token in self.LITERAL:
+            with self.subTest(token=token):
+                self.assertPhrase(token, self.do_brief)
+
+    def test_check_brief_does_not_restate_the_rows(self):
+        self.assertNotIn("criteria rows verbatim", self.check_brief)
+        self.assertPhrase("by reference", self.check_brief)
+        self.assertPhrase("rows live in the status file", self.check_brief)
+
+    def test_orchestrator_calls_the_plan_a_pointer(self):
+        self.assertPhrase("The plan itself travels as a pointer", self.orch)
+        self.assertPhrase("second copy that drifts from the status file", self.orch)
+
+
 class CaptureShapeTest(PhraseAssertions):
     """A run leaves three artifacts: the exit status and both streams are evidence, not prose.
 
