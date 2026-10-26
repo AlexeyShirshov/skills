@@ -11,9 +11,6 @@ A **goal** is the result the user wants to achieve.
 goal in a verifiable way. It plans actions, executes them,
 and checks the results against explicit acceptance criteria.
 
-**The skill is loaded — the task is now driven strictly by this contract.** Without it the
-contract does not apply and ordinary tasks are done directly.
-
 These rules are addressed to the **driver** — the cheap primary in normal mode or the cheap
 `pdca-orchestrator` in autonomous mode. Subagents (`pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout`) do not apply them and do not route: each acts or decides its role.
