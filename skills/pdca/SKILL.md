@@ -14,11 +14,6 @@ and checks the results against explicit acceptance criteria.
 **The skill is loaded — the task is now driven strictly by this contract.** Without it the
 contract does not apply and ordinary tasks are done directly.
 
-**The cycle is domain-neutral.** It names only **roles**, **phases** and **forms**; it imposes no
-artefact-specific obligation, no task-type list and no domain example. **Models, providers and
-tiers live outside this skill:** roles are bound to host subagents/models (§Roles and host
-requirements); no model id is ever written into a role, this skill or a prompt.
-
 These rules are addressed to the **driver** — the cheap primary in normal mode or the cheap
 `pdca-orchestrator` in autonomous mode. Subagents (`pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout`) do not apply them and do not route: each acts or decides its role.
