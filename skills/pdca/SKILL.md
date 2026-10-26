@@ -79,26 +79,41 @@ and the blocker must be reported.
 
 ## Roles and host requirements
 
-The roles are **subagent names**; the skill creates no agents and sets no models — the host
-provides them. **Orchestration is cheap-only:** the driver is the cheap-tier primary, or the cheap
+A **role** is the combination of responsibilities, permissions, and a required model tier.
+A named subagent implements each role. Roles describe agents' duties, not additional PDCA
+phases: auxiliary roles may support multiple phases. The skill creates no agents and assigns
+no models; the host provides them.
+
+**Model tiers** classify models by relative capability and cost, not by model name:
+
+- **cheap** — low-cost models for orchestration, fact gathering, and routine execution.
+- **medium** — more capable models for goal classification, planning decisions, and verification.
+- **strong** — high-capability models for difficult or high-risk decisions requiring escalation.
+
+The role defines the expected tier, the subagent asset declares it with a `# tier:` label,
+and the **host profile's `agent` block** assigns the actual model. Effective tier is determined
+by that host binding, not by an agent name or its label.
+
+**Orchestration is cheap-only:** the driver is the cheap-tier primary, or the cheap
 `pdca-orchestrator` it dispatches. A primary may drive the cycle **only when its effective
 host-profile tier is cheap** — by effective tier, not by agent name. A medium/strong primary does
 **not** drive the cycle: it hands the design to the cheap primary, preserving refs, and keeps its
 decision role outside the cycle.
 
-| Role | Agent | Required | Fallback if missing |
-|---|---|---|---|
-| GATHER (facts) | `pdca-scout` | read-only, cheap, reused unchanged | resource blocker |
-| PLAN (decisions) | `pdca-planner` | read-only, no delegation, default-deny | resource blocker |
-| DO (hands) | `pdca-executor` | `edit`/`bash`/`read` allow | resource blocker |
-| CHECK (verdict) | `pdca-check` | read-only (brief + cycle evidence artifacts), no delegation, default-deny | resource blocker |
-| ESCALATE | `pdca-escalate` | read-only, facts via `pdca-scout` | resource blocker |
-| RUNNER | `pdca-orchestrator` | cheap dispatcher, subagent allowlist (shared) | flat cheap primary + `Notice:` |
+| Role | Agent | Responsibilities | Permissions | Tier | Fallback if missing |
+|---|---|---|---|---|---|
+| FACT-FINDING & OBSERVATION | `pdca-scout` | Gather facts on request; independently observe results and verification evidence before CHECK | Read-only discovery and restricted read-only commands; may write only its pinned `observation-pack.md`; no delegation | cheap | resource blocker |
+| PLAN (decisions) | `pdca-planner` | Classify the goal and form, select specialization, define acceptance criteria and verification; decide revisions | Default-deny, no delegation or execution; may write only the pinned plan document | medium | resource blocker |
+| DO (hands) | `pdca-executor` | Execute the task, apply fixes, gather run evidence, and record cycle state | `edit`/`bash`/`read` allowed within the host and cycle constraints | cheap | resource blocker |
+| CHECK (verdict) | `pdca-check` | Independently judge evidence against acceptance criteria and route findings | Default-deny; scoped read of `.pdca/**` evidence, no delegation or writes | medium | resource blocker |
+| ESCALATE | `pdca-escalate` | Resolve difficult, disputed, or high-risk decisions within existing gates | Read-only inspection, restricted non-mutating commands, facts via permitted `pdca-scout` delegation; no state-changing execution | strong | resource blocker |
+| RUNNER | `pdca-orchestrator` | Coordinate delegation, handoffs, and cycle/campaign state without deciding or judging | Delegation to allowed subagents only; no edits, writes, or shell execution | cheap | flat cheap primary + `Notice:` |
 
-Ready-made definitions ship in this skill's `assets/opencode-agents/`. Each asset carries only a
-`# tier:` label (`pdca-executor`/`pdca-scout`/`pdca-orchestrator` = cheap;
-`pdca-planner`/`pdca-check` = medium; `pdca-escalate` = strong). Model bindings come from the
-**host profile's `agent` block** — never a model-id field in a role markdown.
+ACT is finalized through the existing driver and executor responsibilities; it has no separate
+subagent role.
+
+Ready-made agent definitions ship in `assets/opencode-agents/` with the `# tier:` labels shown
+above. Model bindings belong only in the host profile, never in a role markdown file.
 
 **Setup (once):** copy `assets/opencode-agents/*.md` into the host's agent directory and restart;
 allow the primary to dispatch the roles above plus `pdca-orchestrator`, and allow nested delegation
