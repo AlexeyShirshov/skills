@@ -11,9 +11,7 @@ A **goal** is the result the user wants to achieve.
 goal in a verifiable way. It plans actions, executes them,
 and checks the results against explicit acceptance criteria.
 
-These rules are addressed to the **driver** — the cheap primary in normal mode or the cheap
-`pdca-orchestrator` in autonomous mode. Subagents (`pdca-planner`, `pdca-executor`, `pdca-check`,
-`pdca-escalate`, `pdca-scout`) do not apply them and do not route: each acts or decides its role.
+**Driver** is the agent responsible for coordinating PDCA execution and delegating work to specialized agents.
 
 ## Entry: one PLAN decides the form
 
