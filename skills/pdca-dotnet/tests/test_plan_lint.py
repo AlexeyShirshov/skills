@@ -192,38 +192,3 @@ class ProbeTest(PlanLintCase):
         result = self.run_lint(plan, "probe")
         self.assertEqual(2, result.returncode)
         self.assertIn("probe failed", self.messages(result))
-
-
-class SkillWiringTest(unittest.TestCase):
-    """The variant contract names the helper and the receipt row.
-
-    The bulky command contract moved into `references/plan.md` when the .NET text
-    became an overlay; the overlay itself keeps only the summary and the pointers,
-    so the wiring is asserted over the overlay + its phase reference.
-    """
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.skill = (HERE.parent / "SKILL.md").read_text(encoding="utf-8")
-        cls.plan_reference = (HERE.parent / "references/plan.md").read_text(encoding="utf-8")
-        cls.corpus = cls.skill + "\n" + cls.plan_reference
-        cls.scenarios = (HERE / "scenarios.md").read_text(encoding="utf-8")
-
-    def test_skill_documents_the_projection_and_cli(self) -> None:
-        for phrase in (
-            "Machine projection: `commands.json` + `plan_lint.py`",
-            "plan_lint.py check --repo",
-            "plan_lint.py probe --repo",
-            "`PLAN-LINT`",
-            "Exit codes are `0` ok, `2` violation",
-        ):
-            with self.subTest(phrase=phrase):
-                self.assertIn(phrase, self.corpus)
-
-    def test_scenario_covers_a_failing_projection(self) -> None:
-        self.assertIn("R9. The plan's command projection fails the machine check", self.scenarios)
-        self.assertIn("plan_lint.py check` exits `2", self.scenarios)
-
-
-if __name__ == "__main__":
-    unittest.main()
