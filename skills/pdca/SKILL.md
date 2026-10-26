@@ -51,9 +51,10 @@ This selection does not change the execution form.
   decomposition into independent goals is needed.
 - **Incremental Execution** — the method is unknown **or** the volume is unknown, or the composition/choice
   of the next actions genuinely depends on knowledge not yet obtained and cannot be justified now.
-- **Collection** — a list of **independent goals** (not an internal split of one goal). Each item
-  gets its own form by these same rules; a batch may be heterogeneous; a single-lane collection is
-  the normal case, not a degradation.
+- **Collection** — a set of independent goals.
+  Each goal is processed by a separate, complete
+  invocation of the PDCA skill, including its own
+  classification, execution, verification, and completion.
 
 **One deliverable is not a known method.** A finished result, file or format does not establish the
 method; name the justified method and bound. Permissible assumptions may bound a calculation-only
