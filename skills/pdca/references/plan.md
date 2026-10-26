@@ -162,7 +162,14 @@ valid result is **not `ready`**:
 - **capture is declared** — each frozen command names a capture stem and writes three artifacts:
   `<stem>.out`, `<stem>.err`, `<stem>.rc`. A single merged log is not evidence for an exit status or
   for a negative stream criterion (empty stdout, non-empty stderr), and an empty log without `.rc`
-  cannot be told apart from a run that never started.
+  cannot be told apart from a run that never started. A **decisive** command also writes
+  `<stem>.identity`: the SHA-256 of the input paths it declares in `identity`, taken immediately
+  before the run, so the capture and the frozen snapshot resolve to the same bytes.
+- **caches stay outside the evidence root** — a command that needs a cache, home or temp area
+  (`GOCACHE`, `GOPATH`, `HOME`, `TMPDIR`, a package cache) names it in `env` outside the checkout
+  (`$TMPDIR/<task>-<n>-cache` is the default target), never under the evidence root: the root holds
+  evidence, and one build cache turns a 40-file evidence tree into a thousand-file pile that every
+  later role listing it has to filter out.
 
 A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises the plan. It is never
 absorbed as a recorded exception, a substituted command or a `Notice`.
@@ -172,22 +179,33 @@ absorbed as a recorded exception, a substituted command or a `Notice`.
 The prose command block is not machine-checkable, so a plan that freezes commands also emits a
 **projection** at `<evidence-dir>/inputs/commands.json` (same attempt child as the contract):
 
-- `task` and `plan_r` (required); `checkout`, `evidence_root`, `units`, `host_budget`,
+- `task` and `plan_r` (required); `checkout`, `evidence_root`, `units`, `criteria`, `host_budget`,
   `integration_boundary_runs` (optional);
 - one object per command: `id`, `phase` (`inner | boundary | any`), `kind`
   (`unit | integration | build | mutation | docs | other`), `argv[]`, `cwd`, `env`, `expected`
   (`green | expected-negative | informational`), `expected_identity`, `log`, `timeout_s`, `covers`,
-  and for a mutation row a `harness_probe` or a declared `fallback` — `log` is the capture **stem**,
-  and the `.out`/`.err`/`.rc` artifacts beside it carry the facts a criterion claims.
+  `decisive`, `identity`, and for a mutation row a `harness_probe` or a declared `fallback` — `log` is
+  the capture **stem**, and the `.out`/`.err`/`.rc` artifacts beside it carry the facts a criterion
+  claims.
+
+`criteria` lists the plan's required criterion IDs; `decisive` names the criteria a row decides.
+**One row decides a criterion**, the rest are pointers — a plan whose prose calls `T2`, `T3` and `T4`
+decisive for the same criterion has drifted, and the projection is where that becomes checkable:
+`plan_lint` rejects a criterion decided by two rows, a declared criterion with no deciding row, an
+`informational` row marked decisive, a decisive row without a capture stem, and a decisive row that
+declares no `identity` (or names an input that is missing or outside the checkout). `covers` keeps
+naming units, so a plan with no unit table declares its criteria in `criteria`, never in `covers`.
 
 `pdca-executor` stages `plan_lint.py` into `.pdca/scripts/` (§Helper staging) and runs it **before
 gate 1** and **again on DO entry** after re-anchoring:
 
 - `python3 .pdca/scripts/plan_lint.py check --repo <checkout> --commands <projection> --receipt
   <evidence-dir>/plan_lint.json` — schema, argv shape, phase and scope legality, expected outcome,
-  evidence binding to the linted checkout, unit coverage;
+  evidence binding to the linted checkout, the one-row-per-criterion mapping, unit coverage;
 - `python3 .pdca/scripts/plan_lint.py probe …` — additionally runs each `harness_probe` from an
-  allow-list (`git`, `python3`, `go`, `gofmt`), timeout-bounded, never the planned command.
+  allow-list (`git`, `python3`, `go`, `gofmt`), timeout-bounded, never the planned command;
+- `python3 .pdca/scripts/plan_lint.py schema` — prints the projection shape, so the executor writes
+  `commands.json` from it instead of reverse-engineering the helper source.
 
 Exit codes `0` ok, `2` violation, `1` usage/operational. A nonzero `check` **is** a gate-1 failure;
 the receipt is the evidence row `PLAN-LINT` (path + exit). The check proves a command is well-formed
@@ -207,8 +225,11 @@ and **again in ACT before finalization**:
 - `python3 .pdca/scripts/status_lint.py check --repo <checkout> --status
   .pdca/status/<task>-<N>.md --receipt <evidence-dir>/status_lint.txt` — required sections, the
   durable-state block (`N`/`r`/`n`/`rv`/form/overlay/mode/`Status`/`Phase`), the closed-cycle
-  sections once the cycle closes, one claims row per claim ID, and every progress-log line in the
-  frozen shape `<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>`.
+  sections once the cycle closes, one claims row per claim ID, every progress-log line in the frozen
+  shape `<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>`, and no event that
+  restates the file's own log-line count (`9 log lines`): such a line is stale the moment the next
+  event is appended, so the receipt carries the counts and the line carries the pointer;
+- `python3 .pdca/scripts/status_lint.py schema` — prints the durable-status shape.
 
 Exit codes `0` ok, `2` violation, `1` usage/IO; the receipt is the evidence row `STATUS-LINT`. The
 helper is structural: it proves the durable record is machine-readable and consistent with itself,
@@ -370,11 +391,12 @@ criterion ID** to its evidence **by reference, not by copy**:
 - `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria
   / unit criteria) of the pinned plan;
 - `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
-  `evidence[]` of `{kind, path, command?, exit?, value?, decisive?}` (path, command, exit status, key
-  number, and `decisive: true` on the row that decides the criterion); for `open` a `reason`; for
-  `na` an observed `predicate`. A row whose evidence is a `pdca-scout` observation uses
-  `kind: observation` and the pack's path. Exactly one evidence entry per criterion is marked
-  `decisive`; the rest stay pointers.
+  `evidence[]` of `{kind, path, command?, exit?, value?, identity?, decisive?}` (path, command, exit
+  status, key number, the `identity` capture that binds the run to the inputs it consumed, and
+  `decisive: true` on the row that decides the criterion); for `open` a `reason`; for `na` an
+  observed `predicate`. A row whose evidence is a `pdca-scout` observation uses `kind: observation`
+  and the pack's path. Exactly one evidence entry per criterion is marked `decisive`; the rest stay
+  pointers.
 
 Every `required` ID must appear; a criterion without a resolving reference is `open`, never dropped,
 and logs stay references — the manifest is a thin index, not a copy. **No PASS while any

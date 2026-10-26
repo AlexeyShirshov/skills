@@ -173,6 +173,118 @@ class CheckTest(PlanLintCase):
         result = self.run_lint(plan)
         self.assertEqual(1, result.returncode)
 
+    def test_one_row_decides_a_criterion(self) -> None:
+        # A plan whose prose calls two rows decisive for one criterion has drifted — the manifest
+        # carries exactly one, so the projection must name it before DO starts.
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1]["decisive"] = ["C1", "C2"]
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        self.assertIn("decided by 2 rows", self.messages(result))
+
+    def test_declared_criterion_needs_a_deciding_row(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["criteria"] = ["C1", "C2", "C3"]
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        self.assertIn("no row declares it decisive", self.messages(result))
+        self.assertIn("C3", self.messages(result))
+
+    def test_informational_or_uncaptured_row_cannot_decide(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1]["expected"] = "informational"
+        data["commands"][1]["decisive"] = ["C1"]
+        data["commands"][1].pop("log")
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        text = self.messages(result)
+        self.assertIn("cannot decide a criterion", text)
+        self.assertIn("capture stem", text)
+
+    def test_decisive_row_needs_its_input_identity(self) -> None:
+        # Without the input identity a capture proves that *some* build passed, not that the frozen
+        # snapshot did: the decisive row declares the paths it consumes.
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1].pop("identity")
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        self.assertIn("declares `identity`", self.messages(result))
+
+    def test_identity_path_must_exist_inside_the_checkout(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1]["identity"] = ["tests/Proj/NoSuchFile.cs"]
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        self.assertIn("does not exist", self.messages(result))
+
+        data["commands"][1]["identity"] = ["../outside.cs"]
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        self.assertIn("escapes the linted checkout", self.messages(result))
+
+    def test_decisive_rows_without_criteria_only_warn(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data.pop("criteria")
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertTrue(
+            any("declares no `criteria`" in warning for warning in self.payload(result)["warnings"]),
+            self.payload(result)["warnings"],
+        )
+
+    def test_covers_without_units_is_a_warning(self) -> None:
+        # The Levenshtein projection put criterion ids into `covers` with no unit table; the lint
+        # names the overload instead of accepting it silently.
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data.pop("units")
+        for command in data["commands"]:
+            command["covers"] = ["C1"]
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(0, result.returncode, result.stdout)
+        warnings = self.payload(result)["warnings"]
+        self.assertTrue(any("`covers` declared without `units`" in w for w in warnings), warnings)
+
+    def test_cache_env_inside_the_evidence_root_is_rejected(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1]["env"] = {
+            "GOCACHE": ".pdca/T900/rv1/goenv/gocache",
+            "HOME": ".pdca/T900/rv1/goenv/home",
+        }
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(2, result.returncode)
+        text = self.messages(result)
+        self.assertIn("GOCACHE", text)
+        self.assertIn("HOME", text)
+        self.assertIn("inside the evidence root", text)
+
+    def test_cache_env_outside_the_evidence_root_is_allowed(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1]["env"] = {"GOCACHE": "/tmp/plan-lint-cache", "DOCKER_HOST": "tcp://127.0.0.1:2375"}
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual([], self.payload(result)["warnings"])
+
+    def test_cache_env_inside_the_checkout_is_a_warning(self) -> None:
+        data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
+        data["commands"][1]["env"] = {"GOCACHE": ".pdca/work/gocache"}
+        result = self.run_lint(self.write_plan(data=data))
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(
+            any("untracked noise" in warning for warning in self.payload(result)["warnings"]),
+            self.payload(result)["warnings"],
+        )
+
+    def test_schema_subcommand_prints_the_projection(self) -> None:
+        # The executor writes the projection from `schema`, not from 680 lines of lint source.
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "schema"], capture_output=True, text=True, timeout=120
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('"decisive"', result.stdout)
+        self.assertIn('"criteria"', result.stdout)
+        self.assertIn("evidence_root", result.stdout)
+        self.assertIn("Input schema", result.stdout)
+
     def test_unknown_selector_target_is_reported(self) -> None:
         data = json.loads((FIXTURES / "ok.json").read_text(encoding="utf-8"))
         data["commands"][2]["argv"][-1] = "Proj.Tests.NoSuchTests"
@@ -246,6 +358,9 @@ class SkillWiringTest(unittest.TestCase):
             "Machine projection: `commands.json` and `plan_lint.py`",
             "plan_lint.py check --repo",
             "plan_lint.py probe",
+            "plan_lint.py schema",
+            "One row decides a criterion",
+            "caches stay outside the evidence root",
             "`PLAN-LINT`",
             "Exit codes `0` ok, `2` violation",
         ):

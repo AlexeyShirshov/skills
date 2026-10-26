@@ -14,6 +14,9 @@ and the form discriminators arrive verbatim.
   with IDs, criteria each with a verification method, verification choice, constraints, assumptions,
   decomposition or a decision not to split, means/access, risks and stop conditions — or a replan
   with the reason the previous revision failed
+- **manifest**: pin `<evidence-root>/attempts/c<N>-r<r>-n<n>/manifest.json` exactly — a gate-1
+  field fixed by convention, not a choice; the attempt child is the only legal location and a
+  root-level `<evidence-root>/manifest.json` is a PLAN defect
 - **plan document**: `<path>` — your one permitted write (`.pdca/<task>/rv<k>/plan-r<n>.md`): put the
   same plan text there, and mark the **decisive** command per criterion (the row that decides it)
   so DO can mark it `decisive: true` in the manifest

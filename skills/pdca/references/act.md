@@ -18,7 +18,7 @@ artefact — the status file remains and the work continues in the same session.
 3. **Cycle status file — finalized by `pdca-executor`:** the driver passes the reports (CHECK
    verdict, executor run results, scout facts) and the executor fills in Done/Verified, Next plan
    and Changed artefacts, then runs the **status lint** (`references/plan.md` §Status lint) and
-   corrects a `S002`–`S006` structural violation in the same bookkeeping edit before the file is
+   corrects a `S002`–`S007` structural violation in the same bookkeeping edit before the file is
    kept.
 4. **Status-file lifetime** — finalized and **kept**, never deleted: the next session's handoff in
    normal mode, the next PLAN's input in autonomous mode.

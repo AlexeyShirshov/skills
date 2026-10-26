@@ -73,6 +73,10 @@ for a decisive run, the command, exit status and key number. **The absence of a 
 pass.** A verdict that rests on no numbers is **Verifier Theater** and is worthless. A claim without
 a resolving reference is `unverified`, not `met`.
 
+A decisive command's capture resolves to the frozen snapshot only through its `identity` capture: the
+run's input hashes must match the snapshot the status file records. A capture without it leaves the
+*binding* `unverified` — the artefact shows a run, not that this snapshot ran.
+
 The matrix distinguishes what was observed, what rests on an assumption, and what remains unknown.
 Successful verification establishes only what its method examined; matching result identities do not
 establish content correctness or consistency between renderings of the same content.

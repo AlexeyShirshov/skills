@@ -11,7 +11,9 @@ What it proves:
 * the durable-state block carries every counter and a legal ``Status``/``Phase``;
 * every claim ID named by the plan has a row in the carrying-claims table;
 * every progress-log line matches the frozen shape
-  ``<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>``.
+  ``<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>``;
+* no event restates the number of this file's log lines (``9 log lines``): such a line goes stale
+  with the next append, so the receipt carries the counts and the line carries the pointer.
 
 The shape check is what catches a hand-edited log: ``iteration n=3``, ``revision 1``, a missing
 pointer, a shell-escaped arrow left by ``sed``.
@@ -20,6 +22,7 @@ Usage::
 
     python3 .pdca/scripts/status_lint.py check --repo . --status .pdca/status/<task>-<N>.md \
         --receipt <evidence-dir>/status_lint.txt
+    python3 .pdca/scripts/status_lint.py schema     # the durable-status shape, no file needed
 
 Exit codes: ``0`` ok, ``2`` violation, ``1`` usage/IO — the same convention as ``plan_lint.py``.
 Output carries no timestamps and no absolute paths, so it is stable in CI.
@@ -67,6 +70,9 @@ TABLE_ROW = re.compile(r"^\|\s*(?P<id>[A-Z]\d+)\s*\|(?P<rest>.*)\|$")
 STATE_LINE = re.compile(r"^\s*[-*]\s*\**\s*(?P<key>[^:*|]+?)\s*\**\s*:\s*(?P<value>.+?)\s*$")
 STATE_ROW = re.compile(r"^\|\s*(?P<key>[^|]+?)\s*\|\s*(?P<value>[^|]+?)\s*\|")
 SHELL_ARROW = re.compile(r"\$\\(?:to|rightarrow|Rightarrow)\$|\\to\\")
+# A count of the status file itself inside an event is stale by construction: the next append
+# changes it.  The lint receipt carries the counts; the log line carries the pointer.
+STALE_COUNTER = re.compile(r"\b\d+\s+log lines?\b", re.IGNORECASE)
 
 
 class Violations:
@@ -207,6 +213,12 @@ def lint(text: str, where: str) -> tuple[Violations, dict]:
                 v.add(where, "S006", "iteration denominator must be 3, got %r" % match.group("total"))
             elif match.group("iteration") not in ("1", "2", "3"):
                 v.add(where, "S006", "iteration must be 1..3, got %r" % match.group("iteration"))
+            stale = STALE_COUNTER.search(match.group("event"))
+            if stale:
+                v.add(where, "S007",
+                      "progress-log event restates this file's own count (%r): it goes stale with the "
+                      "next append — point at the STATUS-LINT receipt instead"
+                      % stale.group(0))
 
     if SHELL_ARROW.search(text):
         v.warn("possible shell artefact: an escaped arrow (`$\\to$`) is left in the text")
@@ -214,9 +226,28 @@ def lint(text: str, where: str) -> tuple[Violations, dict]:
     return v, facts
 
 
+def schema_text() -> str:
+    """The durable-status shape, derived from the constants the lint enforces."""
+    order = ("cycle", "revision", "attempt", "rv", "form", "overlay", "mode", "status", "phase")
+    lines = [
+        "PDCA durable status shape (status_lint v%d)" % VERSION,
+        "",
+        "sections (open cycle): " + ", ".join("## %s" % s for s in OPEN_SECTIONS),
+        "sections (closed cycle): " + ", ".join("## %s" % s for s in CLOSED_SECTIONS),
+        "durable state keys: " + ", ".join(STATE_KEYS[key][0] for key in order),
+        "status values: " + ", ".join(sorted(STATUS_VALUES)),
+        "phase values: " + ", ".join(sorted(PHASE_VALUES)),
+        "claims table: one `| <ID> | <claim> | <status> |` row per claim ID the plan names",
+        "progress log line: <UTC> | <PHASE> | revision r<n> | iteration <n>/3 | <event> | <pointer>",
+        "  <event> carries no count of this file's log lines: the receipt carries them",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Static lint for a PDCA durable status file")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("schema", help="print the durable-status shape and exit")
 
     check = sub.add_parser("check", help="validate the status file")
     check.add_argument("--repo", default=".", help="binding checkout (default: cwd)")
@@ -225,6 +256,9 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--json", action="store_true", help="machine-readable result on stdout")
 
     args = parser.parse_args(argv)
+    if args.command == "schema":
+        sys.stdout.write(schema_text())
+        return 0
     if args.command != "check":
         return 1
 

@@ -813,8 +813,10 @@ gates.
 - **The plan-command lint.** `scripts/plan_lint.py check` validates the plan's `commands.json`
   projection before gate 1 — argv shape, phase/scope legality, solution-build scope against the
   declared host budget, selector resolution against the project sources, expected outcome, evidence
-  binding and unit coverage — and exits `0`/`2`/`1`. `probe` additionally runs each allow-listed
-  `harness_probe` (never the planned command). Every plan carries a **`PLAN-LINT`** row with the
+  binding, one decisive row per criterion with its declared inputs, and unit coverage — and rejects a
+  cache/home/temp area inside the evidence root; it exits `0`/`2`/`1`. `probe` additionally runs each
+  allow-listed `harness_probe` (never the planned command); `schema` prints the projection shape so the
+  executor does not read the helper source. Every plan carries a **`PLAN-LINT`** row with the
   receipt and exit `0`.
 - **Explicit execution states.** Every actually-started run is recorded regardless of outcome:
   `finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` |

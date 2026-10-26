@@ -100,12 +100,19 @@ PATHSPEC_ALLOW = (
     "git status --porcelain -- *",
 )
 GIT_ALLOW = GIT_LITERAL_ALLOW + PATHSPEC_ALLOW
+# The observation pack binds its own SHA-256, so the scout alone carries the hashing readers; a
+# decision role (escalate) and the auditor do not inherit them.
+SCOUT_READERS_ALLOW = (
+    "sha256sum *",
+    "echo *",
+    "command -v *",
+)
 # The shared read-only roles are not interchangeable: scout and the security
 # auditor inspect git facts, escalate makes decisions and needs no git access.
 # Keep one exact minimal set per role instead of widening all three to parity.
 ROLE_ALLOW = {
     "pdca-escalate": BASE_LITERAL_ALLOW + ("cd *",),
-    "pdca-scout": BASE_LITERAL_ALLOW + GIT_ALLOW,
+    "pdca-scout": BASE_LITERAL_ALLOW + SCOUT_READERS_ALLOW + GIT_ALLOW,
     "pdca-security-auditor": BASE_LITERAL_ALLOW + GIT_ALLOW,
 }
 GIT_ROLES = ("pdca-scout", "pdca-security-auditor")

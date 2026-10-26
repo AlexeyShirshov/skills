@@ -213,6 +213,31 @@ class LintTest(StatusLintCase):
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertIn("shell artefact", result.stdout)
 
+    def test_event_restating_the_file_count_is_a_violation(self) -> None:
+        # "15 sections, 9 log lines" is stale the moment the next event is appended; the receipt
+        # carries the counts, the line carries the pointer.
+        text = OPEN_CYCLE.replace(
+            "DO started",
+            "gate: status_lint check exit 0 (15 sections, 9 log lines, 0 violations)",
+        )
+        result = self.run_lint(self.write(text))
+        self.assertEqual(2, result.returncode)
+        self.assertIn("S007", result.stdout)
+        self.assertIn("STATUS-LINT receipt", result.stdout)
+
+    def test_event_without_a_derived_count_passes(self) -> None:
+        text = OPEN_CYCLE.replace("DO started", "DO started with the plan folded in")
+        self.assertEqual(0, self.run_lint(self.write(text)).returncode)
+
+    def test_schema_subcommand_prints_the_durable_shape(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "schema"], capture_output=True, text=True, timeout=120
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("## Progress log", result.stdout)
+        self.assertIn("iteration <n>/3", result.stdout)
+        self.assertIn("current cycle n", result.stdout)
+
     def test_operational_errors_are_exit_one(self) -> None:
         missing = self.repo / ".pdca/status/nope.md"
         self.assertEqual(1, self.run_lint(missing).returncode)
@@ -225,9 +250,11 @@ class DocumentationTest(unittest.TestCase):
         for phrase in (
             "Status lint: `status_lint.py`",
             "status_lint.py check --repo",
+            "status_lint.py schema",
             "`STATUS-LINT`",
             "Exit codes `0` ok, `2` violation",
             "iteration <n>/3",
+            "restates the file's own log-line count",
         ):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, REFERENCE)

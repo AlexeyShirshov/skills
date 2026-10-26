@@ -74,8 +74,9 @@ GIT_INSPECTION = frozenset(
 )
 INSPECTION_STEMS = frozenset(
     # `sha256sum` binds an observation to the frozen result identity; `echo` prints a one-line
-    # label in a capture — both read-only, neither can write.
-    ("cd", "ls", "cat", "sed", "head", "tail", "wc", "stat", "file", "sha256sum", "echo")
+    # label in a capture; `command -v` reports a tool's presence and path without running it —
+    # all read-only, none can write.
+    ("cd", "ls", "cat", "sed", "head", "tail", "wc", "stat", "file", "sha256sum", "echo", "command")
 )
 WRITE_STEMS = frozenset(
     ("build", "make", "test", "run", "pytest", "tox", "npm", "yarn", "pnpm", "cargo",
