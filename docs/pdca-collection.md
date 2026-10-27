@@ -323,7 +323,7 @@ criteria are forbidden; old immutable revisions are never rewritten
 **Readiness is not completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
 `started`: the unit stays `pending` and never becomes `done` because the frame is ready. Only an
 accepted `met` with an explicit `disposition=finalized` gives `done`
-(`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §Campaign item status projection`).
 
 **Pause is not final.** `blocked`, `stopped` and `unreachable` with an admissible next target within
 an unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays `in-progress`,
@@ -332,7 +332,7 @@ remaining `pending` units of the group are marked `incomplete` and are not execu
 explicit final unsuccessful disposition and is not derived from a pause. There is no endless
 automatic retry; pause and resume do not reset `N`/`r`/`n`; a paused lane does not advance its
 group's dependent chain, while the other groups continue; the success criteria are never changed
-silently (`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
+silently (`skills/pdca-collection/SKILL.md §Campaign item status projection`).
 
 **Disposition, and the derived lane pause.**
 `disposition` (`active` | `paused` | `finalized`) is a per-unit field, not a task or group status.
@@ -446,8 +446,8 @@ precedence.
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `skills/pdca-collection/SKILL.md §Failure (semantics)`; `skills/pdca-collection/SKILL.md §Invariants` |
 | Parameters: `cap`/`plan_cap` = 4 as the contract's scheduling choice (not a host setting), bounded by the declared host budget and observed concurrency, the worktree directory, the merge right | `skills/pdca-collection/SKILL.md §Parameters`; `skills/pdca-collection/SKILL.md §Report` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `skills/pdca-collection/SKILL.md §Fallback` |
-| The barrier by item form, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/SKILL.md §Routing campaign outcomes`; `skills/pdca-incremental/SKILL.md §Campaign status` |
-| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-item `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `skills/pdca-collection/SKILL.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
+| The barrier by item form, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/SKILL.md §Campaign item status projection`; `skills/pdca-incremental/SKILL.md §Campaign status` |
+| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-item `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `skills/pdca-collection/SKILL.md §Campaign item status projection · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
 | The collection-lane driver (the same `pdca-orchestrator`, the campaign inline in campaign-control, one lane) and the step's PLAN/approval | `skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
 | Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `skills/pdca-collection/SKILL.md §Surface reservation and its extension` |
 | Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
