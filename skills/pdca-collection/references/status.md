@@ -1,8 +1,7 @@
 # Collection status: the batch record and item outcomes
 
-Reference for the status file of a collection. The phase rules stay in `../SKILL.md`; the write
-semantics are set by the primary or the collection `pdca-planner`, the physical write is performed
-by `pdca-executor` on an explicit dispatch.
+Reference for the status file of a collection. The phase rules stay in `../SKILL.md`; the write semantics are determined by the relevant phase's role; the designated driver coordinates
+and `pdca-executor` performs physical writes on an explicit dispatch.
 
 ## File and content
 
@@ -48,7 +47,8 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
     identity of the defect is preserved across closures/restarts of the corrective cycle);
   - a link to the status file of the linked corrective cycle;
   - the **next allowed step**;
-- Done / Verified / Incomplete.
+- Collection completeness (all original item goals accepted) / integrated-tree verification
+  (independent CHECK verdict) / incomplete items and preserved results: these are distinct fields.
 
 ## Routing campaign outcomes
 
@@ -98,5 +98,5 @@ Rules:
 - The status/evidence paths are not deleted while they hold a pointer to the preserved results.
 - The `tip` of a group = the last commit of its branch.
 - One writer per record: the collection status is written by `pdca-executor` on the collection
-  owner's dispatch; a campaign item's runtime status is written by `pdca-executor` on the
-  designated campaign controller's dispatch — never by the collection owner.
+  driver's dispatch; a campaign item's runtime status is written by `pdca-executor` on its
+  designated item driver's dispatch — never by the driver directly.
