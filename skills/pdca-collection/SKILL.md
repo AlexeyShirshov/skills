@@ -41,7 +41,7 @@ and their outcome links. An integration CHECK is a check **of the integrated sna
 not proof that every original item goal was achieved. Full collection completion
 requires each item's own accepted whole-goal CHECK and the integration CHECK.
 
-### Batch terminology
+## Batch terminology
 
 - **Item preparation** — completing the pre-DO work for each goal: a persisted PLAN for a
   `cycle` item (`plan_state=ready`), or a persisted preparation charter for a `campaign` item
@@ -429,8 +429,10 @@ contract names roles only, carries no model id and adds no role.
 
 ## References
 
-Loaded **at the start of its phase**, not up front (the host truncates tool output at 50 KiB /
-2000 lines, so a truncated contract would lose the tail — usually the CHECK/ACT/STOP rules):
+Load the **base `../pdca/SKILL.md` and this `SKILL.md` as separate reads on entry**,
+not as one concatenated tool output (the host may truncate at 50 KiB / 2000 lines).
+Load the other referenced files **when their phase starts**; a truncated contract
+must never be treated as complete:
 
 - `../pdca/SKILL.md` — the **required common cycle contract** inherited here. Load with
   this skill; on shared rules the base is authoritative, including role boundaries,
