@@ -240,6 +240,7 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
 
 1. Through `pdca-executor`: one worktree per group
    `<repo>-worktrees/<collection-id>/<group>` and the branch `collection/<id>/group-<g>`.
+   Group and task branches are sibling Git refs, never name-prefixes of each other.
    **If there is one group** — no worktree and no branches (`group-<g>`, `task-<g>-<k>`) are
    created: work in the current worktree on the current branch, the commits go there too; instead of
    `merge --no-ff` — ordinary work in place (there is nothing to merge).
@@ -426,6 +427,9 @@ An item with the form `cycle` is driven by its designated driver: it
 receives one already-planned cycle, executes it and returns the result; it does not own campaign
 advancement and does not advance anything else in the batch.
 
+Collection owns the outer item completion commit; a campaign's `Commit policy: none`
+disables intermediate step commits, not that authorized outer commit.
+
 The step semantics — the covered content of one step, the increment unit, the accepted negative
 candidate as knowledge, the absence of a forced second increment, the whole-goal final check and
 the claims veto — are the incremental contract's (`../pdca-incremental/SKILL.md` §Campaign
@@ -485,10 +489,6 @@ collection PLAN (in normal mode — the user), taking into account the already s
 already accepted results. There is no automatic `recluster`/`remerge`/`reset`/`revert`, an already
 integrated tip is not merged again, and the accepted steps are not recalculated.
 
-
-## Git model details
-
-For multiple groups, a group's branch `collection/<id>/group-<g>` is fast-forwarded to each completed item tip, ending at the last item's commit. Sequential task branches `collection/<id>/task-<g>-<k>` branch from the previous committed tip; group and task refs are siblings, never path prefixes of each other. The outer item completion commit belongs to Collection; a campaign's `Commit policy: none` prohibits intermediate step commits but not an authorized outer commit. One group uses the current worktree/branch and needs no group/task branches, worktrees or merge. The group tip is its last commit; an incomplete group's tip remains evidence, never integrated. Commit only item paths (`git add <paths>`, not `git add -A`); push never. A multi-group explicit no-commit restriction is a preflight blocker, not an implicit patch-only execution mode.
 
 ## Collection status record
 
