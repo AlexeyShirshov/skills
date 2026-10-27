@@ -96,14 +96,14 @@ DO never issues a verdict, PASS or STOP; it returns exactly one of two outcomes:
 
 ### Transition gates
 
-1. **PLAN → DO** — only with the plan's result contract complete (goal/expected result, criteria
-   each with a verification method, constraints, assumptions, carrying claims with IDs, form and
-   overlay with a reason, dependencies/bounds, risks and stop conditions, evidence location, effort
-   estimate) and written to the status file, every frozen verification command validated against
-   the environment, and — in normal mode — the recorded approval. Missing acceptance criteria are
-   closed by PLAN's authorized gather; if they cannot be determined, or the original task is proven
-   infeasible, the cycle goes **PLAN → ACT** and ACT finalizes the **cycle** `blocked`/`STOP`
-   (status projection below) — there is no ask-the-user path and no substitute task.
+1. **PLAN → DO** — only with a complete result contract: unchanged original task and
+   supplied acceptance criteria (or criteria derived by PLAN when none were supplied),
+   the explicit cycle scope, constraints, assumptions, bounds, risks and stop conditions,
+   recorded in the status file, and (in normal mode) the exact approval. PLAN must
+   not prescribe implementation steps or CHECK's verification methods, sources or
+   commands. Verification is designed by CHECK against the actual DO result.
+   Missing criteria or proven infeasibility of the original task goes PLAN → ACT;
+   no substitute result is accepted.
 2. **DO → CHECK** — only when every active, non-`superseded` unit is `done` with recorded evidence.
    A blocker report is **not** `done`; unfinished work stays `blocked`/`pending`, and a rejected
    candidate resumes the original unit.
@@ -234,12 +234,10 @@ correct", "passed last time" in a report → order the run. Gates pass on facts,
   veto is never waived by this economy. An evidence requirement never demands from a role an action
   its permissions forbid: it is `unverified-by-design` up front or assigned to a role with the
   rights.
-- **Command responsibility** — DO selects its implementation commands inside the result contract;
-  CHECK selects and validates the evidence-gathering methods and commands needed for its verdict.
-  The driver routes authorized requests to `pdca-executor`, not their technical design. A frozen command that cannot run is a PLAN defect at
-  gate 1; discovered once DO has started, the contract cannot be met → `DO → ACT`.
-- A frozen command set, when one exists, may be projected to the machine lint
-  (`../../pdca/scripts/plan_lint.py`, reused by explicit path) before gate 1 and again on DO entry.
+- **Command responsibility** — DO chooses its implementation commands within the result
+  contract. CHECK selects and validates its own evidence-gathering methods and commands,
+  requesting execution through the driver and `pdca-executor`. No frozen PLAN-side
+  verification commands or mandatory pre-DO command lint are imposed.
 
 ## Workspace and durable status
 
