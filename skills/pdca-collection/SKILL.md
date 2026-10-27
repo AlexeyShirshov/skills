@@ -1,6 +1,6 @@
 ---
 name: pdca-collection
-description: "PDCA collection: the batch contract of the PDCA family — a batch of independent goals whose items the same configured planner classifies into an ordinary cycle or an incremental campaign, then clustered into parallel groups (worktree per group, `git merge --no-ff` of the `done` groups only). Loaded by the base PLAN when the collection form is decided; a single-lane collection is the normal case."
+description: "Collection execution of independent user goals, each with its own complete PDCA invocation and PLAN-selected form. The collection driver coordinates a preparation barrier, conflict-aware groups, isolated lanes when permitted, independent verification of the integrated result, and ACT without replacing an item goal or its acceptance criteria."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
@@ -8,36 +8,33 @@ disable-model-invocation: true
 
 # A batch of independent goals as PDCA
 
-## Role
+## Scope and entry
 
-This contract is **self-contained**. Invoked directly, this file plus
-`references/common-contract.md` is a complete contract and **loading the base `../pdca/SKILL.md`
-first is not required**. When entered from the family router, its single PLAN already decided the
-**collection** form — a list of **independent goals**, not an internal split of one goal — and
-passed the plan by reference. Either way this skill **does not classify the batch** and has no
-routing table of its own: the form of the whole batch is already fixed.
+A **Collection** is a set of independent user-defined goals. Each item is a separate, complete
+invocation of PDCA; a collection is **not** an internal DO decomposition of one goal. The collection
+form has already been selected by the entry PLAN (or explicitly named by the user) and is not
+reclassified here. This contract plus `references/common-contract.md` is self-contained: loading
+`../pdca/SKILL.md` first is not required.
 
-Collection planning then classifies **each item** by the same rules as the common contract (§Forms) —
-ordinary cycle or incremental campaign — with the **same configured `pdca-planner`**; that is the
-per-item decision that starts each item's own PLAN, not a second PLAN of the batch. A batch may be
-heterogeneous; a **single-lane collection is the normal case**, not a degradation. The collection
-PLAN owns the batch: item ids, footprints, dependencies and the grouping decision.
+The **collection driver** coordinates the batch, including its status, preparation barrier,
+schedule, group integration and final CHECK/ACT. It does not plan implementations, choose tests,
+judge acceptance, edit files or run commands. `pdca-planner` makes substantive PLAN decisions,
+`pdca-check` makes independent CHECK decisions, and `pdca-executor` performs all writes and
+execution. Each item has its own **designated driver** and durable record. Collection coordination
+is separate from the execution of the individual goals; no two drivers compete for an item's state.
 
-**Naming.** An item's **form** is `cycle` | `campaign`; the **contract** is `pdca` plus the
-**overlay** (`none` | `coder` | `coder+.NET`, applied to the chosen form, common contract §Forms). A
-campaign item has **no item-level contract**: the contract/overlay belongs to each concrete **step**
-and is decided by `pdca-planner` for that step; the campaign itself is governed by
-`../pdca-incremental/SKILL.md`.
+In **normal mode**, the primary drives the collection and the cycles/steps, obtains the user's
+approval before each DO and does not dispatch `pdca-orchestrator` to drive a cycle or step.
+In **autonomous mode**, the primary delegates coordination to `pdca-orchestrator` when permitted;
+an available group runner may itself be the designated driver for its items and, for a campaign,
+its successive steps. A single campaign keeps **one driver across all steps**. Host inability to
+delegate follows §Fallback, without transferring PLAN or CHECK authority to a cheap driver.
 
-The common gates, counters, roles, approval mechanics, escalation, recovery, effort accounting and
-generic operating constraints are in `references/common-contract.md` (a local copy, so this form
-works without the base); the campaign's step semantics are the incremental contract's. This skill
-adds only the batch level: the barrier, the clustering, the lanes, the merge decision and the
-collection status file.
-
-You (the collection owner) **do not edit files and do not run commands yourself**. The
-infrastructure (worktrees, branches), `git merge --no-ff` and the mandatory checks of an item are
-executed by `pdca-executor` on your command; you own the tracking, the gates and the merge decision.
+The collection adds only the batch layer: item preparation, ALL-barrier, DAG/groups, lanes,
+integration, batch status and final verification. A one-item or one-lane collection remains a
+valid collection. Its cycle items use the base PDCA cycle; incremental items use
+`../pdca-incremental/SKILL.md`, whose steps inherit the base common cycle rules. This collection
+contract remains independently authoritative for its own batch state and gates.
 
 A standard multi-group run assumes an **explicitly authorized autocommit** for the `collection/**`
 branches and `merge --no-ff` (otherwise the task branch will not get a committed tip — the last
@@ -59,156 +56,110 @@ silent switch to another run mode. The absence of authorization is **not** an au
   `incomplete` only by an explicit final outcome, never automatically from the withdrawal. Push —
   **never**.
 
-## Ownership
+## Items and execution ownership
 
-- **Batch and lane ownership stays with the collection owner** (the cheap primary, or the cheap
-  `pdca-orchestrator` it dispatches as the group runner): the schedule, the ALL-barrier, the lane
-  queue, the merge decision and the collection status file.
-- An item with the form **`cycle`** is executed by the same cheap dispatcher in **cycle-control**
-  (common contract §Roles and tiers): it receives one already-planned cycle, executes it
-  and returns the result; it does not advance the campaign, the queue or anything else.
-- An item with the form **`campaign`** has its campaign state owned by **one designated existing
-  cheap `pdca-orchestrator` in campaign-control** (common contract §Roles and tiers),
-  designated when the schedule is bound: it holds the campaign record, the effort accounting and the
-  recovery, and it is the only writer of that record. **No competing writers** — the collection
-  owner never writes or advances a campaign; a pause and a stop are durable in the campaign record
-  and in the item's `disposition`.
+Each item preserves **its own original user goal and any user-supplied acceptance criteria
+verbatim**. The collection driver passes them unchanged to every phase; planning, grouping,
+dependency metadata and integration never introduce substitutes or weaken them. Only when the
+user supplied no criteria may that item's PLAN derive them. A change to the input requires a new
+explicit user instruction, not merely approval of a plan.
 
-## Items: form, contract, overlay
+Each item's **first PLAN** is delegated to `pdca-planner`. It classifies the item's form under the
+same definitions as the base entry: **Bounded Execution** (`cycle`) when the method and scope are
+known and bounded, or **Incremental Execution** (`campaign`) when the method, volume or next
+actions genuinely require learning. It also selects the applicable specialized skill for a bounded
+coding item: `pdca-coder` for general programming or **only `pdca-dotnet`** for .NET; non-coding
+work requires none. No collection-driver preclassification or second PLAN is inserted. The
+planner requests missing facts through the driver, who calls `pdca-scout` and returns the findings
+to the **same pending PLAN**; a bounded choice probe is not a new cycle.
 
-A batch consists of **items** — the collection's tracked entries, each with a stable id. Every item
-has a **form**, decided by the collection PLAN (`pdca-planner`) before any dispatch:
+- `cycle` — one complete PLAN → DO → CHECK → ACT for the item's entire goal. Store its saved plan,
+  form, selected specialized skill, revision and approval pointer; resume that same PLAN at DO
+  after the barrier, unless the planner finds a substantive contract defect.
+- `campaign` — one incremental invocation for the item's entire goal, with a preparation charter,
+  runtime record and successive complete cycles. The campaign has **no item-level step overlay**:
+  each concrete step's applicable specialized skill is selected for that step. Preparation does not
+  create or decide future steps. The same designated item driver retains state, history and
+  recovery across those steps.
 
-- `cycle` — one cycle of the chosen contract+overlay: one full PLAN → DO → CHECK → ACT; the item
-  carries `plan_state`, the contract with its overlay and its pending approval ref;
-- `campaign` — one incremental campaign with its own goal, charter (the immutable preparation
-  document), runtime record and steps. The item carries **no** contract/overlay: they appear on a
-  concrete step only.
+An item cannot be a nested collection; there is no campaign inside a campaign or collection
+inside a collection. The collection driver owns the batch schedule and integration, while the
+item driver owns its own cycle/campaign progression. `pdca-executor` is the physical writer of
+both records. No separate `cycle-control`, `campaign-control` or `collection owner` role exists.
 
-The runner only reads the decided values and does not classify the item or pick a contract.
-**Composition is not recursive:** a campaign step is only a family cycle; a campaign inside a
-campaign, a collection inside a campaign and a collection inside a collection are not expressible.
-
-**Step and lens semantics follow the form.** A `campaign` item follows the incremental contract —
-one planner call per step boundary, an accepted negative candidate credited as knowledge, no forced
-second increment, a whole-goal final check before `done`, and the claims veto
-(`../pdca-incremental/SKILL.md` §Campaign cycle, §Stop; common contract §Claims and veto). A `cycle` item follows the common gates as they are. Neither is restated
-here.
+**Acceptance boundary.** Each item's `done` requires its own accepted whole-goal CHECK and ACT,
+not merely a ready plan, accepted increment or passing test. The collection's CHECK is additional:
+it verifies the actual integrated result and never supplies missing acceptance for an item.
 
 ## Collection (P / D / C / A)
 
 ### P — per-item PLANs, the barrier, clustering
 
-The order is strict: **each item's own PLAN → ALL-barrier → DAG and groups.** A preliminary
-analysis of the descriptions (`pdca-scout`) is by itself **not** a PLAN and does not replace it.
+The order is strict: **each item's initial PLAN → ALL-barrier → DAG/groups → item DO**.
+The first PLAN of every item is part of its separate PDCA invocation; it is not a second
+classification of the batch.
 
-1. **Input and bootstrap.** The goal list in any form is given by the user. Give every item a
-   stable id, the source brief and its **form**; the collection PLAN decides the form of every item
-   **before** the per-form dispatch, and the primary/runner only passes the ready value. For a
-   `cycle` item the contract and overlay are part of that decision; a `campaign` item has none
-   (§Items). Pass the common item list to each item as context, as a source of dependency
-   requirements — but do **not** compute the DAG, the order or the groups in advance.
-2. **Each item's own PLAN / campaign preparation.** Through `pdca-orchestrator` at the
-   **COLLECTION TASK PLAN** entry, run the route matching the item's form (the dispatcher neither
-   derives nor classifies it):
-   - `cycle` — the item's own genuine PLAN of its contract+overlay: `pdca-scout` gathers facts,
-     `pdca-planner` decides, `pdca-executor` persists the status. The PLAN ends at the PLAN→DO
-     boundary (durable checkpoint) and **hands control to the collection parent** — it is not DO,
-     not an error and not the completion of the item. The handoff carries the planned write
-     footprint and its uncertainty, the requirements on the predecessors' results,
-     assumptions/prerequisites and refs, and — in normal mode — the pending approval ref pointer (a
-     checkpoint for the parent, which owns obtaining the approval). The item's code is **not**
-     written at this step.
-   - `campaign` — the **preparation route of the incremental contract**
-     (`../pdca-incremental/SKILL.md` §Campaign cycle, subsection 0. Bootstrap): `pdca-scout`
-     gathers facts, `pdca-planner` decides, `pdca-executor` writes the immutable charter at
-     `.pdca/<collection-id>/items/<item-id>/preparation.md`, `preparation_state` (`pending` |
-     `ready`; `ready` is not `met` and is not completion) and the single `preparation_ref`; a
-     `preparation_handoff` is returned. The charter's content, its mandatory items and their
-     renegotiation rules are the incremental contract's (§Campaign invariants, §Campaign
-     status) — not restated here. The baseline, the runtime record, the plans of future steps, their
-     number and their contracts are **not** created or required now; the step's contract/overlay is
-     chosen by `pdca-planner` at that step.
+1. **Input and first PLAN.** The input is the user's list of independent goals, each with a stable
+   id and its **unchanged** brief and any supplied criteria. Dispatch each item to its own
+   `pdca-planner` before choosing `cycle` or `campaign`. The planner chooses form, applicable
+   specialized skill and acceptance criteria (only if the user supplied none), but **does not**
+   choose implementation actions, steps, verification methods, evidence sources or commands. Only
+   at the planner's request does the driver call `pdca-scout` for missing facts. Pass the other
+   item briefs as dependency context; do not determine the DAG or group order yet.
 
-   **The items' PLANs are independent and run in parallel.** One item's plan does not require
-   another item's artefacts: the dependency is recorded as a requirement on the predecessor's
-   results in the handoff metadata, not as waiting for someone else's plan.
+2. **Preparation to the PLAN/DO boundary.** Through the item's designated driver, continue the
+   **same initial PLAN**, not a new PLAN introduced by the collection:
+   - `cycle`: `pdca-executor` records the completed result contract and its
+     `plan_state=ready`, then returns a `plan_handoff` at the PLAN → DO boundary. The plan
+     includes goals, preserved or derived criteria, constraints, assumptions, bounds, risks and
+     stop conditions, but no mandated DO steps or frozen CHECK method. Record the available
+     **estimated conflict surface** and prerequisite/dependency assumptions separately as
+     scheduling metadata, not as prescribed implementation or an acceptance criterion.
+   - `campaign`: follow `../pdca-incremental/SKILL.md` §Campaign cycle / Bootstrap:
+     `pdca-executor` persists the preparation charter at
+     `.pdca/<collection-id>/items/<item-id>/preparation.md`, its
+     `preparation_state` and authoritative `preparation_ref`; return
+     `preparation_handoff`. No baseline, runtime record, substantive DO, future step plan
+     or step count is required at the barrier.
 
-   - **Dispatching.** `COLLECTION TASK PLAN` goes out immediately for all items without a ready
-     plan/charter (§P.3, §Barrier by item forms), up to `plan_cap` (§Parameters); handoffs are
-     accepted as they become ready, not in the declared order. Several calls go out **as one block**,
-     not one at a time — sending the next only after the previous returns is serialization even if
-     the text says "in parallel". Parallelism is bounded by the host: `plan_cap` is an upper bound,
-     not a guarantee.
-   - **Status writing.** The primary appends the rows after each handoff returns, not between
-     sends. The write is serialized, not delegated to every PLAN: the semantics are set by the
-     primary/`pdca-planner`, the physical write is done by `pdca-executor` on an explicit dispatch
-     (`references/status.md`), so item rows, handoff/`preparation_ref` and the decisions log are
-     entered without a race. Parallel planning changes the cost of the phase, not the rows.
-   - **Barrier.** §P.3 is not weakened by this: it is about the readiness of **all** plans, not
-     about their sequence.
-   - **Schedule.** A parallel PLAN **does not fix the schedule**: the groups and the order are
-     determined only after the barrier (§P.4), so a sequential chain of items in one group is a
-     normal outcome, not a conflict with parallel planning.
-   - **Code overlap** is resolved there too: the footprint reservation is a **claim** for
-     clustering, not a lock. The PLAN **declares** the write footprint and its uncertainty, but
-     holds no lock and does not prevent other plans from being assembled in parallel. Overlapping
-     footprints do not forbid parallel planning — they forbid parallel **lanes**: such items land in
-     one group and go through it sequentially (branch after branch).
-   - **A dependency on a predecessor's result** is recorded in the handoff as a requirement on the
-     results; the lane checks applicability before DO and, when the premises are unmet, returns the
-     item to its own PLAN (`references/lane.md` §Stale plan and schedule revision).
+   PLAN-terminal `acceptance criteria cannot be determined` or proven
+   `original task is infeasible under the stated constraints` goes to that item's ACT,
+   without DO or CHECK, and **cannot** be marked ready. A failed candidate or an
+   unproven method alone does not establish infeasibility; no substitute goal is created.
+   A re-entry after a terminal result preserves its cause and history rather than rerunning
+   the same failed criterion unchanged.
 
-   **A re-entry after a terminal `incomplete`/STOP** does not re-run the failed criterion unchanged:
-   the previous terminal cause is a mandatory input of the own PLAN, and `pdca-planner` either
-   proves that the evidence is now obtainable or redefines the oracle; otherwise the item stays a
-   gap (§P.3).
+   **Parallel preparation.** Send the initial PLAN/preparation dispatches concurrently up to
+   `plan_cap` and observed host capacity, accepting handoffs as they finish; the physical
+   writes to the shared collection status are serialized through `pdca-executor`.
+   Independent planning does not require predecessor artefacts. Estimated write surfaces
+   are **non-binding claims** derived from known constraints; uncertain or unknown surfaces
+   stay explicit and conservatively constrain later lane parallelism. Planning never
+   locks files or promises that DO will use a prescribed implementation.
 
-   **A collection is a batch, not a licence to skip plan hygiene.** The item's own PLAN validates
-   its command contract before `plan_state=ready` (`../pdca/references/plan.md` §Plan command
-   contract), names its verification choice and effort estimate/accounting, and — for an unproven mechanism — plans a bounded probe
-   before the full acceptance contract. A plan whose decisive command cannot run is a gap at the
-   barrier, not a lane surprise.
-3. **ALL-barrier.** The DAG, the groups and the order are **not built** until the requirement of its
-   form is met for **every** item (§Barrier by item forms). An item's readiness by its form is
-   **not** a user approval and **not** a successful completion; readiness alone never triggers lane
-   allocation or an early DO — in normal mode the lane's DO still waits for the recorded approval
-   against the item's pending approval ref (§Approval barrier). An item for which a meaningful plan
-   is impossible (not enough data/decisions) stays a gap and is **not** marked with a `ready`
-   placeholder: the barrier is not passed, early DO is forbidden. The barrier constrains the
-   **start** of the DAG/groups/lanes, not the order of the PLANs: it does not require assembling the
-   plans sequentially and does not forbid the parallel dispatching of §P.2.
-4. **Clustering (after the barrier).** `pdca-planner` validates the contradictions and the
-   uncertainty from the handoff metadata, then builds the DAG and cuts it into groups: a group = a
-   connected component/line by dependencies and shared files; the groups' footprints do not overlap;
-   inside a group the items are ordered topologically. The result is bound to the **PLAN revision
-   vector** (which plans exactly were used) and recorded in the collection status file
-   (`references/status.md`). Before the persistent binding of the schedule there is no lane
-   allocation.
+3. **ALL-barrier.** The collection schedule and lanes are not allocated until **every** item
+   has a genuine saved `cycle` plan or `campaign` preparation charter. Readiness is neither
+   user approval nor completion, and normal-mode DO still requires recorded approval
+   against the exact pending ref (§Approval barrier). An undetermined/unreachable goal or
+   missing item preparation is an explicit gap: do not invent a `ready` placeholder, bypass
+   the barrier or start another item's DO early. Status updates and preparation writes are
+   permitted before the barrier; substantive bootstrap and DO are not.
 
-   **Width is an objective, not a by-product.** Minimise the largest serialized group: a component
-   whose items touch disjoint file families is cut into separate groups even when one lane could
-   carry them in order. A schedule that leaves most items in one chain has degraded to a single lane
-   by construction and must be justified in the status file, not accepted silently. The schedule
-   also declares the **host budget** — available memory, measurement locks, container capacity — and
-   `cap` is derived from it (§Parameters), never from the number of groups. After the first wave the
-   schedule is **re-examined**: a group that has lost its last writer releases waiting items into a
-   new lane through the persisted revision binding; this is a schedule revision, not an automatic
-   recluster (`references/lane.md`).
+4. **Clustering after the barrier.** `pdca-planner` examines the available dependency
+   requirements, estimated conflict surfaces, their uncertainty and host resource budget,
+   and decides the DAG, ordering and independent groups. Actual implementation choices
+   remain DO's. Known overlapping or **unresolved** write/conflict surfaces do not execute
+   in concurrent lanes; a conservative single lane is valid. The schedule and PLAN revision
+   vector are persisted before allocation. Prefer independent lanes when the known
+   constraints support them, without fabricating independence; a schedule revision after
+   new facts requires the recorded planner decision and applicable approval
+   (`references/lane.md` §Stale plan and schedule revision).
 
-   **Parallelism is not an entry condition.** If the barrier leaves one group, the host allows only
-   one lane (`cap = 1`), or the items share a measurement resource, that is a normal degradation to
-   a single lane (§D, `references/lane.md`), not a reason to change the contract. Do not create
-   fake groups and do not call the run parallel.
-5. **The only progress mirror is the collection status file.** There is no separate sidebar todo:
-   the host may not provide a todo tool, and a second mirror only produces divergence. You (the
-   primary) **define the semantics** of the write in the same tick as the event: a group/item
-   transition, a group stop, a merge, a corrective cycle, an escalation; **the physical write is
-   performed by `pdca-executor`** on an explicit dispatch — the primary does not write files itself.
-   Before dispatching, check the status file; after compaction the state is restored from it, not
-   from memory. Groups, items and their statuses live in the tables of `references/status.md` — a
-   separate list of items is not needed; a runner writes the status file of its own item, not the
-   sidebar.
+5. **Durable tracking.** The collection status file (`references/status.md`) is the only
+   batch progress mirror. The collection driver coordinates updates, but `pdca-executor`
+   writes each transition, handoff, group stop, merge, correction and escalation **in the
+   same turn**, without a competing sidebar list. On recovery the status is the source of
+   truth; item drivers maintain their own status files by the same one-writer rule.
 
 #### Barrier by item forms
 
@@ -216,7 +167,7 @@ analysis of the descriptions (`pdca-scout`) is by itself **not** a PLAN and does
   reservation and its uncertainty, the requirements on the predecessors' results,
   assumptions/prerequisites, refs. This is the same plan that is later executed;
   `plan_state=ready` is the readiness of the plan, not an approval and not completion.
-- **`campaign`** — the approved immutable/revisioned **charter** (preparation document) at
+- **`campaign`** — the prepared immutable/revisioned **charter** (preparation document) at
   `.pdca/<collection-id>/items/<item-id>/preparation.md`, the readiness `preparation_state`
   (`pending` | `ready`) and the **single authoritative** `preparation_ref` of the form `<path>@r<k>`
   in the item record. `ready` is not `met` and is not the completion of the campaign.
@@ -238,14 +189,13 @@ bootstrap and the change-producing DO are defined once in `../pdca-incremental/S
 not `started`: the item stays `pending` and never `done`. The only success of a campaign item is an
 accepted `met`; the barrier does not require what is created later.
 
-If there is **one group** — do not fail: degrade to a single lane. **No worktree and no group branch
+If there is **one group** — keep the collection form and use a single lane. **No worktree and no group branch
 are created**: work in the **current** worktree on the current branch, the commits (in autocommit
 mode) go straight into it, `merge --no-ff` is not needed — there is nothing to merge; the merge
 barrier (§D.3), the group/task branches and the merge itself **do not apply**. On `incomplete` of
 such a group the commits already made **stay** in the current branch (no automatic rollback), and
 the uncommitted changes of the failed item are preserved as a patch; only the paths of that item are
-rolled back (`references/lane.md` §Failure). If there are no independent items at all — an ordinary
-pdca cycle; an empty input → report that there is nothing to do.
+rolled back (`references/lane.md` §Failure). A one-item collection stays a collection; an empty input → report that there is nothing to do.
 
 ### D — infrastructure, tracking, merge
 
@@ -257,10 +207,12 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    **If there is one group** — no worktree and no branches (`group-<g>`, `task-<g>-<k>`) are
    created: work in the current worktree on the current branch, the commits go there too; instead of
    `merge --no-ff` — ordinary work in place (there is nothing to merge).
-2. The `pdca-orchestrator` instances are started in parallel (one subagent per group; a campaign
-   item is led inline in its lane by that item's designated controller, §Ownership and
-   `references/lane.md`), no more than `cap` at a time. With one group — one runner in the current
-   worktree.
+2. In autonomous mode, available `pdca-orchestrator` group runners are started in parallel
+   (one per group, up to `cap`); each may be the **designated item driver** and keeps a campaign's
+   driver across all its steps (§Items and execution ownership, `references/lane.md`). In normal
+   mode the primary itself drives the cycles/steps and obtains approval; it does not spawn a
+   `pdca-orchestrator` as their driver. Actual lane concurrency is bounded by host capability.
+   With one group there is one lane in the current worktree.
 3. **Merge barrier**: with `>=2` groups the merge starts only when **all** lanes are terminal
    (`done` | `incomplete` with an explicit outcome) — readiness = terminality, **not** success. Then
    `pdca-executor` sequentially performs `git merge --no-ff` **only for the `done` groups** (the
@@ -300,9 +252,12 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
 
 ### C — verification (the standard CHECK)
 
-The common verification of a collection is the **standard CHECK** of the common contract (two ticks:
-gather cheap → verdict `pdca-check` medium; common contract §One loop,
-`../pdca/references/check.md`), plus the overlay deltas of the contract applied to the checked work
+The common verification of a collection is an **independent CHECK** of the integrated result
+against the preserved batch requirements and their actual scope (`pdca-check`,
+`references/common-contract.md` §Verification). **CHECK chooses the verification methods and
+sufficient evidence at CHECK time**, routing any necessary runs through `pdca-executor` and
+independent observation through `pdca-scout`. Apply the relevant specialized-skill check deltas
+for the work actually included
 (`../pdca-coder/SKILL.md` §Code-specific check deltas; for .NET — `../pdca-dotnet/SKILL.md`
 §.NET check deltas), and **not** a separate bespoke stage of the collection. When all lanes are
 stopped, in the main tree: all **`done`** groups are integrated (**became `merged`**, including a
@@ -311,19 +266,21 @@ unfinished merge state**.
 
 The input of the common `C` is the **actual group statuses** plus the separate **integration note**
 (`skipped` + reason); only the **selected `done` groups** are integrated and moved to `merged`,
-`incomplete` stays `incomplete` and keeps its evidence. `PASS` of the parent `C` **may coexist** with
-`incomplete` groups: the **completion** report (how many items/groups were carried through) and the
-**verification verdict** of the integrated tree are **separate** fields. Even with no selected `done`
+`incomplete` stays `incomplete` and keeps its evidence. `PASS` of the parent **integration CHECK** may coexist with `incomplete` groups because it
+judges **only the integrated result**. The **completion** report and **integration verdict** are
+separate; a PASS on that narrower snapshot never means the full set of original item goals is
+complete. Even with no selected `done`
 group or with an `incomplete` current group the standard `C` still runs on the integrated tree; the
 source items are **not** marked `done` retroactively. Counters/escalation are the common ones (common contract
 §Counters and history, §Escalation and guardrails), without a collection counter.
 
-The runner **always** — even when all checks are green — gathers through the existing
-`pdca-executor`/`pdca-scout` the mandatory reports about the raw measurements (command, exit code,
-log) and the observation-lens reports, and passes the **aggregate** to `pdca-check` (medium). The
-raw command measurements **never** decide gate PASS by themselves: the verdict of `C`
-(`pass`/`fail` + findings) is issued by `pdca-check`; `pdca-check` does not run hands and does not
-edit code. The claims and the veto apply unchanged (common contract §Claims and veto).
+Even when implementation checks are green, the driver sends the **unchanged original item
+requirements**, actual integrated snapshot, statuses, and available evidence pointers to
+`pdca-check`. The checker decides what additional verification is necessary; the runner only
+routes those requests. A missing or unreliable report is `unverified`, not a defect or a PASS,
+and gathering it is not a new implementation attempt. Raw exit codes never pronounce PASS;
+`pdca-check` alone judges the integrated result, without editing code. The mandatory-requirement
+veto remains in force (`references/common-contract.md` §Claims and veto).
 
 - **PASS** → the common ACT of the collection is allowed (§A).
 - **FAIL · a real defect** → the runner opens a **standard corrective cycle** (its form, contract
@@ -359,9 +316,11 @@ the **common** `C` and obeys the common `r`/`n`.
 
 ### A — completion
 
-ACT finalizes the collection outcome. **Only a PASS of the common `C`** allows the success
-completion and cleanup; a `blocked`/`incomplete`/`STOP` outcome is finalized by the same ACT, with
-the honest outcome recorded and **no success path**. Report (§Report); `pdca-executor` removes
+ACT finalizes the collection outcome. **Full collection completion** requires both an accepted
+common integration CHECK **and completion of every original item goal** by that item's own
+whole-goal CHECK/ACT. An integration PASS with `incomplete` items is a verified partial integration,
+**not** full collection success. A `blocked`/`incomplete`/`STOP` outcome is finalized honestly,
+without claiming `done` for missing goals and without taking the success cleanup path. Report (§Report); `pdca-executor` removes
 **only disposable** worktrees and temporary group/task branches that are **`done`/`merged`**. The
 worktrees, branches, commits and patches of **`incomplete` groups are never deleted**: before any
 cleanup their refs and patch paths are preserved (simplest — leave their worktree and refs in
@@ -390,10 +349,10 @@ An item or step waiting for approval is `disposition=paused` with the status `in
 ref, the applicability check on resume, the fresh approval after a real revision. The collection
 adds only what the collection owns:
 
-1. The runner returns a **checkpoint** to the parent (the collection primary) with the ref — the
+1. The item driver returns a **checkpoint** to the collection driver (the primary in normal mode) with the ref — the
    handoff carries it as its approval pointer — and does not ask the user itself and does not start
    DO. A brief, a summary or a chat message is not an approval.
-2. The primary asks the user; an explicit approval is recorded against **the same** ref. The
+2. In normal mode the primary asks the user; an explicit approval is recorded against **the same** ref. The
    protocol is the same for `cycle` and `campaign`.
 3. Resume continues **the same** cycle/step, and an unchanged saved plan is no exception;
    applicability without a matching record is an **approval-needed checkpoint**, not DO and not a
@@ -408,19 +367,16 @@ adds only what the collection owns:
 The host requirements, the role table and the resource-blocker rules are in
 `references/common-contract.md`; this section keeps only the collection's own fallback.
 
-If the harness forbids a subagent to delegate (no nested delegation), `pdca-orchestrator` cannot
-orchestrate pdca. Trigger: the launch of `pdca-orchestrator` fails with a
-delegation/subagent-unavailability error. Then — **one** flat-primary fallback: the primary itself
-leads "in flight" **one current item per group** (launches to
-`pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-scout`), and on completion launches the next item
-of the same group. **Independent groups keep the allowed parallelism**: up to `cap` groups at a time
-if the host allows it; if the host does not provide concurrency — the same fallback leads the groups
-sequentially. `cap` is an upper bound, not a guarantee. The fallback does not substitute roles:
-another agent does not perform the functions of an unavailable mandatory role. In phase P the flat
-primary likewise conducts the **COLLECTION TASK PLAN** of every item itself (by its form — the
-cycle's own PLAN or the preparation of the campaign charter), observing the ALL-barrier, and
-continues the saved PLAN in the lane with DO. The fallback marks itself with a `Notice:` line and a
-durable reason and does not obtain the roles' rights.
+When an autonomous `pdca-orchestrator` is absent or cannot delegate, use the **flat cheap primary**
+as driver with `Notice:` and a durable reason, if the host permits it. It drives one current item
+per lane and delegates PLAN/DO/CHECK to their required roles; a campaign still has one designated
+driver for all steps. Independent groups may be processed concurrently up to `cap` only if the
+host permits that concurrency; otherwise they are sequential. Normal mode already uses the
+primary driver and must not treat the lack of orchestrator delegation as a reason to skip approval.
+The fallback never promotes a driver into PLAN, CHECK, execution or expert-review authority.
+
+A required-but-unavailable role or a host-denied fallback is a **resource blocker**, not a reason
+to improvise another role. Plan preparation, barrier and handoff semantics remain unchanged.
 
 **Capability preflight.** Before the lane allocation and before the start of a campaign in a lane
 the observable capability of the host is checked: the availability of the mandatory roles and
@@ -455,13 +411,13 @@ contract names roles only, carries no model id and adds no role.
 Loaded **at the start of its phase**, not up front (the host truncates tool output at 50 KiB /
 2000 lines, so a truncated contract would lose the tail — usually the CHECK/ACT/STOP rules):
 
-- `references/common-contract.md` — the self-contained common contract: entry and control mode, the
+- `references/common-contract.md` — the collection-local self-contained common contract: entry and control mode, the
   loop, roles and tiers, counters, claims and veto, evidence, escalation and guardrails. Load it with
   this file; the base `../pdca/SKILL.md` is optional deeper detail, not a prerequisite.
 - `../pdca-incremental/SKILL.md` — a campaign item: invariants, charter and status file, bootstrap,
   the step boundary, acceptance, the stop rules.
 - `../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md` — the overlays applied to the relevant work.
-- `references/lane.md` — lane work stream, queue, campaign-control in a lane, lane pause, stale plan
+- `references/lane.md` — lane work stream, queue, designated item driver and campaign continuity, lane pause, stale plan
   and schedule revision, surface reservation, git model, failure semantics.
 - `references/status.md` — the collection status file, its invariants and the routing of campaign
   outcomes to item status.
