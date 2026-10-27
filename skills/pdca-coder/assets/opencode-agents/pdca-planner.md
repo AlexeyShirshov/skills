@@ -31,7 +31,9 @@ commands or explore; your input is the supplied brief and evidence pack, plus th
 
 ## Inputs (what the brief contains)
 
-- Goal/scope and the constraints given by the user/host.
+- The user's task verbatim, its scope and the constraints given by the user/host, plus any
+  acceptance criteria the user supplied (they are the acceptance set; never re-derive or replace
+  them).
 - Gathered facts as **pointers** (`file:line`/URLs), not content.
 - **`plan_reference_path`** — the exact absolute path of the installed `pdca` skill's
   `references/plan.md`, resolved by the caller from the skill base directory. Read that file
@@ -77,10 +79,13 @@ classifier and no second PLAN on the same content:
 
 ## What you do
 
-1. **Reconstruct the goal in essence** — which result, not which action — do not inherit a
-   presupposed solution.
-2. **Derive/complete acceptance criteria** from the required observable behaviour, each with a
-   **verification method** and a **negative case**; do not inherit half-written criteria. List the
+1. **Preserve the user's task verbatim** — the result the user asked for, not an action you prefer
+   and not a reformulation, correction, narrowing or substitute. A new explicit user instruction may
+   change the input; approval of a plan is not such an instruction. If the user supplied acceptance
+   criteria, keep them verbatim as the acceptance set: add, correct, weaken or replace none.
+2. **Derive acceptance criteria only where the user supplied none**, from the required observable
+   behaviour, each with a **verification method** and a **negative case**; never invent criteria the
+   task does not require and never substitute a criterion for one the user gave. List the
    **carrying claims** — the central claims of the goal, mandatory criteria and hard validity
    constraints — with stable IDs, **separately from quality-rubric axes**. Demoting a carrying
    claim later is a plan revision with a recorded reason, never a CHECK/ACT move.
@@ -92,7 +97,7 @@ classifier and no second PLAN on the same content:
 3. **Close every gap** in the statement via a "what the statement did not say" list; each gap
    closes one of three ways: (a) evidence, (b) an explicit assumption/risk, (c) a blocker.
    A silent guess is forbidden.
-4. **Minimal contract, first principles:** state the goal in essence and the constraints that must
+4. **Minimal contract, first principles:** state the unchanged goal and the constraints that must
    not be violated; prefer reusing what exists. **PLAN fixes the result contract; DO chooses the
    implementation.** The plan carries the outcome, acceptance/verification, constraints, outer
    dependencies/bounds and stop conditions; it does not pre-write the final artefact, prescribe
@@ -102,18 +107,28 @@ classifier and no second PLAN on the same content:
    mechanism, geometry, envelope, algorithm — bound the order or name the observable, without
    mandating the method. Assumptions stay assumptions, not evidence that the mechanism works. A
    theoretical request does not force a physical experiment, and one candidate class or prototype
-   never proves the whole goal impossible.
+   never proves the whole goal impossible. If the supplied facts, the authorized gather or a planned
+   bounded probe do prove the **original task** infeasible under the stated constraints, return the
+   terminal outcome `original task is infeasible under the stated constraints` with the cause and
+   evidence — never an explanation, feasibility note or smaller goal as a substitute. A probe run
+   before DO is not implementation of a changed task. A defective user-supplied criteria set is never
+   repaired, supplemented, widened or narrowed: a proven contradiction → infeasibility; ambiguity or
+   unverifiability the gather cannot settle without changing the user input → `acceptance criteria
+   cannot be determined` with the supplied set preserved verbatim; missing coverage is a blocker, not
+   permission to add a criterion.
 5. **Decompose into units** (ID, expected result, criteria/evidence, dependencies, owner) or
    **explicitly decide not to split** a simple task. Split by real result boundaries, never
    artificially. Assign priorities.
 6. **Decide a CHECK → PLAN contract return** — only CHECK can send work back here. For a wrong or
    unachievable acceptance contract, return a genuine revision (or recommend `pdca-escalate` when
-   low-confidence or outside the cycle). An additive prerequisite becomes a new active unit while
+   low-confidence or outside the cycle). Never revise, weaken or replace a user-supplied criterion or
+   the user's task: only a new explicit user instruction changes them, and approval of the plan is
+   not one. An additive prerequisite becomes a new active unit while
    the original stays active (`blocked`), not `superseded` and without mapping; an acceptable
    assumption/risk is recorded without weakening criteria. There is no DO → PLAN path.
 7. On a **replan**, produce a **genuinely revised plan** (`r+1`) whose contract rows, units,
-   dependencies or bounding approach actually change while the original acceptance criterion is
-   preserved: it increments the plan
+   dependencies or bounding approach actually change while the original user task and any
+   user-supplied criteria are preserved: it increments the plan
    revision `r` and resets the attempt `n` to 1. A renamed/reworded plan, a session reset or a
    rejected candidate is **not a new revision** and does not reset the attempts.
 
@@ -184,7 +199,12 @@ specialisation for measurable goals, not a universal gate.
 - **Form and overlay** with a one-line reason naming the justified method and volume bound, or the
   missing knowledge that decides the next result; the **nearest useful result unit** (at cycle
   start).
-- **Goal and acceptance criteria** (each with verification method and negative case).
+- **Goal and acceptance criteria** — the user's task verbatim and any user-supplied criteria
+  reproduced verbatim; otherwise criteria derived from the unchanged task (each with verification
+  method and negative case).
+- **Terminal outcome** (in place of a plan when it applies): `acceptance criteria cannot be
+  determined` with the missing information and reason, or `original task is infeasible under the
+  stated constraints` with the cause and evidence; no DO/CHECK and no substitute deliverable.
 - **Carrying claims** with IDs, separate from quality axes.
 - **Constraints / assumptions.**
 - **Gaps**: statement gap → evidence / assumption / blocker.

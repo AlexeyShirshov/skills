@@ -34,13 +34,17 @@ Look at:
 
 ## PLAN owns the quality of the plan
 
-Treat a weak statement (vague issue, half-written criteria, no edge list, habit-sketched solution)
-as a **hypothesis to test**, not a contract to obey. PLAN owns plan quality regardless of input:
+PLAN owns the quality of the plan **without owning the requirement**: a weak statement (vague issue,
+missing edge list, habit-sketched solution) is a **gap to close** with evidence, an explicit
+assumption/risk or a blocker — never a licence to rewrite the task or its acceptance criteria.
 
-- **Reconstruct the goal in essence** first (§Minimal solution) — do not inherit a presupposed
-  solution.
-- **Derive/complete acceptance criteria** from the required observable behavior (each with a
-  negative case), not the wording.
+- **Preserve the user's task verbatim** — the requested result, not your preferred solution and not a
+  reformulation, correction, narrowing or substitute. If the user supplied acceptance criteria, they
+  are the acceptance set verbatim: add, correct, weaken or replace none; derive criteria only where
+  the user supplied none.
+- **Derive acceptance criteria** (only where the user supplied none) from the required observable
+  behavior, each with a negative case — never from the wording of a sketch and never in place of a
+  criterion the user gave.
 - Keep a **"What the statement did not say"** list; every gap closes one of three ways: (a) evidence
   (`file:line`), (b) an explicit **assumption/risk**, (c) a **blocker/`pdca-escalate`**. A silent
   guess is forbidden.
@@ -71,8 +75,8 @@ statement raises PLAN's burden, it does not lower the bar.
 
 ### Minimal solution and first principles
 
-For a non-trivial plan, record in the plan answers to: (1) the goal **in essence** (which result,
-not which edit)? (2) constraints that **must not** be violated (public contract, compatibility,
+For a non-trivial plan, record in the plan answers to: (1) the unchanged requested result (which
+result, not which edit)? (2) constraints that **must not** be violated (public contract, compatibility,
 invariants)? (3) the optimal solution **under these constraints**? Keep it **minimal** (YAGNI
 ladder): no functionality without a consumer → reuse what exists → standard library → platform
 capability → only then a dependency/new code; "the minimum that works". A superfluous abstraction,

@@ -52,7 +52,20 @@ rule dependency.
   action genuinely depends on knowledge not yet obtained and cannot be justified now.
 - **Collection** — a set of independent goals, each processed by its own complete cycle.
 - Feasibility need not be proven at PLAN: one **bounded probe** may settle form, feasibility or a
-  criterion. A probe is not a cycle, starts no per-probe CHECK and waives no approval.
+  criterion. A probe is not a cycle, starts no per-probe CHECK and waives no approval. A bounded probe
+  run before DO is not implementation of a changed task. If the supplied facts, the authorized gather
+  or such a probe prove the **original task itself** infeasible under the stated constraints (not
+  merely that one candidate failed), PLAN returns the terminal outcome `original task is infeasible
+  under the stated constraints` with the cause and evidence, and ACT finalizes `blocked`/`STOP`; an
+  explanation, a feasibility note or a smaller goal is not the requested result and never replaces it.
+- **The user's task is authoritative and immutable.** No phase or handoff reformulates, corrects,
+  narrows, widens or substitutes it. User-supplied acceptance criteria are the acceptance set
+  **verbatim**: no phase adds, corrects, weakens, replaces or supplements them, and no result is
+  accepted against a different set. Only when the user supplied no criteria does PLAN define them;
+  only a new explicit user instruction changes the input, and approval of the agent's plan is not
+  one. Decomposition and verification detail are not acceptance requirements. Separate mandatory
+  safety and permission gates are not criteria and are never waived here. (Base wording, when
+  installed: `../../pdca/SKILL.md` §The user's task and its criteria.)
 
 ### Overlays
 
@@ -69,6 +82,8 @@ PLAN → (normal mode: the user reads and approves the plan) → DO → CHECK �
                                       CHECK → DO   (implementation defect)
                                       CHECK → PLAN (contract/acceptance defect)
                                       DO → ACT     (cannot finish: blocked / incomplete / STOP)
+                                      PLAN → ACT   (criteria cannot be determined |
+                                                    original task proven infeasible)
 ```
 
 DO never issues a verdict, PASS or STOP; it returns exactly one of two outcomes:
@@ -85,15 +100,16 @@ DO never issues a verdict, PASS or STOP; it returns exactly one of two outcomes:
    each with a verification method, constraints, assumptions, carrying claims with IDs, form and
    overlay with a reason, dependencies/bounds, risks and stop conditions, evidence location, effort
    estimate) and written to the status file, every frozen verification command validated against
-   the environment, and — in normal mode — the recorded approval. Missing acceptance criteria in
-   normal mode → ask the user; in autonomous mode → route through planner/escalate, and if no
-   acceptable contract can be formed, ACT finalizes STOP.
+   the environment, and — in normal mode — the recorded approval. Missing acceptance criteria are
+   closed by PLAN's authorized gather; if they cannot be determined, or the original task is proven
+   infeasible, the cycle goes **PLAN → ACT** and ACT finalizes the **cycle** `blocked`/`STOP`
+   (status projection below) — there is no ask-the-user path and no substitute task.
 2. **DO → CHECK** — only when every active, non-`superseded` unit is `done` with recorded evidence.
    A blocker report is **not** `done`; unfinished work stays `blocked`/`pending`, and a rejected
    candidate resumes the original unit.
 3. **DO → ACT** — DO cannot finish under the approved contract. No CHECK and no planner detour: ACT
-   finalizes `blocked`/`incomplete`/`STOP` with cause, evidence and residual requirements. No PASS,
-   no `done`, no credit.
+   finalizes the **cycle** `blocked`/`incomplete`/`STOP` (status projection below) with cause,
+   evidence and residual requirements. No PASS, no `done`, no credit.
 4. **CHECK → ACT** — only if `pdca-check` finds every criterion `met` on **actual evidence**, no
    carrying claim `confirmed`/`unverified` against it, and cross-part consistency verified.
    Otherwise loop back: implementation defect → DO; wrong or unachievable contract → PLAN via
@@ -104,6 +120,18 @@ DO never issues a verdict, PASS or STOP; it returns exactly one of two outcomes:
 6. **ACT → STOP** — ACT finalizes a `blocked`/`incomplete`/`STOP` outcome with the remaining
    `unmet`/`unverified` criteria, the counters and the defect history, without a false PASS and
    without bypassing the no-4th rule. **STOP is an ACT outcome**, not a separate terminal path.
+
+**PLAN → ACT** is terminal and bypasses DO and CHECK with no approval: `acceptance criteria cannot
+be determined` (concrete missing information and reason) or `original task is infeasible under the
+stated constraints` (proven cause and evidence, concerning the original task rather than one failed
+candidate). ACT finalizes the **cycle** as `blocked`/`STOP` with the counters and defect history, no
+`PASS`, no `done` and no substitute deliverable. The form's own status projection stays in
+`references/status.md` §Routing campaign outcomes: `original task is infeasible` → `unreachable`
+(paused, or `finalized`(failure)/`incomplete` only by that contract's explicit final unsuccessful
+disposition), criteria-undetermined/blocked → `blocked`/`stopped` as that mapping says; `blocked` and
+`stopped` are checkpoints unless that disposition is taken, independent items continue, and no
+`STOP` value is added to the enum. Feasibility is not demanded of every PLAN; uncertainty and the
+bounded probe remain.
 
 **CHECK is mandatory to accept a completed result; it is never run on a candidate DO already
 reports as blocked or incomplete. You cannot close the cycle without ACT. There is no DO → PLAN,

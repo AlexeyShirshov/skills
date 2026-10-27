@@ -1,4 +1,4 @@
-<svg viewBox="0 948 1388 488" width="1388" height="488" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif" role="img">
+<svg viewBox="0 948 1388 528" width="1388" height="528" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif" role="img">
 <defs>
 <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker>
 </defs>
@@ -26,7 +26,7 @@
 <text x="42" y="124" class="ol">← DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»</text>
 <text x="42" y="142" class="ol">← CHECK ← «units done от DO»</text>
 <text x="42" y="160" class="ol">← ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»</text>
-<text x="694.0" y="106" class="ol">← ACT ← «все criteria met от CHECK» · «DO не может завершить» · «STOP-финализация»</text>
+<text x="694.0" y="106" class="ol">← ACT ← «все criteria met от CHECK» · «DO не может завершить» · «PLAN-терминал» · «STOP-финализация»</text>
 <text x="694.0" y="124" class="ol">← STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT</text>
 <text x="694.0" y="142" class="ol">← EXIT ← «ACT закрыт»</text>
 <rect x="108.0" y="226" width="212" height="40" rx="8" fill="#2563eb"/><text x="214.0" y="251.0" class="h" fill="#ffffff" text-anchor="middle">P · PLAN</text>
@@ -285,62 +285,64 @@
 <text x="969.5333333333334" y="933" class="lm" fill="#ffffff" text-anchor="middle">strong</text>
 <text x="1009.7333333333333" y="933" class="ls">pdca-escalate</text>
 <text x="24" y="966" class="lt">Граф состояний цикла</text>
-<rect x="24" y="1116" width="156" height="56" rx="10" fill="#94a3b8" fill-opacity="0.10" stroke="#94a3b8" stroke-width="1.8" data-node-id="START"/>
-<text x="102.0" y="1143.0" class="st" fill="#94a3b8" text-anchor="middle">START</text>
-<text x="102.0" y="1160.0" class="ss" fill="#94a3b8" text-anchor="middle" opacity="0.8">начало</text>
-<rect x="256" y="1116" width="156" height="56" rx="10" fill="#60a5fa" fill-opacity="0.10" stroke="#60a5fa" stroke-width="1.8" data-node-id="PLAN"/>
-<text x="334.0" y="1143.0" class="st" fill="#60a5fa" text-anchor="middle">P · PLAN</text>
-<text x="334.0" y="1160.0" class="ss" fill="#60a5fa" text-anchor="middle" opacity="0.8">план</text>
-<rect x="488" y="1116" width="156" height="56" rx="10" fill="#a78bfa" fill-opacity="0.10" stroke="#a78bfa" stroke-width="1.8" data-node-id="DO"/>
-<text x="566.0" y="1143.0" class="st" fill="#a78bfa" text-anchor="middle">D · DO</text>
-<text x="566.0" y="1160.0" class="ss" fill="#a78bfa" text-anchor="middle" opacity="0.8">исполнение</text>
-<rect x="720" y="1116" width="156" height="56" rx="10" fill="#fbbf24" fill-opacity="0.10" stroke="#fbbf24" stroke-width="1.8" data-node-id="CHECK"/>
-<text x="798.0" y="1143.0" class="st" fill="#fbbf24" text-anchor="middle">C · CHECK</text>
-<text x="798.0" y="1160.0" class="ss" fill="#fbbf24" text-anchor="middle" opacity="0.8">проверка</text>
-<rect x="952" y="1116" width="156" height="56" rx="10" fill="#34d399" fill-opacity="0.10" stroke="#34d399" stroke-width="1.8" data-node-id="ACT"/>
-<text x="1030.0" y="1143.0" class="st" fill="#34d399" text-anchor="middle">A · ACT</text>
-<text x="1030.0" y="1160.0" class="ss" fill="#34d399" text-anchor="middle" opacity="0.8">финализация</text>
-<rect x="1184" y="1116" width="156" height="56" rx="10" fill="#94a3b8" fill-opacity="0.10" stroke="#94a3b8" stroke-width="1.8" data-node-id="EXIT"/>
-<text x="1262.0" y="1143.0" class="st" fill="#94a3b8" text-anchor="middle">EXIT</text>
-<text x="1262.0" y="1160.0" class="ss" fill="#94a3b8" text-anchor="middle" opacity="0.8">завершение</text>
-<polyline points="180,1144.0 256,1144.0" fill="none" stroke="#94a3b8" data-edge-id="start_plan" marker-end="url(#arrow)"/>
-<text x="218.0" y="1137.0" class="g" fill="#cbd5e1" text-anchor="middle">старт</text>
-<polyline points="412,1144.0 488,1144.0" fill="none" stroke="#94a3b8" data-edge-id="plan_do" marker-end="url(#arrow)"/>
-<text x="450.0" y="1111.0" class="g" fill="#cbd5e1" text-anchor="middle">контракт · апрув</text>
-<text x="450.0" y="1124.0" class="g" fill="#cbd5e1" text-anchor="middle">сразу (авто)</text>
-<text x="450.0" y="1137.0" class="g" fill="#cbd5e1" text-anchor="middle">· n=1/3</text>
-<polyline points="644,1144.0 720,1144.0" fill="none" stroke="#94a3b8" data-edge-id="do_check" marker-end="url(#arrow)"/>
-<text x="682.0" y="1137.0" class="g" fill="#cbd5e1" text-anchor="middle">units done</text>
-<polyline points="876,1144.0 952,1144.0" fill="none" stroke="#94a3b8" data-edge-id="check_act" marker-end="url(#arrow)"/>
-<text x="914.0" y="1137.0" class="g" fill="#cbd5e1" text-anchor="middle">criteria met</text>
-<polyline points="1108,1144.0 1184,1144.0" fill="none" stroke="#94a3b8" data-edge-id="act_exit" marker-end="url(#arrow)"/>
-<text x="1146.0" y="1137.0" class="g" fill="#cbd5e1" text-anchor="middle">закрыто</text>
-<path d="M988,1116 C988,1076 376,1076 376,1116" fill="none" stroke="#34d399" stroke-dasharray="5,4" data-edge-id="act_plan" marker-end="url(#arrow)"/>
-<text x="682" y="1072" class="g" fill="#cbd5e1" text-anchor="middle">следующий цикл · N+1</text>
-<path d="M566,1116 C566,1044 1040,1044 1040,1116" fill="none" stroke="#94a3b8" data-edge-id="do_act_incomplete" marker-end="url(#arrow)"/>
-<text x="803" y="1040" class="g" fill="#cbd5e1" text-anchor="middle">не может завершить → ACT</text>
-<path d="M798,1116 C798,1012 566,1012 566,1116" fill="none" stroke="#94a3b8" data-edge-id="check_do_defect" marker-end="url(#arrow)"/>
-<text x="682" y="1008" class="g" fill="#cbd5e1" text-anchor="middle">дефект · n+1 (n/3)</text>
-<path d="M798,1116 C798,980 334,980 334,1116" fill="none" stroke="#94a3b8" data-edge-id="check_plan_replan" marker-end="url(#arrow)"/>
-<text x="566" y="976" class="g" fill="#cbd5e1" text-anchor="middle">неверный контракт → CHECK → PLAN · r+1</text>
-<rect x="488" y="1296" width="156" height="56" rx="10" fill="#f87171" fill-opacity="0.10" stroke="#f87171" stroke-width="1.8" data-node-id="ESCALATE"/>
-<text x="566.0" y="1323.0" class="st" fill="#f87171" text-anchor="middle">ЭСКАЛАЦИЯ</text>
-<text x="566.0" y="1340.0" class="ss" fill="#f87171" text-anchor="middle" opacity="0.8">решение</text>
-<rect x="1184" y="1296" width="156" height="56" rx="10" fill="#dc2626" fill-opacity="0.10" stroke="#dc2626" stroke-width="1.8" data-node-id="STOP"/>
-<text x="1262.0" y="1323.0" class="st" fill="#dc2626" text-anchor="middle">STOP</text>
-<text x="1262.0" y="1340.0" class="ss" fill="#dc2626" text-anchor="middle" opacity="0.8">исход ACT</text>
-<path d="M798,1172 C798,1252 566,1216 566,1296" fill="none" stroke="#f87171" data-edge-id="check_escalate" marker-end="url(#arrow)"/>
-<text x="700" y="1234.0" class="g" fill="#cbd5e1" text-anchor="middle">повтор · 3-й провал</text>
-<polyline points="516,1296 516,1172" fill="none" stroke="#f87171" data-edge-id="escalate_do" marker-end="url(#arrow)"/>
-<text x="504" y="1234.0" class="g" fill="#cbd5e1" text-anchor="end">r не исчерпан → DO</text>
-<polyline points="488,1324.0 334,1324.0 334,1172" fill="none" stroke="#f87171" data-edge-id="escalate_plan" marker-end="url(#arrow)"/>
-<text x="411" y="1314.0" class="g" fill="#cbd5e1" text-anchor="middle">исчерпан r → PLAN r+1</text>
-<polyline points="644,1324.0 980,1324.0 980,1172" fill="none" stroke="#f87171" data-edge-id="escalate_act" marker-end="url(#arrow)"/>
-<text x="812" y="1314.0" class="g" fill="#cbd5e1" text-anchor="middle">нет плана r+1 → ACT</text>
-<path d="M1060,1172 C1060,1232 1262,1236 1262,1296" fill="none" stroke="#dc2626" data-edge-id="act_stop" marker-end="url(#arrow)"/>
-<text x="1128" y="1234.0" class="g" fill="#cbd5e1" text-anchor="end">STOP · incomplete</text>
-<text x="24" y="1414" class="g" fill="#94a3b8" text-anchor="start">сплошная стрелка — переход</text>
-<text x="320" y="1414" class="g" fill="#94a3b8" text-anchor="start">дуга — loop-back до ACT</text>
-<text x="600" y="1414" class="g" fill="#94a3b8" text-anchor="start">пунктир — следующий цикл</text>
-<text x="860" y="1414" class="g" fill="#94a3b8" text-anchor="start">нижний ряд — эскалация; STOP — исход ACT</text>
+<rect x="24" y="1156" width="156" height="56" rx="10" fill="#94a3b8" fill-opacity="0.10" stroke="#94a3b8" stroke-width="1.8" data-node-id="START"/>
+<text x="102.0" y="1183.0" class="st" fill="#94a3b8" text-anchor="middle">START</text>
+<text x="102.0" y="1200.0" class="ss" fill="#94a3b8" text-anchor="middle" opacity="0.8">начало</text>
+<rect x="256" y="1156" width="156" height="56" rx="10" fill="#60a5fa" fill-opacity="0.10" stroke="#60a5fa" stroke-width="1.8" data-node-id="PLAN"/>
+<text x="334.0" y="1183.0" class="st" fill="#60a5fa" text-anchor="middle">P · PLAN</text>
+<text x="334.0" y="1200.0" class="ss" fill="#60a5fa" text-anchor="middle" opacity="0.8">план</text>
+<rect x="488" y="1156" width="156" height="56" rx="10" fill="#a78bfa" fill-opacity="0.10" stroke="#a78bfa" stroke-width="1.8" data-node-id="DO"/>
+<text x="566.0" y="1183.0" class="st" fill="#a78bfa" text-anchor="middle">D · DO</text>
+<text x="566.0" y="1200.0" class="ss" fill="#a78bfa" text-anchor="middle" opacity="0.8">исполнение</text>
+<rect x="720" y="1156" width="156" height="56" rx="10" fill="#fbbf24" fill-opacity="0.10" stroke="#fbbf24" stroke-width="1.8" data-node-id="CHECK"/>
+<text x="798.0" y="1183.0" class="st" fill="#fbbf24" text-anchor="middle">C · CHECK</text>
+<text x="798.0" y="1200.0" class="ss" fill="#fbbf24" text-anchor="middle" opacity="0.8">проверка</text>
+<rect x="952" y="1156" width="156" height="56" rx="10" fill="#34d399" fill-opacity="0.10" stroke="#34d399" stroke-width="1.8" data-node-id="ACT"/>
+<text x="1030.0" y="1183.0" class="st" fill="#34d399" text-anchor="middle">A · ACT</text>
+<text x="1030.0" y="1200.0" class="ss" fill="#34d399" text-anchor="middle" opacity="0.8">финализация</text>
+<rect x="1184" y="1156" width="156" height="56" rx="10" fill="#94a3b8" fill-opacity="0.10" stroke="#94a3b8" stroke-width="1.8" data-node-id="EXIT"/>
+<text x="1262.0" y="1183.0" class="st" fill="#94a3b8" text-anchor="middle">EXIT</text>
+<text x="1262.0" y="1200.0" class="ss" fill="#94a3b8" text-anchor="middle" opacity="0.8">завершение</text>
+<polyline points="180,1184.0 256,1184.0" fill="none" stroke="#94a3b8" data-edge-id="start_plan" marker-end="url(#arrow)"/>
+<text x="218.0" y="1177.0" class="g" fill="#cbd5e1" text-anchor="middle">старт</text>
+<polyline points="412,1184.0 488,1184.0" fill="none" stroke="#94a3b8" data-edge-id="plan_do" marker-end="url(#arrow)"/>
+<text x="450.0" y="1151.0" class="g" fill="#cbd5e1" text-anchor="middle">контракт · апрув</text>
+<text x="450.0" y="1164.0" class="g" fill="#cbd5e1" text-anchor="middle">сразу (авто)</text>
+<text x="450.0" y="1177.0" class="g" fill="#cbd5e1" text-anchor="middle">· n=1/3</text>
+<polyline points="644,1184.0 720,1184.0" fill="none" stroke="#94a3b8" data-edge-id="do_check" marker-end="url(#arrow)"/>
+<text x="682.0" y="1177.0" class="g" fill="#cbd5e1" text-anchor="middle">units done</text>
+<polyline points="876,1184.0 952,1184.0" fill="none" stroke="#94a3b8" data-edge-id="check_act" marker-end="url(#arrow)"/>
+<text x="914.0" y="1177.0" class="g" fill="#cbd5e1" text-anchor="middle">criteria met</text>
+<polyline points="1108,1184.0 1184,1184.0" fill="none" stroke="#94a3b8" data-edge-id="act_exit" marker-end="url(#arrow)"/>
+<text x="1146.0" y="1177.0" class="g" fill="#cbd5e1" text-anchor="middle">закрыто</text>
+<path d="M988,1156 C988,1116 376,1116 376,1156" fill="none" stroke="#34d399" stroke-dasharray="5,4" data-edge-id="act_plan" marker-end="url(#arrow)"/>
+<text x="682" y="1112" class="g" fill="#cbd5e1" text-anchor="middle">следующий цикл · N+1</text>
+<path d="M566,1156 C566,1084 1040,1084 1040,1156" fill="none" stroke="#94a3b8" data-edge-id="do_act_incomplete" marker-end="url(#arrow)"/>
+<text x="803" y="1080" class="g" fill="#cbd5e1" text-anchor="middle">не может завершить → ACT</text>
+<path d="M798,1156 C798,1052 566,1052 566,1156" fill="none" stroke="#94a3b8" data-edge-id="check_do_defect" marker-end="url(#arrow)"/>
+<text x="682" y="1048" class="g" fill="#cbd5e1" text-anchor="middle">дефект · n+1 (n/3)</text>
+<path d="M798,1156 C798,1020 334,1020 334,1156" fill="none" stroke="#94a3b8" data-edge-id="check_plan_replan" marker-end="url(#arrow)"/>
+<text x="566" y="1016" class="g" fill="#cbd5e1" text-anchor="middle">неверный контракт → CHECK → PLAN · r+1</text>
+<path d="M334,1156 C334,966 1040,966 1040,1156" fill="none" stroke="#94a3b8" data-edge-id="plan_act_terminal" marker-end="url(#arrow)"/>
+<text x="682" y="988" class="g" fill="#cbd5e1" text-anchor="middle">критерии не определены · невозможность → ACT</text>
+<rect x="488" y="1336" width="156" height="56" rx="10" fill="#f87171" fill-opacity="0.10" stroke="#f87171" stroke-width="1.8" data-node-id="ESCALATE"/>
+<text x="566.0" y="1363.0" class="st" fill="#f87171" text-anchor="middle">ЭСКАЛАЦИЯ</text>
+<text x="566.0" y="1380.0" class="ss" fill="#f87171" text-anchor="middle" opacity="0.8">решение</text>
+<rect x="1184" y="1336" width="156" height="56" rx="10" fill="#dc2626" fill-opacity="0.10" stroke="#dc2626" stroke-width="1.8" data-node-id="STOP"/>
+<text x="1262.0" y="1363.0" class="st" fill="#dc2626" text-anchor="middle">STOP</text>
+<text x="1262.0" y="1380.0" class="ss" fill="#dc2626" text-anchor="middle" opacity="0.8">исход ACT</text>
+<path d="M798,1212 C798,1292 566,1256 566,1336" fill="none" stroke="#f87171" data-edge-id="check_escalate" marker-end="url(#arrow)"/>
+<text x="700" y="1274.0" class="g" fill="#cbd5e1" text-anchor="middle">повтор · 3-й провал</text>
+<polyline points="516,1336 516,1212" fill="none" stroke="#f87171" data-edge-id="escalate_do" marker-end="url(#arrow)"/>
+<text x="504" y="1274.0" class="g" fill="#cbd5e1" text-anchor="end">r не исчерпан → DO</text>
+<polyline points="488,1364.0 334,1364.0 334,1212" fill="none" stroke="#f87171" data-edge-id="escalate_plan" marker-end="url(#arrow)"/>
+<text x="411" y="1354.0" class="g" fill="#cbd5e1" text-anchor="middle">исчерпан r → PLAN r+1</text>
+<polyline points="644,1364.0 980,1364.0 980,1212" fill="none" stroke="#f87171" data-edge-id="escalate_act" marker-end="url(#arrow)"/>
+<text x="812" y="1354.0" class="g" fill="#cbd5e1" text-anchor="middle">нет плана r+1 → ACT</text>
+<path d="M1060,1212 C1060,1272 1262,1276 1262,1336" fill="none" stroke="#dc2626" data-edge-id="act_stop" marker-end="url(#arrow)"/>
+<text x="1128" y="1274.0" class="g" fill="#cbd5e1" text-anchor="end">STOP · incomplete</text>
+<text x="24" y="1454" class="g" fill="#94a3b8" text-anchor="start">сплошная стрелка — переход</text>
+<text x="320" y="1454" class="g" fill="#94a3b8" text-anchor="start">дуга — loop-back до ACT</text>
+<text x="600" y="1454" class="g" fill="#94a3b8" text-anchor="start">пунктир — следующий цикл</text>
+<text x="860" y="1454" class="g" fill="#94a3b8" text-anchor="start">нижний ряд — эскалация; STOP — исход ACT</text>
 </svg>

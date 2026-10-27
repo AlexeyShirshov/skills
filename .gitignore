@@ -8,7 +8,9 @@ __pycache__/
 skills/*/tests/fixtures/**/bin/
 skills/*/tests/fixtures/**/obj/
 
-# PDCA: `.pdca/status/**` is the durable record and stays in the index; evidence
-# and staged helpers are local by-products of a run (docs/install.md).
+# PDCA: `.pdca/status/**` is the durable on-disk record (not ignored) — it persists and is read back
+# by a fresh session, which does not make it Git-tracked: adding, staging or committing it needs an
+# explicit user/policy instruction. Evidence and staged helpers are local by-products of a run
+# (docs/install.md).
 .pdca/*/rv*/
 .pdca/scripts/

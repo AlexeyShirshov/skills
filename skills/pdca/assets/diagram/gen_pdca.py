@@ -100,7 +100,7 @@ INPUTS = [
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
     "CHECK ← «units done от DO»",
     "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»",
-    "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «STOP-финализация»",
+    "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «PLAN-терминал» · «STOP-финализация»",
     "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT",
     "EXIT ← «ACT закрыт»",
 ]
@@ -224,8 +224,8 @@ _TR_EN = {
     "CHECK ← «units done от DO»": "CHECK ← “units done from DO”",
     "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»":
         "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after pdca-scout”",
-    "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «STOP-финализация»":
-        "ACT ← “all criteria met from CHECK” · “DO cannot finish” · “STOP finalization”",
+    "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «PLAN-терминал» · «STOP-финализация»":
+        "ACT ← “all criteria met from CHECK” · “DO cannot finish” · “PLAN terminal” · “STOP finalization”",
     "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT":
         "STOP ← “no doable PLAN r+1” · “unsolvable constraint” · “approval refused” — ACT outcome",
     "EXIT ← «ACT закрыт»": "EXIT ← “ACT closed”",
@@ -261,6 +261,7 @@ _TR_EN = {
     "не может завершить → ACT": "cannot finish → ACT",
     "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
     "неверный контракт → CHECK → PLAN · r+1": "wrong contract → CHECK → PLAN · r+1",
+    "критерии не определены · невозможность → ACT": "criteria undetermined · infeasible → ACT",
     "r не исчерпан → DO": "r not exhausted → DO",
     "исчерпан r → PLAN r+1": "r exhausted → PLAN r+1",
     "нет плана r+1 → ACT": "no plan r+1 → ACT",
@@ -289,7 +290,7 @@ COL_BOTTOM = COL_Y + (MAXROWS - 1) * BOX_STEP + BOX_H + 8
 LEG_Y = COL_BOTTOM + 74
 SG_TITLE_Y = LEG_Y + 56
 NH, NW = 56, 156
-R1_TOP = SG_TITLE_Y + 150
+R1_TOP = SG_TITLE_Y + 190
 R2_TOP = R1_TOP + 180
 M4 = R2_TOP + NH + 44
 H = M4 + 40
@@ -528,6 +529,10 @@ def render(P):
     s.append(curve(f"M798,{R1_TOP} C798,{R1_TOP-136} 334,{R1_TOP-136} 334,{R1_TOP}",
                    P["arrow"], "check_plan_replan"))
     s.append(label(566, R1_TOP - 140, "неверный контракт → CHECK → PLAN · r+1", P["label"]))
+    # PLAN terminal: criteria cannot be determined, or the original task is proven infeasible.
+    s.append(curve(f"M334,{R1_TOP} C334,{R1_TOP-190} 1040,{R1_TOP-190} 1040,{R1_TOP}",
+                   P["arrow"], "plan_act_terminal"))
+    s.append(label(682, R1_TOP - 168, "критерии не определены · невозможность → ACT", P["label"]))
 
     # escalation row
     s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "решение", P["escalate"], "ESCALATE"))
@@ -611,11 +616,11 @@ def main(argv=None):
     if LANG == "ru":
         # The slide deck uses the dark diagram split into its contract and state
         # halves; both are deterministic crops of the same rendered artifact.
-        with open(os.path.join(OUT_DIR, "pdca-contract-dark.svg"), "w", encoding="utf-8") as fh:
-            fh.write(crop(rendered["dark"], 0, STATE_TOP))
-        with open(os.path.join(OUT_DIR, "pdca-state-dark.svg"), "w", encoding="utf-8") as fh:
-            fh.write(crop(rendered["dark"], STATE_TOP, H - STATE_TOP))
         print("wrote pdca-contract-dark.svg, pdca-state-dark.svg")
+    with open(os.path.join(OUT_DIR, "pdca-contract-dark" + suffix + ".svg"), "w", encoding="utf-8") as fh:
+        fh.write(crop(rendered["dark"], 0, STATE_TOP))
+    with open(os.path.join(OUT_DIR, "pdca-state-dark" + suffix + ".svg"), "w", encoding="utf-8") as fh:
+        fh.write(crop(rendered["dark"], STATE_TOP, H - STATE_TOP))
 
 
 if __name__ == "__main__":

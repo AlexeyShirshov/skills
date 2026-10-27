@@ -18,10 +18,29 @@ An observation or run its chosen method needs is requested through the driver, w
 ## Assess the criteria
 
 Before judging the result, assess the criteria against the original task: do they cover its
-mandatory requirements, do they contradict each other or the task, is each one judgeable? Missing
+mandatory requirements, do they contradict each other or the task, is each one judgeable? Where the
+user supplied the criteria, they are the acceptance set: judge against them verbatim and do not
+accept the result against a different, weaker or enlarged set. Missing
 coverage, contradiction or an unjudgeable criterion is a criteria defect for PLAN, not a reason to
 judge the result against a weaker reading. One failed candidate is not proof that a criterion is
 unachievable.
+
+A **defective user-supplied criterion is still preserved verbatim**: nobody repairs, supplements,
+widens or narrows the set, and the defect never becomes a new criteria set or a DO/CHECK loop. It
+resolves only as a PLAN-terminal outcome:
+
+- a proven contradiction that makes the original task together with its supplied criteria
+  unachievable → `original task is infeasible under the stated constraints`;
+- an ambiguous or unverifiable supplied criterion that PLAN's authorized read-only gather cannot
+  settle without changing the user's input → `acceptance criteria cannot be determined`, carrying
+  that supplied set verbatim and the concrete defect/reason (the criteria are not "absent");
+- missing coverage of a mandatory requirement is not permission to add a criterion: the inability to
+  determine acceptance of the original task without a supplement is an explicit blocker, not an
+  edit to the criteria.
+
+Only a **new explicit user instruction** changes the criteria, and plan approval is not one. This is
+not a proactive ask-the-user detour: PLAN records the terminal outcome/blocker; it does not solicit a
+rewrite.
 
 ## Verify the result
 
@@ -78,5 +97,6 @@ mandatory criterion blocks acceptance.
 
 A mandatory requirement that is `unmet` or `unverified` prevents acceptance, and the goal is not
 weakened to obtain a PASS. A refuted finding stands on independently checked evidence, not on the
-author's claim. A genuine user-approved scope change remains possible; it is the user's, not a waiver
-CHECK grants or a narrowing taken to clear the block.
+author's claim. A genuine user-requested scope change remains possible; it is the user's, and neither
+CHECK nor approval of the agent's plan may substitute or narrow a user-supplied requirement or
+criterion.

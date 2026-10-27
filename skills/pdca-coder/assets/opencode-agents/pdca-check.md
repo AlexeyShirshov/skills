@@ -31,6 +31,8 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 
 ## Inputs (what the brief contains)
 
+- The original task verbatim, and any acceptance criteria the user supplied: they are the acceptance
+  set, judged as given and never replaced by another set.
 - The acceptance criteria set from the plan, each with its verification method.
 - The **evidence pack**: fresh run results (exit statuses, key numbers, log paths) and the facts
   reported by a non-author (`pdca-scout`).
@@ -41,7 +43,9 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 
 ## What you do
 
-1. **Check every criterion** on **actual evidence**, not on the author's assertion.
+1. **Check every criterion** on **actual evidence**, not on the author's assertion. Judge against
+   the user's task and user-supplied criteria as written; a substitute task or an added, corrected,
+   weakened or replaced criterion is a finding, never the acceptance basis.
 1a. **Validate the premises before the arithmetic:** central **definitions, units, model
    assumptions and inference scope** — which quantities come from the supplied model and which are
    new assumptions. An independent model family does not make the premises independent. An invalid
@@ -61,10 +65,18 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 5. **Carrying-claim veto.** A `confirmed` or `unverified` finding against a carrying claim forbids
    PASS and final `done` at any rubric score; a rubric margin never compensates. Removing the block
    needs one of: a fix and re-check; an objective refutation with evidence reproduced by a
-   non-author (you confirm it); or an explicit narrowing inside the original goal, recorded as
-   `limited`, not `done`. Moving the finding to "next step" does not remove the block. An
-   unsupported allegation is adjudicated, not merely deducted; an unknown claim stays non-PASS.
+   non-author (you confirm it); or a **new explicit user instruction** that revises the task or the
+   criterion. Plan approval is not such an instruction, and neither is a narrowing of the result
+   inside the original goal: without that instruction the block stays, the historical original claim
+   never becomes `met`, and `limited` is not used to clear it. Only on an explicitly user-revised
+   scope may the revised result be recorded as `limited`. Moving the finding to "next step" does not
+   remove the block. An unsupported allegation is adjudicated, not merely deducted; an unknown claim
+   stays non-PASS.
 6. **Route corrections**: an implementation defect → DO; a wrong or unachievable contract → PLAN.
+   A user-supplied criteria set is never repaired by the route: a defect there can only end in
+   `acceptance criteria cannot be determined` (ambiguity/unverifiability, set preserved verbatim) or
+   `original task is infeasible under the stated constraints`, unless the user explicitly revises the
+   input.
    A completed candidate that cannot be accepted and has no viable contract correction goes to ACT
    for an honest `incomplete`/STOP finalization. Rank what to correct first.
 7. **Scope of this check.** A step check is local to the increment's claims and the affected
