@@ -221,16 +221,6 @@ classification of the batch.
   it may be absent and after it is mandatory; it is not a pointer to the charter and not a
   replacement for `preparation_ref`.
 
-**What the barrier does not have.** Not needed: an item-level contract/overlay for `campaign`,
-baseline evidence, a `running` runtime record, the campaign status file, the plans of future steps,
-their contracts and the number of steps. An item without a meaningful plan or charter stays a gap
-and does not get a `ready` placeholder. Before the barrier not a single lane is allocated; early DO
-is forbidden for both forms. Before the barrier the executor's **preparation writes** are allowed
-(the plan, `plan_state`, the charter, `preparation_ref`, links, the collection status); substantive
-bootstrap and DO of an item before the barrier are forbidden. The charter's content, the baseline
-bootstrap and the change-producing DO are defined once in `../pdca-incremental/SKILL.md`
-(§Campaign invariants, §Campaign cycle, subsection 0. Bootstrap).
-
 **Readiness ≠ completion.** `preparation_state=ready` without a runtime record is `barrier-ready`,
 not `started`: the item stays `pending` and never `done`. The only success of a campaign item is an
 accepted `met`; the barrier does not require what is created later.
