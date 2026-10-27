@@ -2272,7 +2272,6 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         for heading in ("## Lane execution and schedule revision",
                         "## Collection status record",
                         "### Routing campaign outcomes",
-                        "## Git model details",
                         "### The queue and the per-item continuation"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, self.skill)
@@ -2282,6 +2281,10 @@ class CollectionContractSemanticsTest(unittest.TestCase):
                        "disposition=paused", "`incomplete`", "`merged`",
                        "preparation_state=ready", "plan_state=ready"):
             with self.subTest(marker=marker): self.assertIn(marker, self.skill)
+
+    def test_unique_git_invariants_still_present(self):
+        self.assertIn("Group and task branches are sibling Git refs", self.skill)
+        self.assertIn("disables intermediate step commits, not that authorized outer commit", self.skill)
 
     def test_git_and_verification_safety(self):
         for marker in ("git merge --abort", "git merge --no-ff",
