@@ -302,7 +302,7 @@ _PREPARATION_BLOCKS = (
     ("allowed surface", re.compile(r"(?i)allowed surface|reserved surface", re.I)),
     ("protected/foreign areas", re.compile(r"(?i)protected/foreign|foreign", re.I)),
     ("first-step candidate list", re.compile(r"(?i)candidate list", re.I)),
-    ("carrying claims", re.compile(r"(?i)carrying claims?", re.I)),
+    ("criteria", re.compile(r"(?i)\bcriteria\b", re.I)),
     ("definition of done", re.compile(r"(?i)definition of done", re.I)),
     ("effort accounting", re.compile(r"(?i)^effort accounting:", re.M)),
     ("commit policy", re.compile(r"(?i)commit_policy|commit policy", re.I)),

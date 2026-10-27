@@ -1,457 +1,295 @@
-# `pdca-dotnet`: the same cycle, but with .NET gates
+# `pdca-dotnet`: the .NET/C# overlay
 
-## 1. The problem, and when to pick this skill
+## 1. The problem and when to pick this skill
 
-An autonomous agent that "fixes C# from a task description" almost always breaks in the same way:
-it builds the project, sees green tests and declares victory. But a green run proves nothing if the
-tests do not intersect the change, if `--no-build` reused an old artifact, if the "full run" was
-actually filtered down to zero tests, or if the report simply was not attached. The problem is not
-the model but the **absence of a verifiable contract**: "done" has no single, machine-checkable
-definition.
+A .NET repository gives an agent many ways to look productive: a solution-wide build that hides the
+affected project, a test run whose selector matched zero cases, `--no-build` against an artifact that
+predates the edit, a warning count quoted from a configuration that never ran, or a symbol renamed by
+text search. Each looks like evidence and none of them is.
 
-`pdca-dotnet` is an engineering contract for .NET/C# that makes "done" verifiable. In its base
-mechanics (PLAN → DO → CHECK → ACT, gates as conditions for admitting the next step, roles,
-parallel DO/CHECK streams) it is **identical** to the stack-neutral `pdca-coder`; the differences
-are in the domain lenses and in the **additional gates** tailored to .NET. It is worth picking when
-the task is C#/.NET code with real acceptance criteria: a behaviour change, a new branch of logic, a
-bug fix, performance, a public API. For unrelated tasks (text, a config of another stack) it is
-overkill.
+`pdca-dotnet` is a **domain overlay** for the PDCA family. It inherits `pdca-coder` and adds only
+.NET/C# facts: the `dotnet` toolchain, Roslyn-first symbol work, test and coverage specifics, analyzer
+policy, documentation conventions and .NET specialists. It is still an overlay: no form, no phase state
+machine, no counter, no gate of its own.
 
-## 2. Launching: `pdca-dotnet`
+Pick it for .NET work — C#, F#, or VB on .NET: implementation, refactoring, tests, solution/project and
+build configuration, packages, public API surface, and the docs tied to code. A mixed repository applies
+it only to the .NET component; other stacks stay under `pdca-coder`. Specialized knowledge loads only
+for the current step.
 
-This skill's trigger is **explicit**: naming `pdca-dotnet` (the explicit id is what selects the
-.NET overlay). The generic phrases "by the cycle"/"via PDCA" load the family's single entry —
-`pdca` — whose one PLAN decides the form and, for .NET/C# work, this overlay; naming another
-contract explicitly just makes that choice a constraint. The overlay is applied **to** the chosen
-form and is not a cycle of its own: it **inherits** `pdca` (base cycle) and `pdca-coder` (the
-programming overlay) and adds only the .NET differences, so the driver never classifies. This is
-described in `skills/pdca/SKILL.md §Overlays` and `skills/pdca-dotnet/SKILL.md`, while
-`pdca-orchestrator` itself ships as `assets/opencode-agents/pdca-orchestrator.md` in every skill of
-the family. The skill is launched **explicitly** and does not replace ordinary tasks — an
-edit without the cycle is performed directly.
+**C# symbol work is Roslyn-first.** Definitions, references, call sites, implementations, overloads,
+members, renames and impact are resolved with the `roslyn` tool, never with text search. `rg`, `grep`,
+`glob` and `sed` are for non-symbol text: string literals, comments, prose docs, configs, non-`.cs`
+files. A symbol inferred from text search is not a resolved symbol. F# and VB symbol questions use their
+own tooling; `roslyn` covers C#.
 
-## 3. Participants and tiers
+## 2. Composition and selection
 
-The skill names only **roles**, not models: the host binds a role to a specific subagent and model
-(cheap, medium or strong), while the role templates carry only a `# tier:` label — the `model:`
-field is not there and must not be. The economics are built into the design:
+The base entry PLAN selects the form and, for .NET work, the specialized skill `pdca-dotnet`, which
+layers on `pdca-coder`. Loading it does not change the form, and an already selected form and overlay
+set stay as they are. Invoked directly, load the contract already in force — the base for a bounded
+cycle, `pdca-incremental` for a campaign step, or `pdca-collection` with its common rules for a
+collection item — and preserve that form. If no form is in force, the base entry decides; the overlay
+does not.
 
-- **the orchestrator** — cheap: it drives the cycle without pulling code into its context;
-- **`pdca-scout`** and **`pdca-executor`** — cheap: facts (`file:line`) and edits/commands;
-- **`pdca-planner`** and **`pdca-check`** — the medium tier: decisions (decomposition, plan) and the verdict
-  (pass/fail, ranking, loop-back);
-- **`pdca-escalate`** — expensive and called **rarely, by triggers**, when the cheap roles cannot give an
-  answer;
-- **`pdca-security-auditor`** — the medium tier, switched on **by trigger** (auth, secrets, external
-  input, crypto) as a CHECK gather stream: its report returns into the `pdca-check` aggregate, and the
-  stream has no verdict of its own.
+**The task stays unchanged.** The original task, its global requirements and acceptance remain as
+supplied, with user criteria verbatim. The current cycle or step keeps its own scope. The .NET specifics
+apply inside them; a local result is not the whole goal. This overlay neither widens nor narrows the
+task, and a user-prescribed command or method stays a requirement.
 
-The roles' permissions differ and are fixed in the templates: `pdca-planner` works from the summary,
-`pdca-check` may read only the cycle's evidence artifacts (status, evidence, manifest — but never
-product code), and `pdca-scout` has only read-only git from the allowlist among `bash` commands. The
-economics are visible in practice too: `.pdca/scripts/pdca_cost.py` computes cost and tokens by phase and
-tier, and model names are not hard-coded in it.
+## 3. The .NET toolchain
 
-The PLAN/CHECK domain lenses are the `dotnet-*` subagents: `dotnet-architect`/
-`dotnet-code-review-agent` — design and performance during PLAN gathering (findings `file:line`,
-counters, no code), while the verdict still belongs to `pdca-check`; `dotnet-testing-specialist` (what
-to test and how), `dotnet-benchmark-designer`/`dotnet-async-performance-specialist`/
-`dotnet-csharp-concurrency-specialist`/`dotnet-performance-analyst` (performance, the last one
-**only with ready-made artifacts**), `dotnet-docs-generator` and `docfx-specialist`
-(documentation). The specialized subagents are additional **gatherers** of evidence, not new gates:
-the verdict still belongs to `pdca-check`.
+The toolchain is a property of the existing project environment. Take the build, test, format, pack and
+docs commands from its manifests, CI workflow, `.editorconfig` and analyzer configuration, solution and
+project files, task runner or README. A command or threshold the user prescribed is a requirement. There
+is no global canonical .NET command set or exit-code table to invent here.
 
-## 4. How the .NET overlay differs
+- **Build the affected project(s) and their dependencies, sequentially and within the host's
+  resources.** A whole-solution or root build belongs outside the inner loop, and only when the actual
+  scope or capacity justifies it and the phase allows it — scope and capacity, not plan preference. The
+  coder overlay's inner-loop rule is unchanged.
+- **`--no-build` needs a fresh artifact.** After a compiled edit, the affected project and its
+  dependencies are rebuilt, or an artifact is reused only when it is known to match the actual source
+  including uncommitted changes. `HEAD` alone is not that identity. A docs-only change claims no build
+  receipt and needs none. Record the actual state identity and log, not a mandatory hash, manifest or a
+  `committed == tested` gate.
+- **Selectors must match the configured runner.** Use the fully qualified name where that runner needs
+  it; `dotnet test <project> --no-build --filter <selector>` is one form, a project runner with its own
+  `-class`/`-method` selection is another. A selector matching zero cases proves nothing: `0 selected` is
+  a failed run, not green. Record the selector and the test identities reported.
+- **Exit status belongs to the runner, not to .NET in general.** Record the configured runner identity,
+  its documented exit-code meaning and the actual status. Distinguish a test failure from infrastructure
+  or usage outcomes using that runner.
+- **Coverage** — when relevant, configuration comes from `Directory.Build.props` /
+  `Directory.Packages.props`, a `.runsettings` / `coverlet.runsettings`, the CI workflow or an accepted
+  baseline; `dotnet test --collect:"XPlat Code Coverage"` is one form. The project threshold is the lower
+  bound; with none configured, record the measured baseline rather than inventing a number.
 
-### 4.1. A mandatory `test scope` and a validator that fails closed
+### 3.1. Roslyn-first in practice
 
-Every implementation brief **must** carry a structured `test scope`: the brief is an **envelope** —
-`unit` (the DO unit id, a string) at the top level, and the fields nested under `scope`:
-`projects`, `selectors`, `files` (mandatory key, may be an empty list), `rebuild` (`affected` |
-`none`), `boundary`, `rationale` — and, for the run policy, `integration_projects` and
-`integration_boundary_runs`. A bare scope object at the top level is rejected
-(`missing required key: unit`). Without a valid scope the orchestrator **does not send** the brief —
-it goes back to `pdca-planner` to be completed. `selectors` must be precise; a wide
-selector ("the whole solution") is rejected. `rebuild: "affected"` is correct for a compilable
-change, while a docs-only change must go with `rebuild: "none"` (an invented rebuild fails the
-gate). `boundary` is the single comprehensive point at the DO → CHECK boundary.
+- Actions: `structure` / `types` for discovery; `members` / `refs` / `callers` / `implementations` for
+  the answer; `rename` for changes.
+- In Code Mode the call goes **inside `execute`**:
+  `const r = await tools.roslyn({ action: "refs", target: "Ns.Type.Member" }); return r`. Batch several
+  queries in one `execute` with `Promise.all`; the daemon keeps the solution loaded.
+- Name a solution outside the session directory explicitly: `solution: "/abs/path/App.slnx"`. If the
+  catalog does not show the tool, run `search({ query: "roslyn" })` first — a missing catalog entry is
+  not grounds for text search.
+- Apply a rename with `roslyn rename` (dry run, then `apply`) and re-check with the same tool; never by
+  textual substitution.
+- Text search remains valid for non-symbol text and is reported as such; a symbol-bearing meaning is
+  never inferred from it. When the tool cannot load a solution or there is no `.cs`, a labelled
+  text-search fallback is allowed, but its result is never called a resolved symbol.
+- **Source-side gather resolves; CHECK interprets.** Resolution happens on the candidate snapshot the run
+  actually produced. CHECK reads that evidence and needs neither an inaccessible solution nor a widened
+  tool grant.
 
-**The limit is on the actual integration run, not on the number of report entries.** Unit runs are
-unlimited inside DO and at phase boundaries: build the affected project once, then run
-`dotnet test <project> --no-build --filter <selector>` — **or** the affected **unit** project
-unfiltered. The presence or absence of `--filter` is **not** a unit-vs-integration criterion and is
-never grounds to restrict a unit run. Expensive **integration** runs are permitted only at the
-DO → CHECK boundary, within the scope and the count PLAN fixed in advance; an integration run inside
-DO is a visible policy deviation (recorded in the ledger, not masked by a phase or a rename), and a
-mixed solution run that really executes integration is not "unit" because of a command name.
+### 3.2. .NET specialists (gather-only)
 
-The executor runs `.pdca/scripts/validate_inner_loop.py brief <brief.json>` **before any editing** and
-`report <evidence.json>` **before CHECK** — reconciled with `--journal <journal.json>` when the raw
-execution journal exists. The validator executes nothing — it only parses the recorded argument
-arrays and JSON. Exit codes: `0` — valid, `2` — a violation (`FAIL: …`), `1` — a usage error,
-unreadable or broken JSON. A non-zero code is **fail-closed**: editing does not begin, CHECK is not
-skipped.
+Specialists are advisory gathers, not cycle roles. The phase whose chosen method needs one requests it on
+demand through the driver; the report joins the evidence `pdca-check` judges. A specialist never issues a
+verdict, widens a permission or replaces a base role. Tiers are role labels bound to models only by the
+host profile, and a capability label never creates an agent. Use one only where the repository actually
+declares it; otherwise the coder overlay's generic path applies.
 
-Among other things, the validator checks:
+| Specialist | Useful when |
+|---|---|
+| `dotnet-code-review-agent` | diff review raw candidates, no verdict |
+| `dotnet-testing-specialist` | test strategy, coverage configuration, gaps |
+| `dotnet-docs-generator`, `dotnet-api-docs`, `docfx-specialist` | prose docs, generated API docs, a DocFX site |
+| `dotnet-benchmark-designer`, `dotnet-performance-analyst` | measurement design; the analyst only with ready traces, heap dumps or benchmark comparisons |
+| `dotnet-async-performance-specialist` | async hot paths: `ValueTask` vs `Task`, `ConfigureAwait`, `async void`, sync-over-async, state-machine allocations, `Channel` / `IO.Pipelines`, ThreadPool starvation |
+| `dotnet-csharp-concurrency-specialist` | races, deadlocks, `lock` / `SemaphoreSlim` / `Interlocked`, lock order |
+| `pdca-security-auditor` | the diff touches auth, secrets, external input or crypto |
 
-- the ban on wide selectors and on a "fake" affected rebuild for docs-only;
-- mandatory execution fields: `phase` (`inner`/`boundary`), non-empty
-  `source_revision`/`artifact_revision`, and — for a `finished` run — an integer `exit_code` and
-  `selected_count ≥ 1`;
-- the absence of shell wrappers and compound commands;
-- the **kind/phase policy**: an integration run inside DO, more boundary integration runs than the
-  plan allows, and a solution or integration-project run mislabelled as `unit`;
-- that the filters match the declared scope (otherwise — "silent scope expansion");
-- that an affected build exists before the first inner test;
-- the freshness of `--no-build`: `source_revision == artifact_revision` and a matching previous
-  build;
-- the freshness of the boundary;
-- a final green result in every group.
+Related skills load on demand for the current step, not as a catalogue every run:
+`dotnet-csharp-nullable-reference-types`, `dotnet-csharp-async-patterns`,
+`analyzing-dotnet-performance`, `type-design-performance`, `dotnet-api-surface-validation`,
+`dotnet-editorconfig`, `slopwatch`, `dotnet-testing-strategy`, `dotnet-test-quality`,
+`dotnet-integration-testing`, `testcontainers`, `dotnet-xml-docs`.
 
-**Every actually-started run is recorded**, regardless of exit code, cancellation, retry or
-a status beyond the planned boundary: the report is **projected** from the raw journal, and a projection that drops a
-started execution is rejected (`projection incomplete`). The execution states are explicit —
-`finished` | `started` | `running` | `interrupted` | `canceled` | `failed-to-start` | `not-started`;
-exit code and selected count are nullable and are never invented for a run that did not finish, and
-an unfinished attempt does not satisfy a required success even though it is retained after a
-successful retry.
+## 4. .NET plan deltas
 
-The remaining modes serve the evidence pack and the lifecycle. `journal` validates the raw
-start/finish capture, and `project` rebuilds the report from it mechanically. `manifest <manifest.json>` checks the **row coverage** of the frozen evidence manifest (see §4.2), not
-execution; an `open` row is a legitimate input, and it is exactly what forbids a PASS in CHECK while
-it is binding (§4.3). Finally `cleanup` and `archived` gate the ACT cleanup receipt — the receipts
-that make the removal of heavy staged material verifiable (§4.5).
+For code work under the base common cycle, PLAN defines only the cycle's observable criteria; every other
+plan field, the original task, the cycle/step scope and criteria ownership stay as the governing contract
+sets them. A form's own PLAN protocol is not replaced here.
 
-### 4.2. Versioned evidence contract: rows, the DO ledger, `rv`
+- **Correctness** — the requested behaviour including its error path and exit status, empty / single /
+  many input, malformed or missing input, and a negative condition where the task makes one relevant.
+- **Nullability and API surface** — only where the task's result includes them: a nullable annotation
+  contract, a public-API baseline, or a compatibility guarantee the project enforces.
+- **Performance** — a numeric threshold only when the task or the project's declared policy supplies one.
+- **Documentation** — an obligation only when the task or the declared project policy mandates it.
 
-At PLAN the versioned evidence contract must be **fixed** in the status file — before DO begins.
-This is the single global definition: agent templates and project overlays must **reference** it
-rather than set up a competing contract of their own. Every row requires:
+PLAN does not choose the test strategy, the implementation decomposition, the concrete commands or the
+specialist list; those belong to DO and, per criterion, to CHECK at CHECK time. A user-prescribed command
+or method is carried unchanged as a requirement. .NET environment facts — target frameworks, configured
+runner, solution layout, existing thresholds — may reach PLAN through `pdca-scout` as inputs, not as a
+frozen procedure. If the criteria cannot be determined, the base `PLAN → ACT` outcome applies; this
+overlay adds no extra completeness checklist, mandatory row or pre-DO blocker.
 
-- a stable requirement ID and a stable row ID;
-- the required check or scenario;
-- the expected kinds of evidence and their sources;
-- the exact command/call, the requirements on the exit code (or the call's result) and on the log;
-- the expected artifacts and their location, or an explicitly justified N/A;
-- the owning stream responsible for producing the evidence;
-- an observable applicability predicate (unconditional obligations always apply);
-- the contract revision `rv`.
+## 5. .NET check deltas
 
-**"No optional slots"**: PLAN is free to choose the representation but may not omit slots or weaken
-mandatory checks. The planned artifact locations are an expectation, not evidence; inventing future
-test symbols or `file:line` references is forbidden — only verified existing references or
-explicitly planned sources. PLAN also fixes the **final re-gather plan** (a supplementary
-evidence gathering, per defect — not a task cutoff) in CHECK and its owner.
+CHECK keeps the base procedure, its per-criterion method choice, verdict, routing and accounting, and the
+coder overlay's evidence rules. This section adds what a .NET check examines and how its evidence is read.
+CHECK chooses its own methods and commands; nothing here is a pre-DO obligation.
 
-Alongside the evidence contract PLAN freezes the **command projection** `commands.json` (skill
-§Plan command contract): the task, plan revision, checkout and evidence root, host budget, the
-planned boundary integration count, optional units, and one object per command — id, phase, kind,
-argv, cwd/env, expected outcome with its failure identity, minimum selected count, log, timeout,
-coverage, and (for mutation) a harness probe or a declared fallback. The executor stages
-`plan_lint.py` and runs `check` before gate 1 and again on DO entry; the receipt is the mandatory
-**`PLAN-LINT`** row with exit `0`. `probe` additionally runs each allow-listed `harness_probe`,
-never the planned command; codes are `0`/`2`/`1`.
+- **Applicable work, no fixed tally.** Examine the actual change and the criteria: build and analyzers
+  under the project's own `.editorconfig` / warning policy — read the effective `dotnet_diagnostic.*`
+  severities when the chosen lens needs them; suppressions (`#pragma warning disable`,
+  `[SuppressMessage]`, `<NoWarn>`), disabled tests (`Skip=`), empty `catch` and `Task.Delay` as raw
+  candidates from the actual diff, with scope, counts and judgment left to CHECK — a marker is not an
+  automatic defect; public API, naming/BCL conventions, compatibility or an API baseline and the CS1591
+  policy when the change touches the surface; tests against the criteria; docs where required; a security
+  gather when triggered. No frozen plan manifest is created, and no universal surface lock is required
+  where the project has none.
+- **Diff review candidates.** Where the actual change makes them relevant: unsealed types when
+  extensibility is intentional and invariants allow it; mutable or defensive-copy structs; a mutable
+  `List<T>` or collection exposed from a public API; `ValueTask` misuse (multiple awaits, mixing with
+  `Task`, no synchronous fast path); `Span<T>`/async combinations judged against the project's language
+  version and target; missing `StringComparison` where comparison semantics matter;
+  `Substring`/`Replace` chains whose cost is real; `IDisposable` lifetimes; DI scope; async and
+  nullable-reference mistakes. These are candidates for CHECK's judgment, not token violations, and no
+  fixed list is applied blindly.
+- **Build and test evidence is executed evidence.** Record the actual commands, exit status, key numbers
+  and log path; red↔green for a fix with both exit codes. An unfinished or not-started run carries no
+  invented exit status or selected count, and a later retry does not erase the earlier failure; recording
+  a deviation does not authorise it. Findings carry the actual CA/analyzer id when one exists — never a
+  fabricated id. A configured analyzer is evidence only when it ran. The executor's run is candidate
+  evidence; CHECK interprets it independently, and a report, `0 selected` or an unexecuted log is not
+  green.
+- **Tests are judged on the applicable complete scope.** Unit coverage, and integration coverage only
+  where the task actually exercises EF Core or a real database, Testcontainers,
+  `WebApplicationFactory`, the DI graph, serialization/snapshots or migrations. Read the threshold from
+  the project configuration or baseline; no configured threshold means no invented target, and an
+  irrelevant task owes no coverage or mutation measurement. Branch delta and CRAP are reported only where
+  the project's policy asks for them, compared with a baseline; no universal red CRAP threshold is
+  created. Mutation, when required, is the scoped Stryker.NET result on the touched assembly/type or a
+  controlled-mutant demonstration; surviving mutants on the changed code are killed or justified against
+  the criterion. A controlled mutant is not equivalent to a full Stryker score, and neither is claimed
+  from a run that did not execute.
+- **Optional `T? x = null` / `= default` on `*Options`** — a finding when it lets a wrong behaviour be
+  chosen silently; the overload pair (one minimal, one requiring the value) is one fix where the task
+  matches. Nullable reference annotations alone do not create distinct signatures — a pair differing only
+  in annotations is a duplicate member (CS0111) — and this does not generalise to `Nullable<T>` value
+  types. `CS8625` is a warning when a `null` literal reaches a non-nullable reference type under nullable
+  analysis, and an error only where the project's warnings-as-errors policy makes it one. `required`
+  enforces initialization, not runtime null rejection for reference types.
+- **Security** — the coder overlay's trigger and boundaries apply; the review is evidence, the decision
+  CHECK's, and its absence `unverified`, never a pass.
+- **Missing evidence stays `unverified`**, to be re-gathered under the base. It is not a product defect,
+  not an implementation attempt and not an infrastructure criterion. A genuine inability to proceed is
+  `DO → ACT` per the base.
 
-The **DO ledger** is the log of actual evidence by row ID and `rv`: verified test symbols/
-`file:line`, results, executed commands, exit codes, paths to logs and artifacts. Failed,
-never-run, missing and blocked evidence is recorded **explicitly**. N/A is admissible only with an
-observable predicate; it does not lift an unconditional obligation.
+## 6. .NET DO and ACT deltas
 
-The **frozen evidence manifest** is a single object per task that CHECK reconciles against. PLAN
-fixes its path in the status file (by default `.pdca/<task>/rv<k>/`, where `<k>` is the
-contract revision `rv`); DO writes the manifest, and it is **frozen** at the DO → CHECK boundary,
-tied to the tree revision and `rv`. In CHECK the manifest is **only appended to** (evidence or an
-`open` reason for existing rows): rewriting a row or starting a second manifest is not allowed.
-The minimum: `task`, `tree`, `contract_rv`, `status_file`, `required_rows` (the contract's
-mandatory IDs) and `rows[]` — one row per ID: `id`, `status` (`met` | `open` | `na`), for `met` an
-`evidence[]` of references `{kind, path, command?, exit?, value?}`, for `open` a `reason`, for `na`
-an observable `predicate`. These are **references, not copies**: logs and artifacts live at their
-own paths, the manifest is a thin index. Every ID from `required_rows` must be in `rows[]`, and
-vice versa; a row without a permitting reference is `open`, not gone.
+DO owns the implementation, the test strategy and the command choice; ACT records the outcome. The coder
+overlay's DO/ACT rules — parallel code/test/docs streams, editing discipline, worktree sub-tasks, security
+boundaries and handoff — apply unchanged.
 
-**The mechanical pipeline.** The contract can be materialised as a JSON object that mirrors the
-status file and handed to the skill's tracked helper, run as `.pdca/scripts/pdca_evidence.py`
-(standard library only).
-`generate --repo <root> --contract <contract.json> --output <evidence-dir>` resolves a frozen
-synthetic tree from `base_ref` + `footprint`, writes one immutable receipt per required row and
-replaces `manifest.json` last and atomically. The evidence root stays `.pdca/<task>/rv<k>/`; each
-attempt passes a **fresh child** `<root>/attempts/c<N>-r<r>-n<n>/` as `<evidence-dir>` and the status
-file pins that child's manifest before DO → CHECK (`c<N>` is the cycle, so the next cycle gets a
-distinct child even at the same `rv`/`r`/`n`). A preflight lint refuses to regenerate over a
-stale snapshot, so a changed attempt must use a fresh child (the old manifest is retained); an
-implementation fix under the same required rows/criteria keeps `contract_rv`. A held lock refuses a
-concurrent writer. `lint --repo <root> --manifest
-<manifest.json>` recomputes the same tree and fails on any disagreement, on a path outside the
-repository, on duplicate row IDs and on a one-sided `required_rows` ↔ `rows[]` coverage. The tool
-never invents an execution and never turns `open` into `met`; codes are `0` (valid), `2`
-(violation) and `1` (usage/operational error).
+- **Integration lane.** When the project declares a container-backed integration lane or a shared lease,
+  DO runs one serialized lane at the stream / DO→CHECK boundary, with the provider connection environment
+  configured and no hidden provider-skip opt-out. The skip budget is judged against the applicable
+  complete scope, never a class-filtered subset; a skip is not proof, and a missing prerequisite is
+  recorded honestly rather than silently skipped. Expensive integration inside DO outside the authorised
+  allowance is recorded in the executing phase as a policy deviation, never renamed away, and it neither
+  freezes the verification choice nor licenses repeat runs.
+- **Timeouts and retries follow the governing policy.** A transport or resource timeout is failed-run
+  evidence, not a new criterion or a local counter. Repeated occurrences are classified by the base
+  retry/escalation policy, and its limits and grounds are unchanged.
+- **Test host safety (DO and CHECK).** Serialize heavyweight suites — never two in parallel or beside the
+  editor/agent stack — and cap the test host, for example
+  `DOTNET_GCHeapHardLimit=0x80000000 DOTNET_gcServer=0` (2 GiB, raised only when justified) inside a
+  wall-clock `timeout 600 …`. Stream the log (`2>&1 | tee <log>`, keeping `rc=${PIPESTATUS[0]}`), never
+  `| tail`. Exit **137** or "Out of memory" signals a possible resource failure: stop and review the
+  failure and the cap before any rerun, record the actual reason rather than asserting a diagnosis from
+  the code, and treat the code alone as neither proof of an unbounded application nor proof that the
+  original task is infeasible.
+- **Mutation harness.** When mutation is relevant, the phase choosing it first confirms that the harness
+  runs with the project and its provider configuration. Broken tooling is not a green run or a score. If
+  the runner is unusable, the responsible phase may choose a controlled mutant (inject the change and
+  observe the intended assertion fail) only when it demonstrates target behaviour; a controlled mutant is
+  not a substitute for a full Stryker score.
+- **Docs.** Prose docs are an independent, optional DO stream, as the coder overlay says; XML `///`
+  follows the finished implementation and reflects its actual signatures, never an intended one.
+  Generated docs come after real implementation. Follow the project's `GenerateDocumentationFile`
+  setting and effective `CS1591` warning policy; `<NoWarn>` may suppress missing-doc warnings, it does
+  not enable documentation requirements the project does not have, and a disabled CS1591 is not turned
+  into an unconditional zero-warning requirement. A new or changed public member's XML doc matches its
+  real signature when the project requires it. Existing EN/RU pairs, CRLF and section parity, and any
+  no-internal-spec-link convention apply only where the repository actually keeps paired docs and that
+  convention; .NET does not by itself require bilingual docs or CRLF. Doc mismatches are fixed in
+  DO/CHECK, never in ACT.
+- **Status metadata.** Use the base `act.md` CYCLE RECORD, nested in a form-owned outer container when the
+  form defines one; put .NET facts in the matching existing sections — the actual project/runner
+  configuration, artifact pointers, coverage baseline and runs under `## DO result` / `## CHECK record`
+  as the base section owns them. No separate schema, top-level field, local counter or mandated evidence
+  path. The executor remains the sole status writer; the original task, phase reports, dialogue language
+  and Git ledger come from the base unchanged; per-unit evidence belongs to the parent cycle record, not a
+  per-unit status file.
+- **Artifacts and cleanup.** If CHECK's chosen method needs the full bodies of artifacts, a staged copy
+  may be used, with source identity and staged-vs-source fidelity verified by CHECK; no reviewer pack is
+  mandatory each task. Source identity includes the uncommitted working state when present, so evidence
+  is bound to the actual candidate rather than to `HEAD` alone, and a staged copy is validated against the
+  original. A drift after the snapshot makes CHECK reconsider the impacted conclusion per the base, not a
+  new counter. A missing body or a staged-vs-source mismatch is `unverified` or an evidence blocker,
+  never an automatic product fail or pass. Cleanup is not a phase gate and nothing is deleted
+  automatically: preserve proof and recovery per the base, limit any cleanup to task-owned artifacts
+  within an explicit allowed scope, and never move or lose original source data. A true `DO → ACT`
+  terminal outcome needs no phantom successful CHECK to permit cleanup.
 
-**Binding/applicability disposition.** The frozen manifest is never rewritten and no row is ever
-deleted — a pre-existing, self-imposed extra *audit* row keeps its original status and text and is
-never quietly turned into `met`. Instead CHECK returns an explicit append instruction for that row
-in the same manifest; the executor writes it and CHECK reconciles the durable result. The append
-carries a stable row ID, the classification `diagnostic_nonbinding`, and the
-concrete reason/basis in the agreed scope or in the priority global rule. The row may therefore stay
-`open` while it is excluded from the set of **binding acceptance blockers**, and the final receipt
-shows binding unmet rows and audit notes separately. This is not a loophole: it covers only
-unsupported extra audit demands that follow from no agreed goal — a recursive historical inventory,
-or a retrospective execution-time `committed == tested`. A failing or missing required test,
-unverified direct evidence, a source-copy mismatch or a real functional/security variant stays on
-the normal fail/re-gather/STOP route, and a finite audit goal that the user agreed as a **separate**
-audit task stays **binding**. The mirror-image obligation binds PLAN too: in an ordinary product
-task it may not freeze a hard gate on arbitrary audit completeness (a whole transitive reference
-graph, retrospective hashes, an execution-time `committed == tested`); such metadata is a
-**diagnostic note**, and its absence never forces `incomplete`/STOP.
+## 7. Optional verification helpers
 
-**Revision.** If a new mandatory variant is discovered, that is a CHECK → PLAN return with a
-justification: PLAN explicitly declares the supersession of the previous contract revision, keeps
-the existing row IDs, adds IDs for the new variants, and retains all still-mandatory acceptance
-criteria. The mere fact of "gathering more evidence" does not revise the contract. A contract
-supersession does **not** cancel DO's work and does not discard unfinished criteria; the rules for
-plan revisions and attempts stay as they were.
+The skill ships two standard-library helpers for projects that want the inner-loop and evidence rules
+checked mechanically. They are **optional**: a task whose criteria do not need them owes neither run, and
+their absence is not a failure. They never execute a supplied command; they validate recorded JSON.
 
-### 4.3. The CHECK completeness gate: no PASS while a binding row is open
+- `scripts/validate_inner_loop.py` — validates a `brief` (the DO test scope before dispatch), a `report`
+  (scope plus executions before CHECK), an append-only `journal` projection, and the shape of an evidence
+  `manifest`. It distinguishes unit from integration runs, rejects zero-target selectors, catches a
+  stale `--no-build` artifact, and treats an unfinished run as unfinished.
+- `scripts/pdca_evidence.py` — generates and lints an immutable, receipt-based evidence tree bound to a
+  frozen synthetic tree, with a scoped manifest and `rv<k>` history.
 
-Before a PASS, the check reconciles the active contract with the **frozen manifest** (a single
-object per task, rows by reference) and with the DO ledger, and then **opens the references
-themselves**: CHECK permits a row by reading its `path`, not by retelling the brief. **Every
-applicable mandatory row** must be satisfied by actual evidence for the current `rv`; all mandatory
-IDs from `required_rows` are in the `met` or `na` status, and any `open` row that is
-**binding/applicable** forbids a PASS. The required artifacts must exist and confirm the claimed
-result. N/A is valid only with a demonstrated fixed predicate; unconditional obligations are not
-lifted.
+Neither helper is a gate the base did not ask for: use them where the project already has such evidence
+or where a cycle chooses that method. The scripts' module docstrings are the CLI reference
+(`brief`, `report`, `project`, `manifest`; `generate`, `lint`), and their exit codes are `0` success,
+`2` validation violation, `1` usage or operational error.
 
-**The gate is mechanical.** CHECK runs both tracked helpers on the frozen manifest and treats a
-non-zero exit as a failed evidence gate, never a warning: `.pdca/scripts/validate_inner_loop.py manifest
-<manifest.json>` (row/evidence shape and two-way `required_rows` ↔ `rows[]` coverage) and
-`.pdca/scripts/pdca_evidence.py lint --repo <root> --manifest <manifest.json>` (frozen-tree binding,
-recomputed independently, plus the same coverage). A tree that does not reconcile, a missing
-required row, an undeclared row or a dangling evidence reference is an open evidence gate — it is
-never reclassified into a PASS.
+## 8. Limitations and false expectations
 
-**The gate is binding-scoped, not absolute.** A retained audit row carrying a valid
-`diagnostic_nonbinding` disposition (§4.2) is reported **separately** and does not block the PASS:
-the receipt shows binding unmet rows and audit notes apart. The exclusion is deliberately narrow —
-only extra audit demands that follow from no agreed goal — and it never covers a failing or missing
-required test, unverified direct evidence, a source-copy mismatch or a genuine functional/security
-variant.
+- **“The overlay is the whole .NET contract.”** No. It adds .NET facts to the base and the coder overlay;
+  the base owns every phase, criterion, counter and status rule.
+- **“Roslyn is optional when the symbol is obvious.”** No. A C# symbol question is resolved with
+  `roslyn`, not with text search. The fallback is labelled and is not called a resolved symbol.
+- **“A solution build is the inner loop.”** No. The affected project and its dependencies run alone; a
+  whole-solution build belongs outside the inner loop and only when scope and capacity justify it.
+- **“Green tests prove the change.”** Only if the selector selected the intended cases, the artifact
+  matched the actual source, and an independent CHECK interpreted the evidence. `0 selected` and a stale
+  `--no-build` run are failures, not green.
+- **“Every .NET task owes coverage and mutation.”** No. They are reported when the task or project policy
+  makes them relevant, with a configured baseline; a score never replaces a mandatory criterion.
+- **“The overlay may commit or push.”** No. Commits and pushes remain explicit authorisations.
 
-**Missing evidence is not a product defect.**
-Missing reports, logs, artifacts or check results are gathered **inside CHECK** from the assigned
-owner, within the declared re-gather plan and the existing permissions. Because of that, one cannot return to
-DO, spin up a DO iteration, or render a product FAIL. Nor may evidence be invented or the product
-edited during the supplementary gathering. But a **proven product defect** still requires a FAIL
-and the usual loop-back, and a new mandatory variant requires a justified CHECK → PLAN with an
-explicit supersession. CHECK may not silently add, remove or weaken contract rows.
+## 9. Where to go next
 
-If the re-gather plan is exhausted while mandatory evidence is still open, CHECK remains unresolved: the
-open row IDs and the reasons are listed, and then the usual blocker/escalation rules apply. **PASS
-is forbidden while a binding/applicable mandatory row is open.** This gate adds no new phase to the
-state machine, does not lower priorities and does not replace the existing correctness checks.
-
-### 4.4. Zero warnings, coverage and mutations
-
-The build is a gate: the project must be clean under its own warnings policy (for example,
-`TreatWarningsAsErrors`). A change that introduces a warning is **not a fix**; zero warnings is
-checked both in the code audit and when verifying the merged tree.
-
-Coverage is taken **from the project** (`Directory.Build.props`, `Directory.Packages.props`,
-`.runsettings`, `coverlet.runsettings`, CI, baseline) and is treated as a **lower bound** — it may
-not be lowered, new code arrives with tests; with no configuration, a recorded baseline rather than
-an invented threshold. A green line percentage proves nothing about new branches: the report is
-kept by the **branch** increment, and mutation testing (Stryker.NET, within the affected
-build/type) kills the surviving mutants or explicitly justifies them. If there is no tool, that
-must be said and the uncovered branches listed, rather than hinting at coverage that does not
-exist. New 🔴 CRAP hotspots are tracked separately.
-
-Plus the run-safety requirements: a heap limit for the test host (`DOTNET_GCHeapHardLimit`, for
-example 2 GiB) and a wall-clock `timeout`, serialization of heavy suites (never two test projects
-in parallel, and never next to the editor/LSP), a streamed log instead of `| tail`, returning both
-the log path **and** the exit code.
-
-### 4.5. The reviewer evidence pack and the ACT cleanup receipt
-
-Two more pieces make the evidence verifiable end to end.
-
-**Reviewer evidence pack.** An independent CHECK reads only inside its allowed roots, so at the
-DO → CHECK boundary the executor **stages the full bodies** of the changed files a reviewer needs
-into the task's `rv<k>` evidence directory — staging is a **copy, not a move**: the originals are
-preserved. A diffstat, a paraphrase, a link to an unreadable original or isolated quoted lines is
-**not** reviewable evidence. A separate, cheap **read-only source-side gather** performs the
-transport and the technical check **before** medium CHECK: per staged file it records the original
-path, the staged copy path, the content digest, the **source identity** of the verified
-revision/working tree and the **content equality** of copy vs source — the receipt carries the
-gather's actual finding, not the author's declaration. A single `HEAD` is insufficient when the
-working tree has uncommitted edits, so the source identity names the state that was actually
-reviewed. Roslyn resolution runs in that same gather, on the same frozen snapshot, and the pack
-carries the result with the same source identity; CHECK never runs Roslyn against an inaccessible
-whole solution. Any **unexpected** drift of the task-relevant footprint between the frozen capture
-and CHECK **invalidates** the verdict; the next snapshot is a new attempt (fresh child, new `n`),
-and `rv` changes only when a CHECK → PLAN actually revises the required rows/criteria — not for a
-planned CHECK → DO attempt or an implementation fix under the same criteria. CHECK itself
-reconciles each changed registry claim against the supplied confirmation and records a **row-level**
-result, without loading every staged file into context and without widened read rights. A missing
-body, a staged-vs-source mismatch, an incomplete justification or the absence of an independent
-verdict is **evidence open/blocked** — neither a product FAIL nor a PASS. This is source-copy
-fidelity, not a proof of execution-time `committed == tested`.
-
-**ACT cleanup receipt.** Staged evidence is retained until the independent CHECK, the review and the
-task closure are complete — it is not cleaned on every DO → CHECK. On a genuine **terminal closure**
-ACT removes this task's heavy staged copies and temp material, and that removal is gated by a
-**machine-checkable receipt** (`validate_inner_loop.py cleanup <receipt.json>`): the receipt is
-bound to the task and its `rv`, to the approved terminal closure and to the independent final
-verdict, and lists the removed paths with their **prior hashes** plus the retained records. The
-right to terminal closure is checked **before** deletion — a receipt without it, or without the
-independent verdict, is rejected as premature cleanup. The deletion scope is this task's own `rv`
-directory only: a blanket `rm` of the whole task directory, a broad pattern or another task's files
-are rejected, and the retained report/manifest/digests/certification are never removed.
-`validate_inner_loop.py archived <manifest.json> --cleanup <receipt.json>` checks the frozen
-manifest's digest against the receipt and requires every missing body to be explained by it, so a
-correctly cleaned-up snapshot is a **planned lifecycle** rather than "the evidence never existed" —
-while a snapshot missing *before* ACT, or without a valid receipt, stays an error. Archived
-validation claims no re-certification over removed bodies and does not replace the checks.
-
-## 5. A teaching scenario: a .NET verification that rejects incomplete evidence
-
-> The scenario is **teaching/illustrative**: the numbers and names are fictional, and the mechanics
-> of the gates are what is shown.
-
-Task: in the `Ordering` library a discount-calculation branch was added for a `null` customer. The
-DO report arrives with four rows of evidence. The `report` validator returns `2` and prints a
-structural violation:
-
-- `execution 0 selected_count must be an integer >= 1 (zero/missing selected tests)` — the filter
-  `FullyQualifiedName~Ordering.Tests` actually selected `selected_count=0`: the tests exist but do
-  not touch the new branch. Zero matches is a rejection, not "green".
-
-The structural checks fire before the freshness and boundary rules, so there are no other messages
-in this run. After `selected_count` is fixed, the same `report` prints, among other things:
-
-- `more than one comprehensive boundary test sweep: 2` — instead of one whole-solution check at the
-  boundary there were two;
-- `execution 1: stale --no-build artifact (source_revision != artifact_revision)` — after a
-  compilable edit, a run with `--no-build` reused an old artifact: source and binary were of
-  different revisions.
-
-In addition, the CHECK completeness gate sees that the contract row "boundary: the
-`null`/`default` branches" is not confirmed: its boundary evidence is invalid — the validator
-rejected the report (two whole-solution boundary sweeps instead of one, a stale `--no-build`
-artifact), so the row has no valid evidence — in the manifest it is `open` with a reason. This is
-**not** a product FAIL but a supplementary gathering in CHECK from the owning stream (the test
-lens), within the declared re-gather plan. Only after a real boundary run with a fresh artifact
-(`source_revision == artifact_revision`) and `selected_count ≥ 1` does the row close; if the re-gather
-plan is exhausted, CHECK remains unresolved with the open IDs listed rather than a PASS.
-
-The gate distinguishes "the work is done, the report is incomplete" (gather more) from "the product
-is defective" (FAIL and loop-back) — and in both cases it does not let a "green by eye" through.
-
-## 6. The cycle's outcome and ACT
-
-The cycle does not "end silently": ACT is a mandatory gate, and it has an observable outcome. In
-normal mode it leaves **two artifacts**: a finalized **cycle status file** (filled in by `pdca-executor`
-from the reports — the `pdca-check` verdict, the run results, the `file:line` facts from `pdca-scout`:
-Done/Verified, Next plan, Changed files) and a ready **message for the next session**. In
-autonomous mode there is no second artifact — there is no user to address, the work continues in
-the same session, and the status file is kept.
-
-The order of ACT: a transferable lesson (optional, 0–2 per cycle; a no-op is normal) → updating
-`AGENTS.md`/tests (`pdca-executor`) → stable rules into the project overlay → finalizing the cycle status
-file (`pdca-executor`) → on a genuine terminal closure, the **gated cleanup** of this task's heavy staged
-material with its machine-checkable receipt (§4.5); last in normal mode comes the "commit advice +
-message" block, and after it nothing.
-The status file is **always kept**: via the recorded `Next plan` it either becomes the input of the
-next cycle or remains a closed record. It also holds the durable state (`N`, revision `r`, attempt
-`n/3`) and the **defect history** (a defect key → revisions/attempts, the number of fixes, the last
-recurrence and the escalation outcome) — the counters are restored from the file, not from the
-session context. Product documents are the **DO** stream; the doc lens of **CHECK** verifies them;
-ACT does not edit them.
-
-## 7. Limitations and false expectations
-
-- **The coverage threshold is a lower bound, not a goal.** Catching up to a number with tests for
-  the number's sake is not allowed: tautological tests and coverage-for-a-percentage are rejected
-  by the lens. The threshold comes from the project; a missing configuration does not justify an
-  invented threshold.
-- **An incomplete report ≠ a product defect — but also not a PASS.** It is easy to confuse:
-  "the report was not attached" is no reason to declare a FAIL, but also no reason to pass. The row
-  stays open until the evidence is gathered.
-- **There is no 4th attempt.** For an exhausted revision `r`, a fourth attempt is forbidden even
-  after an escalation: continuation is possible only through a **substantively reworked plan** (a
-  new revision, the attempt counter starting at `n=1`). `DO → PLAN`/`CHECK → PLAN` do not "spend"
-  the next revision's attempts.
-- **Escalation is not a universal answer.** The expensive role is called by triggers; a fourth blind
-  attempt is usually more expensive than one escalation.
-- **A re-entry after a terminal STOP is not a re-run of the same criterion.** The previous terminal
-  cause is a mandatory PLAN input when resuming a task after `incomplete`/STOP: either it is proven
-  that the failed evidence is now obtainable (new evidence or fixed tooling), or the criterion is
-  redefined onto a reproducible oracle. A plan that silently repeats the failed criterion is not
-  `ready`.
-- **Lenses are gatherers, not judges.** The `dotnet-*` subagents bring candidates and numbers. The
-  verdict, ranking and loop-back belong to `pdca-check`; zero numbers or the author's self-report is a
-  fail ("verifier theater", Verifier Theater).
-- **The .NET overlay does not replace the general cycle.** It inherits the same contract and adds
-  .NET specifics; the state machine, the "all green" gate and the loop-back are shared.
-
-## 8. Where to go next
-
-Start with the family overview — [`pdca.md`](pdca.md) — then with the stack-neutral "neighbour"
-[`pdca-coder.md`](pdca-coder.md): `pdca-dotnet` differs from it not in the state machine but in the
-domain lenses and the additional gates (and if there are many independent tasks —
-[`pdca-collection.md`](pdca-collection.md)).
-The primary source of behaviour is the contract itself: the sections "Versioned evidence contract"
-in [`skills/pdca-dotnet/references/plan.md`](../skills/pdca-dotnet/references/plan.md) and
-"CHECK completeness gate — mandatory evidence contract" in
-[`skills/pdca-dotnet/references/check.md`](../skills/pdca-dotnet/references/check.md). The role
-templates are the shared, domain-neutral source
-([`pdca-planner.md`](../skills/pdca/assets/opencode-agents/pdca-planner.md),
-[`pdca-check.md`](../skills/pdca/assets/opencode-agents/pdca-check.md)); the .NET-specific deltas
-stay in this overlay's SKILL and phase references rather than in those generic role bodies. The
-compact implementation of the gate is
-[`scripts/validate_inner_loop.py`](../skills/pdca-dotnet/scripts/validate_inner_loop.py);
-the static command-contract lint — [`scripts/plan_lint.py`](../skills/pdca-dotnet/scripts/plan_lint.py):
-`check` validates the `commands.json` projection before gate 1 (argv shape, phase/scope,
-solution-build scope against the host budget, selector resolution against the project sources,
-expected outcome, evidence binding, unit coverage) and `probe` runs only the allow-listed harness
-probes; codes `0`/`2`/`1`.
-An overview of the whole family is in [`docs/pdca-guide.md`](pdca-guide.md).
+- The base cycle: [`pdca.md`](pdca.md), [`pdca-guide.md`](pdca-guide.md),
+  [`skills/pdca/SKILL.md`](../skills/pdca/SKILL.md).
+- The generic programming overlay this one inherits: [`pdca-coder.md`](pdca-coder.md).
+- A campaign step or collection item that uses this overlay: [`pdca-incremental.md`](pdca-incremental.md),
+  [`pdca-collection.md`](pdca-collection.md).
+- Host setup: [`install.md`](install.md).
 
 ## Sources
 
-The article's normative claims were reconciled with the repository's current files
-(`skills/pdca/SKILL.md`, `skills/pdca-coder/SKILL.md`, `skills/pdca-dotnet/SKILL.md` and their
-`references/`); where they disagree, the skill file takes precedence. The
-"claim → source" map:
-
 | Claim | Source |
 |---|---|
-| The .NET overlay is the same contract, the tools are replaceable; it inherits `pdca` + `pdca-coder` | `skills/pdca-dotnet/SKILL.md:11-27` |
-| The form and the overlay are decided once by the base PLAN; an overlay is not a second cycle | `skills/pdca/SKILL.md §Entry: one PLAN decides the form · §Overlays` |
-| The explicit trigger and the separation of the skills; "an edit without the cycle — directly" | `README.md` (Usage); `skills/pdca-dotnet/SKILL.md:1-7` |
-| Roles and tiers (`# tier:`, no `model:`); roles → agents and the fallbacks to built-ins | `skills/pdca/SKILL.md §Roles and host requirements`; `skills/pdca-dotnet/SKILL.md:14-19`; `skills/pdca-dotnet/assets/opencode-agents/*.md` |
-| `pdca-check` may open the evidence artifacts (not product code); `pdca-scout` — read-only git only | `skills/pdca/SKILL.md:19-24`; `skills/pdca-dotnet/assets/opencode-agents/pdca-check.md`; `skills/pdca-dotnet/assets/opencode-agents/pdca-scout.md` |
-| `pdca-security-auditor` is a conditional gather, its report returns into the `pdca-check` aggregate | `skills/pdca-coder/SKILL.md §Optional specialists`; `skills/pdca-dotnet/SKILL.md §.NET check deltas` |
-| The economics in practice (cost/tokens by phase and tier, no model names) | `skills/pdca-dotnet/scripts/pdca_cost.py:4-6,28-31,93-99` |
-| The mandatory `test scope` (the `unit`+`scope` envelope, fields, wide selectors, docs-only/`rebuild`, the boundary) | `skills/pdca-dotnet/SKILL.md §.NET plan deltas`; `skills/pdca-dotnet/references/plan.md §Mandatory \`test scope\` envelope` |
-| The validator modes (`brief`/`report`/`journal`/`project`/`manifest`/`cleanup`/`archived`), the `--journal` reconciliation, the `0`/`2`/`1` codes, "executes nothing" | `skills/pdca-dotnet/scripts/validate_inner_loop.py:1-30,84-102,1241-1300` |
-| The scope/execution rules: wide selectors, an invented rebuild, `selected_count ≥ 1` for a finished run, shell wrappers, the kind/phase policy (integration inside DO, the planned boundary runs, a mislabelled `unit`), scope expansion, freshness, final green; structural violations before the freshness/boundary rules | `skills/pdca-dotnet/scripts/validate_inner_loop.py:322-364,415-471,487-595,598-658,660-681,694-748` |
-| The frozen manifest: its path, freezing at DO → CHECK, append-only, the fields, aggregation by reference; the schema and row coverage in the validator | `skills/pdca-dotnet/references/plan.md §Frozen evidence manifest`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:32-83,1158-1226` |
-| The mechanical evidence pipeline: `generate`/`lint`, the frozen synthetic tree, atomic publication, two-way `required_rows` ↔ `rows[]` coverage in lint | `skills/pdca-dotnet/references/plan.md §Mechanical evidence pipeline (\`.pdca/scripts/pdca_evidence.py\`, stdlib only)`; `skills/pdca-dotnet/scripts/pdca_evidence.py:1-29,397-493,577-709` |
-| The versioned evidence contract: row slots, "No optional slots", the DO ledger, the re-gather plan, revision/supersession | `skills/pdca-dotnet/references/plan.md §Versioned evidence contract · §.NET documentation owners` |
-| The plan command contract: the `commands.json` projection, `plan_lint.py check`/`probe`, the mandatory `PLAN-LINT` row, one evidence location binding | `skills/pdca-dotnet/references/plan.md §Machine projection: \`commands.json\` + \`plan_lint.py\``; `skills/pdca/references/plan.md §Plan command contract (PLAN close)`; `skills/pdca-dotnet/scripts/plan_lint.py:1-70` |
-| The inner-loop evidence gate: CHECK fails rather than warns; the list of conditions, incl. the omitted-execution projection | `skills/pdca-dotnet/references/check.md §Inner-loop evidence gate (mandatory, fails closed)` |
-| The CHECK completeness gate: reconciling contract↔manifest, missing evidence = re-gather, the ban on PASS while a **binding** row is `open`, the re-gather plan | `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract`; `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
-| A re-entry after a terminal `incomplete`/STOP: the previous cause is a PLAN input | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
-| Quality gates: zero warnings; coverage/branches/mutations/CRAP; test-run safety | `skills/pdca-dotnet/references/plan.md §.NET test strategy deltas · §Test run safety (memory + streaming) — every phase`; `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`; `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| The `dotnet-*` lenses of PLAN/CHECK | `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)`; `skills/pdca-dotnet/references/plan.md §PLAN lenses and .NET skills`; `skills/pdca-dotnet/references/check.md §Streams and audit items` |
-| The ban on a 4th attempt, escalation by counter, decision routing | `skills/pdca/SKILL.md §Escalation (pdca-escalate)` |
-| ACT: the order of steps, the status file always kept; the status file path, the durable state (`N`, `r`, `n`) and the defect history | `skills/pdca/references/act.md §Closing order · §Status file` |
-| The execution policy and the journal: unit unlimited, integration boundary-only, the planned boundary count, the explicit states, the projection | `skills/pdca-dotnet/references/act.md §Execution journal and the unit/integration policy`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:126-156,415-471,507-596,711-748,750-958` |
-| The reviewer evidence pack: staged full bodies, the source-side receipt (digest/source identity/content equality), Roslyn on one snapshot, drift ⇒ invalidation | `skills/pdca-dotnet/references/plan.md §Reviewer evidence pack (independent CHECK over full bodies)` |
-| The binding/applicability disposition: append-only, `diagnostic_nonbinding`, the non-loophole boundary | `skills/pdca-dotnet/references/plan.md §Binding/applicability disposition (append-only)`; `skills/pdca-dotnet/references/check.md §CHECK completeness gate — mandatory evidence contract` |
-| The ACT cleanup receipt: the gate, the deletion scope, `cleanup`/`archived`, the immutable manifest | `skills/pdca-dotnet/references/act.md §ACT cleanup receipt (heavy staged materials)`; `skills/pdca-dotnet/scripts/validate_inner_loop.py:960-1140` |
-| The teaching scenario: the numbers are fictional; the skill's static matrix does not prove behaviour | `skills/pdca-dotnet/tests/scenarios.md:3-5` |
-
-The host artifacts (`config/agents/*.md`, `config/AGENTS.md`, `config/profiles/*.jsonc`,
-`config/skills/…`) live in a separate config repository and are not shipped here: the checks
-consult them only when `OPENCODE_CONFIG_REPO` is set (`README.md`, Tests); the phrase-to-trigger mapping
-comes from there as well.
+| The overlay is not a cycle and composes with the base and the coder overlay | `skills/pdca-dotnet/SKILL.md:11-31`; §Composition |
+| When it applies, including Roslyn-first | `skills/pdca-dotnet/SKILL.md §When it applies` |
+| Toolchain facts, builds, `--no-build`, selectors and coverage | `skills/pdca-dotnet/SKILL.md §.NET toolchain and commands` |
+| Roslyn-first details and the source-side gather | `skills/pdca-dotnet/SKILL.md §Roslyn-first for C# symbols` |
+| .NET specialists and related skills | `skills/pdca-dotnet/SKILL.md §.NET specialists (gather-only)` |
+| .NET plan deltas | `skills/pdca-dotnet/SKILL.md §.NET plan deltas` |
+| .NET check deltas and missing evidence | `skills/pdca-dotnet/SKILL.md §.NET check deltas` |
+| .NET DO/ACT deltas, host safety, docs and artifacts | `skills/pdca-dotnet/SKILL.md §.NET do/act deltas` |
+| Optional helper scripts | `skills/pdca-dotnet/scripts/validate_inner_loop.py`; `skills/pdca-dotnet/scripts/pdca_evidence.py` |

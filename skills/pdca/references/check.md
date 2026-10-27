@@ -1,6 +1,6 @@
 # CHECK: evidence, criteria and verdict
 
-Reference for the CHECK phase. Independence, permissions and the gates stay in `../SKILL.md`; this
+Reference for the CHECK phase. Independence, permissions and the phase exits stay in `../SKILL.md`; this
 file holds what CHECK receives, how it verifies and what its verdict carries.
 
 ## What CHECK receives

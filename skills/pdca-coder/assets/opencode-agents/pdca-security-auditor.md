@@ -51,6 +51,132 @@ permission:
   question: allow
   todowrite: allow
   doom_loop: ask
+permissions:
+  # V2 form of the same policy as the `permission:` map above. Both blocks are
+  # kept equivalent; last match wins, so the deny-broad rules come first.
+  - action: *
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.env"
+    effect: deny
+  - action: read
+    resource: "*.env.*"
+    effect: deny
+  - action: read
+    resource: "*.env.example"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "pdca-scout"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "ls*"
+    effect: allow
+  - action: shell
+    resource: "cat *"
+    effect: allow
+  - action: shell
+    resource: "head *"
+    effect: allow
+  - action: shell
+    resource: "tail *"
+    effect: allow
+  - action: shell
+    resource: "wc *"
+    effect: allow
+  - action: shell
+    resource: "stat *"
+    effect: allow
+  - action: shell
+    resource: "git status"
+    effect: allow
+  - action: shell
+    resource: "git status --short"
+    effect: allow
+  - action: shell
+    resource: "git status --short -- *"
+    effect: allow
+  - action: shell
+    resource: "git status --porcelain"
+    effect: allow
+  - action: shell
+    resource: "git status --porcelain -- *"
+    effect: allow
+  - action: shell
+    resource: "git rev-parse *"
+    effect: allow
+  - action: shell
+    resource: "git diff --stat"
+    effect: allow
+  - action: shell
+    resource: "git diff --name-only"
+    effect: allow
+  - action: shell
+    resource: "git diff --no-color"
+    effect: allow
+  - action: shell
+    resource: "git log --oneline -n 20"
+    effect: allow
+  - action: shell
+    resource: "git show HEAD"
+    effect: allow
+  - action: shell
+    resource: "git show --stat HEAD"
+    effect: allow
+  - action: shell
+    resource: "git show --name-only HEAD"
+    effect: allow
+  - action: shell
+    resource: "git ls-files"
+    effect: allow
+  - action: shell
+    resource: "git diff --stat -- *"
+    effect: allow
+  - action: shell
+    resource: "git diff --name-only -- *"
+    effect: allow
+  - action: shell
+    resource: "git diff --no-color -- *"
+    effect: allow
+  - action: shell
+    resource: "git log --oneline -n 20 -- *"
+    effect: allow
+  - action: shell
+    resource: "git ls-files -- *"
+    effect: allow
+  - action: shell
+    resource: "git blame -- *"
+    effect: allow
+  - action: skill
+    resource: "*"
+    effect: deny
+  - action: skill
+    resource: "security-owasp"
+    effect: allow
+  - action: skill
+    resource: "secrets-management"
+    effect: allow
+  - action: skill
+    resource: "cryptography"
+    effect: allow
+  - action: question
+    resource: "*"
+    effect: allow
+  - action: todowrite
+    resource: "*"
+    effect: allow
+  - action: doom_loop
+    resource: "*"
+    effect: ask
 ---
 
 # pdca-security-auditor

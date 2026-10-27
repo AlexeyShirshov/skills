@@ -410,7 +410,7 @@ disables intermediate step commits, not that authorized outer commit.
 The step semantics — the covered content of one step, the increment unit, the accepted negative
 candidate as knowledge, the absence of a forced second increment, the whole-goal final check and
 the claims veto — are the incremental contract's (`../pdca-incremental/SKILL.md` §Campaign
-invariants, §Campaign cycle, §Step boundary) plus the base gates; the collection adds neither a
+invariants, §Campaign cycle, §Step boundary) plus the base phase exits; the collection adds neither a
 counter nor a gate.
 
 ### Lane pause

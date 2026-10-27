@@ -11,8 +11,9 @@ Two scopes are deliberate:
   (they legitimately cite a skill that has since been deleted) and are not claims about the
   current tree;
 * the **architecture facts** asserted here are only the stable ones — single entry, forms,
-  overlays, claims veto, step boundary — because the articles are rewritten in a separate
-  stream.  Everything else is covered by the contract guards, not by prose snapshots.
+  overlays/specialized skills, the mandatory-requirement veto and the step boundary — because the
+  articles are rewritten in a separate stream.  Everything else is covered by the contract guards,
+  not by prose snapshots.
 
 Run:
     python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
@@ -63,10 +64,10 @@ ARTICLE_PAIRS = (
 # README must state them; the step boundary is asserted where it is *the* subject.
 ARCHITECTURE_FACTS = {
     "docs/pdca.md": ("only entry", "form", "incremental campaign", "overlay",
-                     "carrying claims", "veto"),
-    "docs/ru/pdca.md": ("единственный вход", "форма", "incremental", "оверлей",
-                        "несущие утверждения", "вето"),
-    "README.md": ("only entry", "overlay", "veto"),
+                     "specialized skill", "STOP is an **act outcome**"),
+    "docs/ru/pdca.md": ("единственный вход", "форма", "инкрементальная", "оверлей",
+                        "специализированный скилл"),
+    "README.md": ("only entry", "overlay", "specialized skill"),
     "docs/pdca-incremental.md": ("step boundary", "§Step boundary"),
     "docs/ru/pdca-incremental.md": ("§Step boundary",),
 }
@@ -84,7 +85,7 @@ def headings(skill: Path) -> list[tuple[int, str]]:
     """(line, text) for every `##`/`###` heading, backticks stripped."""
     out: list[tuple[int, str]] = []
     for number, line in enumerate(skill.read_text(encoding="utf-8").splitlines(), 1):
-        match = re.match(r"^(#{2,3})\s+(.*)$", line)
+        match = re.match(r"^(#{2,4})\s+(.*)$", line)
         if match:
             out.append((number, match.group(2).replace("`", "").strip()))
     return out

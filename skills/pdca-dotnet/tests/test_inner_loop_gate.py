@@ -2455,13 +2455,12 @@ class SkillBriefExampleTest(unittest.TestCase):
     the loop: extract the example and run it through the real validator.
     """
 
-    REFERENCE = REFERENCE_DIR / "plan.md"
+    REFERENCE = SKILL
 
     @staticmethod
     def _example() -> dict:
         text = SkillBriefExampleTest.REFERENCE.read_text(encoding="utf-8")
-        section = text.index("### Mandatory `test scope` envelope")
-        start = text.index("```json", section)
+        start = text.index("```json")
         body_start = text.index("\n", start) + 1
         end = text.index("```", body_start)
         return json.loads(text[body_start:end])

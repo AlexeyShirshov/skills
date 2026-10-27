@@ -32,6 +32,66 @@ permission:
   question: allow
   todowrite: allow
   doom_loop: ask
+permissions:
+  # V2 form of the same policy as the `permission:` map above. Both blocks are
+  # kept equivalent; last match wins, so the deny-broad rules come first.
+  - action: *
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.env"
+    effect: deny
+  - action: read
+    resource: "*.env.*"
+    effect: deny
+  - action: read
+    resource: "*.env.example"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "pdca-scout"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "cd *"
+    effect: allow
+  - action: shell
+    resource: "ls*"
+    effect: allow
+  - action: shell
+    resource: "cat *"
+    effect: allow
+  - action: shell
+    resource: "head *"
+    effect: allow
+  - action: shell
+    resource: "tail *"
+    effect: allow
+  - action: shell
+    resource: "wc *"
+    effect: allow
+  - action: shell
+    resource: "stat *"
+    effect: allow
+  - action: skill
+    resource: "*"
+    effect: deny
+  - action: question
+    resource: "*"
+    effect: allow
+  - action: todowrite
+    resource: "*"
+    effect: allow
+  - action: doom_loop
+    resource: "*"
+    effect: ask
 ---
 
 # pdca-escalate (strong tier) — hard-decision second tier

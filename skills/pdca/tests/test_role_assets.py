@@ -134,40 +134,34 @@ class SourceParityTest(unittest.TestCase):
         # The shared executor brief is domain-neutral; the coder overlay keeps the
         # code-specific duties instead of losing them when the briefs were unified.
         skill = (FAMILY / "pdca-coder/SKILL.md").read_text(encoding="utf-8")
-        act = (FAMILY / "pdca-coder/references/act.md").read_text(encoding="utf-8")
         for token in ("no TDD ordering", "defect history", "Do not commit or push"):
             with self.subTest(token=token):
                 self.assertIn(token, skill)
-        self.assertIn("no TDD ordering", act)
 
-    def test_check_pointer_to_frozen_matrices_and_plan_authority(self) -> None:
-        # The authoritative priority/row rule stays in plan.md; the CHECK reference
-        # only requires the brief to include the frozen matrices and points there.
-        check = (FAMILY / "pdca-coder/references/check.md").read_text(encoding="utf-8")
-        plan = (FAMILY / "pdca-coder/references/plan.md").read_text(encoding="utf-8")
+    def test_phase_references_stay_with_the_base(self) -> None:
+        # Overlays no longer ship copies of plan.md/check.md/act.md: those references
+        # belong to the base package and are routed by role from there.
+        plan = (FAMILY / "pdca/references/plan.md").read_text(encoding="utf-8")
+        check = (FAMILY / "pdca/references/check.md").read_text(encoding="utf-8")
+        act = (FAMILY / "pdca/references/act.md").read_text(encoding="utf-8")
+        self.assertIn("Instructions for **`pdca-planner` only**", plan)
+        self.assertIn("Reference for the CHECK phase", check)
+        self.assertIn("Reference for the ACT phase", act)
+        for skill in ("pdca-coder", "pdca-dotnet"):
+            self.assertFalse((FAMILY / skill / "references").exists(),
+                             f"{skill} must inherit the base references, not copy them")
+
+    def test_net_inner_loop_and_helpers_stay_in_the_dotnet_overlay(self) -> None:
+        skill = (FAMILY / "pdca-dotnet/SKILL.md").read_text(encoding="utf-8")
         for token in (
-            "frozen variant and priority matrices",
-            "references/plan.md",
-            "PLAN owns the quality of the plan",
+            "inner loop",
+            "whole-solution",
+            "validate_inner_loop.py",
+            "pdca_evidence.py",
+            "Roslyn-first",
         ):
             with self.subTest(token=token):
-                self.assertIn(token, check)
-        self.assertIn("PLAN owns the quality of the plan", plan)
-        self.assertIn("may not downgrade a", plan)
-
-    def test_net_inner_loop_and_journal_stay_in_the_dotnet_overlay(self) -> None:
-        skill = (FAMILY / "pdca-dotnet/SKILL.md").read_text(encoding="utf-8")
-        plan = (FAMILY / "pdca-dotnet/references/plan.md").read_text(encoding="utf-8")
-        act = (FAMILY / "pdca-dotnet/references/act.md").read_text(encoding="utf-8")
-        for token in ("inner loop", "test scope", "whole-solution"):
-            with self.subTest(token=token):
                 self.assertIn(token, skill)
-        for token in ("Inner-loop gate", "test scope"):
-            with self.subTest(token=token):
-                self.assertIn(token, plan)
-        for token in ("Execution journal", "journal", "projected"):
-            with self.subTest(token=token):
-                self.assertIn(token, act)
 
 
 class GeneratorFixtureTest(unittest.TestCase):

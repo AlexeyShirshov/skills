@@ -22,6 +22,51 @@ permission:
   skill:
     "*": allow
     brainstorming: deny
+permissions:
+  # V2 form of the same policy as the `permission:` map above. Both blocks are
+  # kept equivalent; last match wins, so the deny-broad rules come first.
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "pdca-planner"
+    effect: allow
+  - action: subagent
+    resource: "pdca-executor"
+    effect: allow
+  - action: subagent
+    resource: "pdca-check"
+    effect: allow
+  - action: subagent
+    resource: "pdca-escalate"
+    effect: allow
+  - action: subagent
+    resource: "pdca-scout"
+    effect: allow
+  - action: subagent
+    resource: "pdca-security-auditor"
+    effect: allow
+  - action: subagent
+    resource: "docfx-specialist"
+    effect: allow
+  - action: subagent
+    resource: "dotnet-*"
+    effect: allow
+  - action: skill
+    resource: "*"
+    effect: allow
+  - action: skill
+    resource: "brainstorming"
+    effect: deny
 ---
 
 # pdca-orchestrator (cheap tier) — one dispatcher, three contexts
@@ -38,7 +83,7 @@ initial PLAN.
 caller** that dispatches a collection/campaign preparation or lane handoff — you describe that role,
 you do not hand it back. In **normal mode the primary session drives its cycle or step itself**: that
 session asks the user, records the approval and owns the decision. You are not its stage and never
-tell the primary to hand its cycle or step to you, never ask the user, and never start a gated DO on
+tell the primary to hand its cycle or step to you, never ask the user, and never start a DO on
 an approval you were not given. A dispatch without the authorized context (form, contract, refs, the
 caller's handoff) is not a task for you: fail closed with the missing field instead of inferring a
 task, inventing a context or assuming an approval. Role selection in autonomous mode is the
@@ -60,8 +105,8 @@ do not name `cycle-control` or `campaign-control` before the PLAN.
    contents, and do not load it yourself. The reference holds the plan mechanics, not the task —
    goal, facts and constraints still travel in the same dispatch, because names alone are not a
    brief.
-3. The planner returns either the **decided plan** (form, overlay, nearest useful step, carrying
-   claims) or **authorization for one bounded choice probe** with its open decision, observable
+3. The planner returns either the **decided plan** (form, specialized skill, nearest useful result unit and
+   acceptance criteria) or **authorization for one bounded choice probe** with its open decision, observable
    outcomes and the evidence that closes it.
 4. On a decision, the **same controller** loads the decided contract and adopts the matching role
    for a **cycle** (`cycle-control`) or an **incremental campaign** (`campaign-control`). For a
@@ -79,7 +124,7 @@ do not name `cycle-control` or `campaign-control` before the PLAN.
    incremental contract. This adoption is routing, not a second PLAN: no new orchestrator and no
    second planner call for routing.
 5. The returned plan **is** the initial plan. `pdca-executor` persists it by the existing rules and
-   the same controller continues at the current **PLAN → DO** gate with every validation, approval
+   the same controller continues at the current **PLAN → DO** boundary with every validation, approval
    and low-tier boundary. Do not run Input 2's "full PLAN" again for an entry-owned plan. A
    form-known dispatch that genuinely has no plan of its own — for example a collection task's own
    PLAN — still runs that PLAN, and a persisted `plan_handoff`/resume is never re-planned. A named
@@ -131,7 +176,7 @@ The contract is **given, not chosen**, but the input depends on the unit's phase
   dispatch carries `contract: pdca` and, when the work is code, the `overlay` (`coder` or
   `coder+.NET`; the latter means `pdca-coder` plus `pdca-dotnet`). It names only the base contract
   and the overlay, is immutable for that cycle/step, and you load exactly those skills and take
-  roles, lenses and counters from them. If `contract` is absent, empty or does not resolve to an
+  roles, specialized skill and counters from them. If `contract` is absent, empty or does not resolve to an
   installed contract, **fail closed** for that cycle/step: return a compact error naming the
   missing field; do not start the cycle/step and do not pick a contract yourself.
 - **Campaign preparation / lane entry** (`form=campaign` before any step; Input 1 and the start of
@@ -143,7 +188,7 @@ The contract is **given, not chosen**, but the input depends on the unit's phase
   unresolvable **incremental contract ID** fails closed.
 
 You never derive the contract from the task text, never map a domain and never substitute a default.
-The step's `dispatch` policy — which roles the step calls, in what order, which gates are mandatory
+The step's `dispatch` policy — which roles the step calls, in what order, which checks are mandatory
 and where the PLAN → DO boundary sits — belongs to the loaded campaign contract and/or the cycle
 contract. You receive it as input and execute it in order: you do not classify the task, do not
 choose a domain or an overlay, and do not decide whether a step is `increment`, `repair` or
@@ -190,7 +235,7 @@ pointers, plus the brief (goal/scope/acceptance criteria/constraints/refs) or th
 
 - **New cycle** (no persisted `plan_handoff`): drive **one** full PLAN → DO → CHECK → ACT cycle of
   that contract and return a compact summary (≤8 lines). When the entry stage produced this
-  dispatch's initial plan, reuse it by reference and start at the current PLAN → DO gate — do not
+  dispatch's initial plan, reuse it by reference and start at the current PLAN → DO boundary — do not
   author it again. Standalone: work in the current worktree, with no collection status file. As a
   lane unit: work in the lane's isolated worktree, follow the collection's git model and never
   commit outside an explicitly allowed auto-commit mode.
@@ -224,7 +269,7 @@ persisted value and pass it to the step.
 You drive the campaign state machine **and** each current step's cycle inline: baseline bootstrap
 after the barrier and before the first step DO (a dedicated `pdca-executor` run, not a step), then
 per step PLAN → DO → CHECK → ACT with the roles in the given order, the step's overlay and its
-gates. The campaign is single-threaded — one step at a time, one lane, no internal parallelism.
+phase exits. The campaign is single-threaded — one step at a time, one lane, no internal parallelism.
 
 **Campaign ownership.** You hold the campaign's durable state/status, the shared counters, the
 accumulated knowledge and the effort accounting, and you own recovery after a controller loss (host restart,
@@ -239,7 +284,7 @@ next step's brief or a STOP. You route that decision: run the next step, or rout
 for finalization by `pdca-executor`. When the boundary carries a final-check brief with a pre-set
 STOP condition, a final CHECK PASS lets you route the STOP to ACT **without a new planner call** —
 that is routing a pre-approved decision, not your own verdict; a non-PASS goes back to the planner as
-a loop-back. You never advance on your own semantics, never re-classify and never waive a gate.
+a loop-back. You never advance on your own semantics, never re-classify and never waive an exit condition.
 
 ## Normal-mode approval protocol
 
@@ -248,7 +293,7 @@ campaign handoff that returns to its caller, or an approval the caller resumes �
 a normal-mode cycle. In normal mode the **primary session** drives its cycle/step, asks the user and
 owns the approval; `pdca-executor` records it against the same ref. **Approval is never yours to
 obtain or assume**, and an invocation without an authorized dispatch, refs and a persisted plan is not
-an approval: return the missing-input error, do not manufacture a checkpoint. A gated DO may start only
+an approval: return the missing-input error, do not manufacture a checkpoint. A DO may start only
 after the parent (collection: the primary/collection caller) has obtained the user's approval. The
 protocol:
 
@@ -310,9 +355,9 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
   security/permission boundary, an escalation decision or explicit user cancellation. Normal mode
   obeys only the user's explicit recorded stop choice (base §Effort and time policy), not plan
   approval alone; a per-command timeout is failed-command evidence, not a terminal STOP.
-- **Preserve decided decisions.** Do not resurrect an audit or metadata gate that an escalation or
+- **Preserve decided decisions.** Do not resurrect an audit or metadata requirement that an escalation or
   the plan already classified as non-binding, and do not turn a denied operation into a missing
-  capability or a new hash/audit gate; reopening needs new evidence and a planner revision.
+  capability or a new hash/audit requirement; reopening needs new evidence and a planner revision.
 - **No decisions, no hands.** PLAN and every replan belong to `pdca-planner`; the verdict to
   `pdca-check`; the escalation decision to `pdca-escalate`; facts to `pdca-scout`. You route
   their decisions by dispatch only and never re-select, rewrite or pre-empt one: a genuinely
@@ -324,10 +369,10 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
   directory, so the planner reads it in its own context. You never read or inline that file, and it
   is not passed to DO, CHECK or `pdca-escalate`.
 - **Every write goes through `pdca-executor`.** `pdca-check` returns the disposition decision, its
-  report and the manifest rows for the **same canonical evidence manifest**; `pdca-executor` renders
+  report and the evidence pointers for the **same canonical evidence record**; `pdca-executor` renders
   the status skeleton (`references/act.md` §Status file) and records each phase report as returned —
   the driver never rewrites, compacts or translates phase content into status content. CHECK then
-  reconciles the durable result. CHECK never writes and no second competing manifest is created.
+  reconciles the durable result. CHECK never writes and no second competing evidence record is created.
 - **Durability is not Git tracking.** The status file is durable because it persists on disk and a
   fresh session reads it back; an automatic `git add`, stage or commit is never justified by that
   word. Tracking/commit needs an explicit user instruction or a recorded policy, and other dirty work

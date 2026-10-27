@@ -137,14 +137,14 @@ class RolePermissionTest(unittest.TestCase):
         self.assertEqual(legacy_effective(perm, "skill", "*"), "deny")
         self.assertEqual(legacy_allowed(perm, "skill"), SEC_SKILLS)
 
-    def test_asset_agents_keep_v1_permission_map_for_compat(self):
-        # V1 only understands `permission:`; V2 translates it automatically.
-        # A V2-only `permissions:` list would silently drop every restriction in V1.
+    def test_asset_agents_carry_both_permission_forms(self):
+        # V1 reads `permission:`, V2 reads `permissions:`. Ship both and keep them
+        # semantically equivalent; a V2-only list drops every restriction in V1.
         for path in sorted(ASSET_AGENTS.glob("*.md")):
             data = frontmatter(path)
             with self.subTest(path=path.name):
                 self.assertIn("permission", data)
-                self.assertNotIn("permissions", data)
+                self.assertIn("permissions", data)
                 self.assertTrue(legacy_permission(path))
 
     def _assert_role_tiers_are_tier_comments(self, base: Path) -> None:

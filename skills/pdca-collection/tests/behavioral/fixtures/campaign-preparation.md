@@ -40,9 +40,9 @@ No-silent-change rule: thresholds 40.00/60.00, seed 7, 1500 rows, 20 sequential 
 - A knowledge increment (a rejected candidate that yields decision-relevant knowledge) is credited as knowledge, not as a failed measurement; no rule demands a second increment once the goal is satisfied and checked.
 - Functional lens/guards: output length 1500; each list sorted by r[1]; stable ties; input not mutated; repeated calls with same object; independent lists. Other input sizes/empty input are deferred with trigger "if the code path changes".
 
-## Carrying claims and definition of done
-- Carrying claims: CC-1 the credited measurement is valid by the recipe; CC-2 bench.py is unchanged (hash-verified); CC-3 the change is inside app.py only; CC-4 report(rows) keeps its functional contract. A `confirmed`/`unverified` finding against any carrying claim forbids PASS and `met` at any rubric score.
-- Definition of done: the whole-goal CHECK passes on the accepted state — the goal predicate is true, no carrying claim blocks and the original requirement is verified. A separate final check adds no planner call: its brief and pre-set STOP condition are issued at the last step boundary.
+## Criteria and definition of done
+- Criteria: C1 the credited measurement is valid by the recipe; C2 bench.py is unchanged (hash-verified); C3 the change is inside app.py only; C4 report(rows) keeps its functional contract. A mandatory criterion that is `unmet` or `unverified` forbids PASS and `met` at any rubric score.
+- Definition of done: the whole-goal CHECK passes on the accepted state — the goal predicate is true, no mandatory criterion blocks and the original requirement is verified. A separate final check adds no planner call: its brief and pre-set STOP condition are issued at the last step boundary.
 - Exit surface on the outside of the goal: `blocked` for a missing host/executor/evidence; a surface violation is stop/reapprove, never a lowered threshold.
 
 ## Boundaries / surface reservation

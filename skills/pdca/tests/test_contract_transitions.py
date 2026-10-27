@@ -1,4 +1,4 @@
-"""Contract guards for the PDCA state machine, the PLAN/DO split and the standalone forms.
+"""Contract guards for the PDCA state machine, the PLAN/DO split and the forms.
 
 These tests assert the *semantics* the family settled on, not prose snapshots:
 
@@ -8,10 +8,10 @@ These tests assert the *semantics* the family settled on, not prose snapshots:
   accepted result and the honest `blocked`/`incomplete`/STOP outcome, and STOP is
   not a path beside ACT;
 * PLAN defines the result contract and never prescribes DO's implementation
-  actions, steps or commands; the frozen command set is the verification
-  (acceptance-evidence) set and the machine lint is scoped to it;
-* the incremental and collection forms ship a self-contained common contract, so
-  neither needs the base SKILL loaded first, and the two copies do not drift.
+  actions or CHECK's verification method; the base reference no longer freezes
+  implementation or verification commands;
+* the incremental and collection forms inherit the base common contract instead of
+  shipping a copied standalone contract, and the legacy copies are gone.
 
 Run:
     python3 -m unittest discover -s skills/pdca/tests -p 'test_contract_transitions.py' -v
@@ -28,7 +28,6 @@ BASE = SKILLS / "pdca"
 SKILL = BASE / "SKILL.md"
 PLAN_REF = BASE / "references/plan.md"
 ASSETS = BASE / "assets/opencode-agents"
-PLAN_LINT = BASE / "scripts/plan_lint.py"
 FORMS = {
     "pdca-incremental": SKILLS / "pdca-incremental",
     "pdca-collection": SKILLS / "pdca-collection",
@@ -52,167 +51,157 @@ def headings(path: Path) -> list[str]:
 
 
 class StateMachineTest(unittest.TestCase):
-    def test_state_machine_declares_the_four_transitions(self) -> None:
+    def test_state_machine_declares_the_current_transitions(self) -> None:
         block = norm(read(SKILL))
         for edge in (
-            "CHECK → DO   (implementation defect)",
-            "CHECK → PLAN (contract/acceptance defect)",
-            "DO → ACT     (cannot finish: blocked / incomplete / STOP)",
+            "DO → ACT (cannot finish)",
+            "CHECK → DO (defect)",
+            "CHECK → PLAN (contract)",
+            "CHECK → ACT (STOP)",
+            "PLAN → ACT (criteria undetermined | original task infeasible)",
         ):
             with self.subTest(edge=edge):
                 self.assertIn(norm(edge), block)
 
-    def test_no_do_to_plan_candidate_classifier_survives(self) -> None:
-        self.assertNotIn("DO → PLAN candidate", read(SKILL))
-        self.assertIn("no direct DO → PLAN", read(SKILL))
-        # The planner asset must not accept a DO-originated candidate either.
+    def test_no_do_to_plan_path_survives(self) -> None:
+        skill = norm(read(SKILL))
+        self.assertIn("**only CHECK returns to PLAN** (never DO)", skill)
+        self.assertIn("does not rewrite the plan", skill)
+        self.assertIn("does not return to PLAN", skill)
         planner = norm(read(ASSETS / "pdca-planner.md"))
-        self.assertIn("DO never returns to PLAN", planner)
         self.assertIn("There is no DO → PLAN path", planner)
+        self.assertIn("DO never returns to PLAN", planner)
 
     def test_check_is_mandatory_only_for_a_completed_result(self) -> None:
         skill = norm(read(SKILL))
+        self.assertIn("**CHECK is mandatory to accept a completed result**", skill)
         self.assertIn(
-            "CHECK is mandatory to accept a completed result", skill
+            "never runs on a candidate DO reports as blocked or incomplete", skill
         )
-        self.assertIn("it is not run for a candidate that DO already reports as blocked", skill)
-        # DO → CHECK requires every active unit `done` with evidence.
-        self.assertIn("A blocker report is **not** `done`", norm(read(SKILL)))
+        self.assertIn("a blocker report is not `done`", skill)
 
     def test_act_finalizes_both_outcomes_and_stop_is_an_act_outcome(self) -> None:
         skill = norm(read(SKILL))
-        self.assertIn("**ACT finalizes** either the accepted result", skill)
-        self.assertIn("STOP is an **ACT outcome**", skill)
+        self.assertIn("**ACT finalizes**", skill)
+        self.assertIn("STOP** is an **ACT outcome**", skill)
         self.assertNotIn("a **separate terminal path**", skill)
-        # Gate 6 is the honest finalization, not a bypass of the no-4th rule.
-        self.assertIn("without bypassing the no-4th rule", skill)
+        self.assertIn("no bypass of the no-4th rule", skill)
 
     def test_do_failure_goes_to_act_with_residual_requirements(self) -> None:
         skill = norm(read(SKILL))
-        self.assertIn(
-            "the driver goes **straight to ACT** (gate 3)", skill
-        )
+        self.assertIn("**DO → ACT** — DO cannot finish under the approved contract", skill)
         self.assertIn("residual `unmet`/`unverified` requirements", skill)
-        self.assertIn("No `PASS`, no `done`, no credit", skill)
+        self.assertIn("with no `PASS`, no `done` and no credit", skill)
 
 
 class PlanDoesNotChooseActionsTest(unittest.TestCase):
     def test_plan_defines_the_result_contract_only(self) -> None:
         skill = norm(read(SKILL))
-        self.assertIn("It does **not** prescribe implementation actions", skill)
+        self.assertIn(
+            "It prescribes neither implementation actions or a step-by-step DO", skill
+        )
         self.assertIn("the executor chooses the implementation", skill)
+        self.assertIn("nor verification methods, evidence sources or commands", skill)
 
-    def test_plan_reference_scopes_the_command_contract_to_verification(self) -> None:
+    def test_plan_reference_scopes_itself_to_the_result_contract(self) -> None:
         plan = norm(read(PLAN_REF))
-        self.assertIn("**Scope — verification commands only.**", plan)
-        self.assertIn("never freezes, prescribes or lints the implementation actions", plan)
-        self.assertIn("implementation commands are not listed there, are not linted", plan)
-        self.assertIn("**verification** command", plan)
+        self.assertIn(
+            "does not prescribe a manifest row, an evidence source, a method or a script",
+            plan,
+        )
+        self.assertIn("no pre-DO condition depends on them", plan)
+        self.assertIn("no field and no instruction in this file names a verification procedure", plan)
+        self.assertIn("DO chooses the implementation", plan)
 
-    def test_gate_one_validates_verification_commands_only(self) -> None:
+    def test_do_handoff_carries_no_frozen_verification_procedure(self) -> None:
         skill = norm(read(SKILL))
-        self.assertIn("every frozen **verification** command", skill)
-        self.assertIn("never DO's implementation actions", skill)
+        self.assertIn("no frozen verification procedure", skill)
+        self.assertIn("Choosing, validating and running the verification is CHECK's work", skill)
 
     def test_planner_and_executor_assets_carry_the_scope(self) -> None:
         planner = norm(read(ASSETS / "pdca-planner.md"))
         executor = norm(read(ASSETS / "pdca-executor.md"))
-        self.assertIn("never the steps or commands of DO's implementation", planner)
-        self.assertIn("verification commands the plan freezes", planner)
+        self.assertIn("PLAN fixes the result contract; DO chooses the", planner)
+        self.assertIn("Do not freeze a command, selector, test strategy or manifest row", planner)
         self.assertIn("DO's own implementation actions and commands are your choice", executor)
 
     def test_plan_lint_is_documented_as_a_verification_lint(self) -> None:
-        script = norm(read(PLAN_LINT))
+        script = norm(read(BASE / "scripts/plan_lint.py"))
         self.assertIn("Static contract lint for a PDCA plan's frozen verification commands", script)
         self.assertIn("It never prescribes, freezes or forbids the implementation", script)
 
 
-class StandaloneFormsTest(unittest.TestCase):
-    REQUIRED = (
-        "Entry and control mode",
-        "Forms",
-        "One loop",
-        "Transition gates",
-        "Roles and tiers",
-        "Counters and history",
-        "Claims and veto",
-        "Evidence over assertion",
-        "Verification",
-        "Workspace and durable status",
-        "Strategic revision and recovery",
-        "Escalation and guardrails",
-        "Effort and time policy",
-        "Security and operating constraints",
-        "Red flags (self-check)",
-    )
+class InheritanceTest(unittest.TestCase):
+    """The forms inherit the base common contract; the copied contracts are gone."""
 
-    def contracts(self) -> dict[str, Path]:
-        return {name: root / "references/common-contract.md" for name, root in FORMS.items()}
-
-    def test_every_form_ships_a_common_contract(self) -> None:
-        for name, path in self.contracts().items():
+    def test_legacy_common_contract_copies_are_gone(self) -> None:
+        for name, root in FORMS.items():
             with self.subTest(form=name):
-                self.assertTrue(path.is_file(), f"{name} has no references/common-contract.md")
+                self.assertFalse(
+                    (root / "references/common-contract.md").exists(),
+                    f"{name} still ships a copied common contract",
+                )
+                self.assertFalse(
+                    (root / "references").exists(),
+                    f"{name} still ships a local references directory",
+                )
 
-    def test_the_two_copies_do_not_drift(self) -> None:
-        copies = self.contracts()
-        incremental = copies["pdca-incremental"].read_bytes()
-        collection = copies["pdca-collection"].read_bytes()
-        self.assertEqual(incremental, collection, "common-contract copies diverged")
-
-    def test_required_sections_are_present(self) -> None:
-        for name, path in self.contracts().items():
-            known = headings(path)
-            for section in self.REQUIRED:
-                with self.subTest(form=name, section=section):
-                    self.assertIn(section, known, f"{name} common contract lacks §{section}")
-
-    def test_common_contract_enumerates_the_six_gates(self) -> None:
-        text = norm(read(self.contracts()["pdca-incremental"]))
-        for gate in (
-            "1. **PLAN → DO**",
-            "2. **DO → CHECK**",
-            "3. **DO → ACT**",
-            "4. **CHECK → ACT**",
-            "5. **ACT → EXIT**",
-            "6. **ACT → STOP**",
-        ):
-            with self.subTest(gate=gate):
-                self.assertIn(gate, text)
-
-    def test_common_contract_carries_verification_rules(self) -> None:
-        text = norm(read(self.contracts()["pdca-incremental"]))
-        for rule in (
-            "`met | unmet | unverified`",
-            "The absence of a check is NOT a pass",
-            "carrying claims",
-            "forbids PASS and final `done`",
-            "correction routing",
-        ):
-            with self.subTest(rule=rule):
-                self.assertIn(rule, text)
-
-    def test_each_form_declares_it_does_not_need_the_base(self) -> None:
+    def test_each_form_declares_inheritance_from_the_base(self) -> None:
         for name, root in FORMS.items():
             with self.subTest(form=name):
                 skill = norm(read(root / "SKILL.md"))
-                self.assertIn("self-contained", skill.lower())
-                self.assertIn(
-                    "loading the base `../pdca/SKILL.md` first is not required", skill
-                )
+                self.assertIn("inherit", skill.lower())
+                self.assertIn("../pdca/SKILL.md", skill)
+                self.assertIn("§Common cycle contract", skill)
+                self.assertIn("skip", skill)
+                self.assertIn("classification", skill)
+
+    REQUIRED = {
+        "pdca-incremental": (
+            "Inheritance: the base contract is the single source of the shared rules",
+            "Campaign goal and measurement",
+            "Campaign invariants",
+            "Campaign status",
+            "Campaign cycle",
+            "Step boundary",
+            "Stop",
+            "Strategic revision and recovery",
+        ),
+        "pdca-collection": (
+            "Inheritance",
+            "Batch terminology",
+            "Items and execution ownership",
+            "Capability preflight",
+            "Collection (P / D / C / A)",
+            "Lane execution and schedule revision",
+            "Collection status record",
+            "Approval barrier (normal mode)",
+            "Fallback",
+        ),
+    }
+
+    def test_form_sections_are_present(self) -> None:
+        for name, sections in self.REQUIRED.items():
+            known = headings(FORMS[name] / "SKILL.md")
+            for section in sections:
+                with self.subTest(form=name, section=section):
+                    self.assertIn(section, known, f"{name} lacks §{section}")
+
+    def test_forms_do_not_restate_the_common_counters(self) -> None:
+        # Form-local numeric rules would drift from the base. They may name the
+        # counters by reference, but not define a second budget or threshold.
+        for name, root in FORMS.items():
+            with self.subTest(form=name):
+                skill = norm(read(root / "SKILL.md"))
+                self.assertIn("§State machine and counters", skill)
+                self.assertNotIn("four counters, do not mix them", skill.lower())
+                self.assertNotIn("n/3 is the", skill.lower())
 
     def test_common_contract_citations_resolve(self) -> None:
-        """Every contract citation must name a real section of its target.
-
-        Scoped to the copied common contract and the base package references the
-        forms cite; prose shorthand such as `§D.3` for a phase sub-block of the
-        collection contract is not a section citation and is skipped.
-        """
+        """Every contract citation must name a real section of its target."""
         problems: list[str] = []
         for name, root in FORMS.items():
-            for path in sorted(
-                [root / "SKILL.md", *sorted((root / "references").glob("*.md"))]
-            ):
+            for path in sorted([root / "SKILL.md"]):
                 text = read(path)
                 for lineno, line in enumerate(text.splitlines(), 1):
                     for match in re.finditer(r"§([^\n`§]+)", line):
@@ -220,7 +209,7 @@ class StandaloneFormsTest(unittest.TestCase):
                         target = self._target(path, line[: match.start()])
                         if target is None or not target.is_file():
                             continue
-                        if not self._in_scope(target, root):
+                        if not self._in_scope(target):
                             continue
                         cleaned = self._clean(tail)
                         if cleaned is None:
@@ -233,17 +222,15 @@ class StandaloneFormsTest(unittest.TestCase):
         self.assertEqual([], problems, "\n".join(problems))
 
     @staticmethod
-    def _in_scope(target: Path, root: Path) -> bool:
+    def _in_scope(target: Path) -> bool:
         resolved = target.resolve()
-        if resolved.name == "common-contract.md":
-            return True
-        return (SKILLS / "pdca") in resolved.parents
+        return (SKILLS / "pdca") in resolved.parents or resolved == SKILL
 
     @staticmethod
     def _clean(tail: str) -> str | None:
         cleaned = tail.strip().lstrip("`'\"( ").strip()
         cleaned = re.split(r",|;|\)|:|\s—\s", cleaned)[0].strip()
-        cleaned = re.sub(r"\s+gate\s+\d+$", "", cleaned).strip(" `'\"().")
+        cleaned = re.sub(r"\s+(gate\s+)?\d+$", "", cleaned).strip(" `'\"().")
         if not cleaned or re.fullmatch(r"[A-Z](\d+(\.\d+)?)?", cleaned):
             return None  # prose shorthand (§C, §D.3), not a section name
         return cleaned
@@ -261,16 +248,45 @@ class StandaloneFormsTest(unittest.TestCase):
 
     @staticmethod
     def _target(path: Path, before: str) -> Path | None:
-        """Nearest target before the `§`: the common contract or a cited file."""
-        marker = max(
-            before.rfind("common contract"), before.rfind("common-contract.md")
-        )
+        """Nearest target before the `§`: a cited file, else the current skill."""
         paths = list(re.finditer(r"`([^`]*?\.md)`", before))
-        if paths and paths[-1].start() > marker:
+        if paths:
             return (path.parent / paths[-1].group(1)).resolve()
-        if marker >= 0:
-            return path.parent / "references/common-contract.md"
-        return None
+        return path
+
+
+class CampaignFailureSemanticsTest(unittest.TestCase):
+    """A failed step blocks the campaign; it never reboots or credits itself."""
+
+    def setUp(self) -> None:
+        self.skill = norm(read(FORMS["pdca-incremental"] / "SKILL.md"))
+
+    def test_failed_step_is_blocked_and_not_credited(self) -> None:
+        for phrase in (
+            "the step is **not credited**",
+            "the campaign is **blocked**",
+            "neither reboots the step, nor erases history, nor earns an increment, nor advances to the next step",
+            "no accepted increment, no auto-replan",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.skill)
+
+    def test_stop_table_keeps_the_blocked_row_honest(self) -> None:
+        self.assertIn(
+            "the current step's DO cannot finish under the contract", self.skill
+        )
+        self.assertIn(
+            "cause, evidence, residual requirements; no accepted increment, no auto-replan",
+            self.skill,
+        )
+
+    def test_pause_is_not_a_terminal_status(self) -> None:
+        self.assertIn("disposition: paused", self.skill)
+        self.assertIn("A pause is not an outcome and not a terminal status", self.skill)
+
+    def test_step_boundary_is_one_planner_call(self) -> None:
+        self.assertIn("**one** planner call decides", self.skill)
+        self.assertIn("Separate DECIDE → brief → STOP turns on unchanged content are a repeated PLAN", self.skill)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ prove the goal.
 
 Two subcommands:
 
-``check``  static only (the gate-1 form): schema, argv shape, phase/scope
+``check``  static only (the plan-close form): schema, argv shape, phase/scope
            legality, build scope against the declared host budget, selector
            resolution against the project sources, expected outcome, evidence
            binding, unit coverage.  Seconds, no containers, no network.
@@ -637,7 +637,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     for name, help_text in (
-        ("check", "static validation (gate 1)"),
+        ("check", "static validation (plan close)"),
         ("probe", "static validation plus each harness probe"),
     ):
         proto = sub.add_parser(name, help=help_text)

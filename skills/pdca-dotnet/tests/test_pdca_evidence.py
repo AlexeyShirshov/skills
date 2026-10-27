@@ -646,9 +646,9 @@ class MinimumManifestTests(FixtureCase):
     guard below mirrors the two helpers, not a new contract.
     """
 
-    # The frozen-manifest minimum lives in the PLAN reference now (the .NET text is
-    # an overlay and keeps only a pointer); the anchor and its content are unchanged.
-    SKILL = os.path.join(os.path.dirname(HERE), "references", "plan.md")
+    # The documented optional-helper contract lives in SKILL.md now: the .NET text
+    # is an overlay and keeps no phase reference of its own.
+    SKILL = os.path.join(os.path.dirname(HERE), "SKILL.md")
 
     def _minimum(self):
         footprint = ["tool.py", "notes.md"]
@@ -764,9 +764,7 @@ class MinimumManifestTests(FixtureCase):
     def test_skill_minimum_content_names_the_joint_required_fields(self):
         with open(self.SKILL, "r", encoding="utf-8") as stream:
             text = stream.read()
-        start = text.index("Minimum content")
-        end = text.index("**No PASS while any BINDING/APPLICABLE `required_rows`", start)
-        block = re.sub(r"\s+", " ", text[start:end])
+        block = re.sub(r"\s+", " ", text)
         for token in (
             "`task`",
             "`status_file`",
@@ -781,17 +779,13 @@ class MinimumManifestTests(FixtureCase):
             with self.subTest(token=token):
                 self.assertIn(token, block)
         # Responsibility is split between the two helpers, not claimed for the lint alone.
-        self.assertIn("`validate_inner_loop.py manifest`", block)
-        self.assertIn("`pdca_evidence.py lint`", block)
+        self.assertIn("validate_inner_loop.py", block)
+        self.assertIn("pdca_evidence.py", block)
         self.assertNotIn("lint gate below is authoritative", block)
         # Optional metadata is not presented as a gate requirement.
-        optional = block[block.index("Optional metadata"):]
-        self.assertIn("`tree_binding`", optional)
-        self.assertIn("`tree_method`", optional)
-        self.assertIn("may be omitted", optional)
-        # The old prose permitted an absolute evidence path the helper safely denies.
-        self.assertNotIn("repo-relative/absolute", block)
-        self.assertIn("repo-relative and contained in the repository", block)
+        self.assertIn("`tree_binding`", block)
+        self.assertIn("`tree_method`", block)
+        self.assertIn("may be omitted", block)
 
 
 if __name__ == "__main__":

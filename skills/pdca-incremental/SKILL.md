@@ -14,12 +14,12 @@ acceptance.
 
 ## Inheritance: the base contract is the single source of the shared rules
 
-The **common cycle contract** in `../pdca/SKILL.md` supplies, unchanged and normative for every step:
-roles, permissions and tiers; normal/autonomous modes and the approval protocol; the phase contracts
-and criteria/acceptance rules, including the mandatory-requirement veto and the whole-goal CHECK;
-escalation, evidence, the counters `N`, `r`, `n/3` and the evidence-path contract revision `rv`, the
-same-defect threshold and the defect history; safety, effort, recovery, workspace and status
-bookkeeping.
+The **common cycle contract** (§Common cycle contract) in `../pdca/SKILL.md` supplies, unchanged and
+normative for every step: roles, permissions and tiers; normal/autonomous modes and the approval protocol;
+the phase contracts and criteria/acceptance rules, including the mandatory-requirement veto and the
+whole-goal CHECK; escalation, evidence, the counters `N`, `r`, `n/3` and the evidence-path contract
+revision `rv` (§State machine and counters), the same-defect threshold and the defect history; safety,
+effort, recovery, workspace and status bookkeeping.
 
 This file **adds the campaign layer only** and never restates those rules: a local paraphrase is not
 an alternative, and on a shared rule the base governs. Read it whenever a shared rule is in question.
@@ -34,7 +34,7 @@ for its steps, with the collection coordinating the batch.
 **Overlay.** When a step's work is code, the overlay its PLAN declares (`../pdca-coder/SKILL.md`, or
 `../pdca-dotnet/SKILL.md` inheriting it) applies **for that step only**: domain facts, tools and
 required evidence — not a form, not a second cycle or state machine, and never a cancellation of the
-base goals, gates or safety. Auxiliary verification code makes that component coding work; it does
+base goals, exits or safety. Auxiliary verification code makes that component coding work; it does
 not reclassify a non-coding campaign.
 
 **The original task is immutable here too.** Every step's dispatch carries the unchanged original
@@ -347,7 +347,7 @@ erases history, nor earns an increment, nor advances to the next step. A red res
 Exhaustion follows the base counters and escalation — escalation or an ACT-finalized STOP with the
 recorded remainder, never a silent move on.
 
-### 4. Step boundary
+### Step boundary
 
 After the step's CHECK, **one** planner call decides and, in the same turn, emits either the next brief
 or a STOP; the driver routes and books, it does not run a second PLAN:
@@ -438,7 +438,7 @@ tokens, cost, revisions, steps and measurement totals are accounting, never a st
 legacy or resume budget is revived. Work ends on an accepted whole goal, a verified irreducible blocker
 for the **agreed goal**, a security/permission boundary or explicit user cancellation; a failed
 candidate or incomplete evidence returns to the step boundary. Normal-mode estimate and stop choice,
-per-command timeouts and safety hold as in the base. The **commit policy** (§Campaign invariants 6) is
+per-command timeouts and safety hold as in the base. The **commit policy** (§Campaign invariants, item 6) is
 the only campaign-specific permission, and `push` is never part of it.
 
 ## Strategic revision and recovery

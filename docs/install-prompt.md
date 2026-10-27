@@ -91,10 +91,11 @@ PROFILE=<профиль или пусто>
 2. Агенты-роли
    - Скопируй $SKILLS_REPO/skills/$VARIANT/assets/opencode-agents/*.md в $AGENTS_ROOT, существующие
      файлы — в бэкап.
-   - Frontmatter ассетов — это нативный V1-формат OpenCode (`mode: subagent`, `permission:`):
-     для OpenCode V1 копируй как есть, V2 транслирует его сам. Для claude переведи в формат
-     Claude Code (`name`, `description`, `tools`; права — allowlist инструментов), для
-     codex/custom — в формат хоста; тело промпта роли не меняй.
+   - Frontmatter ассетов несёт оба представления прав: V1-карту `permission:` и V2-список
+     `permissions:`; они должны выражать одну политику. Для OpenCode V1 и V2 копируй как есть
+     (V2 понимает оба, V1 — карту). Для claude переведи в формат Claude Code (`name`, `description`,
+     `tools`; права — allowlist инструментов), для codex/custom — в формат хоста; тело промпта роли
+     не меняй.
    - Убедись, что установленный pdca-orchestrator совпадает байт-в-байт с
      $SKILLS_REPO/skills/pdca/assets/opencode-agents/pdca-orchestrator.md (тело; frontmatter мог быть
      транслирован).
@@ -106,7 +107,7 @@ PROFILE=<профиль или пусто>
      копией (`python3 skills/pdca/scripts/sync_role_assets.py --check`).
    - Если CONFIG_REPO задан, синхронизируй те же файлы в его каталог агентов (источник для
      будущих установок), с бэкапами.
-   - Проверь: ни в одном агенте нет выдуманного `model:`; у runner есть allowlist pdca-*.
+   - Проверь: ни в одном агенте нет выдуманного `model:`; у драйвера есть allowlist pdca-*.
 
 3. Делегация и права (формат хоста)
    - opencode V2: `experimental.subagent_depth` в секции `experimental` (top-level `subagent_depth`
@@ -149,11 +150,11 @@ PROFILE=<профиль или пусто>
      V2 — один массив `[ ... ]`; не смешивай формы в одном файле.
 
 6. Перезапуск и проверка
-   - opencode V2: `opencode service restart`, затем `opencode debug agents` (все роли и runner
+   - opencode V2: `opencode service restart`, затем `opencode debug agents` (все роли и драйвер
      видны) и `opencode debug config` (`experimental.subagent_depth` виден в секции `experimental`;
      само значение — не проверка цепочки).
    - opencode V1: перезапусти TUI/приложение (команды `service` в V1 нет); проверь
-     `opencode agent list` (все роли и runner видны) и что `pdca` виден в списке скиллов.
+     `opencode agent list` (все роли и драйвер видны) и что `pdca` виден в списке скиллов.
      `debug agents`/`debug config` — V2-only, в V1 их не требуй.
    - claude: новая сессия, `/agents` перечисляет субагентов.
    - codex/dsh/custom: перезапуск/новая сессия по правилам хоста и его список агентов.

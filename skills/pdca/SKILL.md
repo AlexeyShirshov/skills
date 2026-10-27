@@ -78,7 +78,7 @@ section re-classifies the task or selects another form.
 This section is the **single source** for the shared rules below, for Bounded Execution and
 for inheriting forms: incremental campaign steps, collection item cycles, corrective cycles
 and applicable shared verification/role requirements. Each form adds only its own container,
-scheduling and status projections. No form contract restates common acceptance, cycle gates,
+scheduling and status projections. No form contract restates common acceptance, cycle exits,
 counters or evidence as a competing local version; a conflict on a shared rule is resolved here.
 
 ### The user's task and its criteria

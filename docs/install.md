@@ -18,25 +18,27 @@ The roles are **subagent names**. Every skill in the family is explicit about it
 
 | Skill | Roles it dispatches | Role assets shipped |
 |---|---|---|
-| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate` | `assets/opencode-agents/*.md` (6 files — the canonical shared set) |
+| `pdca` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`; the driver is the primary (normal) or `pdca-orchestrator` (autonomous) | `assets/opencode-agents/*.md` (6 files — the canonical shared set) |
 | `pdca-coder` | `pdca-scout`, `pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`, `pdca-security-auditor` | `assets/opencode-agents/*.md` (7 files — 6 byte-identical mirrors + specialist) |
-| `pdca-dotnet` | same as `pdca-coder`, plus the `dotnet-*` lenses | `assets/opencode-agents/*.md` (7 files — 6 byte-identical mirrors + specialist) |
-| `pdca-collection` | all of the above per item, plus the runner `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` (mirror) |
-| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per step, plus the runner `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` (mirror) |
+| `pdca-dotnet` | same as `pdca-coder`, plus the optional `dotnet-*` specialists | `assets/opencode-agents/*.md` (7 files — 6 byte-identical mirrors + specialist) |
+| `pdca-collection` | all of the above per item, plus the driver `pdca-orchestrator` | `assets/opencode-agents/pdca-orchestrator.md` (mirror) |
+| `pdca-incremental` | `pdca-planner`, `pdca-executor`, `pdca-scout`, `pdca-check` per step, plus the driver `pdca-orchestrator` (the step's own cycle adds `pdca-escalate`) | `assets/opencode-agents/pdca-orchestrator.md` (mirror) |
 
 Every shipped agent id carries the `pdca-` prefix and is **the same across the base and the overlays**,
 so a skill never takes over a host's existing `planner`, `coder`, `scout`, `check` or `escalate` agent.
 
-Agents carry only **identity, tier, permissions and an output contract**; decision knowledge
-(routes, gates, checklists) lives in the skill and is loaded with it. The driver in particular
-never classifies a task — it loads the contract of the form and the overlay that the plan declared.
+Agents carry only **identity, tier, permissions and an output contract**; decision knowledge (routing,
+phase contracts, acceptance) lives in the skill and is loaded with it. The driver in particular never
+classifies a task — it loads the contract of the form and the specialized skill that the plan declared.
 
-The runner **`pdca-orchestrator` ships in every skill's `assets/opencode-agents/`** (the same file,
-so any install carries it). Every skill also needs a cheap-tier primary — the tier is taken from the host
-profile's effective tier, not from the agent's name. A medium or strong primary (for example
-`architect`) **does not** launch or dispatch the cycle and does not run it flat itself: it hands off
-explicitly to the cheap primary (`build` by default), preserving the task, the status file and the
-`.pdca/` references, and that handoff is the only supported path into a cycle.
+The driver **`pdca-orchestrator` ships in every skill's `assets/opencode-agents/`** (the same file, so
+any install carries it). Every skill also needs a cheap-tier primary for **autonomous** mode — the tier
+is taken from the host profile's effective tier, not from the agent's name. A medium or strong primary
+(for example `architect`) does not launch the autonomous cycle; it hands off explicitly to the cheap
+primary (`build` by default), preserving the task, the status file and the `.pdca/` references. In
+**normal** mode the primary drives the cycle itself and asks the user to approve the plan before DO;
+that is permitted within the permissions the profile actually grants. If the profile explicitly forbids
+the primary to control a cycle, that is a reported blocker, never a reason to widen a permission.
 
 ## 2. Install the skills
 
@@ -100,7 +102,7 @@ and translates the frontmatter:
 
 | Host | Agents root | Frontmatter |
 |---|---|---|
-| OpenCode | `~/.config/opencode/agents/`, `.opencode/agents/` | as shipped (V1-native; V2 translates) |
+| OpenCode | `~/.config/opencode/agents/`, `.opencode/agents/` | both: V1 `permission:` map and V2 `permissions:` list are shipped and kept equivalent; other hosts translate the body |
 | Claude Code | `~/.claude/agents/`, `.claude/agents/` | `name`, `description`, `tools`; express permissions via the tool allowlist, drop `mode`/`permission` |
 | Codex | the host's subagent/workflow directory | keep the body, adapt the frontmatter |
 | custom (`dsh`, …) | the host's agent root | keep the body, adapt the frontmatter |
@@ -157,31 +159,34 @@ a role markdown** — model ids are bound by the host profile (§8).
 > deliberately and re-verified — do not assume `vendor-skills` or `sync_role_assets.py --fix` updated
 > them.
 
-## 5. Install the runner `pdca-orchestrator`
+## 5. Install the driver `pdca-orchestrator`
 
-The runner is the cheap **dispatcher** that drives one child cycle, one collection group or one
-incremental step. It ships in every skill's `assets/opencode-agents/`, so step 3 copies it with the
-rest — do not write your own, and do not keep an older host copy under the same id. The
-`mode:`/`permission:` frontmatter is the legacy OpenCode adapter (V1-native; V2 translates it); other
-hosts reuse the body.
+The driver is the cheap **dispatcher**. In **autonomous** mode it drives one child cycle, one collection
+group or one incremental campaign; in **normal** mode the primary drives the cycle itself and the driver
+is not dispatched for it. It ships in every skill's `assets/opencode-agents/`, so step 3 copies it with
+the rest — do not write your own, and do not keep an older host copy under the same id.
 
-What it must be (the asset already encodes this — check it after installation):
+The shared role assets are written in the **V1 `permission:` map**, which V2 translates, and every one
+also carries the equivalent **V2 `permissions:` list**. Both representations must express the same
+policy; the tests check their equivalence. Keep both in sync when editing an asset, or regenerate the
+mirrors with `python3 skills/pdca/scripts/sync_role_assets.py --fix`.
+
+What the driver must be (the asset already encodes this — check it after installation):
 
 - `mode: subagent`, `# tier: cheap`, no `model:`;
-- `edit`/`write`/`shell`: **deny** — it dispatches, it does not work;
-- a `subagent` allowlist for `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`/
-  `pdca-scout`/`pdca-security-auditor` (+ the `dotnet-*` lenses and `docfx-specialist` where used),
-  with `*` denied;
-- `skill` allowed (it loads the contract of the form and the overlay declared by the plan).
+- `edit`/`write`/`bash` (V1) or their V2 equivalents: **deny** — it dispatches, it does not work;
+- a `subagent`/`task` allowlist for `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`/
+  `pdca-scout`/`pdca-security-auditor` (+ the optional `dotnet-*` specialists and `docfx-specialist`
+  where used), with `*` denied;
+- `skill` allowed (it loads the contract of the form and the specialized skill declared by the plan).
 
-A host that already ships its own runner may keep it only if it grants the same allowlist; otherwise
-the shipped copy should win, because a dispatcher without the `pdca-*` allowlist cannot start a
-cycle. Without a runner at all, autonomous mode falls back to the flat cheap primary; normal mode
-keeps working.
+A host that already ships its own driver may keep it only if it grants the same allowlist; otherwise the
+shipped copy should win, because a dispatcher without the `pdca-*` allowlist cannot start a cycle.
+Without a driver at all, autonomous mode falls back to the flat cheap primary; normal mode keeps working.
 
 ## 6. Allow nested delegation
 
-The runner drives a child cycle, so a subagent must be able to launch subagents. The skill only needs
+The driver runs a child cycle, so a subagent must be able to launch subagents. The skill only needs
 the **capability**; the host decides how it is spelled — OpenCode V2 keeps the depth **only** under
 `experimental`, OpenCode V1 uses the top-level key, Claude Code and Codex use their own subagent
 settings. Without it the documented flat-primary fallback applies.
@@ -215,7 +220,7 @@ setting, not a validated budget.
 
 The forms are not interchangeable: V2 accepts a top-level `subagent_depth` but **ignores** it
 (warning `omitted unsupported legacy setting`), and V1 ignores `experimental.subagent_depth`. In both
-cases the depth falls back to a single level — the runner can no longer delegate and every autonomous
+cases the depth falls back to a single level — the driver can no longer delegate and every autonomous
 cycle degrades to the flat primary. Requires a restart.
 
 ## 7. Permissions: let the cheap primary dispatch
@@ -256,11 +261,11 @@ OpenCode V1 uses the `permission` map and the `task` action; the `subagent` acti
 ```
 
 The `task` pattern matches the subagent name, last match wins; `pdca-*` covers the six roles, and
-`skill` lets the runner load its contract. V1 has no `subagent` action to translate.
+`skill` lets the driver load its contract. V1 has no `subagent` action to translate.
 
 All six ids are the same across the base and the overlays (`pdca-planner`, `pdca-executor`, `pdca-check`,
 `pdca-escalate`, `pdca-scout`, `pdca-security-auditor`), so one allowlist serves the family. The
-runner gets the same allowlist for its own children — and it may **not** widen the expensive roles'
+driver gets the same allowlist for its own children — and it may **not** widen the expensive roles'
 permissions.
 
 If the host forbids `general`/`explore`, do not bypass it: a missing role is a **resource blocker**
@@ -273,7 +278,7 @@ If the host forbids `general`/`explore`, do not bypass it: a missing role is a *
 | nested delegation | top-level `subagent_depth` | `experimental.subagent_depth` |
 | dispatch permission | `permission: { task: ... }` | `permissions: [{ action: "subagent", ... }]` |
 | skill auto-selection | `metadata.opencode/autoinvoke: "false"` | same, plus optional `disable-model-invocation` |
-| agent frontmatter | `mode: subagent`, `permission:` (native) | the same legacy map, translated |
+| agent frontmatter | `mode: subagent`, `permission:` map | `mode: subagent`, `permissions:` list; the shipped V1 map is translated, and both blocks are kept equivalent |
 | `skills` config | `{ paths, urls }` | one array |
 | restart / verify | restart the TUI; `opencode agent list` | `opencode service restart`; `opencode debug agents` / `debug config` |
 
@@ -346,7 +351,7 @@ about observable capability, not about a number in the config:
 - are the mandatory roles resolvable — allowed by policy, loadable as agents, present in the host's
   agent list? Verify by resolution, never by dummy substantive work: no probe edits, probe tasks or
   fake steps.
-- is nested delegation actually usable by the runner, and is `pdca-orchestrator` available as a
+- is nested delegation actually usable by the driver, and is `pdca-orchestrator` available as a
   subagent?
 - is the `escalate → scout` edge reachable on every path where escalation may be needed?
 - is the step's cycle contract loadable and not forbidden?
@@ -356,7 +361,7 @@ chain (§6). No host-side parallel-cap key, schema entry or constant was found i
 source; that absence is **not** evidence of unlimited concurrency, and `cap` values are not invented
 either.
 
-The installed runner may **drift** from the canonical asset in
+The installed driver may **drift** from the canonical asset in
 `skills/pdca/assets/opencode-agents/`. Refresh it from the asset and verify its effective permissions
 before relying on it: an installed
 `pdca-orchestrator` that does not allow delegation to `pdca-scout` is the concrete observed example,
@@ -370,7 +375,7 @@ Failure semantics:
 | driver unavailable (no agent, no nested delegation, preflight failed) | exactly one fallback: the cheap primary runs inline and writes `Notice:` with a durable reason (normal mode also tells you) |
 | mandatory role unavailable | resource stop: no other agent takes over; the run stops and records what was already accepted |
 | cycle contract unavailable | fail closed: no substitute contract, no "similar" cycle, no generic execution |
-| discovered late (after start) | safe pause before the dependent action; the gate is never weakened |
+| discovered late (after start) | safe pause before the dependent action; the acceptance rule is never weakened |
 
 ## 11. Verification status: unverified
 
@@ -404,7 +409,7 @@ this status from OPEN; completing a step here, or a green repository run, does n
 | A role is "not found" on dispatch | agent file missing, or installed into a directory the host does not discover | put it in `~/.config/opencode/agents/` (or `.opencode/agents/`), restart, re-check with `debug agents` |
 | Cycle falls back to the flat primary | no `pdca-orchestrator`, no usable nested delegation (legacy key ignored, limit too low), or the host forbids delegation | §5 and §6 |
 | `Notice:` about a missing role | the skill's role name differs from the installed agent name (e.g. `pdca-planner` vs `pdca-planner`) | install the matching family, or alias the agent |
-| A role behaves like its V1 twin | the asset uses the legacy `permission:` map | V2 translates it (`permission` → `permissions`, `task` → `subagent`, `bash` → `shell`, `write`/`patch` → `edit`); the merged rules are visible in `debug agents` — prefer `permissions:` in new agents |
+| A role behaves like its V1 twin | the asset carries both the `permission:` map and the `permissions:` list, and one of them is stale | keep both blocks semantically equivalent (and regenerate mirrors with `sync_role_assets.py --fix`); V2 translates `permission` → `permissions`, `task` → `subagent`, `bash` → `shell`, `write`/`patch` → `edit`; the merged rules are visible in `debug agents` |
 | A rule has no effect | the asset names an action outside the V2 Core list | `todowrite`, `doom_loop` and `list` are not V2 Core permission actions (plugins may define their own). They pass through the config but match no built-in tool. Harmless, but do not rely on them |
 | Expensive model used for gathering | no tier binding in the profile | §8 |
 | `.pdca/` reads are asked for approval | the host denies `.pdca/**` to the check/executor | allow `read`/`edit` on `.pdca/**` for those agents |
@@ -416,7 +421,8 @@ this status from OPEN; completing a step here, or a green repository run, does n
 - It does not grant commit or merge rights. `pdca-collection` needs an explicit project overlay or
   your request for `git merge --no-ff`; without it the group runs without commits and is marked
   `incomplete`. Push is never granted.
-- It does not widen permissions for autonomous mode. Autonomy removes questions, not the gates.
+- It does not widen permissions for autonomous mode. Autonomy removes questions, not the acceptance
+  rule, evidence requirements or permission boundaries.
 
 ## 14. Let an agent install it
 

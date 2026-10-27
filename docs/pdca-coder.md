@@ -1,283 +1,411 @@
-# `pdca-coder`: the engineering cycle that cannot be closed without verification
+# `pdca-coder`: the programming overlay
 
 ## The problem: whose assessment is "done"?
 
-An agent's ordinary work on an engineering task looks like a sequence of actions: read the code,
-fix it, run it, say "done". That sequence has three weak spots. It is unclear what counted as
-success: the criterion was not stated in advance, and "done" is the author's self-assessment, not a
-verified fact. State lives in the session context: after context compaction or in a new session the
-agent does not remember where it is, what has already been done and why. And mistakes cost nothing:
-if something did not work, it can "try again" endlessly without changing its approach.
+Code work has a special failure mode. The change compiles, a quick run is green, and the author says
+"done" — while the error path was never exercised, the selector matched no tests, the log was stale,
+or the real integration suite never ran. The more familiar the stack, the easier it is to mistake a
+plausible diff for a verified result.
 
-`pdca-coder` is a skill (a pluggable behaviour contract) — the family's **programming overlay** — that
-replaces such a sequence with a **cycle with a verifiable result**: PLAN → DO → CHECK → ACT, with
-explicit gates. It contains only its differences from the base: no PLAN of its own, no state machine,
-no second status file, no separate routing branch. It is applied **to** the form the base PLAN chose —
-an ordinary cycle, an incremental step, the relevant items of a collection — and adds engineering
-facts to it. A gate is a condition under which the next step is allowed; it checks the *presence* of
-the mandatory items,
-not their quality. The skill is made for software-engineering tasks of any stack: writing and
-changing code, tests, documentation, refactoring, configuration. Its key property is
-**stack-agnosticism**: the skill does not dictate a specific language, compiler or framework; PLAN
-chooses the toolchain (build, tests, lint) and the verification lenses for the specific task, while
-the project overlay supplies the concrete commands, thresholds and formats. A "lens" is a
-verification perspective (a set of rules and a focus), for which an agent or an explicit general
-path is selected.
+`pdca-coder` does not add another cycle. It is a **domain overlay** for the PDCA family: it supplies
+code-specific criteria, evidence rules, command safety and DO/CHECK/ACT additions to the form the base
+already selected. The base contract still owns the task, acceptance, roles, counters, modes, status and
+closing.
 
-The cycle does not turn itself on. Until the skill is loaded, the contract does not apply and an
-ordinary task is performed directly. `pdca-coder` is worth picking where the result must be
-*proven*: a behaviour change, new functionality, a fix with a regression test, a config change with
-verification. The value of the skill is not that it guarantees the right result (a gate is an
-admission condition, not a promise of quality), but that it does not let you close work without
-verification, lose state, or pass off identical retries as progress.
+## What it is, and what it is not
 
-## Launching: the entry, or the explicit overlay
+`pdca-coder` is:
 
-"By the cycle", "via PDCA", "run PDCA" load the family's single entry — `pdca`. Its one PLAN picks the
-form and, for code work, the overlay: naming `pdca-coder` explicitly only makes that choice a
-constraint. The overlay is not a cycle of its own, so it always runs on top of the base
-([`skills/pdca/SKILL.md`](../skills/pdca/SKILL.md)); naming `pdca-dotnet` selects the .NET overlay,
-which **inherits** this one and adds .NET specifics and .NET gates — that is not `pdca-coder` alone.
+- a set of **code-specific deltas** applied to Bounded Execution, an incremental step or a collection
+  item;
+- a way to make PLAN state code-observable criteria and CHECK choose real code evidence;
+- a guardrail for the toolchain, test execution, evidence and security boundaries.
 
-There are two modes. In **normal** mode the cycle is interactive. First the plan is written into the
-status file on disk (the source of truth on the cycle), then the orchestrator states that the plan
-is ready and recorded — and only after the user **reads and approves** the plan does execution
-begin; a question, a request to change the plan or an optional reply does not count as a start. In
-**autonomous** mode (the user has explicitly asked to
-work without questions) there are no pauses: transitions happen in the same turn in which the gate
-is passed, and all communication goes into the status file as `Notice:` marks. Autonomy reduces
-questions but **does not expand permissions** and does not cancel the mandatory gate items.
+It is not:
 
-## Who is in the cycle: roles and tiers
+- a form or a phase state machine;
+- a PLAN of its own, a counter, a gate, an acceptance rule or a status shape;
+- a second cycle, a second driver or a second writer;
+- a mandate for coverage, mutation or performance work on a task that does not need it.
 
-A role in the cycle is a function, not a person and not a specific model. The skill names only
-**roles**; the host (the run environment) binds them to agents and models, and a model id never
-enters a role definition — a role carries only a `# tier:` label. The economics are built on
-separating cost from quality: that is why roles are marked with **tiers** — labels of
-cost/quality, not of authority:
+The authoritative contract remains `../pdca/SKILL.md` (or the form that inherits or governs it). This
+overlay composes by addition, never by restating a competing rule.
 
-- **`pdca-scout`** — fact gathering, read-only, the cheap tier; it returns references of the form
-  `file:line` and URLs, with no recommendations.
-- **`pdca-executor`** — the cycle's "hands", the cheap tier; it is allowed file edits and commands. Every
-  write and every run in the cycle goes through it.
-- **`pdca-planner`** — decisions and decomposition, the medium tier; it only reads the summary and
-  draws up the plan.
-- **`pdca-check`** — the verdict, the medium tier; it judges candidates and renders `pass/fail`, a
-  return, or a new attempt.
-- **`pdca-security-auditor`** — security audit, the medium tier, engaged by trigger (if the change
-  touches authentication, secrets, external input, cryptography).
-- **`pdca-escalate`** — escalation of hard decisions, the strong tier, called rarely and by triggers: an
-  ambiguous criterion, an exhausted attempt counter, an architectural or cryptographic trade-off
-  with long-lasting consequences.
+## When it applies
 
-Only a cheap-tier primary drives the cycle — by the **host profile's effective tier**, not by the
-agent's name; a medium or strong primary does not conduct the cycle and outside the cycle remains
-the deciding primary. The ready-made role assets (`assets/opencode-agents/*.md`) carry explicit
-permissions as well: `pdca-scout` has bash only via an allowlist of read-only commands,
-`pdca-executor` has `edit`/`bash`, `pdca-check` has default-deny (except a scoped read of the cycle's
-artifacts), and `pdca-escalate` and `pdca-security-auditor` have `doom_loop: ask`.
+- **Software work in any stack** — writing and changing code, tests, documentation, refactoring and
+  configuration.
+- **Applied to the relevant component or step.** A step that touches no code runs without it. A mixed
+  repository applies it only to the code component.
+- **Auxiliary verification code does not reclassify a non-coding goal.** A checker, script or utility
+  written to verify an otherwise non-coding result makes **that component** coding work, not the whole
+  goal or campaign.
+- **Specialized knowledge loads only for the current step**, not every language or quality skill at
+  once. The repository supplies the concrete IDs; this overlay names the generic ones.
 
-Required roles are not substituted. An absent or forbidden required role is a **resource blocker**,
-not a reason to fall back to built-in `general`/`explore` or to work silently without it. A host that
-has **forbidden** a role must not be bypassed. The only permitted fallback is the driver: if
-`pdca-orchestrator` is unavailable, the flat cheap primary drives the cycle and records a `Notice:`.
-Optional specialist lenses may use an explicit generic-role path, which is not a substitute for a
-required role.
+## Composition and selection
 
-## How `pdca-coder` differs from the base cycle
+The base entry PLAN selects the form and, for code work, the specialized skill:
 
-The base PDCA cycle is domain-neutral. `pdca-coder` adds engineering concreteness to it, and only
-that: the base goals, gates, counters, claims and safety stay in force unchanged.
+- none for a non-coding task;
+- `pdca-coder` for general programming, including Go or Rust;
+- `pdca-dotnet` for .NET/C#, which inherits this overlay.
 
-**Three DO streams run at the same time.** This is the main difference. Code, tests and prose
-documentation (README, guides) are written **in parallel**, right after the plan, not sequentially.
-The contract explicitly forbids both "code first, tests later" and "docs later": no TDD order is
-used in DO, and the only "red → green" requirement applies to a regression test for a bug fix.
-Each stream depends **only on the plan** (and, if needed, on a frozen shared contract — signatures
-and types without implementations). If tests and docs need a shared abstraction or DTO, first only
-the contract is fixed and frozen: only PLAN may change it. A file that different streams write to
-is not parallelized — it moves into the contract, or the task stays single-streamed. Generated and
-API docs (comments such as XML-doc) are the exception: they live in the same files as the code, so
-they are written **after** the code stream. The result: all three sides are derived from the plan
-and do not wait for one another.
+Loading an overlay does not change the form. An already selected form and overlay set stay as they
+are. A direct load of `pdca-coder` without the base loads the contract already in force — the base for
+a bounded cycle, `pdca-incremental` for a campaign step, or `pdca-collection` with its common rules for
+a collection item — and preserves that form. If no form is in force, the base entry decides; the
+overlay does not.
 
-**PLAN chooses the toolchain and the lenses.** Since the skill is stack-agnostic, PLAN must, for
-each specific task, determine the type of result; find the build/test/lint toolchain declared in the
-project through `pdca-scout`; choose the appropriate correctness lenses; bind each lens to an available
-agent or an explicit general path; and **freeze** that choice together with the evidence each lens
-must return. A missing optional lens is replaced by an explicit general path, not silently dropped.
-Gate 1 (PLAN → DO) checks that this choice is written down together with the acceptance criteria,
-the testing strategy, the documentation plan, and reasoned decisions on performance measurement,
-reconnaissance and the unit execution mode. Re-entry is stipulated separately: after a terminal
-`incomplete`/STOP, the previous terminal cause is a mandatory plan input, and a criterion whose
-evidence failed cannot be re-run unchanged — either it is proven to be reachable now, or the
-criterion is reformulated against a reproducible oracle.
+**The task stays unchanged.** The original task, its global requirements and acceptance remain as
+supplied, with user criteria verbatim. The current cycle or step keeps its own scope. The code-specific
+discipline applies inside them, and a local result never becomes the whole goal.
 
-**The plan close is shared with the base cycle.** Gate 1 also requires every **frozen command** to
-pass the plan command contract: the identifier resolves to at least one target in the declared
-scope, the argv survives the harness (no shell alias, redirection or unexpanded placeholder), the
-phase is legal (a boundary-only sweep is not inner work), the scope fits the declared host capacity, and
-the expected outcome is `green`, `expected-negative` or `informational`. A violation is a **plan
-defect**, not a runtime exception. The gate also records the **effort estimate/accounting** (never an
-autonomous wall-clock/token/revision cutoff); a run that selects zero targets is a failure whatever its exit code, and
-a decisive negative arm is declared `expected-negative` with its exact failure identity. Recorded
-exceptions come from a fixed catalog — a class appearing in three or more units of one campaign is
-systemic. On DO entry the executor re-resolves the plan's anchors before the first edit: cosmetic
-drift is a `Notice`, semantic drift is DO → PLAN.
+## Toolchain and verification lenses
 
-**CHECK in two beats and parallel streams.** Verification does not mix fact gathering with
-judging. First the cheap **gathering**: the mechanics — commands through `pdca-executor` (build and lint
-clean under the project's policy), the semantics — code lenses (raw `file:line` candidates + a rule
-id, no verdict), tests, documentation, performance; then the **triage** — `pdca-check` on the medium
-tier renders the verdict. The gathered evidence converges into a single machine-readable **evidence
-manifest**: DO writes it at the path fixed in the plan and freezes it at the DO→CHECK boundary; in
-CHECK the manifest is only appended to, and `pass` is forbidden while even one mandatory item is
-open **and binding**. A self-imposed extra *audit* row that follows from no agreed goal is not
-rewritten or dropped: CHECK returns an explicit append instruction for it in the same manifest; the
-executor writes it and CHECK reconciles the result (a stable row ID plus the
-`diagnostic_nonbinding` classification and a reason), so the row may stay `open` while
-it is excluded from the binding blockers, with binding unmet rows and audit notes reported
-separately. `pdca-check` reads the aggregated report and may open the cycle's artifacts directly — a scoped
-read of the status, the evidence and the manifest, but never the product's code. Four streams are
-unconditional: code audit, tests, documentation, performance; the fifth — the security audit — is
-conditional and engaged by trigger, and its report returns into the common verdict rather than
-being rendered separately. Any stream failure of the current revision, including a security hit,
-counts as a failed CHECK for the attempt counter; only a hard security trade-off is escalated
-immediately. Independently green branches of work do not combine automatically: if subtasks were
-carried out in separate worktrees (isolated working copies of git), CHECK is supplemented by two
-mandatory steps — merging the branches into a common tree and **re-verifying the merged code**. Any
-CHECK stream failure becomes a `D:` task (a DO stream item) for `pdca-executor` or a return to the plan,
-and does not cancel the other streams.
+The usable toolchain is a property of the existing project environment. Each phase decides only what it
+owns.
 
-**A project overlay on top of this one.** A repository may add its own cycle rules: a file in
-`instructions`, a project skill `*-pdca`, or `.opencode/skills/<name>/SKILL.md`. Such a project
-overlay refines invariants,
-finding registries, report formats and thresholds, and takes precedence over the general
-recommendation, but **does not cancel** the state machine and the gates — the plan approval, "everything green",
-returns, autonomous mode. Before PLAN, `pdca-scout` looks for such an overlay and brings back its rules.
+- **Discover, do not invent.** Take the build/test/lint/format/docs commands from the project's
+  manifests, CI workflow, task runner, README or project overlay. A declared gate runs as declared;
+  when the project declares none, use the runnable check the environment actually provides and say so.
+  A command, method or threshold the user prescribed is a requirement, not a choice.
+- **PLAN** defines the cycle's observable code criteria; every other plan field stays the base's.
+  Toolchain and environment constraints may reach PLAN as input facts through `pdca-scout`. Choosing
+  commands, a test strategy, decomposition, specialists or verification methods is not PLAN's.
+- **DO** maps criteria to implementation and chooses its own developer verification and test strategy;
+  its runs are candidate evidence, not acceptance.
+- **CHECK** chooses, per criterion, the independent method, lens and concrete command at CHECK time. A
+  lens is used when the actual change and the criteria need it: correctness/anti-pattern scan, tests,
+  docs, security when a trust boundary is touched, performance only when a criterion is quantitative,
+  design/type design when the change is structural. Nothing here owes coverage, mutation or performance
+  work to a task that does not need it.
+- **A missing lens is replaced, not dropped.** Use the generic-role path — `pdca-scout` for facts,
+  `pdca-executor` for mechanics, `pdca-check` for judgment — never a fabricated agent name. Role labels
+  and tiers stay the base's.
 
-## A teaching scenario (an illustration, not a rule)
+## Code-specific plan deltas
 
-> **Note:** this is a fictional example explaining the mechanics. It is not part of the contract
-> and does not describe a real repository.
+For code work under the base common cycle, PLAN defines the cycle's observable criteria using the forms
+below. Every other plan field, the original task, the cycle/step scope and criteria ownership stay as
+the governing contract sets them.
 
-Task: add to a console utility a `--strict` flag that exits the process with a non-zero code if
-there were warnings while parsing the config.
+- **Correctness** — the requested behaviour including its error path and exit status, empty / single /
+  many input, malformed or missing input, and a negative condition where the task makes one relevant.
+- **Public contract** — a signature, format or compatibility guarantee only where the task's result
+  includes it.
+- **Security** — the property the task requires (authorisation, input trust, secret handling), not an
+  audit process.
+- **Performance** — a numeric threshold only when the task or the project's declared policy supplies
+  one.
+- **Documentation** — an obligation only when the task or the declared project policy mandates it.
 
-**PLAN.** `pdca-scout` finds the test and lint commands declared in the project. `pdca-planner` formulates the
-goal and the acceptance criteria with negative cases: without the flag, warnings do not change the
-exit code; with the flag, they do; an empty config does not crash. A matrix of variants is built
-(each row is closed as a test, a guard check, or deferred with a trigger): a config with no
-warnings, with one, with several, a missing file. Lenses are chosen: correctness and error
-handling, CLI/UX, security — if an untrusted file is read. Performance decision: not needed, the
-work is not on a line-by-line hot path, with `file:line` given. Documentation decision: update the
-README and the guide section. `pdca-executor` writes the plan into the status file. After the approval, DO begins.
+Criteria state required outcomes. Implementation and developer verification belong to DO; independent
+verification belongs to CHECK, as the governing contract assigns. DO may propose a worktree split,
+performed only within the cycle's authorised workspace operations.
 
-**DO.** Three streams start in one turn: the code adds the flag and changes the exit code; the tests
-write the cases from the matrix; the prose docs describe the flag. All three rely only on the plan.
-Generated API docs, if the project requires them, are added after the code stream.
+## Code-specific check deltas
 
-**CHECK.** Four streams gather evidence: the build/lint commands (exit code, log path), the test
-lens (a run, coverage against the project threshold, a branch report, not just lines), the
-documentation lens (the README is created and matches the implementation), the performance lens
-(confirmation that the path is not line-by-line). `pdca-check` finds that one negative case from the
-matrix is not covered and returns a `D:` for `pdca-executor`. After the fix the streams are re-gathered and
-the verdict turns green.
+CHECK keeps the base procedure, its per-criterion method choice, verdict, routing and accounting. This
+section adds what a code check examines and how code evidence is read. The evidence and safety rules
+hold wherever code evidence is produced or judged — DO follows them when it runs, CHECK when it judges
+or requests a run.
 
-**ACT.** The skill records 0–2 transferable lessons into memory (optional; no lesson is a normal
-outcome), updates `AGENTS.md`/registries/tests, finalizes and **keeps** the status file, and in
-normal mode prints a message for the next session. The status file is never deleted — it remains
-either as a baton to the next session or as a closed record.
+- **Applicable work, no fixed tally.** Examine the actual change and the criteria, not a checklist of
+  streams: an audit of the diff (build/lint clean under the project's own policy, suppressions and
+  smells, the public surface when the task touches it), the tests against the cycle's criteria, docs
+  against the implementation where required, a security gather when triggered, numbers when a criterion
+  is quantitative. A lens with nothing applicable is recorded as not applicable with its reason; an
+  "all streams green" tally is not required, and an inapplicable lens never blocks.
+- **Coverage of the criteria's own variants.** An execution variant the change actually exposes — input
+  kind, `null`/default/uninitialized, value vs reference form, constructor/mapping, projection vs whole
+  object, provider/backend, on/off flag — is verified as part of the existing criteria, not as new
+  behaviour. CHECK independently notices when a relevant variant of an existing criterion has no
+  evidence; the absence is `unverified`, never an automatic product defect. A genuine defect in the
+  criteria themselves remains the base `CHECK → PLAN` route.
+- **Evidence and judgment are separate.** `pdca-executor` runs and returns the exit status, key numbers
+  and log path; it issues no verdict. `pdca-check` interprets independently and alone decides. A
+  specialist's report is advisory input to that decision.
+- **Author ≠ certifier.** CHECK re-derives each acceptance or deferral claim from the actual
+  `file:line` evidence; a self-authored assessment, an unsupported "acceptable" or a deferred item with
+  no code basis is not a waiver. This is the base CHECK's independence applied to code, not a second
+  certifier role or an extra approval.
+- **A code audit, when chosen, is two-phase.** A cheap gather returns raw `file:line` candidates with
+  rule IDs, not severity or a verdict. `pdca-check` judges each as a real defect or noise, its severity,
+  and whether it is fixed now or accepted as a deviation. Suppressions, disabled tests, empty catches
+  and sleeps in the actual changed code are counted over a meaningful denominator and read as
+  candidates that need a reason; the marker alone is not a defect. The .NET overlay names its exact
+  markers.
+- **Existing registers stay on demand.** Where the repository already keeps defect or deviation
+  registers, update only the actual finding; do not reopen a resolved item without new evidence or
+  relist accepted deviations, and keep the base defect history. No new register or `Was`/`Now`/`Check`
+  schema is required.
+- **Integrated candidate.** After an authorised merge or integration, CHECK verifies the integrated
+  candidate itself; green components do not make a green integration, and component conclusions are
+  re-evaluated against the actual combined result.
+- **Session reuse.** Reuse the current `pdca-check` session on a loop-back when the host offers one;
+  otherwise a fresh session reads the persisted evidence. This changes no independence or accounting
+  rule.
+- **Routing and accounting are the base's.** An applicable failing check is a finding; the governing
+  contract alone accounts findings and attempts.
+- **Finding form.** A finding carries the location, the problem, the required change, the check
+  evidence and the numbers. Its language follows the project and the base dialogue language. An
+  optional user-facing summary never replaces the full report the base records. No fixed severity
+  vocabulary, mandatory baseline ratio or line-count limit is imposed here.
+
+### Language and correctness anti-patterns
+
+The correctness lens looks for these in the actual change, and DO does not introduce them:
+
+- **String handling** — culture/locale/encoding assumptions, slicing, chains of `Replace`/`Format`.
+- **Collections and iteration on a hot path** — per-call allocation of collections/maps, repeated
+  enumeration, `Count()` over a lazy sequence, quadratic joins.
+- **Regex** — catastrophic backtracking, compiled-vs-per-call, culture-sensitive options.
+- **I/O and serialization** — unbuffered streams, sync-over-async, deserialization of untrusted input
+  without limits, culture-dependent number/date parsing.
+- **Async** — `async void`, fire-and-forget, `.Result`/`.Wait()`, missing `CancellationToken`
+  propagation, `ConfigureAwait` misuse.
+- **Design and types** — god classes, fat interfaces, leaky contracts, interface/implementation pairs
+  without a second consumer, type-switch, needlessly open/final types, defensive copies, mutable
+  collections leaking from a public API.
+
+When the change is structural, the design/type lens checks that construction preserves the type's
+invariants and weighs mutability, openness to extension and copy cost against the actual use; where the
+choice is non-obvious it may compare the inverse construction, and no whole-repository count or ratio is
+required.
+
+**Optional-null/default** — an optional value with a null/default fallback, especially `*Options`, is a
+finding when it lets a wrong behaviour be chosen silently. Handle it in the language's own terms: make
+the fallback explicit at the boundary, or require the value where its absence would change behaviour,
+according to the language contract. The boundary rejects a missing required value only where the user's
+contract or the language's nullable contract makes it required, not for every parameter by default. The
+C# overload pair is one form, not a requirement for every stack; .NET nullability specifics belong to
+the .NET overlay.
+
+### Code evidence requirements
+
+- **Every run returns** its exit status, the key numbers (passed/failed/skipped, warnings, coverage
+  when measured) and the log path — never the log in the message. A run that did not start is not
+  reported as a run.
+- **Diff facts come from the change, not the author's restatement** — changed files, `git diff --stat`
+  and `file:line`; when the chosen method needs an outside observation, `pdca-scout` reports it.
+- **A report is not a result.** "Should pass", "looks green", "passed last time" order the run; only an
+  actual execution counts. A run whose selector matches zero targets is a failed run whatever its exit
+  status; a vacuous run proves nothing.
+- **A regression fix is red↔green.** When the task is a bug fix, the executor authors an executable test
+  that fails without the fix and passes with it, and returns both exit codes. "Passed once" proves
+  nothing; independent interpretation of what that evidence means is CHECK's.
+- **Build/lint** are gates only where the project declares them; a new warning or lint error is not a
+  fix under that policy.
+- **Coverage and mutation** are numbers with a baseline and the project threshold, not adjectives; a
+  green line percentage does not prove new branches were exercised. Report them when the task or policy
+  makes them relevant. When mutation is chosen, surviving mutants in the changed code are killed or
+  justified against the criterion; without usable tooling, name the untested branches instead of
+  implying the coverage. A score never substitutes for a mandatory criterion, and an untested task owes
+  neither measurement.
+- **Per-row work has a cost.** When the change adds parsing, binding, materialization, serialization or
+  cache work inside a repeated/per-row path, identify the added work and gather an actual measurement
+  where the task's quantitative requirement or a real performance risk makes it relevant. DO may gather
+  a developer measurement; CHECK chooses an independent one only when its method needs it. A general
+  preference for performance is not a universal gate, and an executor run draws no benchmark
+  conclusion.
+- **Output is harness-safe.** The argv or selector must reach the tool intact — quoted arguments, an
+  argument array rather than a shell-reassembled string — and select the intended scope. A selector that
+  resolves to nothing or to the wrong scope is a failed command, not evidence.
+
+### Build and test command forms
+
+A command that produces acceptance evidence must select what it claims, survive the harness, be legal in
+the phase, fit the host, and declare its expected outcome.
+
+- **Inner loop = the affected subset.** Build the affected project once when compilable inputs change,
+  then run it: `dotnet test <project> --no-build --filter <selector>`, `pytest -k <expr> <path>`,
+  `cargo test <module>`, `npm test -- <path>`, or an unfiltered run of the affected **unit** project. A
+  filter does not make a run unit: a mixed run that executes integration cases is integration.
+- **Unit runs are unrestricted; an expensive integration run happens at the stream / DO→CHECK
+  boundary**, and inside DO only when the change is integration-only or the cycle's authorised scope
+  allows it. Outside that case, expensive database/service integration suites run at the stream
+  boundary, not per edit. Widening a run to a shared contract or an external dependency needs a scope
+  amendment validated before the run, with the reason recorded. Integration inside DO outside that
+  allowance is a recorded policy deviation, never renamed away.
+- **Never the whole solution in the inner loop**; the affected project runs alone.
+- **Logs are streamed, not buffered**: `… 2>&1 | tee <log>`, keeping `rc=${PIPESTATUS[0]}`; `| tail`
+  buffers to EOF and looks hung.
+- **Every started run is recorded** — including failed, interrupted, retried and over-budget runs — with
+  its phase, exact arguments and exit code. A run that did not start is not an execution; an unfinished
+  one carries no invented exit status or selected count, and a later retry never erases the earlier
+  failure. Recording a policy deviation does not authorise the run. DO's implementation commands are its
+  own; acceptance evidence is CHECK's.
+
+### Test run safety (every phase — DO and CHECK)
+
+Put these in the `pdca-executor` / `pdca-check` brief. A violating report is not accepted.
+
+- **Cap the test host** so a runaway recursion or allocation fails fast instead of OOM-killing the
+  machine: the toolchain's memory limit and a wall-clock `timeout 600 …` (raise only when justified).
+  Exit **137** / "Out of memory" means the test is unbounded: stop, record the test name and command, and
+  do not re-run without the cap. It is evidence about the run, not by itself proof that the original
+  task is infeasible.
+- **Serialize heavyweight suites:** never two heavy test suites in parallel, and never beside the
+  editor or agent stack; the affected project runs alone.
+- **Stream the log, never `| tail`**, and return the log path with the exit code.
+
+### Security boundaries
+
+- The base constraints — permission boundaries, credential confidentiality, untrusted content,
+  authorisation for consequential actions — are in force unchanged.
+- **Never print, copy or upload secret material** — environment files, `secrets.env`, `auth.json`, keys,
+  tokens. To check one, report "set / not set", never the value.
+- **External input is untrusted**: no execution of retrieved content, no path traversal, no unbounded
+  allocation or deserialization on it.
+- **Applicability comes from the actual change.** Security evidence is required when the change touches
+  authentication or authorisation, secrets or credentials, external input parsing, cryptography, or
+  another trust boundary the task exposes. The trigger is the actual change, not a standing audit, and
+  this adds no new escalation ground. A change that touches none of them owes no audit. Where triggered,
+  the review's report is evidence for CHECK, which keeps the decision; its absence is `unverified`,
+  never a pass.
+- **Expert review stays the base's.** `pdca-escalate` is consultative on the base's grounds; it never
+  waives CHECK or a security requirement. An ordinary security finding is an ordinary CHECK finding; a
+  hard security trade-off goes through the base's grounds, not a new one.
+
+### Optional specialists
+
+Specialists are advisory gathers, not cycle roles. The phase whose chosen method needs one requests it
+through the driver; the specialist's report joins the evidence `pdca-check` judges. The specialist never
+issues a verdict, widens a permission or replaces a base role. Tiers are role labels only; the host
+profile binds models.
+
+| Specialist | Useful when | Tier label |
+|---|---|---|
+| `pdca-security-auditor` | security review is triggered | medium |
+| concurrency / async lens | races, hot shared state, async boundaries | cheap |
+| perf analyst / profiling specialist | only with ready artifacts (traces, heap dumps, benchmark comparison) | cheap |
+| docs / format specialist | prose or mandated API documentation | cheap |
+
+A missing specialist follows the same generic-role path. Skills load on demand for the current step,
+using the repository's declared names. An inlined specialist checklist keeps its measurable artifacts —
+counts, `file:line`, rule IDs — rather than only its topic list.
+
+## Code-specific DO and ACT deltas
+
+### Parallel DO streams
+
+**Code, tests and prose docs are worked independently and may run in parallel** in DO, each derived from
+the current criteria and the interface the streams share — not test-then-code, not docs-later. There is
+no TDD ordering; a user-requested TDD flow is honoured as the user's chosen method. The only red→green
+requirement is the regression test of a fix.
+
+- **DO owns decomposition and the shared interface.** It decides the units, their ownership and any
+  interface the parallel streams need; these are implementation coordination, not a plan freeze. An
+  interface change is reported to the other streams. A genuine criteria defect is not solved by
+  re-coordination: it follows the base CHECK finding to PLAN.
+- **Disjoint ownership.** Parallel units or streams need non-overlapping footprints; anything writing the
+  same file from two streams stays single or moves behind the shared interface. A stream that has
+  finished stops touching the area.
+- **Docs.** Prose docs are the third stream, written only where the task or project policy requires
+  them; when required, they match the public behaviour the change actually produced. Generated or API
+  docs follow the finished code and reflect its actual signatures and behaviour, never an intended one.
+- **Tests.** The developer test strategy is DO's: it closes the executable variants that matter to the
+  actual criteria — empty / single / many, malformed or missing, negative, plus the axes the change
+  really exposes: input kind, `null`/default/uninitialized, value vs reference form,
+  constructor/mapping, projection vs whole object, provider/backend, on/off flag — as a test, a guard or
+  a deferral with a trigger, and it never binds CHECK's independent choice. A test name states the
+  asserted behaviour; integration is used where a unit cannot observe it, E2E only when the task or
+  project demands it. A test that would survive a deliberately wrong implementation, that asserts a mock
+  instead of behaviour, covers only the happy path, checks the implementation instead of behaviour, or
+  exists "for the future" without a criterion is not evidence. A logic-free DTO or proxy may go untested
+  with an explicit reason and trigger; that is a coverage choice, never a waiver of a mandatory
+  criterion.
+- **Fixes.** A fix starts from a reproducible failure: reproduce it, read the error in full, trace the
+  value or state to its source, test one hypothesis, then add the failing regression test and the
+  minimal fix. A fix verifies the original symptom and the regression criterion, not "should work". When
+  successive fixes expose new coupling or a defect elsewhere, report that evidence to the choosing
+  phase; it does not by itself create a plan revision or an escalation. A symptom fix is not a solution.
+- **The status file is not a stream.** The executor logs each stream report separately, one at a time;
+  stream divergence (tests ↔ code, docs ↔ behaviour) is a CHECK finding, not a DO verdict.
+- **Editing discipline.** One coherent axis per step, then build and run the affected tests; keep the
+  minimal blast radius; preserve the repository's line endings and formatting; a red build or test stops
+  the stream and is reported. Keep a public-surface change minimal and report the actual diff when that
+  surface changes; an existing compatibility requirement stays unchanged. Start from the requested
+  consumer: reuse what exists, then the standard library, then a platform capability, before a new
+  dependency, abstraction or configuration, and add no speculative API or product scope. The
+  second-consumer note is an anti-pattern to judge in the actual change, not a universal hard gate. When
+  a genuinely uncertain implementation choice remains, a concise comparison of a couple of approaches
+  with trade-offs, cost and risk is useful; no fixed menu, option count or extra review is required.
+  Understand why code exists (history, consumers) before deleting it. An executor run draws no benchmark
+  conclusion, and an unsupported path fails loudly with a typed error rather than silently substituting
+  semantics.
+- **Exploratory code.** A spike or proof of concept needed to answer a real question stays outside the
+  product source, runs only behind the project's gate and never in production execution, and returns a
+  reproducible command, numbers and dependency version. Before completion it becomes an approved test or
+  product change or is removed within the authorised cleanup scope, with the evidence and recovery
+  retained. It opens no separate cycle or PLAN, and "kept just in case" is not scope authorisation.
+
+### Worktree sub-tasks
+
+When the cycle's authorised workspace operations include separate worktrees for **units of one cycle**,
+each unit is a separate `pdca-executor` dispatch that works only with absolute paths inside its worktree
+and leaves the rest of the tree untouched. DO may propose this split; it is performed only within those
+authorised operations. A unit worktree **belongs to the same parent cycle**, not a separate cycle: it
+gets no independent PLAN/CHECK/ACT and no separate status file; its unit state and evidence nest in the
+canonical current-cycle record. Commit a unit only where the brief or a recorded project policy
+authorises its isolated branch; push never. Creating branches or worktrees, merging and integrating are
+workspace operations that need explicit authorisation, not something this overlay grants. After an
+authorised merge, CHECK verifies the integrated candidate; leave the task branches in place so the work
+remains recoverable.
+
+### Status, ACT and handoff additions
+
+- **The base fixed shape is the cycle record.** Use the base `act.md` CYCLE RECORD skeleton with its
+  canonical headings. A form-owned outer container stays that form's; within the cycle record, code and
+  stream fields nest under `## DO result` / `## Changed files`, and unit decomposition metadata under
+  `## PLAN record` where the base prescribes it. The overlay adds no additional top-level section, log
+  or per-unit status file.
+- **Record rules follow `act.md`.** Original task, phase reports, dialogue language, sole writer, fixed
+  template and Git state are as the base `act.md` states; no restated schema.
+- **Unit and stream metadata.** Keep the code-specific unit fields — state, criteria covered,
+  footprint/owner, evidence pointers — under the base section that owns them, never in a new status path.
+- **Bookkeeping.** Reuse the base touched-file ledger in all dispatches; no custom handoff.
+- **No invented ACT work.** Do not force an `AGENTS.md` or registry edit or fabricate a project lesson to
+  close a cycle. Docs are finished in DO/CHECK, not ACT.
+- **Outcomes stay the base's.** An unfinished DO result goes DO → ACT; ACT records the phase-determined
+  outcome using the governing contract.
+- **Commits.** Do not commit or push as part of the cycle. The exception is an explicit user authorisation
+  — or the task-specific policy the base allows to be recorded — for a named scope such as an authorised
+  unit branch. Disk durability alone stages nothing and is never a licence to commit.
+- **Handoff.** The base handoff only; code work adds no separate handoff block.
 
 ## Limitations and false expectations
 
-**Commit and push.** The cycle does not commit or push on its own initiative. The only mechanical
-exception is the worktree mode: each unit commits into its own isolated `pdca/<task>` branch inside
-its worktree; this is an isolation mechanism that the merge in CHECK relies on, not a delivery.
-Commits into the working branch are made only on explicit request (for example, an autonomous
-auto-commit); push — never without a separate explicit request.
-
-**Autonomy does not expand permissions.** The absence of questions is not a permission. An
-unavailable mandatory role, a secret, an irreversible external action or a step requiring approval
-is a blocker or a STOP, not a silent pass.
-
-**Test-run safety.** Any test run in DO or CHECK limits the test host's resources: a memory limit
-and `timeout 600` by wall-clock are set so that unbounded recursion or allocation fails fast rather
-than destroying the machine. Heavy suites (integration ones with a real database/broker/HTTP) are
-serialized: never two heavy runs in parallel, and never next to the editor or the agent harness. A
-long run is **streamed to a log** rather than through `| tail`, which buffers until end of file and
-looks like a hang; the output always includes both the exit code and the log path. An exit of `137`
-/ "Out of memory" means the test is unbounded: it is stopped and recorded.
-
-**What the cycle does not guarantee.** Gates constrain the permitted actions but do not make a plan
-correct and do not replace domain expertise. Something else is guaranteed: without explicit
-verification the work will not close, state will not be lost silently, and identical retries will
-not be passed off as progress. Fresh evidence is mandatory: a verdict without numbers, `file:line`
-and a baseline does not count as a pass, and the executor's report "done, the build is green" is
-not proof.
+- **“The overlay is a second cycle.”** No. It adds domain facts to the form the base selected; the base
+  owns every phase and counter.
+- **“Code work needs every lens.”** No. A lens is used when the actual change and criteria need it; an
+  inapplicable lens is recorded as such and never blocks.
+- **“A green test run is enough.”** No. The run must select what it claims, use an artifact matching the
+  actual source, and be interpreted by CHECK. A vacuous or stale run is not evidence.
+- **“Coverage is a universal gate.”** No. It is a number with a baseline and a project threshold, used
+  only when the task or policy makes it relevant.
+- **“The overlay may commit because the work is code.”** No. Commits and pushes remain explicit
+  authorisations, never a right of the overlay.
 
 ## Where to go next
 
-If the task is an engineering one with a verifiable result, start with "by the cycle" — it loads the
-family's single entry, `pdca`, and lets the one PLAN formulate the criteria before anything is
-written; code work then gets this overlay. If the task is purely .NET/C#, see the related
-[`pdca-dotnet`](pdca-dotnet.md) (it inherits `pdca-coder`); if the result is not about code, the
-family's base [`pdca`](pdca.md) runs without an overlay; if there are many independent goals —
-[`pdca-collection`](pdca-collection.md); if the method or the volume is unknown —
-[`pdca-incremental`](pdca-incremental.md).
-The family's common mechanics — gates, the `N`/`r`/`n/3` counters, memory and evidence — are
-covered in the article about the base [`pdca`](pdca.md); the full text of the contract
-lives in [`skills/pdca-coder/SKILL.md`](../skills/pdca-coder/SKILL.md), and an overview of the
-whole family is in the guide [`docs/pdca-guide.md`](pdca-guide.md).
+- The base cycle and the common contract: [`pdca.md`](pdca.md), [`pdca-guide.md`](pdca-guide.md),
+  [`skills/pdca/SKILL.md`](../skills/pdca/SKILL.md).
+- The .NET overlay that inherits this one: [`pdca-dotnet.md`](pdca-dotnet.md).
+- A campaign step or collection item that uses this overlay: [`pdca-incremental.md`](pdca-incremental.md),
+  [`pdca-collection.md`](pdca-collection.md).
+- Host setup: [`install.md`](install.md).
 
 ## Sources
 
-The "claim → source" map. The article's normative claims were reconciled with the current
-files (`skills/pdca/SKILL.md`, `skills/pdca/references/*.md`, `skills/pdca-coder/SKILL.md` and its
-`references/`); where they disagree, the skill file takes
-precedence. The paths are given from this repository; the host artifacts (`config/agents/*.md`,
-`config/profiles/*.jsonc`, `config/AGENTS.md`) are not part of it and live in a separate
-configuration repository.
-
 | Claim | Source |
 |---|---|
-| Stack-agnosticism: code, tests, documentation, refactoring, configuration; the choice of toolchain and lenses belongs to PLAN | `skills/pdca-coder/SKILL.md §When it applies · §Toolchain and lenses` |
-| The contract applies only with the skill loaded; a gate checks the presence of items, not their quality | `skills/pdca/SKILL.md:8-9 · §Transition gates` |
-| Roles, tiers and economics (cheap / medium / strong) | `skills/pdca/SKILL.md §Roles and host requirements` |
-| The host defines the roles; only a `# tier:` label, no `model:` is written into a role | `skills/pdca/SKILL.md §Roles and host requirements` |
-| Only a cheap-tier primary drives the cycle (by the profile's effective tier) | `skills/pdca/SKILL.md §Roles and host requirements` |
-| The role table, the fallback to `explore`/`general`; an unavailable role is a resource blocker | `skills/pdca/SKILL.md §Roles and host requirements` |
-| The project overlay and its boundaries (it does not cancel the gates or the state machine) | `skills/pdca-coder/SKILL.md §Composition` |
-| State: the status file is the source of truth and the only progress mirror | `skills/pdca/SKILL.md §Phase progress mirror · §Workspace and durable status` |
-| The three counters `N`, `r`, `n/3` | `skills/pdca/SKILL.md §State machine and counters` |
-| Gates 1–4 (PLAN → DO → CHECK → ACT) | `skills/pdca/SKILL.md §Transition gates` |
-| The plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring and the effort policy | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy` |
-| The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `skills/pdca/SKILL.md §DO outcome and ACT finalization · §Phase contracts (generic)` |
-| Re-entry after a terminal `incomplete`/STOP | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca/SKILL.md §Phase contracts (generic)` |
-| The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |
-| Generated/API docs — after the code stream | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |
-| The editing discipline of `pdca-executor`; the ban on commit/push except `pdca/<task>` branches in a worktree | `skills/pdca-coder/references/act.md §Coder editing discipline (applying fixes)`; `skills/pdca-coder/SKILL.md §Worktree sub-tasks` |
-| The subagent report format (pointers, not dumps) | `skills/pdca-coder/references/act.md §Subagent report format (mandatory)` |
-| The worktree subtask template, the `pdca/<task>` branch, the push ban | `skills/pdca-coder/references/act.md §Worktree sub-tasks of one cycle: subagent prompt template` |
-| Escalation: triggers, no 4th attempt, decision routing | `skills/pdca/SKILL.md §Escalation (pdca-escalate)` |
-| PLAN chooses the toolchain and lenses; freezing the choice and the evidence | `skills/pdca-coder/SKILL.md §Toolchain and lenses` |
-| Plan quality, the minimal solution, the matrix of variants | `skills/pdca-coder/references/plan.md §PLAN owns the quality of the plan · §Minimal solution and first principles · §Variant/branch matrix — mandatory, before the cases` |
-| The unit execution mode (sequential / parallel one tree / worktrees) | `skills/pdca-coder/references/plan.md §Unit execution mode (mandatory decision)` |
-| Performance and reconnaissance — mandatory reasoned decisions | `skills/pdca-coder/references/plan.md §Performance measurement (mandatory decision) · §Prototype / reconnaissance (spike) — mandatory decision` |
-| The plan goes to disk before approval; the user's approval of the plan is the only start signal | `skills/pdca/SKILL.md §Normal-mode approval` |
-| The testing strategy, the matrix of variants, coverage/branches/mutations | `skills/pdca-coder/references/plan.md §Test strategy (PLAN → TEST) · §Variant/branch matrix — mandatory, before the cases · §Coverage comes from the project, mandatory` |
-| Test-run safety (limits, timeout, serialization, streamed log) | `skills/pdca-coder/SKILL.md §Test run safety (every phase — DO and CHECK)` |
-| Documentation: prose vs generated, owners by phase | `skills/pdca-coder/references/plan.md §Documentation (owners by phase)` |
-| The frozen evidence manifest; CHECK reads it first | `skills/pdca/references/plan.md §Frozen evidence manifest` |
-| CHECK in two beats; `pdca-check` may read the cycle's artifacts (scoped read, not the product's code) | `skills/pdca-coder/references/check.md §Two beats`; `skills/pdca/SKILL.md:19-24` |
-| Four unconditional streams + security by trigger; a failure is a `D:` or a return to the plan | `skills/pdca-coder/references/check.md §Parallel CHECK streams (code audit + test + doc + perf + security*)` |
-| "No numbers — no pass": a verdict without numbers/`file:line` is a fail; a report ≠ a result | `skills/pdca/references/check.md §Findings · §Verdict and routing`; `skills/pdca/SKILL.md §Evidence over assertion` |
-| Worktrees: merging and re-verifying the merged tree | `skills/pdca-coder/references/check.md §Parallel sub-tasks in worktrees (within one cycle)` |
-| Debugging: cause before the fix, a red↔green regression test | `skills/pdca-coder/references/act.md §Debugging (loop-back CHECK → DO)` |
-| ACT: memory (0–2), AGENTS.md/registries, finalizing the status file, the session message | `skills/pdca-coder/references/act.md §Status-file additions (code) · §Handoff additions (code)`; `skills/pdca/references/act.md §Closing order · §Message for the next session` |
-| Commit policy: no commit/push from the cycle except the worktree unit branch; commit to the working branch only on request | `skills/pdca-coder/SKILL.md §Status, ACT and handoff additions` |
-| Autonomy does not expand permissions; instruction priority, injections, secrets | `skills/pdca/SKILL.md §Generic operating constraints` |
-
-Additionally: the phrase triggers are a launch convention, not a contract rule; in this repository
-they are fixed by `README.md` (the Usage section), while `SKILL.md` itself does not formulate a
-phrase trigger. The teaching scenario is marked as such in the text and creates no rules.
+| The overlay is not a cycle, form or state machine and composes with the selected contract | `skills/pdca-coder/SKILL.md:11-30`; §Composition |
+| When it applies and how auxiliary code is scoped | `skills/pdca-coder/SKILL.md §When it applies` |
+| Toolchain discovery and the phase division of work | `skills/pdca-coder/SKILL.md §Toolchain and lenses` |
+| Code-specific criteria forms | `skills/pdca-coder/SKILL.md §Code-specific plan deltas` |
+| CHECK deltas, applicable lenses and code audit | `skills/pdca-coder/SKILL.md §Code-specific check deltas` |
+| Evidence rules, command forms and test safety | `skills/pdca-coder/SKILL.md §Code evidence requirements`; §Build and test command forms; §Test run safety (every phase — DO and CHECK) |
+| Security boundaries and specialists | `skills/pdca-coder/SKILL.md §Security boundaries`; §Optional specialists |
+| Parallel DO streams, worktrees and ACT additions | `skills/pdca-coder/SKILL.md §Parallel DO streams`; §Worktree sub-tasks; §Status, ACT and handoff additions |

@@ -252,6 +252,36 @@ security boundaries, handoff) apply unchanged.
   original source data. A true DO → ACT terminal outcome needs no phantom successful CHECK to permit
   cleanup.
 
+## Optional verification helpers
+
+Two standard-library helpers implement the inner-loop and evidence rules mechanically for projects
+that choose that method. They are **optional**: a task whose criteria do not need them owes neither
+run, and their absence is not a failure. Neither executes a supplied command; both validate recorded
+JSON and print `FAIL:`/`ERROR:` with exit `2`/`1`.
+
+`scripts/validate_inner_loop.py` accepts a `brief`, `report`, `project` (journal projection) or
+`manifest`. A brief has `unit` and a nested `scope`:
+
+```json
+{
+  "unit": "Foo.Tests",
+  "scope": {
+    "projects": ["tests/Foo.Tests.csproj"],
+    "selectors": ["FullyQualifiedName~Foo.Tests.BarTests"],
+    "files": ["src/Foo/Bar.cs"],
+    "rationale": "affected unit project after the Bar change",
+    "rebuild": "affected",
+    "boundary": "stream"
+  }
+}
+```
+
+A report adds `executions`; a manifest has `task`, `status_file`, `contract_rv`, `tree`, `base_ref`,
+`footprint`, `exclusions`, `required_rows` and `rows[]`. Optional metadata such as `tree_binding` and
+`tree_method` may be omitted. `scripts/pdca_evidence.py` provides `generate` and `lint` for an
+immutable receipt tree under `.pdca/<task>/rv<k>/`. Use these helpers only where the project already
+keeps such evidence or the cycle chooses that method; they create no additional phase gate.
+
 ## Composition
 
 The overlay composes by addition. The base the run selected — `../pdca/SKILL.md`, or the form that

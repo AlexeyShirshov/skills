@@ -153,6 +153,73 @@ def permission(path: Path) -> dict:
     return node
 
 
+V2_ACTION = {"task": "subagent", "bash": "shell", "write": "edit", "patch": "edit"}
+
+
+def _front_lines(path: Path) -> list[str]:
+    text = read(path)
+    end = text.find("\n---", 3)
+    return text[3:end].splitlines()
+
+
+def v1_rules(path: Path) -> set[tuple[str, str, str]]:
+    """Flatten the V1 `permission:` map into (action, resource, effect) triples."""
+    rules: set[tuple[str, str, str]] = set()
+    in_perm = False
+    action = ""
+    for line in _front_lines(path):
+        if line.startswith("permission:"):
+            in_perm = True
+            continue
+        if not in_perm:
+            continue
+        if line and not line.startswith(" ") and not line.startswith("#"):
+            break
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip())
+        key, _, val = line.strip().partition(":")
+        key = key.strip().strip('"').strip("'")
+        val = val.strip().strip('"').strip("'")
+        if indent == 2:
+            if val:
+                action = ""
+                rules.add((V2_ACTION.get(key, key), "*", val))
+            else:
+                action = key
+        elif indent == 4 and action:
+            rules.add((V2_ACTION.get(action, action), key, val))
+    return rules
+
+
+def v2_rules(path: Path) -> set[tuple[str, str, str]]:
+    """Read the V2 `permissions:` list into the same (action, resource, effect) triples."""
+    rules: set[tuple[str, str, str]] = set()
+    in_perm = False
+    current: dict[str, str] = {}
+    for line in _front_lines(path):
+        stripped = line.strip()
+        if stripped.startswith("permissions:"):
+            in_perm = True
+            continue
+        if not in_perm:
+            continue
+        if line and not line.startswith(" ") and not line.startswith("#"):
+            break
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("- "):
+            if current:
+                rules.add((current["action"], current["resource"], current["effect"]))
+            current = {}
+            stripped = stripped[2:]
+        key, _, val = stripped.partition(":")
+        current[key.strip()] = val.strip().strip('"').strip("'")
+    if current:
+        rules.add((current["action"], current["resource"], current["effect"]))
+    return rules
+
+
 def tier_of(path: Path) -> str:
     match = re.search(r"^# tier: (\w+)$", read(path), re.M)
     return match.group(1) if match else ""
@@ -222,15 +289,19 @@ class AssetSetTest(unittest.TestCase):
                 with self.subTest(asset=str(path.relative_to(FAMILY))):
                     self.assertNotRegex(read(path), r"(?m)^\s*model\s*:")
 
-    def test_assets_keep_the_v1_permission_map(self):
-        # V1 only understands `permission:`; V2 translates it. A V2-only `permissions:`
-        # list would silently drop the restrictions on a V1 host.
+    def test_assets_carry_both_permission_forms_kept_equivalent(self):
+        # V1 reads `permission:`; V2 reads `permissions:`. A V2-only asset would
+        # silently drop the restrictions on a V1 host, and a drifted pair is worse.
         for skill in FAMILY_SKILLS:
             for path in sorted((FAMILY / skill / "assets/opencode-agents").glob("*.md")):
                 data = frontmatter(path)
                 with self.subTest(asset=str(path.relative_to(FAMILY))):
                     self.assertIn("permission", data)
-                    self.assertNotIn("permissions", data)
+                    self.assertIn("permissions", data)
+                    self.assertEqual(
+                        v1_rules(path), v2_rules(path),
+                        "the V1 map and the V2 list express different policies",
+                    )
 
 
 class SourcePermissionBoundaryTest(unittest.TestCase):
@@ -254,7 +325,16 @@ class SourcePermissionBoundaryTest(unittest.TestCase):
             if not path.is_file():
                 continue
             with self.subTest(skill=skill):
-                self.assertEqual({"*": "deny"}, permission(path))
+                perm = permission(path)
+                self.assertEqual("deny", perm.get("*"))
+                self.assertEqual(
+                    {"read", "external_directory"}, set(perm) - {"*"},
+                    "the planner may grant only the plan-reference reads",
+                )
+                self.assertIn(("read", "*/pdca/references/plan.md", "allow"), v1_rules(path))
+                self.assertIn(("*", "*", "deny"), v2_rules(path))
+                self.assertNotIn(("edit", "*", "allow"), v2_rules(path))
+                self.assertNotIn(("shell", "*", "allow"), v2_rules(path))
 
     def test_check_reads_only_the_cycle_evidence(self):
         # The common CHECK template is exactly the cycle state dir: no .NET/tool output

@@ -1,11 +1,11 @@
 # PLAN: fields, criteria and calibration
 
 Instructions for **`pdca-planner` only**. Read the exact absolute `plan_reference_path` supplied in
-your dispatch when you compose the plan or revise the criteria; the gates themselves stay in
+your dispatch when you compose the plan or revise the criteria; the phase exits themselves stay in
 `../SKILL.md`. The path is install-specific and comes only from the dispatch — if it is missing,
 unreadable or denied, report a resource blocker instead of assuming what this file says.
 
-## Plan fields (gate 1)
+## Plan fields
 
 - goal and expected result;
 - declared **form** (ordinary cycle / incremental / collection) and **specialized skill** (none,
@@ -94,7 +94,7 @@ information must not be hidden behind an arbitrary value.
 
 PLAN assigns each criterion a stable ID and does not prescribe a manifest row, an evidence source, a
 method or a script: evidence generation, binding and append mechanics are not PLAN outputs, and no
-pre-DO gate depends on them.
+pre-DO condition depends on them.
 
 The planner returns the plan, its criteria and its complete report as **data to the driver**, which
 passes that report to `pdca-executor` unchanged — verbatim, or by an exact reference to a complete

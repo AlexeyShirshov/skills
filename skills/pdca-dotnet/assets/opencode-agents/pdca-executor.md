@@ -10,6 +10,18 @@ permission:
   doom_loop: allow
   # external_directory: add extra allowed paths if the task needs them, e.g.
   #   "/tmp/**": allow
+permissions:
+  # V2 form of the same policy as the `permission:` map above. Both blocks are
+  # kept equivalent; last match wins, so the deny-broad rules come first.
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: allow
+  - action: doom_loop
+    resource: "*"
+    effect: allow
 ---
 
 # pdca-executor (cheap tier) — DO hands
@@ -39,21 +51,11 @@ of the permitted workspace.
   instead. Choose the implementation inside the contract; do not rewrite the
   contract, add a criterion, or do "while I'm at it" work outside the unit's footprint — that is a
   separate `P:` task.
-- **A brief that contradicts the frozen plan is returned as an exact mismatch.** If the brief adds
-  a criterion, method, checker, script, experiment or scope absent from the plan, quote the
-  mismatch and return it to the orchestrator for a PLAN decision; do not implement newly-added
-  scope. When the plan chose manual observation or focused recomputation, do not build a separate
-  checker or test infrastructure for it.
-- **Validate the plan's verification commands before executing them.** On PLAN close and again on
-  DO entry, confirm for every frozen verification command that the selector resolves to at least one
-  target, that the expanded argument vector is what will actually run, that the phase and scope are
-  legal, and that the expected outcome (`green` / `expected-negative` / `informational`) is declared.
-  These are the commands that produce acceptance evidence; DO's own implementation actions and
-  commands are your choice inside the contract and are not linted or forbidden. A verification
-  command that cannot produce a valid result **at gate 1** is a **PLAN defect** reported through the
-  orchestrator to `pdca-planner` — never silently substituted, and never recorded as an exception.
-  If the same defect appears only once DO has started, the contract cannot be met: report it to the
-  orchestrator for **DO → ACT** finalization, not as a return to PLAN.
+- **A brief that contradicts the approved contract is returned as an exact mismatch.** If the brief
+  adds a criterion, scope or prohibited action absent from the contract, quote the mismatch and
+  return it to the driver for a PLAN decision; do not implement newly-added scope. DO's own
+  implementation actions and commands are your choice inside the contract. When CHECK asks for a
+  specific run, run exactly that proving action and return its evidence.
 - **Re-anchor before the first edit.** Re-resolve every planned anchor; record cosmetic drift
   (same identity, moved location) as a `Notice` with old→new pointers. Semantic drift or a refuted
   premise means you cannot finish under the contract: report the cause, evidence and residual
@@ -62,14 +64,10 @@ of the permitted workspace.
 - **A vacuous run is a failure.** Zero selected targets, zero executed cases or an empty result
   set fails the run regardless of exit status `0`; record the observed count. Record an
   `expected-negative` run against its declared failure identity, not as a green final.
-- **Helper staging is an allowed prerequisite.** Before the first helper command of the cycle —
-  including the PLAN brief validation — stage the plan's required helpers from the `scripts/` of the
-  selected installed package (the base contract and, when applied, its overlay) into
-  `.pdca/scripts/` as byte-identical copies (the brief/PLAN names them; no speculative extras).
-  This is a declared brief/PLAN prerequisite, not an unplanned edit and not a separate `P:` task;
-  record source package, destinations and copy evidence. A missing original is a **resource
-  blocker**: never generate a substitute and never run a helper from the installed skill directory
-  (§Skill workspace of the cycle contract).
+- **Optional helpers.** If the brief names a project helper, stage its byte-identical copy from the
+  selected package's `scripts/` into `.pdca/scripts/` and run it from the project root. A missing
+  original is a resource blocker; never generate a substitute or run it from the installed skill
+  directory. Helpers are optional tooling, not an acceptance gate.
 - **Status file — render the fixed skeleton.** You are the single role that writes the cycle status
   file. Read `references/act.md` §Status file of the loaded `pdca` package (resolve it from the skill
   base directory) when you create that file and on every update: it is the single source for the
@@ -111,9 +109,9 @@ of the permitted workspace.
   history, counters and accounting; a revision keeps the same step identity and only bumps the
   attempts/versions the loop-back rules allow. In a campaign the campaign owner is the single
   writer of this record.
-- **Unfinished work stays unfinished.** A blocker report does **not** mark a `D:` unit `done`:
-  its state stays `blocked`/`pending` (`done` only when gate 2 is satisfied); a rejected
-  candidate resumes the original `D`. An **additive prerequisite** keeps the original `D`
+- **Unfinished work stays unfinished.** A blocker report does **not** mark a unit `done`:
+  its state stays `blocked`/`pending` (`done` only on recorded evidence with its closure in the status file); a rejected
+  candidate resumes the original `D`. An **additive prerequisite** keeps the original unit
   active with criteria and remainder unchanged (`blocked` on the new dependency, **not**
   `superseded`) and adds a new **active** unit without a `superseded→replacement` mapping. Only
   an **actual scope replacement** marks the original `superseded` and requires an explicit

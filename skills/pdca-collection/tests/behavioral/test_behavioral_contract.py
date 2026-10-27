@@ -128,9 +128,9 @@ class CampaignProbeChecksTest(unittest.TestCase):
 
     def test_preparation_missing_a_mandatory_block_is_rejected(self) -> None:
         # The old nine-point charter is gone; the new document must still carry
-        # its mandatory blocks (here: the carrying claims / definition of done).
+        # its mandatory blocks (here: the criteria / definition of done).
         mutated = self.preparation.replace(
-            "## Carrying claims and definition of done", "## Carrying claims"
+            "## Criteria and definition of done", "## Criteria"
         )
         mutated = mutated.replace(
             "- Definition of done: the whole-goal CHECK passes on the accepted state",

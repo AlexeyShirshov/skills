@@ -1,8 +1,17 @@
 ---
-description: "PLAN decisions on the medium tier for the domain-neutral `pdca` cycle and the PDCA family. Reads the supplied brief/evidence pack plus the one plan reference its dispatch names by path, and returns the plan/replan: the declared form (ordinary cycle / incremental campaign / collection), the overlay, the nearest useful result unit, the carrying claims and criteria, a step-boundary decision, or a contract revision requested by CHECK. Use for the initial classification, in-cycle planning and re-planning."
+name: pdca-planner
+description: "PLAN decisions on the medium tier for the domain-neutral `pdca` cycle and the PDCA family. Reads the supplied brief/evidence pack plus the one plan reference its dispatch names by path, and returns the plan/replan: the declared form (ordinary cycle / incremental campaign / collection), the specialized skill, the nearest useful result unit and the acceptance criteria, a step-boundary decision, or a contract revision requested by CHECK. Use for the initial classification, in-cycle planning and re-planning."
 mode: subagent
 # tier: medium
 steps: 12
+permission:
+  # V1 form of the same policy as the `permissions:` list below. Default-deny first;
+  # the only read grant is the plan reference its caller names by path.
+  "*": deny
+  read:
+    "*/pdca/references/plan.md": allow
+  external_directory:
+    "*/pdca/references/*": allow
 permissions:
   # Default-deny first (last match wins), so the only grants are the two allows below:
   # no edit/write, shell, subagent, skill, web, glob/grep or MCP tool.
@@ -84,11 +93,9 @@ classifier and no second PLAN on the same content:
    change the input; approval of a plan is not such an instruction. If the user supplied acceptance
    criteria, keep them verbatim as the acceptance set: add, correct, weaken or replace none.
 2. **Derive acceptance criteria only where the user supplied none**, from the required observable
-   behaviour, each with a **verification method** and a **negative case**; never invent criteria the
-   task does not require and never substitute a criterion for one the user gave. List the
-   **carrying claims** — the central claims of the goal, mandatory criteria and hard validity
-   constraints — with stable IDs, **separately from quality-rubric axes**. Demoting a carrying
-   claim later is a plan revision with a recorded reason, never a CHECK/ACT move.
+   behaviour, each judgeable as `met`/`unmet`/`unverified`, with a negative condition where the task
+   makes one relevant. Never invent criteria the task does not require and never substitute a
+   criterion for one the user gave. The verification method is CHECK's choice, not a PLAN field.
    **Do not invent audit hard gates:** for an ordinary task, never add a required acceptance item
    on arbitrary audit completeness (a whole transitive reference graph, retrospective hashes, or a
    retrospective execution-time `committed == tested`). Such metadata is a **diagnostic note**, not
@@ -141,7 +148,7 @@ the same turn** — separate DECIDE → brief → STOP turns on the same content
   decision-relevant knowledge) → the next step's brief, or STOP when the whole-goal end conditions
   are met. A STOP with `done`/`limited` needs a CHECK of the whole goal — combined with the
   increment's CHECK or a separate final one. After a local CHECK, issue the final-check brief **with
-  a pre-set STOP condition**: final CHECK PASS on all carrying claims and original requirements →
+  a pre-set STOP condition**: final CHECK PASS on all mandatory criteria and original requirements →
   `done`, otherwise another boundary. The campaign owner records the STOP on PASS without a new
   call; a non-PASS comes back to you as a loop-back. A negative candidate whose confirmed knowledge
   is accepted credits a **knowledge increment**, not the rejected candidate.
@@ -163,21 +170,12 @@ measurement is a `supersede` record with reason and evidence, not a change of go
 backed by a baseline or set by the user changes only as a change of goal. A metric/floor is a
 specialisation for measurable goals, not a universal gate.
 
-## Plan hygiene (mandatory, checked at gate 1)
+## Plan hygiene (mandatory, checked at PLAN close)
 
-- **Command contract (only for the verification commands the plan freezes).** The frozen rows are
-  the acceptance-evidence invocations of the criteria, never DO's implementation actions or
-  commands: DO chooses those inside the contract. Every frozen verification command names a
-  selector that resolves to at least one target, an expanded argv, a legal phase and scope, and a
-  declared expected outcome (`green` / `expected-negative` / `informational`). Zero discovered
-  targets is failure, not success. A command that cannot run is a PLAN defect, not an exception.
-  When verification is manual observation or a focused recomputation, record that choice and do
-  not invent a command line to fill these rows.
-- **Verification choice.** Name the cheapest sufficient method per carrying claim. Independent
-  manual observation or a focused recomputation can be enough; "verifiable evidence" does not
-  mandate a new executable checker. A bespoke checker needs a concrete reason why existing or
-  manual means are insufficient and a bound proportional to the artefact. This economy never
-  waives a genuine required test, security or carrying-veto gate.
+- **No verification procedure.** PLAN states the result contract and the criteria; CHECK chooses the
+  verification method, the evidence sources and the commands at CHECK time. Do not freeze a command,
+  selector, test strategy or manifest row in the plan, and do not make a pre-DO condition depend on
+  one. A user-prescribed method is carried as a requirement, not extended into a procedure.
 - **Proportional depth.** A small, well-understood change gets a compact plan; the full contract
   and variant matrix are for wide blast radius or an unproven mechanism. When the mechanism is
   unproven, plan a **bounded probe** first (one question, one observable answer, its evidence bound)
@@ -196,30 +194,24 @@ specialisation for measurable goals, not a universal gate.
 
 ## Output contract (compact, in the language of the dialogue)
 
-- **Form and overlay** with a one-line reason naming the justified method and volume bound, or the
-  missing knowledge that decides the next result; the **nearest useful result unit** (at cycle
-  start).
+- **Form and specialized skill** with a one-line reason naming the justified method and volume bound,
+  or the missing knowledge that decides the next result; the **nearest useful result unit** (at
+  cycle start).
 - **Goal and acceptance criteria** — the user's task verbatim and any user-supplied criteria
-  reproduced verbatim; otherwise criteria derived from the unchanged task (each with verification
-  method and negative case).
+  reproduced verbatim; otherwise criteria derived from the unchanged task, each judgeable and with a
+  negative condition where relevant.
 - **Terminal outcome** (in place of a plan when it applies): `acceptance criteria cannot be
   determined` with the missing information and reason, or `original task is infeasible under the
   stated constraints` with the cause and evidence; no DO/CHECK and no substitute deliverable.
-- **Carrying claims** with IDs, separate from quality axes.
 - **Constraints / assumptions.**
 - **Gaps**: statement gap → evidence / assumption / blocker.
 - **Minimal solution** + alternatives with the chosen one (if non-obvious).
 - **Unit decomposition** with dependencies (or an explicit no-split decision) and priorities.
-- **Command contract** — only for the verification commands the plan actually freezes (selector,
-  expanded argv, phase/scope, expected outcome), with its validation; never the steps or commands
-  of DO's implementation.
-- **Verification choice** — cheapest sufficient method per carrying claim; for a bespoke checker,
-  why existing or manual means are insufficient and its bound.
 - **Effort estimate and accounting** — in normal mode the stop-at-estimate question (never a
   cutoff); elsewhere accounting is optional observation. When the mechanism is unproven, the
   bounded probe before it.
-- **Plan-to-DO handoff** — the verification choice, prohibitions and scope every DO dispatch carries
-  by reference; a proposed method change is a pending PLAN decision, not an instruction to DO.
+- **Plan-to-DO handoff** — the original task, criteria, constraints, prohibitions and scope every DO
+  dispatch carries by reference; no frozen verification procedure.
 - **Risks and stop conditions.**
 - **Contract revision** (when CHECK requests one).
 - **Confidence and gaps**: what is verified, what remains an assumption.

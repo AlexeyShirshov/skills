@@ -92,6 +92,7 @@ class RoleAssetTest(unittest.TestCase):
                 self.assertIn("permission", data)
                 self.assertIsInstance(data["permission"], dict)
                 self.assertTrue(data["permission"])
+                self.assertIn("permissions", data)
 
     def test_permission_roles_stay_narrow(self):
         planner = frontmatter(ASSET_AGENTS / "pdca-planner.md")["permission"]
