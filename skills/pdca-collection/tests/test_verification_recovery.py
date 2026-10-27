@@ -2271,7 +2271,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
         self.assertFalse((SKILL_DIR / "references").exists())
         for heading in ("## Lane execution and schedule revision",
                         "## Collection status record",
-                        "### Routing campaign outcomes",
+                        "### Campaign item status projection",
                         "### The queue and the per-item continuation"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, self.skill)
