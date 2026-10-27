@@ -193,15 +193,13 @@ classification of the batch.
    the barrier or start another item's DO early. Status updates and preparation writes are
    permitted before the barrier; substantive bootstrap and DO are not.
 
-4. **Clustering after the barrier.** `pdca-planner` examines the available dependency
-   requirements, estimated conflict surfaces, their uncertainty and host resource budget,
-   and decides the DAG, ordering and independent groups. Actual implementation choices
-   remain DO's. Known overlapping or **unresolved** write/conflict surfaces do not execute
-   in concurrent lanes; a conservative single lane is valid. The schedule and PLAN revision
-   vector are persisted before allocation. Prefer independent lanes when the known
-   constraints support them, without fabricating independence; a schedule revision after
-   new facts requires the recorded planner decision and applicable approval
+4. **Clustering after the barrier.** `pdca-planner` builds the dependency DAG and
+   groups from item dependencies, estimated write conflicts and host capacity. Overlapping
+   or uncertain write surfaces must run in one sequential lane; independent groups may run
+   in parallel. Persist the schedule and PLAN revision vector before allocating lanes.
+   Later changes require a planner decision and applicable approval
    (§Lane execution and schedule revision → Stale plan and schedule revision).
+   DO chooses implementation.
 
 5. **Durable tracking.** The collection status file (§Collection status record) is the only
    batch progress mirror. The collection driver coordinates updates, but `pdca-executor`
