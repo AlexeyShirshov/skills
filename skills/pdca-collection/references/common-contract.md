@@ -363,7 +363,6 @@ When the base package is installed these are optional, not prerequisites:
 - `../../pdca/references/plan.md` — plan fields, command contract, machine projection, evidence
   manifest and locations, calibration, effort policy;
 - `../../pdca/references/check.md` — criteria matrix, findings, veto, local and whole-goal checks;
-- `../../pdca/references/act.md` — closing order, status-file template and progress log, next-session
-  message;
+- `../../pdca/references/act.md` — closing order, status-file template, progress log and handoff;
 - `../../pdca/scripts/plan_lint.py`, `../../pdca/scripts/pdca_cost.py` — helpers, reused by explicit
   path (staged into `.pdca/scripts/` before the first helper command).

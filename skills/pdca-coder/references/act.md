@@ -2,7 +2,7 @@
 
 Reference for the DO and ACT phases of the programming overlay. The base DO/ACT contracts — what a
 DO report contains, the status-file lifecycle, unit states and the `superseded→replacement` rule, the
-closing order and the next-session message — stay in `../../pdca/SKILL.md`,
+closing order — stay in `../../pdca/SKILL.md`,
 `../../pdca/references/act.md` and `../../pdca/references/check.md`. This file adds the code streams,
 the worktree protocol, the coder editing discipline, the code status rows and the code additions to
 the handoff.

@@ -274,9 +274,8 @@ separate cycles, not worktree sub-tasks.
 - **Do not commit or push** as part of the cycle. The only exception is the worktree unit branch above.
   Commits to the working branch happen only on an explicit request; push never without a separate
   explicit one.
-- **Handoff**: the base next-session block, plus a `Registries:` line and the registries/baseline in
-  the scout request; optional commit advice is placed **before** the block (the base forbids anything
-  after it) and is advice only.
+- **Handoff**: the base status-file handoff, plus a `Registries:` line and the registries/baseline in
+  the scout request; commit advice is optional and advice only, never a delivery step.
 - Project registries/`AGENTS.md`: edited by `pdca-executor`, bookkeeping only, never inside ACT when
   the edit could affect the checked result — the base rule applies unchanged.
 

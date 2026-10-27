@@ -1,8 +1,8 @@
 # DO and ACT deltas for .NET: journal, integration policy, cleanup
 
 Reference for the DO and ACT phases of the .NET overlay. The base DO/ACT contracts — the DO report,
-the status-file lifecycle, unit states and the `superseded→replacement` rule, the closing order and
-the next-session message — stay in `../../pdca/SKILL.md` and `../../pdca/references/act.md`. The code
+the status-file lifecycle, unit states and the `superseded→replacement` rule, the closing order —
+stay in `../../pdca/SKILL.md` and `../../pdca/references/act.md`. The code
 streams, the worktree protocol, the coder editing discipline, the subagent report format, the
 debugging order, the code status rows and the handoff additions stay in
 `../../pdca-coder/references/act.md`. This file adds the execution journal, the unit/integration

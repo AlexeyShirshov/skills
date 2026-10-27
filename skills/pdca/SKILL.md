@@ -408,8 +408,8 @@ It has no separate subagent role — the driver and `pdca-executor` carry it out
 
 - **ACT → EXIT** — after an accepted CHECK: records conclusions, limitations, the actual status,
   the accepted snapshot and the handoff, then `EXIT` (or the next cycle). The status file is
-  finalized and kept, no product/test/checked artifact changed after the accepted CHECK snapshot,
-  and in normal mode the next-session message is printed.
+  finalized and kept, and no product/test/checked artifact changed after the accepted CHECK
+  snapshot.
 - **ACT → STOP** — a `blocked`/`incomplete`/`STOP` outcome is finalized with the cause, evidence,
   the remaining `unmet`/`unverified` criteria, the counters and the defect history — with no `PASS`,
   no `done`, no credit and without bypassing the no-4th rule. An unreachable PLAN (acceptance
@@ -704,5 +704,4 @@ keep the scopes apart, and a supporting file is never auto-loaded by being menti
 - `references/check.md` — read by `pdca-check` when CHECK starts: the verification method CHECK
   chooses, the evidence chain, criteria matrix, the mandatory-requirement veto, the combined final
   check, verdict and correction routing.
-- `references/act.md` — read at ACT: closing order, the cycle status file template and progress log,
-  next-session message.
+- `references/act.md` — read at ACT: closing order, the cycle status file template and progress log.
