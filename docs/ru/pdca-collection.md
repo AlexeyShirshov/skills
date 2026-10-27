@@ -302,7 +302,7 @@ PLAN → DO → CHECK → ACT его контракта и оверлея, с `p
 incremental-кампания со своей целью, каркасом, runtime-статусом и шагами, **без** контракта и
 оверлея уровня пункта. Форма, контракт и оверлей — разные значения: их решает PLAN коллекции
 (`pdca-planner`), раннер только
-читает готовое значение (`skills/pdca-collection/SKILL.md §Items: form, contract, overlay`).
+читает готовое значение (`skills/pdca-collection/SKILL.md §Items and execution ownership`).
 Шаг кампании — только цикл семейства: ни «кампании в кампании», ни «коллекции внутри
 кампании» (и коллекции внутри коллекции) не выражается.
 
@@ -440,7 +440,7 @@ resource stop прогона; недоступный **контракт цикл
 | --- | --- |
 | Роль верхнего уровня и стек-нейтральность; собственный PLAN останавливается на границе PLAN→DO и продолжается в лейне; primary не правит файлы | `skills/pdca-collection/SKILL.md §Role · §Ownership` |
 | Автокоммит только по проектному оверлею или явному запросу; `push` никогда; режим одной группы | `skills/pdca-collection/SKILL.md §Role` |
-| Пункты: форма (`cycle` | `campaign`), контракт (`pdca`) и оверлей (`none` | `coder` | `coder+.NET`); у пункта `campaign` контракта уровня пункта нет; запрет рекурсии | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay` |
+| Пункты: форма (`cycle` | `campaign`), контракт (`pdca`) и оверлей (`none` | `coder` | `coder+.NET`); у пункта `campaign` контракта уровня пункта нет; запрет рекурсии | `skills/pdca-collection/SKILL.md §Items and execution ownership` |
 | P: собственный PLAN каждого пункта до DAG, ALL-barrier, gap без `ready`-placeholder, группы у `pdca-planner`, вектор ревизий, аллокация лейнов только после привязки расписания; параллельные PLAN'ы до `plan_cap`, не фиксирующие расписание, сериализованная запись статус-файла; повторный заход после терминального `incomplete`/STOP требует доказательства или нового оракула; гигиена плана (контракт команд, политика усилий) до `plan_state=ready` | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: файл статуса как единственное зеркало прогресса (таблицы групп и пунктов), одна группа → один лейн, пустой вход | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: барьер по формам пунктов (`plan_state` для `cycle`, preparation document для `campaign`) | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-incremental/references/status.md §Preparation document` |
