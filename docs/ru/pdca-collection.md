@@ -333,7 +333,7 @@ immutable/revisioned **preparation document** — `.pdca/<collection-id>/items/<
 **Готовность — не завершение.** `preparation_state=ready` без runtime — это `barrier-ready`, а не
 `started`: единица остаётся `pending` и никогда не становится `done` от готовности каркаса. `done`
 даёт только принятый `met` с явным `disposition=finalized`
-(`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §Campaign item status projection`).
 
 **Пауза — не финал.** `blocked`, `stopped` и `unreachable` с допустимым следующим target в
 неизменной цели и границах — это checkpoint: `disposition=paused`, единица остаётся `in-progress`,
@@ -342,7 +342,7 @@ immutable/revisioned **preparation document** — `.pdca/<collection-id>/items/<
 финального неуспешного disposition и из паузы не выводится. Бесконечной автоматической докачки
 нет; пауза и resume не сбрасывают `N`/`r`/`n`; лейн на паузе не продвигает зависимую цепочку своей
 группы, остальные группы продолжают; критерии успеха молча не меняются
-(`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §Campaign item status projection`).
 
 **Disposition и производная пауза лейна.** `disposition` (`active` | `paused` | `finalized`) —
 per-unit поле, а не статус задачи или группы. Пауза лейна **производна** от `disposition=paused`
@@ -453,8 +453,8 @@ resource stop прогона; недоступный **контракт цикл
 | Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `skills/pdca-collection/SKILL.md §Failure (semantics)`; `skills/pdca-collection/SKILL.md §Invariants` |
 | Параметры: `cap`/`plan_cap` = 4 как планировочный выбор контракта (не настройка хоста), ограниченный объявленным бюджетом хоста и наблюдённой конкурентностью, worktree-каталог, merge-право | `skills/pdca-collection/SKILL.md §Parameters`; `skills/pdca-collection/SKILL.md §Report` |
 | Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `skills/pdca-collection/SKILL.md §Fallback` |
-| Барьер по форме пункта, отдельный immutable/revisioned preparation document, `preparation_state`, единственный `preparation_ref`, `campaign_ref` optional до и обязателен после bootstrap, три операции, готовность ≠ завершение, пересогласование как новая ревизия | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/SKILL.md §Routing campaign outcomes`; `skills/pdca-incremental/SKILL.md §Campaign status` |
-| `met` — единственный успех, пауза vs финал, явный финальный неуспешный disposition и group-stop, per-item `disposition` и производная пауза лейна, раздельные пространства готовности/runtime/disposition | `skills/pdca-collection/SKILL.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
+| Барьер по форме пункта, отдельный immutable/revisioned preparation document, `preparation_state`, единственный `preparation_ref`, `campaign_ref` optional до и обязателен после bootstrap, три операции, готовность ≠ завершение, пересогласование как новая ревизия | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/SKILL.md §Campaign item status projection`; `skills/pdca-incremental/SKILL.md §Campaign status` |
+| `met` — единственный успех, пауза vs финал, явный финальный неуспешный disposition и group-stop, per-item `disposition` и производная пауза лейна, раздельные пространства готовности/runtime/disposition | `skills/pdca-collection/SKILL.md §Campaign item status projection · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
 | Драйвер лейна (тот же `pdca-orchestrator`, кампания inline в campaign-control, один лейн) и PLAN/апрув шага | `skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
 | Владение поверхностью и консервативная резервация на всю задачу; расширение как stop/reapproval | `skills/pdca-collection/SKILL.md §Surface reservation and its extension` |
 | Коммиты: коллекция владеет внешним lifecycle, `Commit policy: none` и preflight блокер | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
