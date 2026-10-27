@@ -408,7 +408,7 @@ no-commit ограничение, конфликтующее с обязател
 прав. Fallback подменяет только драйвер. Недоступная **обязательная роль** —
 resource stop прогона; недоступный **контракт цикла** — fail closed без подстановки «похожего»
 варианта; позднее обнаружение — безопасная пауза до зависимого действия, а не ослабление гейта
-(`skills/pdca-collection/SKILL.md` §Fallback).
+(`skills/pdca-collection/SKILL.md` §Capability preflight and §Fallback).
 
 ## 8. Куда дальше
 
