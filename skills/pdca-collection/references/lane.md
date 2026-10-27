@@ -1,12 +1,13 @@
 # Lane: work stream, schedule revision and git model
 
 Reference for the D phase and for a running lane. The barrier, the clustering and the collection
-phases stay in `../SKILL.md`; gates, counters, escalation and approval mechanics stay in
-`../../pdca/SKILL.md`.
+phases stay in `../SKILL.md`; collection gates and approval mechanics stay in `../SKILL.md` and
+`common-contract.md`; campaign steps inherit the base `../../pdca/SKILL.md`.
 
 ## One lane = one group
 
-The `pdca-orchestrator` subagent executes **one** group; a lane is one parallel work stream. With
+A lane is one group work stream, driven by its designated driver: the primary in normal mode,
+or an authorized `pdca-orchestrator` in autonomous mode (flat-primary fallback if needed). With
 `>=2` groups — an **isolated worktree per group** (absolute paths, `cd`); with **one** group — the
 current worktree and branch.
 
@@ -22,7 +23,7 @@ For each item in the recorded order:
    `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`. A repeated PLAN is by default
    **not** started — the cycle continues from DO; PLAN is reopened only when staleness is
    detected (§Stale plan and schedule revision);
-3. autocommit after the item, **only in an allowed autocommit mode** (`../SKILL.md` §Role) —
+3. autocommit after the item, **only in an allowed autocommit mode** (`../SKILL.md` §Scope and entry) —
    otherwise the next one does not branch from a committed result. Commit **only the files of the
    item** (`git add <paths>`), not `git add -A`: otherwise alien/artefact files are picked up.
 
@@ -40,9 +41,9 @@ of items — that is how the queue survives compaction and a restart.
 
 - With `>=2` groups the task branch is the unit of commit (no per-item worktree); with one group
   there is no task branch.
-- **An item failure first → `pdca-planner` (PLAN)**: it may return to DO (the loop-backs and
-  counters of the base contract) or **finally** close the item as `incomplete` (patch + reason in
-  the status).
+- **An item failure follows its own cycle's transition**: CHECK alone may send a contract defect
+  to PLAN; an implementation defect goes CHECK → DO, and a DO that cannot finish goes DO → ACT.
+  ACT records a final `incomplete` with cause and evidence, preserving the patch and status.
 - A **final `incomplete` of an item stops the whole group**: the next item is not taken, all
   remaining `pending` items of the group are marked `incomplete` with the explicit reason **"the
   group is stopped"** and are **not executed**; the group is **not merged** (`../SKILL.md` §D.3).
@@ -60,21 +61,21 @@ of items — that is how the queue survives compaction and a restart.
 
 ## A campaign item in a lane (campaign-control)
 
-An item with the form `campaign` is led by the **designated existing cheap `pdca-orchestrator` in
-campaign-control** — one controller per campaign item, chosen when the schedule is bound, with no
-competing writers (`../SKILL.md` §Ownership, `../../pdca/SKILL.md` §Control modes and
-§Execution coordination). It holds the campaign state/status, the shared counters, the accumulated knowledge and the
+An item with the form `campaign` has **one designated driver throughout its steps** — the
+primary in normal mode or the authorized cheap `pdca-orchestrator` in autonomous mode, with the
+permitted flat-primary fallback (`../SKILL.md` §Items and execution ownership,
+`../../pdca/SKILL.md` §Control modes). It holds the campaign state/status, the shared counters, the accumulated knowledge and the
 effort accounting, owns recovery, starts the next step **only on the planner's decision**, and runs the
 current step's cycle inline in its own session. A campaign is always single-threaded: one step at a
 time, one lane, no internal parallelism.
 
 It receives the item's form, the incremental contract by exact ID, `preparation_ref`/`campaign_ref`
-and **the dispatching rule from the caller** (the campaign's stack rule); it does not choose the
+and the dispatching rule from the caller; it does not choose the
 rule and does not classify the item. The contract/overlay of a **concrete step** is decided by
 `pdca-planner` for that step and persisted in the durable step record **before** the step; before
 the bootstrap it does not exist and the runner does not derive it.
 
-An item with the form `cycle` is executed by the same cheap dispatcher in **cycle-control**: it
+An item with the form `cycle` is driven by its designated driver: it
 receives one already-planned cycle, executes it and returns the result; it does not own campaign
 advancement and does not advance anything else in the batch.
 
