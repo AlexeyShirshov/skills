@@ -11,10 +11,35 @@ disable-model-invocation: true
 ## Scope and entry
 
 A **Collection** is a set of independent user-defined goals. Each item is a separate, complete
-invocation of PDCA; a collection is **not** an internal DO decomposition of one goal. The collection
-form has already been selected by the entry PLAN (or explicitly named by the user) and is not
-reclassified here. This contract plus `references/common-contract.md` is self-contained: loading
-`../pdca/SKILL.md` first is not required.
+invocation of PDCA; a collection is **not** an internal DO decomposition of one goal. Its form
+has already been selected by the base entry PLAN (or explicitly named by the user), so no
+second PLAN reclassifies the collection.
+
+## Inheritance: the base contract is the single source of shared rules
+
+The **common cycle contract** in `../pdca/SKILL.md` governs each item's cycle (including
+incremental campaign steps), integration verification, corrective cycles, and the applicable
+shared requirements: original task and acceptance, roles and permissions, control modes,
+PLAN/DO/CHECK/ACT, counters and recurrence, escalation, evidence, approval, recovery,
+effort and safety. **These rules are inherited, not copied or replaced here.** On a shared
+rule, the base governs. This file adds **only the collection layer**: readiness, dependencies,
+group scheduling, lanes, integration and collection-specific status/outcome projection.
+
+**Loading.** The base entry PLAN selects Collection and continues here. On a direct load
+(the user explicitly named `pdca-collection`), load the base common cycle rules **with this
+file** and skip the entry classification: Collection is already a constraint, not a second
+decision. For PLAN dispatch, the planner's `plan_reference_path` is derived from the
+**base** `pdca/SKILL.md` directory; `references/plan.md` is read by `pdca-planner`
+only. CHECK and status writers load the base phase references under their own contracts.
+For a `campaign` item, also load `../pdca-incremental/SKILL.md`, which inherits
+the same base contract for each step.
+
+**Scope of inheritance.** Collection is a container, not an additional ordinary cycle:
+it has no parent `N`, `r` or `n/3` attempt counter. These belong to each actual item
+cycle or corrective cycle; the collection status tracks items, groups, integration
+and their outcome links. An integration CHECK is a check **of the integrated snapshot**,
+not proof that every original item goal was achieved. Full collection completion
+requires each item's own accepted whole-goal CHECK and the integration CHECK.
 
 ### Batch terminology
 
@@ -57,11 +82,9 @@ an available group runner may itself be the designated driver for its items and,
 its successive steps. A single campaign keeps **one driver across all steps**. Host inability to
 delegate follows §Fallback, without transferring PLAN or CHECK authority to a cheap driver.
 
-The collection adds only the batch layer: item preparation, ALL-barrier, DAG/groups, lanes,
-integration, batch status and final verification. A one-item or one-lane collection remains a
-valid collection. Its cycle items use the base PDCA cycle; incremental items use
-`../pdca-incremental/SKILL.md`, whose steps inherit the base common cycle rules. This collection
-contract remains independently authoritative for its own batch state and gates.
+The collection adds item preparation, ALL-barrier, DAG/groups, lanes, integration,
+batch status and integration verification. A one-item or one-lane collection remains
+valid; these collection-specific rules never waive inherited cycle requirements.
 
 A standard multi-group run assumes an **explicitly authorized autocommit** for the `collection/**`
 branches and `merge --no-ff` (otherwise the task branch will not get a committed tip — the last
@@ -85,11 +108,9 @@ silent switch to another run mode. The absence of authorization is **not** an au
 
 ## Items and execution ownership
 
-Each item preserves **its own original user goal and any user-supplied acceptance criteria
-verbatim**. The collection driver passes them unchanged to every phase; planning, grouping,
-dependency metadata and integration never introduce substitutes or weaken them. Only when the
-user supplied no criteria may that item's PLAN derive them. A change to the input requires a new
-explicit user instruction, not merely approval of a plan.
+The base §The user's task and its criteria applies **per item**: every handoff preserves
+the original goal and any user-supplied acceptance criteria verbatim. Scheduling metadata
+is not an alternative goal or an acceptance requirement.
 
 Each item's **first PLAN** is delegated to `pdca-planner`. It classifies the item's form under the
 same definitions as the base entry: **Bounded Execution** (`cycle`) when the method and scope are
@@ -277,69 +298,46 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    event: the status file is the only progress mirror, a divergence from it is an error. Details:
    `references/status.md`; running the lane: `references/lane.md`.
 
-### C — verification (the standard CHECK)
+### C — integration verification
 
-The common verification of a collection is an **independent CHECK** of the integrated result
-against the preserved batch requirements and their actual scope (`pdca-check`,
-`references/common-contract.md` §Verification). **CHECK chooses the verification methods and
-sufficient evidence at CHECK time**, routing any necessary runs through `pdca-executor` and
-independent observation through `pdca-scout`. Apply the relevant specialized-skill check deltas
-for the work actually included
-(`../pdca-coder/SKILL.md` §Code-specific check deltas; for .NET — `../pdca-dotnet/SKILL.md`
-§.NET check deltas), and **not** a separate bespoke stage of the collection. When all lanes are
-stopped, in the main tree: all **`done`** groups are integrated (**became `merged`**, including a
-repeated merge after a conflict, §D.3), **`incomplete` groups are not merged**, and there is **no
-unfinished merge state**.
+The parent CHECK uses the **base `../pdca/SKILL.md` §Phase contracts → CHECK**:
+`pdca-check` independently chooses methods/evidence for the actual integrated result, with
+test execution through `pdca-executor` and outside observation through `pdca-scout`.
+Its scope is the **integrated snapshot**, plus integration invariants and any relevant
+specialized-skill verification deltas (`../pdca-coder/SKILL.md` and
+`../pdca-dotnet/SKILL.md`). It does not replace each item's own whole-goal CHECK.
 
-The input of the common `C` is the **actual group statuses** plus the separate **integration note**
-(`skipped` + reason); only the **selected `done` groups** are integrated and moved to `merged`,
-`incomplete` stays `incomplete` and keeps its evidence. `PASS` of the parent **integration CHECK** may coexist with `incomplete` groups because it
-judges **only the integrated result**. The **completion** report and **integration verdict** are
-separate; a PASS on that narrower snapshot never means the full set of original item goals is
-complete. Even with no selected `done`
-group or with an `incomplete` current group the standard `C` still runs on the integrated tree; the
-source items are **not** marked `done` retroactively. Counters/escalation are the common ones (common contract
-§Counters and history, §Escalation and guardrails), without a collection counter.
+The integration CHECK starts **after all lanes are terminal**. With multiple groups, all
+eligible `done` groups must already be merged, all `incomplete` groups excluded, and
+no merge conflict or unfinished merge state may remain. Its inputs include the actual
+group statuses and the separate integration note (`skipped` + reason), original item
+requirements, the integrated snapshot and evidence pointers.
 
-Even when implementation checks are green, the driver sends the **unchanged original item
-requirements**, actual integrated snapshot, statuses, and available evidence pointers to
-`pdca-check`. The checker decides what additional verification is necessary; the runner only
-routes those requests. A missing or unreliable report is `unverified`, not a defect or a PASS,
-and gathering it is not a new implementation attempt. Raw exit codes never pronounce PASS;
-`pdca-check` alone judges the integrated result, without editing code. The mandatory-requirement
-veto remains in force (`references/common-contract.md` §Claims and veto).
+An integration `PASS` can coexist with `incomplete` groups: it verifies only the
+integration of work actually included. Keep the **integrated-tree verdict** and
+**collection completeness** as different fields. An integration PASS never marks an
+unfinished source item `done`, nor compensates for unmet original requirements.
+Run integration CHECK even if no group qualified for integration; no work then gets
+retroactive acceptance.
 
-- **PASS** → the common ACT of the collection is allowed (§A).
-- **FAIL · a real defect** → the runner opens a **standard corrective cycle** (its form, contract
-  and overlay decided by `pdca-planner` by the same rules; PLAN → DO → CHECK → ACT) on the **current
-  integrated tree/branch** with **its own linked status file**; its ACT returns control to the
-  **full** parent CHECK — **all** mandatory common gates are re-run, not only the failed test. A
-  cheap verdict without a corrective cycle is not allowed.
-- **No mandatory report / an unreliable report / an environment failure** → a standard
-  **re-gather** (gather the missing report again); this is **not** a defect and **not** a reason to
-  edit code. The state of the common verification may stay `blocked`/awaiting-reports in the
-  existing status, but there is **no separate bespoke protocol** (a third verdict, a separate
-  stage/node).
+- **Accepted integrated result** → collection ACT (§A), with full completion separately
+  conditional on all item outcomes.
+- **Implementation defect in the integrated tree** → a linked **corrective PDCA cycle**
+  on the current integrated branch, with its own plan, status and base cycle transitions.
+  Its ACT returns to the **full parent integration CHECK**, not just the failed probe.
+- **Missing, unreliable or unavailable verification evidence** → base CHECK's
+  `unverified`/re-gather route; do not turn missing evidence into a product defect,
+  attempt or PASS. Preserve the collection verification state and its evidence links.
 
-No automatic rerun/remerge/recluster/reset/revert and no new collection worktrees/branch chains;
-corrective cycles are **separate records/links, not additional lanes**. While `C` is red — **no**
-success/cleanup, the results are preserved.
+The collection creates **no additional** attempt counter. For each actual corrective
+cycle the base `r`, `n/3`, defect history and `pdca-escalate` rules apply, including
+recurrence across linked corrective records; changing a status path or cycle ID does
+not erase defect history. A STOP without accepted resolution leaves the parent
+collection `unverified` and preserves the prior item statuses and integrated work.
+A corrective cycle's local PASS never substitutes for rerunning the integration CHECK.
 
-The revision/escalation rules inside a corrective cycle are the **common `r`/`n/3`** (common contract
-§Counters and history, §Escalation and guardrails): the same defect after one fix → `pdca-escalate` **before the
-second fix** even with a local CHECK=PASS and a new corrective id; a change of the cycle
-id/session/status file **does not** reset `r`/`n`/the defect history; an exhausted revision does
-**not** get a 4th implementation CHECK even after `pdca-escalate` — continuation only through a
-genuinely revised plan `r+1`. There is no separate collection attempt counter and no generalized
-"three-failure rule of `C` at the collection level". On STOP without an acceptable revised plan the
-unresolved status/evidence/integrated work are preserved; the parent collection stays
-**`unverified`**, the source items — with their **previous** statuses; **the success of the
-corrective cycle by itself does not mean the success of the collection**.
-
-This is **not** mixed with the `incomplete` of an item inside a lane (`references/lane.md`
-§Failure): that one concerns the failure of a single item of a group and the decision of
-`pdca-planner` in its cycle, whereas the STOP of a corrective cycle is about a repeat of a defect of
-the **common** `C` and obeys the common `r`/`n`.
+No automatic rerun/remerge/recluster/reset/revert, no additional collection lanes
+for a corrective cycle, and no success cleanup while integration is unverified.
 
 ### A — completion
 
@@ -364,35 +362,31 @@ outcomes; campaign acceptance is not the common `C` and does not replace it.
 
 ## Report
 
-The report format follows ACT (`../pdca/references/act.md` when available; the common contract §One loop otherwise): what was done, how it was verified, what
-remains/blocked, the next step; in autonomous mode — without a message to the user. The completion
-report and the verification verdict of the integrated tree stay separate fields (§C).
+The report follows the base §Phase contracts → ACT and `../pdca/references/act.md`:
+what was done, what evidence verified it, what remains or is blocked and the next
+step. Keep collection completeness distinct from the integrated-tree verdict (§C).
 
 ## Approval barrier (normal mode)
 
-An item or step waiting for approval is `disposition=paused` with the status `in-progress`, and
-**not** `done`/`incomplete`. The approval mechanics are stated once in `references/common-contract.md`
-§Entry and control mode: the durable pending approval ref, the approval recorded against the same
-ref, the applicability check on resume, the fresh approval after a real revision. The collection
-adds only what the collection owns:
+The shared approval rules are in `../pdca/SKILL.md` §Normal-mode approval,
+including the durable pending approval ref, same-ref approval record, applicability
+on resume and fresh approval after a substantive revision. The collection adds one
+handoff: the item driver returns its saved `plan_handoff` or
+`preparation_handoff` with the **pending approval ref** to the collection
+primary. The primary obtains the user's approval; the item driver cannot
+invent or infer it, and DO waits for the matching record. A paused item remains
+`in-progress` with `disposition=paused`; its lane does not advance to the next
+dependent item. Approval is separate from the preparation barrier, which
+requires **ready preparation** but not pre-approved DO.
 
-1. The item driver returns a **checkpoint** to the collection driver (the primary in normal mode) with the ref — the
-   handoff carries it as its approval pointer — and does not ask the user itself and does not start
-   DO. A brief, a summary or a chat message is not an approval.
-2. In normal mode the primary asks the user; an explicit approval is recorded against **the same** ref. The
-   protocol is the same for `cycle` and `campaign`.
-3. Resume continues **the same** cycle/step, and an unchanged saved plan is no exception;
-   applicability without a matching record is an **approval-needed checkpoint**, not DO and not a
-   fresh PLAN. A stale plan gets a genuine revision from `pdca-planner` and a **fresh** approval, and
-   the old approval does not authorize it. A paused lane does not advance its group's dependent
-   chain.
-4. Autonomous mode does not invent an approval: an external/user approval remains a blocker or a
-   STOP until it is obtained. A mismatching/missing approval record is a blocker, not a pass.
+In autonomous mode no ordinary plan approval is invented or required, but an
+explicit external/user permission requirement remains a blocker as in the base.
 
 ## Fallback
 
-The host requirements, the role table and the resource-blocker rules are in
-`references/common-contract.md`; this section keeps only the collection's own fallback.
+The host requirements, role table and resource-blocker rules are inherited from
+`../pdca/SKILL.md` §Roles and host requirements; this section adds only
+collection-specific coordination and preflight.
 
 When an autonomous `pdca-orchestrator` is absent or cannot delegate, use the **flat cheap primary**
 as driver with `Notice:` and a durable reason, if the host permits it. It drives one current item
@@ -402,8 +396,8 @@ host permits that concurrency; otherwise they are sequential. Normal mode alread
 primary driver and must not treat the lack of orchestrator delegation as a reason to skip approval.
 The fallback never promotes a driver into PLAN, CHECK, execution or expert-review authority.
 
-A required-but-unavailable role or a host-denied fallback is a **resource blocker**, not a reason
-to improvise another role. Plan preparation, barrier and handoff semantics remain unchanged.
+Missing mandatory roles or forbidden fallbacks follow the base resource-blocker rules;
+collection preparation, barrier and handoffs remain unchanged.
 
 **Capability preflight.** Before the lane allocation and before the start of a campaign in a lane
 the observable capability of the host is checked: the availability of the mandatory roles and
@@ -438,9 +432,9 @@ contract names roles only, carries no model id and adds no role.
 Loaded **at the start of its phase**, not up front (the host truncates tool output at 50 KiB /
 2000 lines, so a truncated contract would lose the tail — usually the CHECK/ACT/STOP rules):
 
-- `references/common-contract.md` — the collection-local self-contained common contract: entry and control mode, the
-  loop, roles and tiers, counters, claims and veto, evidence, escalation and guardrails. Load it with
-  this file; the base `../pdca/SKILL.md` is optional deeper detail, not a prerequisite.
+- `../pdca/SKILL.md` — the **required common cycle contract** inherited here. Load with
+  this skill; on shared rules the base is authoritative, including role boundaries,
+  acceptance, verification, counters, approval, escalation, evidence and recovery.
 - `../pdca-incremental/SKILL.md` — a campaign item: invariants, charter and status file, bootstrap,
   the step boundary, acceptance, the stop rules.
 - `../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md` — the overlays applied to the relevant work.
@@ -448,6 +442,8 @@ Loaded **at the start of its phase**, not up front (the host truncates tool outp
   and schedule revision, surface reservation, git model, failure semantics.
 - `references/status.md` — the collection status file, its invariants and the routing of campaign
   outcomes to item status.
-- `../pdca/references/plan.md`, `../pdca/references/check.md`, `../pdca/references/act.md` — plan
-  fields and command contract, the verdict content and the veto, the closing order and the
-  status-file shape.
+- `../pdca/references/plan.md` — base planner-only phase detail; the driver supplies
+  its exact absolute path, never loads or forwards it.
+- `../pdca/references/check.md` — loaded by CHECK for the base verdict/evidence contract.
+- `../pdca/references/act.md` — loaded by `pdca-executor` for cycle records
+  and status updates; batch projections remain in `references/status.md`.
