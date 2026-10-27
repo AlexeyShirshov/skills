@@ -400,7 +400,7 @@ marking this with a `Notice:` line and a durable reason, still dispatching the r
 acquiring their rights. An unavailable **mandatory role** is a resource stop of the run; an
 unavailable **cycle contract** fails closed without substituting a "similar" contract; a late
 discovery is a safe pause before the dependent action, not a weakened gate
-(`skills/pdca-collection/SKILL.md §Fallback`).
+(`skills/pdca-collection/SKILL.md §Capability preflight and §Fallback`).
 
 ## 8. Where to go next
 
