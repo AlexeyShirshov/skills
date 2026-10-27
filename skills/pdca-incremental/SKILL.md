@@ -26,9 +26,10 @@ an alternative, and on a shared rule the base governs. Read it whenever a shared
 
 **Loading.** The base entry PLAN selects the form and the driver continues here. A direct load — the
 user named `pdca-incremental` — loads the base common rules and **skips the entry classification**:
-the form is a given constraint, not re-decided, and no new PLAN runs to choose it. Collection is a
-separate, self-contained contract; a campaign that is a collection item still runs this contract for
-its steps, with the collection coordinating the batch.
+the form is a given constraint, not re-decided, and no new PLAN runs to choose it. Collection
+likewise inherits the base common rules for its item cycles and CHECK, while adding its own
+batch coordination. A campaign that is a collection item still runs this campaign contract
+for its steps, with the collection coordinating the batch.
 
 **Overlay.** When a step's work is code, the overlay its PLAN declares (`../pdca-coder/SKILL.md`, or
 `../pdca-dotnet/SKILL.md` inheriting it) applies **for that step only**: domain facts, tools and
