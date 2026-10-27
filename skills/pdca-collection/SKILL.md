@@ -16,6 +16,14 @@ form has already been selected by the entry PLAN (or explicitly named by the use
 reclassified here. This contract plus `references/common-contract.md` is self-contained: loading
 `../pdca/SKILL.md` first is not required.
 
+**Preparation barrier (ALL-barrier)** is the mandatory collection-wide readiness gate between
+item planning and execution: **every** `cycle` item must have a completed, persisted PLAN
+(`plan_state=ready`), and **every** `campaign` item must have a persisted preparation charter
+(`preparation_state=ready` and a valid `preparation_ref`). Until all items meet their own condition,
+no DAG/group scheduling or lane allocation and no substantive item DO may begin. The gate checks
+**preparation only**; it is neither user approval nor acceptance/completion of an item. Normal-mode
+DO still requires the relevant recorded user approval after the barrier.
+
 The **collection driver** coordinates the batch, including its status, preparation barrier,
 schedule, group integration and final CHECK/ACT. It does not plan implementations, choose tests,
 judge acceptance, edit files or run commands. `pdca-planner` makes substantive PLAN decisions,
