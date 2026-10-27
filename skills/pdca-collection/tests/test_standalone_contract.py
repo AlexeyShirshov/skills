@@ -23,7 +23,7 @@ class CollectionContractTest(unittest.TestCase):
                      "### D — infrastructure", "### C — integration verification",
                      "### A — completion", "## Lane execution and schedule revision",
                      "## Collection status record", "### Routing campaign outcomes",
-                     "## Git model details", "## Lane failure and preservation"):
+                     "## Git model details", "### The queue and the per-item continuation"):
             with self.subTest(term=term): self.assertIn(term, self.text)
 
     def test_completion_and_preservation(self):
