@@ -22,8 +22,14 @@ class CollectionContractTest(unittest.TestCase):
         for term in ("## Batch terminology", "### P — per-item PLANs",
                      "### D — infrastructure", "### C — integration verification",
                      "### A — completion", "## Lane execution and schedule revision",
-                     "## Collection status record", "### Routing campaign outcomes", "### The queue and the per-item continuation"):
+                     "## Collection status record", "### Campaign item status projection", "### The queue and the per-item continuation"):
             with self.subTest(term=term): self.assertIn(term, self.text)
+
+    def test_campaign_mapping_is_local_not_campaign_semantics(self):
+        for phrase in ("Finalized with accepted", "Explicitly finalized without accepted",
+                       "Running or paused", "Before campaign bootstrap"):
+            self.assertIn(phrase, self.text)
+        self.assertIn("../pdca-incremental/SKILL.md", self.text)
 
     def test_unique_git_invariants_still_present(self):
         self.assertIn("Group and task branches are sibling Git refs", self.text)
