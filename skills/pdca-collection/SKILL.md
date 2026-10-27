@@ -139,6 +139,19 @@ both records. No separate `cycle-control`, `campaign-control` or `collection own
 not merely a ready plan, accepted increment or passing test. The collection's CHECK is additional:
 it verifies the actual integrated result and never supplies missing acceptance for an item.
 
+## Capability preflight
+
+Before allocating lanes and again before starting a campaign in a lane, check
+the host's observable capabilities: mandatory roles and contracts, permitted
+delegation (including the `escalate → scout` path), and the installed
+`pdca-orchestrator` against its canonical asset and permissions when applicable.
+Do not run trial work or assume numeric host settings.
+
+A missing mandatory role stops the run with accepted work recorded; a missing
+contract fails closed, without substituting another. An unavailable optional
+runner/delegation follows §Fallback if permitted. A failure discovered late
+pauses before the dependent action, without weakening the gate.
+
 ## Collection (P / D / C / A)
 
 ### P — per-item PLANs, the barrier, clustering
@@ -579,9 +592,8 @@ explicit external/user permission requirement remains a blocker as in the base.
 
 ## Fallback
 
-The host requirements, role table and resource-blocker rules are inherited from
-`../pdca/SKILL.md` §Roles and host requirements; this section adds only
-collection-specific coordination and preflight.
+Host role and resource-blocker rules are inherited from `../pdca/SKILL.md`
+§Roles and host requirements. This section covers only driver fallback.
 
 When an autonomous `pdca-orchestrator` is absent or cannot delegate, use the **flat cheap primary**
 as driver with `Notice:` and a durable reason, if the host permits it. It drives one current item
@@ -593,20 +605,6 @@ The fallback never promotes a driver into PLAN, CHECK, execution or expert-revie
 
 Missing mandatory roles or forbidden fallbacks follow the base resource-blocker rules;
 collection preparation, barrier and handoffs remain unchanged.
-
-**Capability preflight.** Before the lane allocation and before the start of a campaign in a lane
-the observable capability of the host is checked: the availability of the mandatory roles and
-contracts, of the nested delegation to the runner, of `pdca-orchestrator` as a subagent and of the
-`escalate → scout` edge. The check does not perform dummy substantive work: no trial edits, trial
-items or fake steps. The exact numeric value of a host setting is not invented. The installed runner
-is compared against the canonical asset and checked against the applicable permissions: the observed
-case was an installed copy without `pdca-scout` delegation, which silently breaks the
-`escalate → scout` edge.
-
-An unavailable **mandatory role** — a resource stop of the run: another agent does not perform its
-functions, the work stops recording what has already been accepted; an unavailable **contract** —
-fail closed without substituting a "similar" one; **late discovery** — a safe pause before the
-dependent action, not a weakening of the gate.
 
 ## Parameters
 
