@@ -44,8 +44,12 @@ do not name `cycle-control` or `campaign-control` before the PLAN.
 2. You call `pdca-planner` **once** with the original goal; a user-named **form** (`ordinary`/`cycle`,
    `incremental`, `collection`) or **overlay** separately as a constraint — but a bare `pdca` is
    **family entry only**, never a requested ordinary form; the facts; the decision-relevant
-   unknowns; and the base `### Forms` **discriminators themselves** — names alone are not a brief
-   for a read-denied planner.
+   unknowns; the base `### Forms` **discriminators themselves**; and `plan_reference_path` — the
+   exact absolute path of the loaded `pdca` skill's `references/plan.md`, resolved from the skill
+   base directory. The planner reads that reference in its own context: pass the path, never the
+   contents, and do not load it yourself. The reference holds the plan mechanics, not the task —
+   goal, facts and constraints still travel in the same dispatch, because names alone are not a
+   brief.
 3. The planner returns either the **decided plan** (form, overlay, nearest useful step, carrying
    claims) or **authorization for one bounded choice probe** with its open decision, observable
    outcomes and the evidence that closes it.
@@ -287,6 +291,11 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
   their decisions by dispatch only and never re-select, rewrite or pre-empt one: a genuinely
   revised remediation plan → `pdca-planner`; implementation under the current plan →
   `pdca-executor`; an incomplete/STOP finalization → ACT.
+- **Plan reference path.** Every `pdca-planner` dispatch — entry, a collection task's own PLAN, a
+  campaign step, a resume applicability decision — carries `plan_reference_path`: the exact
+  absolute path of the loaded `pdca` skill's `references/plan.md`, resolved from the skill base
+  directory, so the planner reads it in its own context. You never read or inline that file, and it
+  is not passed to DO, CHECK or `pdca-escalate`.
 - **Every write goes through `pdca-executor`.** `pdca-check` returns the disposition decision and
   the exact append instruction for the **same canonical evidence manifest**; `pdca-executor`
   performs the write, and `pdca-check` then reconciles the durable result. CHECK never writes and

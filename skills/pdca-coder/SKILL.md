@@ -94,9 +94,9 @@ The full code design checklist — two-beat PLAN, the six lenses and what to loo
 (variant/priority matrices, fail-open ban, "what the statement did not say"), minimal solution and
 first principles, unit execution mode, performance measurement, milestone scope, prototype/
 reconnaissance, test strategy and its anti-patterns, documentation owners — is in
-`references/plan.md`. Load it at PLAN start, together with `../pdca/references/plan.md` (base plan
-fields, command contract, frozen evidence manifest, vacuous/expected-negative runs, recorded
-exceptions, re-anchoring).
+`references/plan.md`. Load it at PLAN start, together with the base `../pdca/references/plan.md`,
+whose path the planner receives in its dispatch (base plan fields, command contract, frozen evidence
+manifest, vacuous/expected-negative runs, recorded exceptions, re-anchoring).
 
 ### Language and correctness anti-patterns
 
@@ -328,8 +328,8 @@ lose its tail — the base rule):
 
 - `references/plan.md` — code design checklist, plan-quality rules, unit execution mode, performance
   measurement, reconnaissance, milestone scope, test strategy with the variant matrix and coverage,
-  documentation owners, the code plan section and approval prompt. Load with
-  `../pdca/references/plan.md`.
+  documentation owners, the code plan section and approval prompt. Load with the base
+  `../pdca/references/plan.md`, whose path the planner receives in its dispatch.
 - `references/check.md` — CHECK two beats, the `pdca-check` session rule, parallel streams and the
   security gather, the audit workflow items 1–13, the optional-null smell, worktree merge steps.
   Load with `../pdca/references/check.md`.

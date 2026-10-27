@@ -129,7 +129,7 @@ host-profile tier is cheap** — by effective tier, not by agent name.
 | Role | Agent | Responsibilities | Permissions | Tier | Fallback if missing |
 |---|---|---|---|---|---|
 | FACT-FINDING & OBSERVATION | `pdca-scout` | Gather facts on request from PLAN or CHECK; when CHECK's chosen method needs an outside observer, observe the result and its evidence independently | Read-only discovery and restricted read-only commands; may write only its pinned `observation-pack.md`; no delegation | cheap | resource blocker |
-| PLAN (decisions) | `pdca-planner` | Classify the goal and form, select the specialized skill, define acceptance criteria; decide revisions | Default-deny, no delegation or execution; may write only the pinned plan document | medium | resource blocker |
+| PLAN (decisions) | `pdca-planner` | Classify the goal and form, select the specialized skill, define acceptance criteria; decide revisions | Default-deny, no delegation or execution; reads only the plan reference whose path the dispatch names, plus the supplied brief; no writes — `pdca-executor` persists the pinned plan | medium | resource blocker |
 | DO (hands) | `pdca-executor` | Execute the task, apply fixes, run the checks CHECK asks for, gather run evidence, and record cycle state | `edit`/`bash`/`read` allowed within the host and cycle constraints | cheap | resource blocker |
 | CHECK (verdict) | `pdca-check` | Choose the verification method and sufficiency per criterion, independently judge the result and the criteria against the original task, and route findings | Default-deny; scoped read of `.pdca/**` evidence and the task inputs, no delegation or writes — runs and writes it needs are performed by `pdca-executor` on its request through the driver | medium | resource blocker |
 | ESCALATE (expert review) | `pdca-escalate` | Give reasoned expert judgment — reasoning, facts, recommended disposition — on a difficult or disputed substantive decision referred by the current phase; decide nothing that phase owns | Read-only inspection, restricted non-mutating commands, facts via permitted `pdca-scout` delegation; no edits, no state-changing execution, no approval | strong | resource blocker |
@@ -254,9 +254,10 @@ dependencies/bounds, risks and stop conditions. It does **not** prescribe
 implementation actions or a step-by-step DO: the executor chooses the implementation inside that
 contract. It does **not** prescribe verification methods, evidence sources or verification commands:
 that choice belongs to CHECK (§CHECK). Derive criteria with negative cases. PLAN uses the
-information supplied with the task and gathers any missing information needed to define acceptance
-criteria, only within its existing authorized read-only access — it widens no permission and runs
-no code or edits to reach unavailable information. If the information cannot be obtained and the
+information supplied with the task and the `references/plan.md` it reads itself from the dispatched
+path (below), and gathers any missing information needed to define acceptance criteria only within
+that existing authorized access — it widens no permission and runs no code or edits to reach
+unavailable information. If the information cannot be obtained and the
 acceptance criteria cannot be determined, PLAN does not guess: it returns `acceptance criteria
 cannot be determined` with the concrete missing information and the reason, and the driver proceeds
 directly to ACT without DO and without CHECK. A **state-dependent** criterion must be stated so that
@@ -264,7 +265,15 @@ it is meaningfully measurable where it matters — the condition, the observable
 outcome — but PLAN neither picks the evidence source nor runs a probe before DO. An acceptance
 criterion that cannot be made determinate from the supplied information is that PLAN-terminal
 outcome, never a `ready` placeholder.
-Details: `references/plan.md`.
+Details, for `pdca-planner` only: `references/plan.md` — its **exact absolute path** is derived from
+the loaded skill's base directory and passed in the planner dispatch, and the planner reads it
+there; the driver neither loads nor forwards it.
+
+The PLAN dispatch carries the **unchanged original task**, the constraints, the available
+facts/evidence and that `plan_reference_path`. The driver contributes those and the general
+coordination rules only: it does not read, inline or summarise the reference, and the file is not
+part of a DO, CHECK or `pdca-escalate` dispatch. What the planner returns — the acceptance criteria
+and plan — are shared **data** for the other phases, not their role instructions.
 
 **PLAN returns:**
 
@@ -680,13 +689,21 @@ gate; only an approval required by the environment or the user still blocks.
 
 ## References
 
-Phase detail is loaded **at the start of its phase**, not up front (the host truncates tool output
-at 50 KiB / 2000 lines, so the truncated tail of a contract would lose its rules):
+Phase detail is disclosed per role, not loaded up front (the host truncates tool output at 50 KiB /
+2000 lines, so the truncated tail of a contract would lose its rules). The host does not isolate one
+role's instructions from another automatically: the routing below and the role permissions are what
+keep the scopes apart, and a supporting file is never auto-loaded by being mentioned.
 
-- `references/plan.md` — plan fields, how criteria are stated and measured, the machine projection,
-  evidence locations, provisional thresholds, vacuous/expected-negative runs, recorded exceptions,
-  re-anchoring, one-evidence binding.
-- `references/check.md` — the verification method CHECK chooses, the evidence chain, criteria
-  matrix, the mandatory-requirement veto, the combined final check, verdict and correction routing.
-- `references/act.md` — closing order, the cycle status file template and progress log, next-session
-  message.
+- `references/plan.md` — instructions for **`pdca-planner` only**: plan fields, how criteria are
+  stated and measured, the machine projection, evidence locations, provisional thresholds,
+  vacuous/expected-negative runs, recorded exceptions, re-anchoring, one-evidence binding. The
+  driver supplies its **exact absolute path** (from the loaded skill's base directory) in the PLAN
+  or criteria-revision dispatch, and the planner reads it itself once per fresh planner context. The
+  driver does not read or inline it and does not forward it to DO, CHECK or `pdca-escalate`. The
+  accepted criteria and plan the planner returns are shared data for the other phases, not their
+  instructions.
+- `references/check.md` — read by `pdca-check` when CHECK starts: the verification method CHECK
+  chooses, the evidence chain, criteria matrix, the mandatory-requirement veto, the combined final
+  check, verdict and correction routing.
+- `references/act.md` — read at ACT: closing order, the cycle status file template and progress log,
+  next-session message.

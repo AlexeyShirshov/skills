@@ -264,7 +264,8 @@ lose its tail — the base rule):
   `pdca_evidence.py` pipeline, `commands.json` + `plan_lint.py`, the `test scope` envelope and
   `validate_inner_loop.py` inner-loop gate, test run safety, the .NET test-strategy and documentation
   deltas, the reviewer evidence pack, evidence helper discipline. Load with
-  `../pdca/references/plan.md` and `../pdca-coder/references/plan.md`.
+  `../pdca-coder/references/plan.md`; the base `../pdca/references/plan.md` reaches the planner by
+  path in its dispatch.
 - `references/check.md` — .NET stream→agent mapping, the audit items 3–13, the inner-loop evidence
   gate, the CHECK completeness gate, the optional-null C# case. Load with
   `../pdca/references/check.md` and `../pdca-coder/references/check.md`.

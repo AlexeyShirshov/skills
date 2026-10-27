@@ -118,7 +118,7 @@ skill creates no agents and assigns no models — the host and its profile do.
 | Role | Agent | Duty | Permissions | Tier | Fallback |
 |---|---|---|---|---|---|
 | FACT-FINDING | `pdca-scout` | facts by pointer; independent observation before CHECK | read-only discovery and restricted read-only commands; may write only its pinned observation pack; no delegation | cheap | resource blocker |
-| PLAN | `pdca-planner` | form/overlay, result contract, revisions, step-boundary decisions | default-deny; reads only the supplied brief; may write only the pinned plan document; no execution or delegation | medium | resource blocker |
+| PLAN | `pdca-planner` | form/overlay, result contract, revisions, step-boundary decisions | default-deny; reads the passed plan reference and the supplied brief; no writes — `pdca-executor` persists the pinned plan; no execution or delegation | medium | resource blocker |
 | DO | `pdca-executor` | implementation inside the contract; all writes; run evidence | `edit`/`bash`/`read` within the host and cycle constraints | cheap | resource blocker |
 | CHECK | `pdca-check` | independent verdict and correction routing | default-deny; scoped read of `.pdca/**`; no delegation or writes | medium | resource blocker |
 | ESCALATE | `pdca-escalate` | hard decision from a pre-gathered pack | read-only inspection, restricted non-mutating commands, facts via `pdca-scout`; no state-changing execution | strong | resource blocker |
