@@ -22,9 +22,12 @@ class CollectionContractTest(unittest.TestCase):
         for term in ("## Batch terminology", "### P — per-item PLANs",
                      "### D — infrastructure", "### C — integration verification",
                      "### A — completion", "## Lane execution and schedule revision",
-                     "## Collection status record", "### Routing campaign outcomes",
-                     "## Git model details", "### The queue and the per-item continuation"):
+                     "## Collection status record", "### Routing campaign outcomes", "### The queue and the per-item continuation"):
             with self.subTest(term=term): self.assertIn(term, self.text)
+
+    def test_unique_git_invariants_still_present(self):
+        self.assertIn("Group and task branches are sibling Git refs", self.text)
+        self.assertIn("disables intermediate step commits, not that authorized outer commit", self.text)
 
     def test_completion_and_preservation(self):
         for term in ("**An `incomplete` group is never merged**",
