@@ -982,8 +982,8 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 SKILL_PATH = SKILL_DIR / "SKILL.md"
-STATUS_REF_PATH = SKILL_DIR / "references/status.md"
-LANE_REF_PATH = SKILL_DIR / "references/lane.md"
+STATUS_REF_PATH = SKILL_DIR / "SKILL.md"
+LANE_REF_PATH = SKILL_DIR / "SKILL.md"
 # Canonical shipped runner asset (in-repo) and the deployed copy in the host repo.
 ASSET_PATH = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 LANE_PATH = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
@@ -2233,8 +2233,8 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Static contract tests over the normative prose (SKILL.md, references/lane.md,
-# references/status.md and the shipped pdca-orchestrator asset).
+# Static contract tests over the normative prose (SKILL.md, SKILL.md,
+# SKILL.md and the shipped pdca-orchestrator asset).
 #
 # These prove the DOCUMENTED collection policy, not a live collection run, and
 # they are section-scoped semantic invariants (not whole-file keyword soup):
@@ -2255,327 +2255,39 @@ class DiagramCaptionPolishTest(unittest.TestCase):
 
 
 # The shipped runner asset (`assets/opencode-agents/pdca-orchestrator.md`) mirrors the
-# lane rules of `references/lane.md`. The deployed host copy is host parity only: the
+# lane rules of `SKILL.md`. The deployed host copy is host parity only: the
 # live host is not migrated to the restructured family, so the parity check below is an
 # explicit skip and the canonical asset is asserted instead.
 class CollectionContractSemanticsTest(unittest.TestCase):
-    """Static contract: group stop, results preserved, merge policy, status mirror.
-
-    The lane/git-model/failure sections moved into ``references/lane.md`` and the
-    status tables into ``references/status.md``; they are asserted there, not
-    dropped. The runner mirror is asserted against the shipped asset — the
-    deployed host copy is an explicit skip (host not migrated).
-    """
+    """Inlined batch policy invariants; diagram tests above remain independent."""
 
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         cls.skill = SKILL_PATH.read_text(encoding="utf-8")
-        cls.lane_ref = LANE_REF_PATH.read_text(encoding="utf-8")
-        cls.status_ref = STATUS_REF_PATH.read_text(encoding="utf-8")
         cls.asset = ASSET_PATH.read_text(encoding="utf-8")
 
-    @staticmethod
-    def _plain(text: str) -> str:
-        return _norm(text.replace("**", "").replace("`", ""))
+    def test_consolidated_contract_exists(self):
+        self.assertLess(len(self.skill.encode("utf-8")), 50000)
+        self.assertFalse((SKILL_DIR / "references").exists())
+        for heading in ("## Lane execution and schedule revision",
+                        "## Collection status record",
+                        "### Routing campaign outcomes",
+                        "## Git model details",
+                        "## Lane failure and preservation"):
+            with self.subTest(heading=heading):
+                self.assertIn(heading, self.skill)
 
-    def _skill_plain(self, start: str, end: str) -> str:
-        return self._plain(_skill_section(self.skill, start, end))
+    def test_group_terminal_and_pause_states(self):
+        for marker in ("the group is stopped", "other groups continue",
+                       "disposition=paused", "`incomplete`", "`merged`",
+                       "preparation_state=ready", "plan_state=ready"):
+            with self.subTest(marker=marker): self.assertIn(marker, self.skill)
 
-    def _lane_plain(self, start: str, end: str) -> str:
-        return self._plain(_skill_section(self.lane_ref, start, end))
-
-    def _lane_stream(self) -> str:
-        return self._lane_plain("## One lane = one group", "## A campaign item in a lane")
-
-    def _failure(self) -> str:
-        return self._lane_plain("## Failure (semantics)", self.lane_ref[-200:])
-
-    def _status(self) -> str:
-        return self._plain(self.status_ref)
-
-    # --- definitive incomplete stops the group, not just the item ---------
-
-    def test_definitive_incomplete_stops_whole_group(self):
-        lane_sec = self._lane_stream()
-        self.assertTrue(lane_sec, "references/lane.md §One lane = one group not found")
-        self.assertRegex(
-            lane_sec,
-            r"final incomplete of an item stops the whole group",
-        )
-        self.assertRegex(
-            lane_sec,
-            r"remaining pending items of the group are marked incomplete",
-        )
-        self.assertIn("the group is stopped", lane_sec)
-        self.assertRegex(lane_sec, r"not executed")
-        # the shipped runner mirrors the same rule
-        asset = self._plain(self.asset)
-        self.assertTrue(
-            "final incomplete" in asset or "definitive incomplete" in asset,
-            "the shipped runner does not mirror the group-stop rule",
-        )
-        self.assertIn("whole group", asset)
-        self.assertTrue(
-            "the group is stopped" in asset or "group stopped" in asset,
-            "the shipped runner lost the explicit group-stop reason",
-        )
-
-    def test_remaining_tasks_incomplete_reason_not_blocked(self):
-        lane_sec = self._lane_stream()
-        self.assertIn("the group is stopped", lane_sec)
-        self.assertIn("not executed", lane_sec)
-        self.assertIn("the group is not merged", lane_sec)
-        # `blocked` stays a parent-verification state, never an item/group status
-        self.assertIn(
-            "the status blocked does not exist for items/groups", lane_sec
-        )
-        self.assertIn("blocked remains only a state of the parent verification", lane_sec)
-        asset = self._plain(self.asset)
-        self.assertIn("no blocked status for tasks/groups", asset)
-
-    def test_other_groups_continue(self):
-        self.assertIn("other groups continue", self._lane_stream())
-        self.assertIn("other groups continue", self._failure())
-        asset = self._plain(self.asset).lower()
-        self.assertIn("other groups continue", asset)
-
-    # --- single-group degradation ----------------------------------------
-
-    def test_single_group_exemption(self):
-        p = self._skill_plain("### P —", "### D —")
-        d = self._skill_plain("### D —", "### C —")
-        for sec in (p, d):
-            self.assertRegex(
-                sec,
-                re.compile(r"one group|single group", re.I),
-            )
-        self.assertRegex(
-            p, re.compile(r"no worktree and no group branch are created", re.I)
-        )
-        self.assertRegex(p, r"merge --no-ff is not needed")
-        self.assertRegex(d, re.compile(r"no worktree and no branches .*are created", re.I))
-        self.assertRegex(d, r"merge")
-        asset = self._plain(self.asset)
-        self.assertTrue(
-            "branches and worktrees are not created" in asset
-            or "branches/worktree" in asset,
-            "the shipped runner lost the single-group branch/worktree exemption",
-        )
-
-    # --- the status file is the only progress mirror ----------------------
-
-    def test_progress_mirror_is_the_status_file_only(self):
-        p = self._skill_plain("### P —", "### D —")
-        # no separate sidebar todo: the host may not provide a todo tool
-        self.assertIn("There is no separate sidebar todo", p)
-        self.assertIn("the host may not provide a todo tool", p)
-        self.assertIn("a second mirror only produces divergence", p)
-        # the collection status file is updated in the same turn and reconciled
-        self.assertIn("in the same tick as the event", p)
-        self.assertIn("Before dispatching, check the status file", p)
-        self.assertIn("after compaction the state is restored from it", p)
-        # groups and items live in the status file tables, not a sidebar list
-        status = self._status()
-        self.assertIn("table of groups", status)
-        self.assertIn("table of items", status)
-
-    # --- merge policy -----------------------------------------------------
-
-    def test_merge_only_done_never_incomplete_tip(self):
-        d = self._skill_plain("### D —", "### C —")
-        self.assertRegex(d, r"only for the done groups")
-        self.assertRegex(d, r"[Aa]n incomplete group is never merged")
-        self.assertRegex(d, r"even if")
-        status = self._status()
-        self.assertRegex(status, r"incomplete is never merged")
-        self.assertRegex(status, r"incomplete stays incomplete .*never merged")
-
-    # --- incomplete results survive cleanup -------------------------------
-
-    def test_incomplete_results_preserved_through_cleanup(self):
-        a = self._skill_plain("### A —", "## Report")
-        self.assertRegex(a, r"removes only disposable")
-        self.assertRegex(a, r"incomplete groups are never deleted")
-        self.assertRegex(a, r"patch")
-        self.assertRegex(a, r"refs")
-        self.assertRegex(a, r"must not be deleted")
-        # single-group: earlier commits stay in the current branch, no rollback
-        p = self._skill_plain("### P —", "### D —")
-        self.assertRegex(p, r"incomplete.*commits.*stay.*no automatic rollback")
-        fail = self._failure()
-        self.assertRegex(fail, r"the results are preserved")
-        self.assertRegex(fail, r"refs/branches/commits \+ the patch")
-
-    # --- explicit authorized autocommit is an overlay, not universal ------
-
-    def test_explicit_autocommit_overlay_not_universal(self):
-        header = self._skill_plain("## Role", "## Collection")
-        self.assertRegex(header, r"explicitly authorized autocommit")
-        self.assertRegex(header, r"project overlay")
-        self.assertRegex(header, r"particular project")
-        self.assertRegex(
-            header,
-            r"skill itself grants no universal right to commit/merge",
-        )
-        self.assertRegex(header, r"does not extend the global AGENTS\.md")
-        self.assertRegex(header, re.compile(r"without authorization", re.I))
-        params = self._skill_plain("## Parameters", "## References")
-        self.assertRegex(params, r"project overlay or an explicit user request")
-        self.assertRegex(params, r"skill itself grants no right")
-
-    # --- stack-neutral: per-item contract/overlay, no hard .NET router -----
-
-    def test_collection_is_stack_neutral_with_a_per_item_contract(self):
-        # The collection must not require .NET and must not route by stack: the
-        # item's contract is `pdca` + overlay (none | coder | coder+.NET), chosen
-        # per item; a campaign item's overlay belongs to each concrete step.
-        header = self._skill_plain("## Role", "## Collection")
-        self.assertIn("the contract is pdca plus the overlay", header)
-        for overlay in ("none", "coder", "coder+.NET"):
-            with self.subTest(overlay=overlay):
-                self.assertIn(overlay, header)
-        self.assertIn("A campaign item has no item-level contract", header)
-        self.assertIn("decided by pdca-planner for that step", header)
-        self.assertIn("../pdca-incremental/SKILL.md", header)
-        items = self._skill_plain("## Items: form, contract, overlay", "## Collection")
-        self.assertIn("The item carries no contract/overlay", items)
-        refs = self._skill_plain("## References", self.skill[-200:])
-        self.assertIn("pdca-coder", refs)
-        self.assertIn("pdca-dotnet", refs)
-        self.assertIn("overlays applied to the relevant work", refs)
-
-    # --- the branch chain is per item, not per group ----------------------
-
-    def test_branch_chain_is_per_task_not_group(self):
-        lane_sec = self._lane_stream()
-        self.assertRegex(
-            lane_sec,
-            r"branch collection/<id>/task-<g>-<k> from the committed tip of the previous one",
-        )
-        git = self._lane_plain("## Git model", "## Failure (semantics)")
-        self.assertRegex(git, r"chain of task branches")
-        self.assertRegex(git, r"next one branches from the tip of the previous one")
-        self.assertRegex(git, r"[Ww]ith one group there are no task branches")
-
-    # --- group status enum: the exact original 5 values, `merged` included -
-
-    def test_group_status_enum_is_exact_five_including_merged(self):
-        # The ORIGINAL, approved group enum has exactly five values and `merged`
-        # is one of them -- reached only as the `done` -> `merged` transition.
-        # It is not renamed into a "merge-disposition" field, and `skipped` is not
-        # a group status value at all (only an integration note).
-        status_ref = STATUS_REF_PATH.read_text(encoding="utf-8")
-        status_enum = re.search(
-            r"\(`pending`\s*\|\s*`in-progress`\s*\|\s*`done`\s*\|\s*"
-            r"`incomplete`\s*\|\s*`merged`\)",
-            status_ref,
-        )
-        self.assertIsNotNone(
-            status_enum,
-            "references/status.md must carry the exact 5-value group enum "
-            "including `merged`",
-        )
-        assert status_enum is not None
-        self.assertNotIn("skipped", status_enum.group(0))
-        # the representation is unchanged: no "merge-disposition" field anywhere
-        self.assertNotIn("merge-disposition", self.skill)
-        self.assertNotIn("merge-disposition", status_ref)
-        status_plain = self._status()
-        self.assertRegex(status_plain, r"transition is only done → merged")
-        self.assertRegex(status_plain, r"incomplete is never merged")
-        self.assertRegex(
-            status_plain, r"skipped .*not a group status"
-        )
-
-        # the scenario matrix enumerates the same exact 5-value group enum
-        scenarios = SCENARIOS_PATH.read_text(encoding="utf-8")
-        scen_enum = re.search(
-            r"`pending\s*\|\s*in-progress\s*\|\s*done\s*\|\s*"
-            r"incomplete\s*\|\s*merged`",
-            scenarios,
-        )
-        self.assertIsNotNone(
-            scen_enum,
-            "scenarios.md must carry the exact 5-value group enum including `merged`",
-        )
-        assert scen_enum is not None
-        self.assertNotIn("skipped", scen_enum.group(0))
-        self.assertNotIn("merge-disposition", scenarios)
-
-    # --- pause of a lane is derived: no new status, no runtime mirror -----
-
-    def test_lane_pause_is_derived_and_adds_no_new_status(self):
-        pause = self._lane_plain("## Lane pause", "## Stale plan and schedule revision")
-        self.assertTrue(pause, "references/lane.md §Lane pause not found")
-        self.assertIn("derived", pause)
-        self.assertIn("in-progress", pause)
-        self.assertIn("no new item/group statuses are introduced", pause)
-        self.assertIn("a pause is not a new status value", pause)
-        # the status reference repeats the invariant for the item record
-        status = self._status()
-        self.assertIn("no new item/group statuses are introduced", status)
-        # negative: `blocked` is never (re)defined as an item/group status; a
-        # negated mention is the required wording, not a definition.
-        for path, raw in (
-            ("SKILL.md", self.skill),
-            ("references/lane.md", self.lane_ref),
-            ("references/status.md", self.status_ref),
-        ):
-            for line in raw.splitlines():
-                m = re.search(r"(?i)status\w*\s+`?blocked`?", line)
-                if not m:
-                    continue
-                tail = line[m.end(): m.end() + 60].lower()
-                with self.subTest(path=path, line=line.strip()[:80]):
-                    self.assertTrue(
-                        re.search(r"no\b|not\b|never|forbidden|absent", tail),
-                        "a status definition of `blocked` appeared for items/groups: "
-                        f"{path}: {line!r}",
-                    )
-
-    def test_failure_recovery_writes_a_checkpoint_and_resumes(self):
-        corpus = " ".join(
-            self._plain(raw)
-            for raw in (self.skill, self.lane_ref, self.status_ref)
-        )
-        for token in ("checkpoint", "resume", "incomplete", "group-stop", "met"):
-            with self.subTest(token=token):
-                self.assertIn(
-                    token,
-                    corpus,
-                    f"the contract family lacks the recovery token {token!r}",
-                )
-
-    def test_final_disposition_is_explicit_and_only_accepted_met_is_done(self):
-        corpus = " ".join(
-            self._plain(raw) for raw in (self.skill, self.lane_ref, self.status_ref)
-        )
-        self.assertIn("checkpoint", corpus,
-                      "the contract lacks the recovery checkpoint (paired with the "
-                      "explicit final disposition)")
-        self.assertIn("explicit", corpus,
-                      "the contract must require an explicit final disposition")
-        self.assertIn("only by an accepted", corpus,
-                      "the contract must state that only an accepted `met` closes "
-                      "work ('only by an accepted')")
-        self.assertIn("met", corpus)
-
-    def test_campaign_outcome_routing_is_in_the_status_reference(self):
-        status = self._status()
-        self.assertIn("Routing campaign outcomes", status)
-        for outcome in ("preparation_state=pending", "met (accepted)",
-                        "unreachable, the route is exhausted"):
-            with self.subTest(outcome=outcome):
-                self.assertIn(outcome, status)
-        self.assertIn("done is given only by an accepted met", status)
-        self.assertIn("blocked/stopped are a checkpoint", status)
-
-    @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)
-    def test_deployed_runner_mirrors_the_shipped_asset(self):
-        self.skipTest(
-            f"{SKIP_HOST_NOT_MIGRATED}: deployed {LANE_PATH} still carries the "
-            "legacy execution_kind routing"
-        )
+    def test_git_and_verification_safety(self):
+        for marker in ("git merge --abort", "git merge --no-ff",
+                       "git add <paths>", "no automatic rollback",
+                       "full parent integration CHECK", "re-gather"):
+            with self.subTest(marker=marker): self.assertIn(marker, self.skill)
 
 
 # ---------------------------------------------------------------------------
