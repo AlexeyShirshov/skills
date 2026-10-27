@@ -2273,7 +2273,7 @@ class CollectionContractSemanticsTest(unittest.TestCase):
                         "## Collection status record",
                         "### Routing campaign outcomes",
                         "## Git model details",
-                        "## Lane failure and preservation"):
+                        "### The queue and the per-item continuation"):
             with self.subTest(heading=heading):
                 self.assertIn(heading, self.skill)
 
