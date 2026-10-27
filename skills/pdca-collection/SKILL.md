@@ -109,10 +109,10 @@ silent switch to another run mode. The absence of authorization is **not** an au
 ## Items and execution ownership
 
 Each item preserves its original goal and user criteria; scheduling metadata cannot
-redefine acceptance. In the item's first PLAN, `pdca-planner` selects `cycle` or
-`campaign` and any applicable specialized skill under the base rules. The collection
-driver neither classifies items nor inserts a second PLAN. A `cycle` resumes its
-saved PLAN at DO after the barrier; a `campaign` has no item-level contract/overlay:
+redefine acceptance. In the first PLAN, `pdca-planner` selects `cycle` or `campaign`
+and, only for `cycle`, the specialized skill. The collection driver neither
+classifies items nor inserts another PLAN. A `cycle` resumes its saved PLAN at DO
+after the barrier (unless stale); a `campaign` has no item-level contract/overlay:
 each step gets its own selection, without planning future steps during preparation.
 
 The collection driver owns scheduling and integration; one designated item driver
