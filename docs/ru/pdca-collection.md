@@ -333,7 +333,7 @@ immutable/revisioned **preparation document** — `.pdca/<collection-id>/items/<
 **Готовность — не завершение.** `preparation_state=ready` без runtime — это `barrier-ready`, а не
 `started`: единица остаётся `pending` и никогда не становится `done` от готовности каркаса. `done`
 даёт только принятый `met` с явным `disposition=finalized`
-(`skills/pdca-collection/references/status.md §Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
 
 **Пауза — не финал.** `blocked`, `stopped` и `unreachable` с допустимым следующим target в
 неизменной цели и границах — это checkpoint: `disposition=paused`, единица остаётся `in-progress`,
@@ -342,13 +342,13 @@ immutable/revisioned **preparation document** — `.pdca/<collection-id>/items/<
 финального неуспешного disposition и из паузы не выводится. Бесконечной автоматической докачки
 нет; пауза и resume не сбрасывают `N`/`r`/`n`; лейн на паузе не продвигает зависимую цепочку своей
 группы, остальные группы продолжают; критерии успеха молча не меняются
-(`skills/pdca-collection/references/status.md §Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
 
 **Disposition и производная пауза лейна.** `disposition` (`active` | `paused` | `finalized`) —
 per-unit поле, а не статус задачи или группы. Пауза лейна **производна** от `disposition=paused`
 текущей единицы и не хранится отдельным authoritative полем лейна; новых значений статуса не
 вводится, а `blocked` остаётся состоянием общей верификации
-(`skills/pdca-collection/references/lane.md` §Lane pause`).
+(`skills/pdca-collection/SKILL.md` §Lane pause`).
 
 **Три раздельных пространства состояний.** Готовность единицы (`plan_state` /
 `preparation_state`), runtime-статус кампании (`Status`) и per-unit `disposition` — разные вещи, у
@@ -447,17 +447,17 @@ resource stop прогона; недоступный **контракт цикл
 | D: worktree и ветки, cap, привязка расписания, барьер merge, `done → merged`, `#<n>` в сообщении merge, `incomplete` не мержится, конфликт/abort/эскалация; пять статусов группы, `skipped` — примечание интеграции, `blocked` — не статус; ширина как цель расписания и бюджет хоста | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
 | C: штатный CHECK в два такта, обязательные отчёты и review-линзы, полная проверка после интеграции всех выбранных `done`-групп, PASS вместе с `incomplete`, корректирующая задача, re-gather, базовые `r`/`n`, STOP и `unverified`; механизм `incomplete` пункта в лейне со STOP корректирующей задачи не смешивается | `skills/pdca-collection/SKILL.md §C — verification (the standard CHECK)`; `skills/pdca/references/check.md §Verdict and routing` |
 | A: завершение только по PASS, состав отчёта, cleanup только `done`/`merged`, сохранение `incomplete`-результатов и статус/evidence-путей, STOP | `skills/pdca-collection/SKILL.md §A — completion` |
-| Лейн: ветки пунктов от tip, продолжение сохранённого PLAN с DO, остановка группы, сохранение коммитов/patch, другие группы продолжают, `blocked` не статус группы | `skills/pdca-collection/references/lane.md §One lane = one group · §The queue and the per-item continuation` |
-| Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `skills/pdca-collection/references/lane.md §Stale plan and schedule revision` |
-| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `skills/pdca-collection/references/lane.md §Git model` |
-| Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `skills/pdca-collection/references/lane.md §Failure (semantics)`; `skills/pdca-collection/references/status.md §Invariants` |
+| Лейн: ветки пунктов от tip, продолжение сохранённого PLAN с DO, остановка группы, сохранение коммитов/patch, другие группы продолжают, `blocked` не статус группы | `skills/pdca-collection/SKILL.md §One lane = one group · §The queue and the per-item continuation` |
+| Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `skills/pdca-collection/SKILL.md §Stale plan and schedule revision` |
+| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `skills/pdca-collection/SKILL.md §Git model` |
+| Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `skills/pdca-collection/SKILL.md §Failure (semantics)`; `skills/pdca-collection/SKILL.md §Invariants` |
 | Параметры: `cap`/`plan_cap` = 4 как планировочный выбор контракта (не настройка хоста), ограниченный объявленным бюджетом хоста и наблюдённой конкурентностью, worktree-каталог, merge-право | `skills/pdca-collection/SKILL.md §Parameters`; `skills/pdca-collection/SKILL.md §Report` |
 | Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `skills/pdca-collection/SKILL.md §Fallback` |
-| Барьер по форме пункта, отдельный immutable/revisioned preparation document, `preparation_state`, единственный `preparation_ref`, `campaign_ref` optional до и обязателен после bootstrap, три операции, готовность ≠ завершение, пересогласование как новая ревизия | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/references/status.md §Routing campaign outcomes`; `skills/pdca-incremental/SKILL.md §Campaign status` |
-| `met` — единственный успех, пауза vs финал, явный финальный неуспешный disposition и group-stop, per-item `disposition` и производная пауза лейна, раздельные пространства готовности/runtime/disposition | `skills/pdca-collection/references/status.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/references/lane.md §Lane pause` |
-| Драйвер лейна (тот же `pdca-orchestrator`, кампания inline в campaign-control, один лейн) и PLAN/апрув шага | `skills/pdca-collection/references/lane.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
-| Владение поверхностью и консервативная резервация на всю задачу; расширение как stop/reapproval | `skills/pdca-collection/references/lane.md §Surface reservation and its extension` |
-| Коммиты: коллекция владеет внешним lifecycle, `Commit policy: none` и preflight блокер | `skills/pdca-collection/references/lane.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| Барьер по форме пункта, отдельный immutable/revisioned preparation document, `preparation_state`, единственный `preparation_ref`, `campaign_ref` optional до и обязателен после bootstrap, три операции, готовность ≠ завершение, пересогласование как новая ревизия | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/SKILL.md §Routing campaign outcomes`; `skills/pdca-incremental/SKILL.md §Campaign status` |
+| `met` — единственный успех, пауза vs финал, явный финальный неуспешный disposition и group-stop, per-item `disposition` и производная пауза лейна, раздельные пространства готовности/runtime/disposition | `skills/pdca-collection/SKILL.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
+| Драйвер лейна (тот же `pdca-orchestrator`, кампания inline в campaign-control, один лейн) и PLAN/апрув шага | `skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
+| Владение поверхностью и консервативная резервация на всю задачу; расширение как stop/reapproval | `skills/pdca-collection/SKILL.md §Surface reservation and its extension` |
+| Коммиты: коллекция владеет внешним lifecycle, `Commit policy: none` и preflight блокер | `skills/pdca-collection/SKILL.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | Preflight и единственный fallback (`Notice:` + durable reason, resource stop, fail closed) | `skills/pdca-collection/SKILL.md §Fallback` |
 | Тиры ролей (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements` |
 | База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей базы (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements · §State machine and counters · §Escalation (pdca-escalate) · §Control modes`; `skills/pdca-coder/references/check.md §Two beats` |
