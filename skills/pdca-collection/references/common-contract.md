@@ -5,8 +5,8 @@ verification, durable status, approval, recovery, escalation, effort and safety 
 form so that the form can be invoked directly, **without loading the base `pdca` skill first**.
 `../../pdca/SKILL.md` and its references may be consulted as optional deeper detail when the package is
 installed; nothing below depends on them, and no rule here becomes inoperative when they are absent.
-Where this copy and the base differ, the rules here are the form's governing contract until the base
-is corrected to match. Shared helpers of a sibling package (`../../pdca/scripts/plan_lint.py`,
+This copy governs collection-specific execution independently; align shared PDCA rules with the
+current base rather than treating an older copied rule as a deliberate override. Shared helpers of a sibling package (`../../pdca/scripts/plan_lint.py`,
 `../../pdca/scripts/pdca_cost.py`, …) may be reused **by explicit path**; a helper is tooling, not a
 rule dependency.
 
@@ -16,7 +16,7 @@ rule dependency.
   this contract does not re-classify the task, keeps no routing table of its own and never runs a
   second PLAN on the same content. A batch may still classify **each item** by the same form rules
   (§Forms) — that is the item's own PLAN, not a second PLAN of the batch.
-- **Normal mode** — the user approves the planner's result contract before each cycle's or step's
+- **Normal mode** — the primary drives the cycles/steps; the user approves the planner's result contract before each cycle's or step's
   DO. That approval is the **only** start signal.
 - **Autonomous mode** — no intermediate user approval and no questions, but every permission, gate,
   acceptance criterion, verification requirement and stop condition remains in force. An approval
@@ -163,10 +163,11 @@ skill creates no agents and assigns no models — the host and its profile do.
 
 - `N` — the cycle (or campaign step) number; grows **only in ACT**, when a further cycle is
   planned. Loop-backs never change it.
-- `r` — plan revision; starts at 1 and grows only when `pdca-planner` **actually issued a revised
-  plan**. A rejected candidate or a clarification with the plan unchanged is **not** a revision: no
+- `r` — plan revision; starts at 1 and grows only when `pdca-planner` revises the
+  **substantive result/criteria contract**, never merely a verification method or DO strategy. A rejected candidate or a clarification with the plan unchanged is **not** a revision: no
   bump, no attempt reset. The outgoing failed attempt is recorded before the plan is replaced.
-- `n/3` — execution attempts for revision `r`: `PLAN(r) → DO` starts at 1; `CHECK → DO`
+- `n/3` — substantive product-correction execution attempts for revision `r` (evidence re-gathers
+  are not attempts): `PLAN(r) → DO` starts at 1; `CHECK → DO`
   increments. The **third failed CHECK of the same revision** goes to `pdca-escalate` before a
   fourth; there is **no 4th attempt**. `CHECK → PLAN` does not consume the next revision's attempts;
   a new revision resets `n` to 1 and never erases the same-defect history. A `DO → ACT` incomplete
@@ -180,7 +181,7 @@ skill creates no agents and assigns no models — the host and its profile do.
 
 ## Claims and veto
 
-The PLAN lists **carrying claims** — the central claims of the goal, mandatory criteria and hard
+The PLAN records the user's mandatory requirements and, where relevant, **carrying claims** — the central claims of the goal, mandatory criteria and hard
 validity constraints — with IDs, separately from quality-rubric axes. Demoting one is a plan
 revision with a recorded reason, never a CHECK/ACT move.
 
@@ -189,8 +190,8 @@ any rubric score**, and forbids a STOP with `done`. Removing the block has exact
 
 1. fix and re-check;
 2. objective refutation with evidence reproduced by a non-author — CHECK confirms it;
-3. an explicit narrowing inside the original goal, recorded as `limited` (normal mode: the user
-   approves the narrowing).
+3. a **new explicit user instruction** that changes the original requirement; ordinary plan
+   approval or an agent's `limited` label cannot narrow the original task.
 
 Moving the finding to "next step" removes nothing, and the goal may not be weakened to clear a
 block. An unsupported allegation is adjudicated, not merely deducted; an unknown claim stays
@@ -201,11 +202,10 @@ non-PASS.
 The cycle closes on **fresh evidence**, never on an assertion or a subagent summary. The driver does
 not inspect evidence itself; it builds the chain:
 
-- **Re-run — `pdca-executor`:** run the proving action again and return the exit status, the key
-  numbers and the log **path**, not the log.
-- **Observe — `pdca-scout`, before CHECK:** a non-author observes the actual frozen result and the
-  evidence the criteria name; for each criterion it separates what was observed, what rests on
-  assumptions and what stays unverified, and binds observations to the frozen result identity.
+- **Run — `pdca-executor`:** when CHECK chooses a proving action, run it and return the exit
+  status, key numbers and log **path**, not the log.
+- **Observe — `pdca-scout`, when CHECK requests an independent observer:** report what was
+  actually observed, assumed or unverified, bound to the frozen result identity.
 - **Judge — `pdca-check`:** decides whether the reports prove the claim. Missing evidence stays
   `unverified` → re-gather; permissions are never widened to obtain it.
 
@@ -234,11 +234,9 @@ correct", "passed last time" in a report → order the run. Gates pass on facts,
   veto is never waived by this economy. An evidence requirement never demands from a role an action
   its permissions forbid: it is `unverified-by-design` up front or assigned to a role with the
   rights.
-- **Command contract scope** — only the **verification/evidence commands** that produce acceptance
-  evidence are frozen and validated (selector resolves, expanded argv, legal phase and scope,
-  declared expected outcome `green | expected-negative | informational`; zero selected targets is a
-  failure). The PLAN does not prescribe, freeze or lint DO's implementation actions or commands:
-  DO chooses those inside the contract. A frozen command that cannot run is a PLAN defect at
+- **Command responsibility** — DO selects its implementation commands inside the result contract;
+  CHECK selects and validates the evidence-gathering methods and commands needed for its verdict.
+  The driver routes authorized requests to `pdca-executor`, not their technical design. A frozen command that cannot run is a PLAN defect at
   gate 1; discovered once DO has started, the contract cannot be met → `DO → ACT`.
 - A frozen command set, when one exists, may be projected to the machine lint
   (`../../pdca/scripts/plan_lint.py`, reused by explicit path) before gate 1 and again on DO entry.
@@ -265,7 +263,8 @@ root (`git rev-parse --show-toplevel`):
   `<UTC time> | <phase> | revision r | iteration n/3 | <event> | <evidence pointer>`; timestamps
   come from the clock, and earlier bytes are never rewritten. Accepted conclusions may be
   superseded with a reason, facts are never backfilled.
-- **Mandatory content** — goal/expected result, criteria with verification methods, carrying
+- **Mandatory content** — unchanged goal/expected result and acceptance criteria, verification
+  methods as decided later by CHECK, carrying
   claims, declared form and overlay, plan revision `r`, unit/step states, evidence, attempts and
   defect history, accepted decisions/approvals/blockers/next step, the progress log; in normal
   mode the `Pending approval ref` and `Approval record` slots; for a campaign the accepted
@@ -280,8 +279,8 @@ root (`git rev-parse --show-toplevel`):
 New facts may require revising the strategy at an explicit safe checkpoint while preserving the
 goal, history, result, knowledge, constraints and unfinished work. Silent in-flight switching and
 resetting counters or history to bypass limits are forbidden; `pdca-planner` decides, not the cheap
-driver. A revision is genuine only when the contract rows, units, dependencies or bounding approach
-actually change while the original acceptance criterion is preserved — a rename, a session reset or
+driver. A revision is genuine only when the substantive result/criteria contract actually changes while
+the unchanged original task and user-supplied criteria are preserved — a rename, a session reset or
 a rejected candidate is not a revision.
 
 The host may compact mid-cycle. **The status file is the source of truth** — not the context
