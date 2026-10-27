@@ -323,7 +323,7 @@ criteria are forbidden; old immutable revisions are never rewritten
 **Readiness is not completion.** `preparation_state=ready` without a runtime is `barrier-ready`, not
 `started`: the unit stays `pending` and never becomes `done` because the frame is ready. Only an
 accepted `met` with an explicit `disposition=finalized` gives `done`
-(`skills/pdca-collection/references/status.md §Routing campaign outcomes`).
+(`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
 
 **Pause is not final.** `blocked`, `stopped` and `unreachable` with an admissible next target within
 an unchanged goal and bounds are a checkpoint: `disposition=paused`, the unit stays `in-progress`,
@@ -332,20 +332,20 @@ remaining `pending` units of the group are marked `incomplete` and are not execu
 explicit final unsuccessful disposition and is not derived from a pause. There is no endless
 automatic retry; pause and resume do not reset `N`/`r`/`n`; a paused lane does not advance its
 group's dependent chain, while the other groups continue; the success criteria are never changed
-silently (`skills/pdca-collection/references/status.md §Routing campaign outcomes`).
+silently (`skills/pdca-collection/SKILL.md §Routing campaign outcomes`).
 
 **Disposition, and the derived lane pause.**
 `disposition` (`active` | `paused` | `finalized`) is a per-unit field, not a task or group status.
 The lane pause is **derived** from the current unit's `disposition=paused` and is not stored as a
 separate authoritative lane field; no new status value is introduced, and `blocked` stays a state of
-the common verification (`skills/pdca-collection/references/lane.md §Lane pause`).
+the common verification (`skills/pdca-collection/SKILL.md §Lane pause`).
 
 **Three separate state spaces.** Unit readiness (`plan_state` / `preparation_state`), the campaign
 runtime status (`Status`) and the per-unit `disposition` are different things, each with its own file
 and its own identifiers: the collection status, the preparation document, the campaign runtime status
 and the step's own cycle status. The semantics of a record belong to the primary/`pdca-planner`; the
 physical write is done by `pdca-executor` on an explicit dispatch
-(`skills/pdca-collection/references/status.md §File and content · §Invariants`).
+(`skills/pdca-collection/SKILL.md §File and content · §Invariants`).
 
 **The surface belongs to the collection.** The planned footprint is a **conservative reservation of
 the allowed surface for the whole task**, not a forecast of the exact edits and not the union of the
@@ -355,7 +355,7 @@ Expanding the reservation or the surface after the barrier is a stop/reapproval:
 renegotiation by the collection's `pdca-planner` (in normal mode — the user), taking the already
 started lanes and the already accepted results into account, with no automatic
 `recluster`/`remerge`/`reset`/`revert`
-(`skills/pdca-collection/references/lane.md §Surface reservation and its extension`).
+(`skills/pdca-collection/SKILL.md §Surface reservation and its extension`).
 
 An accepted addition also consumes capacity: its queue position is recorded, it may not silently
 jump ahead of ready units, and when the milestone window is fixed it is scheduled for the next
@@ -380,7 +380,7 @@ applicable plan continues the **same** step; a stale plan gets a genuine planner
 **fresh approval**, which the stale approval never authorizes. Approval resume does not
 unconditionally replan or add a step; the unit is `disposition=paused` / `in-progress` while
 waiting, not `done`/`incomplete`, and compaction is safe
-(`skills/pdca-collection/references/lane.md §A campaign item in a lane (campaign-control) · §Lane pause`); `skills/pdca/SKILL.md §Normal-mode approval`.
+(`skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control) · §Lane pause`); `skills/pdca/SKILL.md §Normal-mode approval`.
 
 **Completion and commits stay on the collection's level.** The campaign's acceptance (`met`) and the
 collection's common verification are different events: a campaign's success does not replace the
@@ -388,7 +388,7 @@ common CHECK on the integrated tree. The external commit/branch lifecycle of a u
 collection; `Commit policy: none` means no intermediate step commits and does not forbid the outer
 completion commit, and an explicit no-commit restriction that conflicts with the mandatory git model
 is a preflight blocker before the lanes are allocated
-(`skills/pdca-collection/references/lane.md §Git model`).
+(`skills/pdca-collection/SKILL.md §Git model`).
 
 **Preflight and fallback.** Before lanes are allocated and before a campaign starts in its lane, the
 host's observable capability is checked: the mandatory roles and contracts, nested delegation for the
@@ -440,17 +440,17 @@ precedence.
 | D: worktrees and branches, cap, schedule binding, the merge barrier, `done → merged`, `#<n>` in the merge message, `incomplete` is not merged, conflict/abort/escalation; the five group statuses, `skipped` as an integration note, `blocked` is not a status; width as a schedule objective and the host budget | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
 | C: the standard two-beat CHECK, the mandatory reports and review lenses, the full check after all selected `done` groups are integrated, a PASS alongside `incomplete`, the corrective task, re-gather, the base `r`/`n`, STOP and `unverified`; the mechanism of an item's `incomplete` in a lane is not mixed with a STOP of a corrective task | `skills/pdca-collection/SKILL.md §C — verification (the standard CHECK)`; `skills/pdca/references/check.md §Verdict and routing` |
 | A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `skills/pdca-collection/SKILL.md §A — completion` |
-| The lane: item branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `skills/pdca-collection/references/lane.md §One lane = one group · §The queue and the per-item continuation` |
-| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `skills/pdca-collection/references/lane.md §Stale plan and schedule revision` |
-| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `skills/pdca-collection/references/lane.md §Git model` |
-| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `skills/pdca-collection/references/lane.md §Failure (semantics)`; `skills/pdca-collection/references/status.md §Invariants` |
+| The lane: item branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `skills/pdca-collection/SKILL.md §One lane = one group · §The queue and the per-item continuation` |
+| A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `skills/pdca-collection/SKILL.md §Stale plan and schedule revision` |
+| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `skills/pdca-collection/SKILL.md §Git model` |
+| The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `skills/pdca-collection/SKILL.md §Failure (semantics)`; `skills/pdca-collection/SKILL.md §Invariants` |
 | Parameters: `cap`/`plan_cap` = 4 as the contract's scheduling choice (not a host setting), bounded by the declared host budget and observed concurrency, the worktree directory, the merge right | `skills/pdca-collection/SKILL.md §Parameters`; `skills/pdca-collection/SKILL.md §Report` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `skills/pdca-collection/SKILL.md §Fallback` |
-| The barrier by item form, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/references/status.md §Routing campaign outcomes`; `skills/pdca-incremental/SKILL.md §Campaign status` |
-| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-item `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `skills/pdca-collection/references/status.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/references/lane.md §Lane pause` |
-| The collection-lane driver (the same `pdca-orchestrator`, the campaign inline in campaign-control, one lane) and the step's PLAN/approval | `skills/pdca-collection/references/lane.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
-| Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `skills/pdca-collection/references/lane.md §Surface reservation and its extension` |
-| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `skills/pdca-collection/references/lane.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| The barrier by item form, the separate immutable/revisioned preparation document, `preparation_state`, the single `preparation_ref`, `campaign_ref` optional before and mandatory after the bootstrap, the three operations, readiness ≠ completion, renegotiation as a new revision | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-collection/SKILL.md §Routing campaign outcomes`; `skills/pdca-incremental/SKILL.md §Campaign status` |
+| `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-item `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `skills/pdca-collection/SKILL.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
+| The collection-lane driver (the same `pdca-orchestrator`, the campaign inline in campaign-control, one lane) and the step's PLAN/approval | `skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
+| Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `skills/pdca-collection/SKILL.md §Surface reservation and its extension` |
+| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `skills/pdca-collection/SKILL.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | Preflight and the single fallback (`Notice:` + durable reason, resource stop, fail closed) | `skills/pdca-collection/SKILL.md §Fallback` |
 | The role tiers (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements` |
 | The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the base (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements · §State machine and counters · §Escalation (pdca-escalate) · §Control modes`; `skills/pdca-coder/references/check.md §Two beats` |
