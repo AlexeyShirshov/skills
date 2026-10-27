@@ -16,7 +16,9 @@ class CollectionContractTest(unittest.TestCase):
 
     def test_base_contract_inherited(self):
         self.assertIn("../pdca/SKILL.md", self.text)
-        self.assertIn("single source of shared rules", self.text)
+        self.assertIn("## Inheritance", self.text)
+        self.assertIn("§Common cycle contract", self.text)
+        self.assertIn("not another cycle or attempt counter", self.text)
 
     def test_batch_model_and_inlined_sections(self):
         for term in ("## Batch terminology", "### P — per-item PLANs",
