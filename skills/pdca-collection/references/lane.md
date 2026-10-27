@@ -59,7 +59,7 @@ of items — that is how the queue survives compaction and a restart.
   uncommitted changes are preserved as a patch and rolled back only along the failed item's paths.
 - The lane returns a compact summary of ≤8 lines without code/diffs/logs.
 
-## A campaign item in a lane (campaign-control)
+## A campaign item in a lane (designated item driver)
 
 An item with the form `campaign` has **one designated driver throughout its steps** — the
 primary in normal mode or the authorized cheap `pdca-orchestrator` in autonomous mode, with the
@@ -175,7 +175,7 @@ current-branch
 - An explicit no-commit restriction of the user conflicting with the git model of `>=2` groups is a
   **preflight blocker before the worktree/lane allocation**, not a silent override of the model and
   not a patch fallback without an explicit decision. For one group git integration is not required
-  (`../SKILL.md` §Role). The completion of a campaign and the finalization of the outer item are
+  (`../SKILL.md` §Scope and entry). The completion of a campaign and the finalization of the outer item are
   different events.
 
 ## Failure (semantics)
