@@ -396,7 +396,7 @@ replan и не добавляет шаг; при ожидании единица
 дереве. Внешний commit/branch lifecycle единицы принадлежит коллекции; `Commit policy: none`
 означает отсутствие промежуточных step-коммитов и не запрещает outer completion commit, а явное
 no-commit ограничение, конфликтующее с обязательной git-моделью, — preflight блокер до аллокации
-лейнов (`skills/pdca-collection/SKILL.md` §Git model).
+лейнов (`skills/pdca-collection/SKILL.md` §D — infrastructure, tracking, merge).
 
 **Preflight и fallback.** До аллокации лейнов и до старта кампании в лейне проверяется наблюдаемая
 способность хоста: обязательные роли и контракты, вложенная делегация драйверу, сам
@@ -449,7 +449,7 @@ resource stop прогона; недоступный **контракт цикл
 | A: завершение только по PASS, состав отчёта, cleanup только `done`/`merged`, сохранение `incomplete`-результатов и статус/evidence-путей, STOP | `skills/pdca-collection/SKILL.md §A — completion` |
 | Лейн: ветки пунктов от tip, продолжение сохранённого PLAN с DO, остановка группы, сохранение коммитов/patch, другие группы продолжают, `blocked` не статус группы | `skills/pdca-collection/SKILL.md §One lane = one group · §The queue and the per-item continuation` |
 | Неактуальность плана и пересмотр расписания (переоткрытие PLAN, запрет авто-recluster после старта лейнов) | `skills/pdca-collection/SKILL.md §Stale plan and schedule revision` |
-| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `skills/pdca-collection/SKILL.md §Git model` |
+| Git-модель: 1 worktree на группу, ff-продвижение, сиблинги ref, merge `--no-ff`, tip | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
 | Семантика сбоя (таблица) и статус коллекции с инвариантами (`plan_state`, `merged`, `skipped`, `blocked`, сохранение evidence) | `skills/pdca-collection/SKILL.md §Failure (semantics)`; `skills/pdca-collection/SKILL.md §Invariants` |
 | Параметры: `cap`/`plan_cap` = 4 как планировочный выбор контракта (не настройка хоста), ограниченный объявленным бюджетом хоста и наблюдённой конкурентностью, worktree-каталог, merge-право | `skills/pdca-collection/SKILL.md §Parameters`; `skills/pdca-collection/SKILL.md §Report` |
 | Fallback (плоский primary, включая COLLECTION TASK PLAN и продолжение сохранённого PLAN) | `skills/pdca-collection/SKILL.md §Fallback` |
@@ -457,7 +457,7 @@ resource stop прогона; недоступный **контракт цикл
 | `met` — единственный успех, пауза vs финал, явный финальный неуспешный disposition и group-stop, per-item `disposition` и производная пауза лейна, раздельные пространства готовности/runtime/disposition | `skills/pdca-collection/SKILL.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
 | Драйвер лейна (тот же `pdca-orchestrator`, кампания inline в campaign-control, один лейн) и PLAN/апрув шага | `skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
 | Владение поверхностью и консервативная резервация на всю задачу; расширение как stop/reapproval | `skills/pdca-collection/SKILL.md §Surface reservation and its extension` |
-| Коммиты: коллекция владеет внешним lifecycle, `Commit policy: none` и preflight блокер | `skills/pdca-collection/SKILL.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| Коммиты: коллекция владеет внешним lifecycle, `Commit policy: none` и preflight блокер | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | Preflight и единственный fallback (`Notice:` + durable reason, resource stop, fail closed) | `skills/pdca-collection/SKILL.md §Fallback` |
 | Тиры ролей (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements` |
 | База цикла: CHECK в два такта, счётчики `N`/`r`/`n/3`, эскалация, автономный fallback и `Notice:`; имена ролей базы (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements · §State machine and counters · §Escalation (pdca-escalate) · §Control modes`; `skills/pdca-coder/references/check.md §Two beats` |
