@@ -158,11 +158,9 @@ lenses stay the coder's; their .NET skill binding and the concrete look-at items
   threshold. Detail: `references/plan.md` (§.NET test strategy deltas).
 - **Test run safety (every phase).** Cap the test host (`DOTNET_GCHeapHardLimit=0x80000000
   DOTNET_gcServer=0`, 2 GiB — raise only when justified) inside a wall-clock `timeout 600 …`;
-  serialize heavyweight suites; capture the run as three artifacts — `cmd > <stem>.out 2>
-  <stem>.err; printf '%s\n' $? > <stem>.rc` (base §Plan command contract) — never a merged
-  stream (`2>&1` into one `tee` log) or `| tail`. Exit **137**/"Out of memory" ⇒ an unbounded test:
-  stop, record the test and the command, do not re-run without the cap. `references/plan.md`
-  (§Test run safety).
+  serialize heavyweight suites; stream the log (`2>&1 | tee <log>`, keep `rc=${PIPESTATUS[0]}`),
+  never `| tail`. Exit **137**/"Out of memory" ⇒ an unbounded test: stop, record the test and the
+  command, do not re-run without the cap. `references/plan.md` (§Test run safety).
 - **Docs.** Prose docs are the third DO stream (README/guides/DocFX, `docfx-specialist`); XML-doc
   (`///`) follows the finished code and is mandatory only when the project enables it
   (`GenerateDocumentationFile` / CS1591 under `TreatWarningsAsErrors` or `<NoWarn>`) or the user asks.

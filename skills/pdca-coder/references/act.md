@@ -21,13 +21,10 @@ no TDD ordering in DO — the only red→green requirement is the regression tes
    abstraction/DTO/signature, **first** only the contract is fixed: signatures and types **without
    implementation** (a single `pdca-executor` dispatch or a sketch in the status file). The streams
    need nothing beyond that from each other. No contract — the step is skipped.
-3. **Parallel launch — only for streams that own their verification.** In one turn, several Tasks in
-   one message: the **code stream** (`pdca-executor`), the **test stream** (`pdca-executor`; with the
-   project's test framework/tooling) and the **prose-docs stream** (`pdca-executor`; README/guides/user
-   documentation; with the docs/format specialist selected by PLAN when one is available) start
-   together **when each has a covering command of its own** (`covers` naming that stream alone in
-   `commands.json`). A stream whose only proof is the shared suite is not a unit: its files are
-   written in the **same single dispatch** as the code, and fresh contexts are not spent per file.
+3. **Parallel launch.** In one turn, several Tasks in one message: the **code stream**
+   (`pdca-executor`), the **test stream** (`pdca-executor`; with the project's test framework/tooling)
+   and the **prose-docs stream** (`pdca-executor`; README/guides/user documentation; with the
+   docs/format specialist selected by PLAN when one is available) start together.
 4. **Generated/API docs — after the code (when required).** Once the code stream has finished
    writing the code, `pdca-executor` adds the **generated API-doc comments/annotations** the toolchain
    uses — **only when the project/task mandates them** or the user requested it. They live in the code
@@ -50,8 +47,8 @@ Invariants:
 - Divergence of the streams (tests ↔ code, prose docs ↔ the actual contract/behavior) is a defect, and
   it is caught by **CHECK** (the test lens and the doc lens), not by DO.
 - The **status file is not written by the streams** (it would be the same file from different
-  streams): the DO report is logged by the dispatch that produced it — one entry per stream in the
-  same log write, never a dispatch per stream.
+  streams): as each stream report arrives, a separate short `pdca-executor` dispatch logs it, one at a
+  time.
 
 Why this way: all three sides are derived from the plan (step 2 removes the only possible link — the
 shared contract), so they are isolated and do not wait for each other; the idle time of the

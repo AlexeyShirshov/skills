@@ -15,8 +15,6 @@ from __future__ import annotations
 
 import importlib.util
 import os
-import sqlite3
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -46,13 +44,6 @@ ROLE_PHASE = {
 # name no concrete model id.
 VALID_TIERS = {"cheap", "medium", "strong"}
 UNKNOWN_ROLE = "mystery-role"
-
-# The exact column set the Store selects, so a fixture table is a real table, not an approximation.
-SESSION_COLUMNS = (
-    "id text, parent_id text, agent text, title text, model text, cost real, "
-    "tokens_input int, tokens_output int, tokens_reasoning int, "
-    "tokens_cache_read int, tokens_cache_write int, time_created int"
-)
 
 
 def load_module():
@@ -154,64 +145,6 @@ class CostAccountingTest(unittest.TestCase):
         allowed = set(self.mod.PHASE_ORDER)
         for key in result["groups"]:
             self.assertIn(key, allowed)
-
-    def test_unpriced_sessions_are_flagged_not_silently_zero(self):
-        # A model without a catalogue price reports cost=0 while spending real tokens. Zero is not
-        # "free": the summary must count the session and say the total understates the run.
-        records = [
-            record(0, "pdca-planner", cost=0.0),
-            record(1, "pdca-executor", cost=0.25),
-        ]
-        result = self.mod.summarize(records, "phase")
-        up = result["unpriced"]
-        self.assertEqual(1, up["sessions"])
-        self.assertEqual(1, up["input"])
-        self.assertEqual(1, up["output"])
-        # The unpriced session still reconciles: it is counted, and its cost is zero as reported.
-        self.assertEqual(2, result["total_sessions"])
-        self.assertEqual(0.25, result["total_cost"])
-
-    def test_a_free_session_without_tokens_is_not_unpriced(self):
-        # A zero-cost, zero-token row carries no spend to hide.
-        records = [record(0, "pdca-scout", cost=0.0, model=None)]
-        records[0]["ti"] = records[0]["to"] = records[0]["tr"] = 0
-        result = self.mod.summarize(records, "phase")
-        self.assertEqual(0, result["unpriced"]["sessions"])
-
-    def test_store_reads_the_live_v2_table_when_present(self):
-        # The harness migrated to `session_v2`; the legacy `session` froze. Reading the legacy
-        # table makes every current run invisible ("task not found").
-        with tempfile.TemporaryDirectory() as tmp:
-            db = os.path.join(tmp, "t.db")
-            con = sqlite3.connect(db)
-            for table in ("session", "session_v2"):
-                con.execute("create table %s (%s)" % (table, SESSION_COLUMNS))
-            legacy = "('old', NULL, 'legacy', 'legacy', NULL, 1.0, 1, 1, 0, 0, 0, 0)"
-            live = "('new', NULL, 'pdca-check', 'live', NULL, 2.0, 1, 1, 0, 0, 0, 0)"
-            con.execute("insert into session values " + legacy)
-            con.execute("insert into session_v2 values " + live)
-            con.commit()
-            con.close()
-            store = self.mod.Store(db)
-            try:
-                self.assertEqual(["new"], [s["id"] for s in store.sessions()])
-            finally:
-                store.close()
-
-    def test_store_falls_back_to_the_legacy_table(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            db = os.path.join(tmp, "t.db")
-            con = sqlite3.connect(db)
-            con.execute("create table session (%s)" % SESSION_COLUMNS)
-            con.execute("insert into session values "
-                        "('old', NULL, 'legacy', 'legacy', NULL, 1.0, 1, 1, 0, 0, 0, 0)")
-            con.commit()
-            con.close()
-            store = self.mod.Store(db)
-            try:
-                self.assertEqual(["old"], [s["id"] for s in store.sessions()])
-            finally:
-                store.close()
 
     def test_store_from_records_walks_descendants(self):
         records = [

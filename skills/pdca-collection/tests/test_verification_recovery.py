@@ -1046,17 +1046,6 @@ def _skill_section(text: str, start_marker: str, end_marker: str) -> str:
     return text[start:] if end == -1 else text[start:end]
 
 
-def _strong_is_advisory(low: str) -> bool:
-    """True when an escalate/strong mention is windowed with a negated edit/spawn."""
-    for m in re.finditer(r"escalate|strong", low):
-        window = low[max(0, m.start() - 260): m.end() + 260]
-        if re.search(r"\b(?:not|never|no)\b", window) and re.search(
-            r"edit|write|run|spawn|execut|chang", window
-        ):
-            return True
-    return False
-
-
 class MergeRetryContractTest(unittest.TestCase):
     """Real-render + normative-SKILL contract for the post-escalate merge retry."""
 
@@ -1267,33 +1256,6 @@ class MergeRetryContractTest(unittest.TestCase):
                 )
 
     # --- normative SKILL: retry sequence + strong is advisory only -----------
-
-    def test_skill_mandates_escalate_merge_retry_via_orchestrator_and_coder(self):
-        skill = SKILL_PATH.read_text(encoding="utf-8")
-        low = skill.lower()
-        section = _skill_section(skill, "### D —", "### C —")
-        self.assertTrue(section, "SKILL.md §D (merge) section not found")
-        # match the normative prose, not its markdown emphasis formatting
-        section = section.replace("**", "").replace("`", "")
-        problems = []
-        if not re.search(r"escalat", section, re.I):
-            problems.append("§D does not name the escalate decision")
-        if not re.search(r"pdca-executor", section, re.I):
-            problems.append("§D does not name coder as the merge executor")
-        if not re.search(r"orchestrator", section, re.I):
-            problems.append("§D does not route the retry through the orchestrator")
-        if not re.search(r"re-?merge|remerge|retry|repeated", section, re.I):
-            problems.append("§D has no repeated-merge (retry) instruction")
-        if not re.search(r"remaining|pending|other\s+groups", section, re.I):
-            problems.append("§D does not continue with the remaining/pending groups")
-        if not re.search(r"full\w*\s+(check|c\b|verification)", section, re.I):
-            problems.append("§D does not return to the full C after the retry")
-        self.assertEqual([], problems, f"{SKILL_PATH}: " + "; ".join(problems))
-        self.assertTrue(
-            _strong_is_advisory(low),
-            "SKILL.md does not state that escalate/strong never edits or spawns coder",
-        )
-
 
 # ---------------------------------------------------------------------------
 # 2026-10-02 dispatch-label consistency (PHASE1 focused contract tests).

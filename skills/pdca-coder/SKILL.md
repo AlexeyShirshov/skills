@@ -121,8 +121,8 @@ CHECK detail: `references/check.md`.
 
 ### Code evidence requirements
 
-- **Every run**: exit status (read from `<stem>.rc`, never from prose), key numbers (passed/failed/
-  skipped, warnings, coverage), and the path to the full log — never the log in the message.
+- **Every run**: exit status, key numbers (passed/failed/skipped, warnings, coverage), and the path to
+  the full log — never the log in the message.
 - **Diff facts** come from a non-author (`pdca-scout`: changed files, `git diff --stat`, `file:line`).
 - **A regression test is red↔green** — it failed without the fix and passes with it, both runs by
   `pdca-executor`, both exit codes reported. "Passed once" proves nothing.
@@ -133,11 +133,6 @@ CHECK detail: `references/check.md`.
 - **A report ≠ a result**: "build should pass", "tests look green", a self-written summary — order the
   run. The base evidence chain (re-run → observe → judge) is unchanged; this overlay only fixes what
   a code run must return.
-- **The candidate carries its own index**: the plan-pinned `manifest.json` with a row per `required`
-  criterion (evidence pointers, not restatements), the staged `plan_lint` receipt for the
-  `commands.json` projection and the `status_lint` receipt for the durable status file. DO writes
-  them before reporting the candidate; without them there is no candidate, and CHECK spends the
-  round re-gathering instead of judging.
 
 ### Build and test command forms
 
@@ -158,11 +153,8 @@ the host capacity, expected outcome declared) applies unchanged. Code-specific a
   editor/agent stack.
 - **A run that selects zero targets is a failed run** whatever its exit status (base vacuous-run rule;
   in code: zero discovered tests, zero executed cases, an empty result set).
-- **Every run leaves three artifacts, not one log**: `cmd > <stem>.out 2> <stem>.err; printf
-  '%s\n' $? > <stem>.rc`. A merged stream (`2>&1`) erases exactly what a negative criterion claims
-  (empty stdout, non-empty stderr), and an empty log without `.rc` cannot be told apart from a run
-  that never started. Don't pipe the run through `| tail` (it buffers to EOF and looks hung); a
-  `| tee` is optional for visibility and never replaces the artifacts.
+- **Logs are streamed, not buffered**: `… 2>&1 | tee <log>` (or `| tail -f`), keeping
+  `rc=${PIPESTATUS[0]}`; piping the run through `| tail` buffers to EOF and looks hung.
 - **Never record a run that did not start**; every started run is reported, including failed and
   cancelled ones.
 
@@ -242,20 +234,14 @@ then code", not "docs later". There is no TDD ordering in DO; the only red→gre
 
 - **Shared contract first, only if the streams need it**: signatures and types without implementation,
   then frozen — only PLAN changes it.
-- **A stream is a unit only when it owns its verification**: a frozen command whose `covers` names
-  that stream alone. The shared full-suite run does not turn one change into three streams — files
-  whose only proof is that run are written in **one dispatch, in one turn**.
-- **Dispatches follow units, never files.** Units with disjoint footprints and their own covering
-  commands may run as parallel dispatches; every other combination — one module, three files, one
-  suite — is a single dispatch. Fresh contexts for one small module are not parallelism, they are
-  three fixed overheads.
-- Code depends only on the plan (+ the frozen contract), not on tests/docs; tests only on the plan,
-  not on code/docs; prose docs only on the plan, not on code/tests. Anything writing the **same file**
-  from two streams is not parallelized — it moves into the contract or the task stays single.
+- Then three streams in one turn: code, tests, prose docs. Code depends only on the plan (+ the
+  frozen contract), not on tests/docs; tests only on the plan, not on code/docs; prose docs only on the
+  plan, not on code/tests. Anything writing the **same file** from two streams is not parallelized —
+  it moves into the contract or the task stays single.
 - **Generated/API docs follow the finished code** — they live in the files the code stream owns, so
   they are written after it, and only when mandated or requested.
-- **The streams never write the status file**: the DO report is logged by the dispatch that produced
-  it — one entry per stream in the same log write, never a dispatch per stream.
+- **The streams never write the status file**: each stream report is logged by a separate short
+  `pdca-executor` dispatch, one at a time.
 - Stream divergence (tests ↔ code, docs ↔ behavior) is a defect found by **CHECK**, not by DO.
 - Independent **units** (not streams) launch in parallel the same way, in one tree or per worktree.
 

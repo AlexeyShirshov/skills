@@ -2,10 +2,7 @@
 
 Reads the opencode session DB and aggregates cost and tokens by PDCA phase.
 A "task" is a session tree: a root session plus every descendant linked via
-`session.parent_id` (subagents spawned by the orchestrator).  The live harness
-writes `session_v2`; the legacy `session` table froze at the migration, so the
-live table wins whenever it exists.  Sessions whose provider reports no price
-are counted and flagged as `unpriced` — zero is not the same as free.
+`session.parent_id` (subagents spawned by the orchestrator).
 
 The skill is stack-agnostic; this script is too. Roles are mapped to phases by a
 **generic** table (see PHASE). Any role the table does not know is grouped under
@@ -177,20 +174,6 @@ def tier_of(raw):
 
 
 class Store:
-    @staticmethod
-    def _session_table(con):
-        """V2 writes ``session_v2``; the legacy ``session`` table froze at the migration.
-
-        Reading the legacy table silently measures the pre-V2 era: every run since the migration
-        is invisible and ``--task`` answers "not found".  Prefer the live table when it exists.
-        """
-        names = {r[0] for r in con.execute("select name from sqlite_master where type='table'")}
-        if "session_v2" in names:
-            return "session_v2"
-        if "session" in names:
-            return "session"
-        raise SystemExit("no session table in the database")
-
     def __init__(self, db):
         # Strictly read-only *and* immutable: `immutable=1` tells SQLite the file
         # cannot change, so it never creates `-wal`/`-shm` sidecars. `query_only`
@@ -202,7 +185,7 @@ class Store:
             "id,parent_id,agent,title,model,cost,tokens_input,tokens_output,"
             "tokens_reasoning,tokens_cache_read,tokens_cache_write,time_created"
         )
-        rows = con.execute("select %s from %s" % (cols, self._session_table(con))).fetchall()
+        rows = con.execute("select %s from session" % cols).fetchall()
         self.by_id = {}
         self.kids = collections.defaultdict(list)
         for r in rows:
@@ -301,36 +284,12 @@ def group_key(s, by):
     return phase_of(s["agent"], s["title"])
 
 
-def is_unpriced(s):
-    """True when tokens were spent but the provider reports no price.
-
-    Zero is not the same as free: a session on a model without a catalogue price lands in the DB
-    as ``cost=0`` and silently understates every total it enters.  It is counted, flagged and kept
-    out of the cost comparison rather than dropped.
-    """
-    tokens = (s["ti"] or 0) + (s["to"] or 0) + (s["tr"] or 0) + (s["tcr"] or 0) + (s["tcw"] or 0)
-    return not (s["cost"] or 0) and tokens > 0
-
-
-def unpriced_summary(sessions):
-    """Token totals for sessions whose provider reported no price."""
-    up = [s for s in sessions if is_unpriced(s)]
-    return {
-        "sessions": len(up),
-        "input": sum(s["ti"] or 0 for s in up),
-        "output": sum(s["to"] or 0 for s in up),
-        "reasoning": sum(s["tr"] or 0 for s in up),
-        "cache_read": sum(s["tcr"] or 0 for s in up),
-        "cache_write": sum(s["tcw"] or 0 for s in up),
-    }
-
-
 def summarize(sessions, by="phase"):
     """Aggregate sessions into groups; totals reconcile by construction.
 
-    Returns a dict with `groups` (key -> accumulator), `total_cost`, `total_sessions` and
-    `unpriced` (sessions whose cost the provider did not report). Every input session lands in
-    exactly one group, including unknown roles in `unclassified`, so the sums equal the totals.
+    Returns a dict with `groups` (key -> accumulator), `total_cost` and
+    `total_sessions`. Every input session lands in exactly one group, including
+    unknown roles in `unclassified`, so the sums equal the totals.
     """
     agg = collections.defaultdict(new_acc)
     for s in sessions:
@@ -339,7 +298,6 @@ def summarize(sessions, by="phase"):
         "total_cost": sum(v[1] for v in agg.values()),
         "total_sessions": sum(v[0] for v in agg.values()),
         "groups": dict(agg),
-        "unpriced": unpriced_summary(sessions),
     }
 
 
@@ -395,15 +353,9 @@ def run_summary(store, args):
     print(hdr(title))
     for k in order_keys(args.by, agg.keys()):
         print(fmt(str(k), agg[k], total))
-    up = res["unpriced"]
-    if up["sessions"]:
-        tokens = up["input"] + up["output"] + up["reasoning"] + up["cache_read"]
-        print("unpriced: %d session(s), %s tokens — the provider reports no price, so the total "
-              "understates the run" % (up["sessions"], f"{tokens:,}"))
     if args.json:
         print(json.dumps({
             "by": args.by, "sessions": res["total_sessions"], "total_cost": total,
-            "unpriced": up,
             "groups": {str(k): {"sessions": v[0], "cost": v[1], "input": v[2],
                                 "output": v[3], "reasoning": v[4],
                                 "cache_read": v[5], "cache_write": v[6]}
@@ -460,14 +412,9 @@ def _task_one(store, root, args):
     for sid in ids:
         add(agg[group_key(store.by_id[sid], "phase")], store.by_id[sid])
     total = sum(v[1] for v in agg.values())
-    up = unpriced_summary([store.by_id[sid] for sid in ids])
     print("=== task: %s ===" % root["title"])
     print("root %s · agent %s · %s · sessions=%d · total $%.4f" % (
         root["id"], root["agent"], ts(root["t"]), len(ids), total))
-    if up["sessions"]:
-        tokens = up["input"] + up["output"] + up["reasoning"] + up["cache_read"]
-        print("unpriced: %d session(s), %s tokens — not in the total" % (
-            up["sessions"], f"{tokens:,}"))
     print(hdr("phase"))
     for k in order_keys("phase", agg.keys()):
         print(fmt(str(k), agg[k], total))
@@ -479,7 +426,6 @@ def _task_one(store, root, args):
         print(json.dumps({
             "root": root["id"], "title": root["title"], "sessions": len(ids),
             "total_cost": total,
-            "unpriced": up,
             "phases": {str(k): {"sessions": v[0], "cost": v[1], "input": v[2],
                                 "output": v[3], "reasoning": v[4],
                                 "cache_read": v[5], "cache_write": v[6]}
@@ -490,9 +436,8 @@ def _task_one(store, root, args):
 
 def _print_tree(store, sid, depth):
     s = store.by_id[sid]
-    cost = " unpriced" if is_unpriced(s) else "$%8.4f" % s["cost"]
-    print("%s- %-10s %s in=%9s out=%8s reas=%8s cr=%11s  %-14s %s" % (
-        "  " * depth, s["agent"] or "?", cost, f"{s['ti']:,}", f"{s['to']:,}",
+    print("%s- %-10s $%8.4f in=%9s out=%8s reas=%8s cr=%11s  %-14s %s" % (
+        "  " * depth, s["agent"] or "?", s["cost"], f"{s['ti']:,}", f"{s['to']:,}",
         f"{s['tr']:,}", f"{s['tcr']:,}", model_id(s["model"]),
         (s["title"] or "")[:60]))
     for k in store.kids.get(sid, []):

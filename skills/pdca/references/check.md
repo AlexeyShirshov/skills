@@ -5,48 +5,10 @@ what the verdict must contain and how a finding is bound.
 
 ## What CHECK receives
 
-The brief (criteria, carrying claims, the frozen result identity, the pinned manifest) plus the
-`pdca-scout` **observation pack**; the checker may open the cycle's own evidence artifacts under
-`.pdca/**` directly (status, manifest, logs) — never the product artefact. The author's own
-restatement is not evidence.
-
-The observation pack is **mandatory for every step and every re-check, before the dispatch**: for
-each criterion it states `observed | assumed | unverified` with a pointer, and it binds the
-observation to the frozen result identity (SHA-256, size and line count; for a document, the lines
-the criterion rests on). It is the only channel by which a deliverable living outside `.pdca/**`
-reaches the verdict. A brief that asks the checker to read such a path is incomplete, and a
-deliverable moved into `.pdca/**` to fit the scope is a changed goal — the planner's `limited`
-decision, never a CHECK workaround.
-
-Reading is **targeted**, and the budget is hard: the manifest, the observation pack, the status and
-**one decisive row per criterion** (the row PLAN marked decisive, `decisive: true` in the manifest) —
-at most about eight files for a five-criterion cycle. A log is searched at the line a criterion names; a
-source file is opened only for the equation a finding depends on. Ingesting the whole evidence tree
-per dispatch buys the verdict nothing and is itself a finding about that round; the verdict **names
-the files it opened**, so the round's read economy is auditable. A re-check after a bounded repair
-judges the **delta** plus the same pack, in a **fresh session**: the previous verdict travels by
-pointer, and continuing the old session re-sends its whole context at full price for the same delta.
-
-Read the status file once: its **durable state, carrying claims and progress log**, and the fenced
-plan copy for each criterion's verification method — that copy **is** the plan document, so opening
-`plan-r<n>.md` as a second read pays twice for the same bytes. A criterion that names a plan line the
-copy lacks is the only reason to open the file, and the copy is taken from it byte-for-byte.
-
-Pass the plan **by reference** (the pinned status file and manifest path) and spend the brief on the
-delta; a brief that restates the plan tables adds no reach to the verdict.
-
-## Frozen manifest
-
-PLAN pins one `manifest.json` (`../references/plan.md` §Frozen evidence manifest); CHECK opens it
-first and reconciles every `required` ID against its row. The status file's prose tables and the
-author's summary are **not** a substitute for it. No manifest, a `required` ID with no row, or a row
-still `open` leaves the criterion `unverified`: the verdict is a re-gather carrying the exact append
-instruction — never `met`. A missing manifest is a missing required report, not an implementation
-defect, so it does not grow `n/3`.
-
-For an exit status or a stream criterion the resolving artifact is the capture itself
-(`<stem>.rc`, `<stem>.err`, `<stem>.out`): the manifest's `value`/`exit` fields point at evidence,
-they do not replace it.
+The brief (criteria, carrying claims, the frozen result identity) plus the `pdca-scout`
+observation; the checker may open the cycle's own evidence artifacts under `.pdca/**` directly
+(status, manifest, logs) — never the product artefact. The author's own restatement is not
+evidence.
 
 ## Premises and inference scope
 
@@ -78,10 +40,6 @@ For **every** criterion: `met | unmet | unverified`, with the evidence pointer t
 for a decisive run, the command, exit status and key number. **The absence of a check is NOT a
 pass.** A verdict that rests on no numbers is **Verifier Theater** and is worthless. A claim without
 a resolving reference is `unverified`, not `met`.
-
-A decisive command's capture resolves to the frozen snapshot only through its `identity` capture: the
-run's input hashes must match the snapshot the status file records. A capture without it leaves the
-*binding* `unverified` — the artefact shows a run, not that this snapshot ran.
 
 The matrix distinguishes what was observed, what rests on an assumption, and what remains unknown.
 Successful verification establishes only what its method examined; matching result identities do not

@@ -33,7 +33,6 @@ def _cat(*fragments):
 
 
 # The stack token that must never be required as a mandatory lens.
-STACK_LENS = _cat("dot", "net-")
 
 
 def read(path: Path) -> str:
@@ -129,21 +128,6 @@ class RoleAssetTest(unittest.TestCase):
         self.assertNotIn("bash", check)
         self.assertNotIn("edit", check)
         self.assertNotIn("write", check)
-
-
-class LensSelectionWordingTest(unittest.TestCase):
-    def test_lenses_are_selected_per_task(self):
-        skill = norm(read(SKILL))
-        self.assertIn("the toolchain and the review lenses are selected by PLAN", skill)
-        self.assertIn("selected by PLAN for each", skill)
-        self.assertIn("explicit generic-role path", skill)
-        self.assertIn("missing optional lens", skill)
-
-    def test_no_mandatory_stack_lens_wording(self):
-        skill = read(SKILL).lower()
-        self.assertNotIn(STACK_LENS, skill)
-        self.assertNotIn("mandatory stack", skill)
-        self.assertNotIn("stack-specific specialist is mandatory", skill)
 
 
 RUNNER_ASSET = ASSET_AGENTS / "pdca-orchestrator.md"

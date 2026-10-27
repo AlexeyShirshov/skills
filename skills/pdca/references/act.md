@@ -17,9 +17,7 @@ artefact — the status file remains and the work continues in the same session.
    verdict is invalid and the cycle loops back. The cycle state is not written there.
 3. **Cycle status file — finalized by `pdca-executor`:** the driver passes the reports (CHECK
    verdict, executor run results, scout facts) and the executor fills in Done/Verified, Next plan
-   and Changed artefacts, then runs the **status lint** (`references/plan.md` §Status lint) and
-   corrects a `S002`–`S007` structural violation in the same bookkeeping edit before the file is
-   kept.
+   and Changed artefacts.
 4. **Status-file lifetime** — finalized and **kept**, never deleted: the next session's handoff in
    normal mode, the next PLAN's input in autonomous mode.
 5. **Message for the next session** — last, nothing after it; **not printed in autonomous mode**.
@@ -84,11 +82,8 @@ rejected).
 
 - **Task**, cycle **goal**, **Current state** (phase, `n/3`, active `D:`/`P:`, in sync with the log),
   **Done/Verified** (filled at ACT).
-- **Durable state** (mandatory): `Current cycle N`, `Plan revision r`, `Attempt n`, `rv` (criteria
-  revision), `Form`, `Overlay`, `Mode` (`normal | autonomous`), `Status` (`pending | in-progress |
-  blocked | stopped | done | incomplete`), `Phase` (`PLAN | DO | CHECK | ACT | EXIT`) and **Defect
-  history** — explicit fields so the file alone restores the counters and the gate state, and
-  `status_lint` can prove them present.
+- **Durable state** (mandatory): `Current cycle N`, `Plan revision r`, `Attempt n`, and **Defect
+  history** — explicit fields so the file alone restores the counters.
 - **Defect history** — one row per stable **defect key** (a criterion/failure identity, independent
   of `r`): observed revisions/attempts, applied fix count, evidence/log pointers, last recurrence,
   escalation outcome (pointers, not sensitive content).

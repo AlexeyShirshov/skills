@@ -497,14 +497,14 @@ the final approval of Task 1 was **not** issued — a fresh scoped check is requ
 > continues the saved PLAN from DO. Source — the spec
 > `docs/superpowers/specs/2026-10-06-pdca-collection-plan-barrier-design.md` and the plan
 > `docs/superpowers/plans/2026-10-06-pdca-collection-plan-barrier-plan.md`. Contract
-> regressions: `skills/pdca-collection/tests/test_plan_barrier.py` (text/status/agent)
+> regressions: agent/status level only; the former text contract tests were removed
 > and `CollectionPlanBarrierDiagramTest` in `test_verification_recovery.py` (render).
 > The earlier sections a–e and their samples remain verbatim history and are not rewritten.
 
 ## Planning scenarios (v5, CURRENT static)
 
 Status: a **static (non-executable) checklist**, and **not** a live multi-agent run.
-The corresponding checks are the contract tests of `test_plan_barrier.py` + the render tests; the live
+The corresponding checks are the render tests; the live
 behaviour of the collection was not enacted here and is not claimed as verified.
 
 | # | Brief | Required outcome |

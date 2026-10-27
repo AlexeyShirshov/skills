@@ -13,10 +13,7 @@ Run:
 from __future__ import annotations
 
 import importlib.util
-import os
 import re
-import sqlite3
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -63,14 +60,6 @@ def record(index, agent, cost=1.0, parent=None):
     }
 
 
-# The exact column set the Store selects, so a fixture table is a real table, not an approximation.
-SESSION_COLUMNS = (
-    "id text, parent_id text, agent text, title text, model text, cost real, "
-    "tokens_input int, tokens_output int, tokens_reasoning int, "
-    "tokens_cache_read int, tokens_cache_write int, time_created int"
-)
-
-
 class CostAccountingTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -112,35 +101,6 @@ class CostAccountingTest(unittest.TestCase):
         allowed = set(self.mod.PHASE_ORDER)
         for key in result["groups"]:
             self.assertIn(key, allowed)
-
-    def test_unpriced_sessions_are_flagged_not_silently_zero(self):
-        # A model without a catalogue price reports cost=0 while spending real tokens: the summary
-        # must count it and say the total understates the run.
-        records = [record(0, "pdca-planner", cost=0.0), record(1, "pdca-executor", cost=0.25)]
-        result = self.mod.summarize(records, "phase")
-        self.assertEqual(1, result["unpriced"]["sessions"])
-        self.assertEqual(2, result["total_sessions"])
-        self.assertEqual(0.25, result["total_cost"])
-
-    def test_store_reads_the_live_v2_table_when_present(self):
-        # The harness writes `session_v2`; the legacy `session` froze at the migration. Reading the
-        # legacy table makes every current run invisible ("task not found").
-        with tempfile.TemporaryDirectory() as tmp:
-            db = os.path.join(tmp, "t.db")
-            con = sqlite3.connect(db)
-            for table in ("session", "session_v2"):
-                con.execute("create table %s (%s)" % (table, SESSION_COLUMNS))
-            legacy = "('old', NULL, 'legacy', 'legacy', NULL, 1.0, 1, 1, 0, 0, 0, 0)"
-            live = "('new', NULL, 'pdca-check', 'live', NULL, 2.0, 1, 1, 0, 0, 0, 0)"
-            con.execute("insert into session values " + legacy)
-            con.execute("insert into session_v2 values " + live)
-            con.commit()
-            con.close()
-            store = self.mod.Store(db)
-            try:
-                self.assertEqual(["new"], [s["id"] for s in store.sessions()])
-            finally:
-                store.close()
 
     def test_store_from_records_walks_descendants(self):
         records = [

@@ -2,8 +2,8 @@
 
 Status: **a static (non-executable) matrix for independent review**. This is **not proof** of
 behavior: no agent or model **ever ran** these scenarios, no real cycle was executed, no
-production state machine was created. Rule presence is checked by
-`test_contract_consistency.py`, and that too only pins the presence of rules, not behavior.
+production state machine was created. No static guard checks rule presence; a presence guard would in any case only pin
+wording, not behavior.
 The behavioral review is performed by an independent `pdca-escalate` against the full corresponding
 contracts.
 
@@ -222,7 +222,7 @@ reset the attempt counter, not erased by a replan); `assets/opencode-agents/pdca
 The matrix is for **all three** variants (`pdca`, `pdca-coder`, `pdca-dotnet`); the shared scenarios
 are run for each, the variant-specific ones only where applicable. This is **not proof** of
 behavior: no agent or model ever ran these scenarios, no real cycle was executed.
-Rule presence is checked by `test_contract_consistency.py` (`AuditGateBoundaryTest`); the behavioral
+Rule presence is not checked by a static guard; the behavioral
 run is a separate step with a **fresh** role context and the role's actual tier (never hardcode model IDs).
 
 ### A238. Green required rows and an audit reference without a ledger hash

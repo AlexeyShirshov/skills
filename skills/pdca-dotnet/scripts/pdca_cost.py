@@ -158,16 +158,6 @@ def tier_of(raw):
 
 
 class Store:
-    @staticmethod
-    def _session_table(con):
-        """V2 writes ``session_v2``; the legacy ``session`` table froze at the migration."""
-        names = {r[0] for r in con.execute("select name from sqlite_master where type='table'")}
-        if "session_v2" in names:
-            return "session_v2"
-        if "session" in names:
-            return "session"
-        raise SystemExit("no session table in the database")
-
     def __init__(self, db):
         con = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
         self.con = con
@@ -175,7 +165,7 @@ class Store:
             "id,parent_id,agent,title,model,cost,tokens_input,tokens_output,"
             "tokens_reasoning,tokens_cache_read,tokens_cache_write,time_created"
         )
-        rows = con.execute("select %s from %s" % (cols, self._session_table(con))).fetchall()
+        rows = con.execute("select %s from session" % cols).fetchall()
         self.by_id = {}
         self.kids = collections.defaultdict(list)
         for r in rows:

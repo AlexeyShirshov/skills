@@ -6,20 +6,12 @@ never the Markdown status file, and answers one question: *can this plan's
 decisive commands produce a valid result in this environment?*  It does not
 run the planned work and it does not judge whether the rows prove the goal.
 
-Four subcommands:
-
-``schema`` print the projection schema below and exit — the shape an executor
-           needs, without reading this file's source.
-
-``fork-attempt`` copy a frozen projection into the next attempt child, rewriting
-           only the ``attempts/<old>`` path segment; text-level, so the file's
-           formatting and every other value survive byte-for-byte.
+Two subcommands:
 
 ``check``  static only (the gate-1 form): schema, argv shape, phase/scope
            legality, build scope against the declared host budget, selector
            resolution against the project sources, expected outcome, evidence
-           binding, the one-decisive-row-per-criterion mapping, unit coverage.
-           Seconds, no containers, no network.
+           binding, unit coverage.  Seconds, no containers, no network.
 
 ``probe``  additionally runs each command's ``harness_probe`` argv (a cheap,
            non-mutating invocation proving the harness accepts it), restricted
@@ -39,7 +31,6 @@ Input schema (all paths repo-relative unless stated)::
       "host_budget": {"max_lanes": 2, "max_solution_builds": 0},
       "integration_boundary_runs": 1,
       "units": ["D1", "D2"],                          # optional
-      "criteria": ["C1", "C2"],                       # optional; the plan's required criterion ids
       "commands": [
         {
           "id": "RED",
@@ -48,31 +39,18 @@ Input schema (all paths repo-relative unless stated)::
           "argv": ["dotnet", "run", "--project", "tests/Proj", "--",
                    "-class", "Proj.Tests.SampleTests"],
           "cwd": ".",                                # optional, default repo root
-          "env": {"DOCKER_HOST": "..."},             # optional; a cache/home/temp area stays out
-                                                     # of evidence_root (GOCACHE, HOME, TMPDIR, ...)
+          "env": {"DOCKER_HOST": "..."},             # optional
           "expected": "expected-negative",           # green | expected-negative | informational
           "expected_identity": "assertion in Does_Thing",
           "min_selected": 1,
           "log": ".pdca/T256/rv1/attempts/c1-r1-n1/red.log",
           "timeout_s": 600,
           "covers": ["D1"],
-          "decisive": ["C2"],                        # criterion ids this row decides (one row each)
-          "identity": ["tests/Proj/Proj.csproj"],    # required on a decisive row: the inputs it
-                                                     # consumes; DO writes <stem>.identity with their
-                                                     # SHA-256 before the run
           "harness_probe": ["dotnet", "--version"],  # mutation only (or "fallback")
           "fallback": "controlled-mutants"
         }
       ]
     }
-
-``decisive`` names the criteria a row decides: exactly one row decides a
-criterion, the rest stay pointers.  A row may decide several criteria; an
-``informational`` row and a row without a capture stem decide none, and an
-empty ``decisive`` array is the same as omitting the key.  ``identity`` binds a
-decisive row's capture to the sources it consumed, so a frozen snapshot hash and
-a capture artefact resolve to the same bytes; a declared input that does not exist
-yet is a warning, because DO creates it and the capture step is what must find it.
 
 Run from the project root::
 
@@ -102,22 +80,6 @@ SHELL_TOKENS = {"|", "||", "&&", ";", ">", ">>", "<", "2>&1", "2>", "&>", "1>"}
 
 SELECTOR_FLAGS = ("-class", "--class", "-method", "--method", "--filter", "-filter")
 PATH_FLAGS = ("--repo", "--output", "--manifest", "--scope-root", "--results", "--logs")
-
-# A cache, home or temp area is a working by-product, never evidence.  Pointed inside the evidence
-# root it buries the frozen artefacts under thousands of files (one Go build cache is ~1k files /
-# tens of MB), and every later role that lists the root has to fight it.
-CACHE_ENV_KEYS = (
-    "HOME", "TMPDIR", "XDG_CACHE_HOME",
-    "GOCACHE", "GOPATH", "GOMODCACHE", "GOTMPDIR",
-    "DOTNET_CLI_HOME", "MSBUILDUSERHOMEDIR", "NUGET_PACKAGES",
-    "PIP_CACHE_DIR", "npm_config_cache", "YARN_CACHE_FOLDER",
-    "CARGO_HOME", "RUSTUP_HOME", "GRADLE_USER_HOME", "MAVEN_CONFIG",
-)
-
-# The `schema` subcommand prints the projection schema out of the module docstring, so the shape
-# an executor needs has one home and cannot drift from the lint that enforces it.
-SCHEMA_START = "Input schema"
-SCHEMA_END = "Run from the project root"
 
 # The base contract fixes the evidence root: `.pdca/<task>/rv<k>` (kebab task slug,
 # criteria/contract revision). A plan that pins any other directory has drifted.
@@ -421,29 +383,11 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
         v.add("-", "commands", "must be a non-empty array")
         return v, 0
 
-    criteria = doc.get("criteria")
-    criteria_ids: list[str] = []
-    if criteria is not None:
-        if not isinstance(criteria, list) or not all(
-            isinstance(c, str) and c.strip() for c in criteria
-        ):
-            v.add("-", "criteria", "must be an array of non-empty criterion ids")
-        else:
-            for cid in criteria:
-                cid = cid.strip()
-                if cid in criteria_ids:
-                    v.add("-", "criteria", "duplicate criterion id %r" % cid)
-                else:
-                    criteria_ids.append(cid)
-
     seen_ids: set[str] = set()
     integration_runs = 0
     solution_builds = 0
     covered: set[str] = set()
     covers_declared: list[tuple[str, str]] = []
-    covers_by_command: dict[str, set[str]] = {}
-    decisive_by_criterion: dict[str, list[str]] = {}
-    missing_identity: dict[str, list[str]] = {}
 
     for idx, cmd in enumerate(commands):
         if not isinstance(cmd, dict):
@@ -541,26 +485,6 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
                 if not _inside(repo, _resolve(repo, log)):
                     v.add(ident, "log", "escapes the repository root")
 
-        env = cmd.get("env")
-        if env is not None:
-            if not isinstance(env, dict):
-                v.add(ident, "env", "must be an object of string values")
-            else:
-                for key, value in env.items():
-                    if not isinstance(key, str) or not isinstance(value, str):
-                        v.add(ident, "env", "every env key and value must be a string")
-                        continue
-                    if key not in CACHE_ENV_KEYS or not evidence_root:
-                        continue
-                    resolved = _resolve(repo, value)
-                    if _inside(evidence_root, resolved):
-                        v.add(ident, "env",
-                              "%s %r points a cache/home/temp area inside the evidence root — "
-                              "the root holds evidence only; name it outside the checkout" % (key, value))
-                    elif _inside(repo, resolved):
-                        v.warn("%s: %s lives inside the checkout and becomes untracked noise; name it "
-                               "outside the checkout" % (ident, key))
-
         covers = cmd.get("covers")
         if covers is not None:
             if not isinstance(covers, list) or not all(isinstance(c, str) for c in covers):
@@ -568,41 +492,6 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
             else:
                 covered.update(covers)
                 covers_declared.extend((ident, c) for c in covers)
-                covers_by_command.setdefault(ident, set()).update(covers)
-
-        identity_inputs = cmd.get("identity")
-        identity_ok = False
-        if identity_inputs is not None:
-            if (not isinstance(identity_inputs, list) or not identity_inputs
-                    or not all(isinstance(p, str) and p.strip() for p in identity_inputs)):
-                v.add(ident, "identity", "must be a non-empty array of repo-relative input paths")
-            else:
-                identity_ok = True
-                for raw in identity_inputs:
-                    resolved = _resolve(repo, raw)
-                    if not _inside(repo, resolved):
-                        v.add(ident, "identity", "path %r escapes the linted checkout" % raw)
-                        identity_ok = False
-                    elif not os.path.exists(resolved):
-                        missing_identity.setdefault(raw, []).append(ident)
-
-        decisive = cmd.get("decisive")
-        if decisive is not None:
-            if not isinstance(decisive, list) or not all(
-                isinstance(c, str) and c.strip() for c in decisive
-            ):
-                v.add(ident, "decisive", "must be an array of criterion ids")
-            elif decisive:
-                for cid in decisive:
-                    decisive_by_criterion.setdefault(cid.strip(), []).append(ident)
-                if expected == "informational":
-                    v.add(ident, "decisive", "an `informational` row cannot decide a criterion")
-                if not isinstance(log, str) or not log.strip():
-                    v.add(ident, "decisive", "a decisive row needs a capture stem (`log`)")
-                if not identity_ok:
-                    v.add(ident, "decisive",
-                          "a decisive row declares `identity` — the inputs the run consumes — so its "
-                          "capture binds to the frozen snapshot instead of resting on the author's word")
 
         probe = cmd.get("harness_probe")
         fallback = cmd.get("fallback")
@@ -634,33 +523,6 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
         v.add("-", "integration_boundary_runs",
               "declared %d but %d integration boundary runs are planned" % (declared_runs, integration_runs))
 
-    # One row decides a criterion.  A plan whose prose calls T2, T3 and T4 decisive for the same
-    # criterion has drifted from the package rule; the projection is where that becomes checkable.
-    for cid, idents in sorted(decisive_by_criterion.items()):
-        if len(idents) > 1:
-            v.add(cid, "decisive",
-                  "decided by %d rows (%s) — exactly one row decides a criterion, the rest are pointers"
-                  % (len(idents), ", ".join(sorted(idents))))
-        if criteria_ids and cid not in criteria_ids:
-            v.add(cid, "decisive", "names a criterion the projection does not declare in `criteria`")
-    for cid in criteria_ids:
-        if cid not in decisive_by_criterion:
-            v.add(cid, "decisive", "no row declares it decisive")
-    if decisive_by_criterion and not criteria_ids:
-        v.warn("commands.json marks decisive rows but declares no `criteria`: the one-row-per-criterion "
-               "rule cannot be checked against the plan's criteria")
-
-    # One line per path, not per (command, path): B and T name the same sources, and a receipt with
-    # the same sentence eleven times buries the six facts it carries.
-    for raw in sorted(missing_identity):
-        idents = ", ".join(sorted(set(missing_identity[raw])))
-        v.warn("identity input %r does not exist yet (named by %s) — the capture step fails if it "
-               "stays missing" % (raw, idents))
-
-    if covers_declared and not unit_ids:
-        v.warn("`covers` declared without `units`: covers names units; the plan's criteria belong in "
-               "`criteria` and `decisive`")
-
     if unit_ids:
         for ident, unit in covers_declared:
             if unit not in unit_ids:
@@ -668,17 +530,6 @@ def lint(doc: dict, repo: str) -> tuple[Violations, int]:
         missing = [u for u in unit_ids if u not in covered]
         for unit in missing:
             v.add(unit, "covers", "unit has no command/evidence owner")
-        # Parallel DO dispatches follow units, never files: a unit covered only by commands shared
-        # with other units has no verification of its own, so it is not a separate dispatch.
-        if len(unit_ids) > 1:
-            for unit in unit_ids:
-                own = any(units == {unit} for units in covers_by_command.values())
-                if own:
-                    continue
-                v.warn(
-                    "unit %r has no command of its own: parallel DO units need their own covering "
-                    "command, otherwise they are one dispatch (pdca-coder §Parallel DO streams)" % unit
-                )
 
     return v, len(commands)
 
@@ -740,16 +591,6 @@ def run_probes(doc: dict, repo: str, only: set[str], timeout_cap: int) -> tuple[
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
 
-def schema_text() -> str:
-    """The projection schema, extracted from the module docstring (one home, no drift)."""
-    doc = (__doc__ or "").strip()
-    start = doc.find(SCHEMA_START)
-    end = doc.find(SCHEMA_END)
-    if start == -1 or end <= start:
-        return doc + "\n"
-    return doc[start:end].rstrip() + "\n"
-
-
 def emit(v: Violations, checked: int, as_json: bool, receipt: str, extra: dict) -> None:
     payload = {
         "tool": "plan_lint",
@@ -783,70 +624,12 @@ def emit(v: Violations, checked: int, as_json: bool, receipt: str, extra: dict) 
         print("plan-lint: OK (%d commands checked)" % checked)
 
 
-ATTEMPT_RE = re.compile(r"c\d+-r\d+-n\d+")
-
-
-def fork_attempt(args) -> int:
-    """Rewrite the ``attempts/<old>`` segment of a frozen projection into the new attempt child.
-
-    Text-level substitution: the projection's formatting and every other value survive, and the
-    result must still parse as JSON.  A projection that carries no reference to the old attempt, or
-    one where a reference survives, is refused rather than silently half-rewritten.
-    """
-    for flag, value in (("--from", args.old), ("--to", args.new)):
-        if not ATTEMPT_RE.fullmatch(value):
-            print("plan-lint: %s %r is not an attempt name like c1-r1-n2" % (flag, value),
-                  file=sys.stderr)
-            return 2
-    if args.old == args.new:
-        print("plan-lint: --from and --to name the same attempt", file=sys.stderr)
-        return 2
-    source = Path(args.commands)
-    if not source.is_file():
-        print("plan-lint: %s does not exist" % source, file=sys.stderr)
-        return 2
-    destination = Path(args.output)
-    if destination.exists() and not args.force:
-        print("plan-lint: %s exists; pass --force to overwrite" % destination, file=sys.stderr)
-        return 2
-    token_old = "attempts/%s" % args.old
-    raw = source.read_text(encoding="utf-8")
-    count = raw.count(token_old)
-    if not count:
-        print("plan-lint: no %r reference in %s" % (token_old, source), file=sys.stderr)
-        return 2
-    forked = raw.replace(token_old, "attempts/%s" % args.new)
-    if token_old in forked:
-        print("plan-lint: a %r reference survived the rewrite" % token_old, file=sys.stderr)
-        return 2
-    try:
-        json.loads(forked)
-    except json.JSONDecodeError as exc:
-        print("plan-lint: the forked projection is not valid JSON: %s" % exc, file=sys.stderr)
-        return 2
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(forked, encoding="utf-8")
-    print("forked: %s -> %s (%d path reference(s) rewritten)" % (source, destination, count))
-    return 0
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="plan_lint.py",
         description="Static contract lint for a PDCA plan's frozen commands.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("schema", help="print the commands.json schema and exit")
-
-    fork = sub.add_parser(
-        "fork-attempt",
-        help="copy a frozen projection into the next attempt child (path segment only)",
-    )
-    fork.add_argument("--commands", required=True, help="the frozen projection to copy")
-    fork.add_argument("--output", required=True, help="the new attempt child's projection")
-    fork.add_argument("--from", dest="old", required=True, help="attempt segment to replace, e.g. c1-r1-n1")
-    fork.add_argument("--to", dest="new", required=True, help="new attempt segment, e.g. c1-r1-n2")
-    fork.add_argument("--force", action="store_true", help="overwrite an existing projection")
 
     for name, help_text in (
         ("check", "static validation (gate 1)"),
@@ -863,11 +646,6 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     try:
-        if args.command == "schema":
-            sys.stdout.write(schema_text())
-            return 0
-        if args.command == "fork-attempt":
-            return fork_attempt(args)
         repo = os.path.realpath(args.repo)
         if not os.path.isdir(repo):
             raise UsageError("--repo %r is not a directory" % args.repo)

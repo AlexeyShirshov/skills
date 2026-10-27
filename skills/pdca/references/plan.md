@@ -81,22 +81,6 @@ refinement). Continuations are not new strategic decisions; the call count is re
 task limit. They are never unchanged confirmations or routing calls and create no hidden exempt
 calls.
 
-### Plan document and status persistence
-
-The planner returns the plan **and writes the same text** to the plan document the brief pins
-(`.pdca/<task>/rv<k>/plan-r<n>.md`) — its one permitted write. Persistence is then mechanical, not a
-second authoring pass:
-
-- `pdca-executor` creates the status file by **including the plan document verbatim** (a file copy,
-  never a re-typed copy) plus the status schema and counters; the document stays the reference for
-  the plan text.
-- This happens in the **first DO dispatch**, together with the `commands.json` projection, the
-  staged `plan_lint`/`status_lint` receipts and gate 1 — on a gate-1 failure the dispatch stops
-  before DO and reports the PLAN defect. A separate "persist the plan" dispatch is a wasted context,
-  not a checkpoint.
-- The status file remains the durable record: it carries the plan text, the counters and the log,
-  and the plan document is its frozen source for a re-read.
-
 ### Gap closure
 
 Every gap in the statement closes one of three ways: evidence, an explicit
@@ -158,27 +142,7 @@ valid result is **not `ready`**:
 - **scope matches the declared host capacity** — the affected surface rather than the whole
   workspace when the host cannot carry the whole workspace;
 - **expected outcome is declared** — `green`, `expected-negative`, or `informational`; "green unless
-  it happens to be red" is not a declaration;
-- **capture is declared** — each frozen command names a capture stem and writes three artifacts:
-  `<stem>.out`, `<stem>.err`, `<stem>.rc`. A single merged log is not evidence for an exit status or
-  for a negative stream criterion (empty stdout, non-empty stderr), and an empty log without `.rc`
-  cannot be told apart from a run that never started. A **decisive** command also writes
-  `<stem>.identity`: the SHA-256 of the input paths it declares in `identity`, taken immediately
-  before the run, so the capture and the frozen snapshot resolve to the same bytes. A directory
-  input digests the sorted `<sha256>  <path>` lines of its regular files, the same method for every
-  executor; the plan may name a file DO creates, because gate 1 checks the shape and the capture is
-  what fails if the input is still missing.
-- **a documented command is a frozen command** — a user-facing invocation the result documents (a
-  README's run block, a usage line, a help text) is decided in PLAN as a row of this contract, even
-  though the document itself is written in DO: the command block is written *from* the row's `argv`,
-  never the other way round. A criterion whose negative case names a documented command verifies it
-  by running it, never by reading it — a README line that has never been executed is a claim, not
-  evidence, and a documented invocation that was not run is a defect, not a limitation.
-- **caches stay outside the evidence root** — a command that needs a cache, home or temp area
-  (`GOCACHE`, `GOPATH`, `HOME`, `TMPDIR`, a package cache) names it in `env` outside the checkout
-  (`$TMPDIR/<task>-<n>-cache` is the default target), never under the evidence root: the root holds
-  evidence, and one build cache turns a 40-file evidence tree into a thousand-file pile that every
-  later role listing it has to filter out.
+  it happens to be red" is not a declaration.
 
 A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises the plan. It is never
 absorbed as a recorded exception, a substituted command or a `Notice`.
@@ -188,78 +152,28 @@ absorbed as a recorded exception, a substituted command or a `Notice`.
 The prose command block is not machine-checkable, so a plan that freezes commands also emits a
 **projection** at `<evidence-dir>/inputs/commands.json` (same attempt child as the contract):
 
-- `task` and `plan_r` (required); `checkout`, `evidence_root`, `units`, `criteria`, `host_budget`,
+- `task` and `plan_r` (required); `checkout`, `evidence_root`, `units`, `host_budget`,
   `integration_boundary_runs` (optional);
 - one object per command: `id`, `phase` (`inner | boundary | any`), `kind`
   (`unit | integration | build | mutation | docs | other`), `argv[]`, `cwd`, `env`, `expected`
   (`green | expected-negative | informational`), `expected_identity`, `log`, `timeout_s`, `covers`,
-  `decisive`, `identity`, and for a mutation row a `harness_probe` or a declared `fallback` — `log` is
-  the capture **stem**, and the `.out`/`.err`/`.rc` artifacts beside it carry the facts a criterion
-  claims.
-
-`criteria` lists the plan's required criterion IDs; `decisive` names the criteria a row decides.
-**One row decides a criterion**, the rest are pointers — a plan whose prose calls `T2`, `T3` and `T4`
-decisive for the same criterion has drifted, and the projection is where that becomes checkable:
-`plan_lint` rejects a criterion decided by two rows, a declared criterion with no deciding row, an
-`informational` row marked decisive, and a decisive row without a capture stem or without `identity`.
-An empty `decisive` array is the same as omitting the key, and a declared input that does not exist
-yet is only a warning: the plan names what the run consumes, and DO creates it before the capture.
-`covers` keeps naming units, so a plan with no unit table declares its criteria in `criteria`, never
-in `covers`.
+  and for a mutation row a `harness_probe` or a declared `fallback`.
 
 `pdca-executor` stages `plan_lint.py` into `.pdca/scripts/` (§Helper staging) and runs it **before
 gate 1** and **again on DO entry** after re-anchoring:
 
 - `python3 .pdca/scripts/plan_lint.py check --repo <checkout> --commands <projection> --receipt
   <evidence-dir>/plan_lint.json` — schema, argv shape, phase and scope legality, expected outcome,
-  evidence binding to the linted checkout, the one-row-per-criterion mapping, unit coverage;
+  evidence binding to the linted checkout, unit coverage;
 - `python3 .pdca/scripts/plan_lint.py probe …` — additionally runs each `harness_probe` from an
-  allow-list (`git`, `python3`, `go`, `gofmt`), timeout-bounded, never the planned command;
-- `python3 .pdca/scripts/plan_lint.py schema` — prints the projection shape, so the executor writes
-  `commands.json` from it instead of reverse-engineering the helper source;
-- `python3 .pdca/scripts/plan_lint.py fork-attempt --commands <old projection> --output <new
-  projection> --from c<N>-r<r>-n<old> --to c<N>-r<r>-n<new>` — copies a frozen projection into the
-  next attempt child, rewriting only the `attempts/<old>` segment. A new attempt keeps the frozen
-  plan; re-deriving the paths by hand is how a capture lands in the previous attempt.
+  allow-list (`git`, `python3`, `go`, `gofmt`), timeout-bounded, never the planned command.
 
 Exit codes `0` ok, `2` violation, `1` usage/operational. A nonzero `check` **is** a gate-1 failure;
 the receipt is the evidence row `PLAN-LINT` (path + exit). The check proves a command is well-formed
 and resolvable, not that its row passes — that stays with CHECK. A plan that freezes no command
-(§Plan command contract) emits no projection; a plan that freezes a command and ships **no**
-projection is a PLAN defect and fails gate 1, never an accepted variation — the `PLAN-LINT` receipt
-is part of the plan's evidence, and until it exists there is no candidate to check.
+(§Plan command contract) emits no projection.
 
 A language overlay may extend the schema and the probe allow-list; it never narrows these rows.
-
-### Status lint: `status_lint.py`
-
-The same staging rule covers the durable status file. The plan stages `status_lint.py` into
-`.pdca/scripts/` and freezes a `STATUS-LINT` command row, run **after the status file is written**
-and **again in ACT before finalization**:
-
-- `python3 .pdca/scripts/status_lint.py check --repo <checkout> --status
-  .pdca/status/<task>-<N>.md --receipt <evidence-dir>/status_lint.txt` — required sections, the
-  durable-state block (`N`/`r`/`n`/`rv`/form/overlay/mode/`Status`/`Phase`), the closed-cycle
-  sections once the cycle closes, one claims row per claim ID, every progress-log line in the frozen
-  shape `<UTC> | <phase> | revision r<n> | iteration <n>/3 | <event> | <pointer>` (a leading list
-  bullet is tolerated), and no event that
-  restates the file's own log-line count (`9 log lines`): such a line is stale the moment the next
-  event is appended, so the receipt carries the counts and the line carries the pointer;
-- `python3 .pdca/scripts/status_lint.py schema` — prints the durable-status shape, including the
-  section-matching rule and the log-line column rule, so the executor writes the file from it
-  instead of reading the helper source.
-
-A `##` heading inside a fenced block is body text: the plan document copied into `## Plan` carries
-its own headings, and none of them may shadow a required section. The copy is fenced with at least
-four backticks (longer than any fence inside it), so section order in the file never matters. A role
-that appends or reads state, claims or the log opens the file at `## Durable state`; the fenced copy
-above is the plan for the one reader that needs its verification methods, and the others do not
-re-read it.
-
-Exit codes `0` ok, `2` violation, `1` usage/IO; the receipt is the evidence row `STATUS-LINT`. The
-helper is structural: it proves the durable record is machine-readable and consistent with itself,
-never that its conclusions are true. A violation is corrected as bookkeeping in the same edit, and
-the corrected file is checked again.
 
 ## Workspace tracking
 
@@ -391,15 +305,8 @@ checker is necessary. No new report schema or general validator is introduced fo
 ## Frozen evidence manifest
 
 One object reconciles CHECK with DO: a single machine-readable **evidence manifest**. DO writes it
-at the path PLAN pins in the status file; CHECK reads it first. The path is a **gate-1 field**: a plan
-that pins no manifest path does not pass gate 1, and no CHECK is dispatched until DO has written the
-manifest. The plan also names the **observation route** — which role observes a deliverable that
-lives outside `.pdca/**` (it is `pdca-scout`, at the deliverable's own path; the scout **writes its
-pack itself** at the pinned path `.pdca/<task>/rv<k>/attempts/<c-r-n>/observation-pack.md`, so no
-other role copies it). A candidate with no manifest is not reported as a candidate — the
-same rule as the `PLAN-LINT` receipt, and for the same reason: the index is what makes the evidence
-reachable without the author's summary. It is **frozen at the
-DO→CHECK boundary** and bound to the frozen result identity (plan revision `r` + the frozen
+at the path PLAN pins in the status file; CHECK reads it first. It is **frozen at the DO→CHECK
+boundary** and bound to the frozen result identity (plan revision `r` + the frozen
 input/artefact identity, e.g. commit/tree or output hash) **and to an immutable evidence generation**
 keyed by `task/N/r/n` + that frozen identity. The generation is an evidence-snapshot identity, **not**
 the criterion revision `rv`: `rv` belongs to criteria/plan, the generation distinguishes successive
@@ -410,30 +317,19 @@ attempts. During CHECK the **same generation** is append-only: a re-gather adds 
 A new plan revision starts a new manifest generation; the superseded one is kept. A **CHECK → DO**
 return under an **unchanged plan** also starts a **new immutable generation** for the new
 attempt/snapshot — the prior generation is retained — even though `r`/`n` follow the base counters
-(no fake replan or reset is introduced for the sake of a new file). The new attempt child's
-projection is produced by `plan_lint.py fork-attempt`, never by editing paths by hand; the plan
-text, criteria and `argv` semantics stay frozen. Each entry maps one **required
+(no fake replan or reset is introduced for the sake of a new file). Each entry maps one **required
 criterion ID** to its evidence **by reference, not by copy**:
 
 - `task`, `revision`, `status_file`, `required` — the mandatory criterion IDs (acceptance criteria
   / unit criteria) of the pinned plan;
 - `rows[]` — one per required ID: `id`, `status` (`met` | `open` | `na`), and for `met` an
-  `evidence[]` of `{kind, path, command?, exit?, value?, identity?, decisive?}` (path, command, exit
-  status, key number, the `identity` capture that binds the run to the inputs it consumed, and
-  `decisive: true` on the row that decides the criterion); for `open` a `reason`; for `na` an
-  observed `predicate`. A row whose evidence is a `pdca-scout` observation uses `kind: observation`
-  and the pack's path. Exactly one evidence entry per criterion is marked `decisive`; the rest stay
-  pointers.
+  `evidence[]` of `{kind, path, command?, exit?, value?}` (path, command, exit status, key number);
+  for `open` a `reason`; for `na` an observed `predicate`.
 
 Every `required` ID must appear; a criterion without a resolving reference is `open`, never dropped,
 and logs stay references — the manifest is a thin index, not a copy. **No PASS while any
 BINDING/APPLICABLE `required` entry is `open`.** If the project ships a manifest validator, run it
 (row completeness + shape).
-
-**The deliverable keeps the path the goal names.** Moving it into `.pdca/**` so that the checker can
-read it is a **changed goal**: the planner records a `limited` decision (normal mode: the user
-approves the narrowing), the observation route covers the original path instead. A DO convenience or
-a CHECK workaround never relocates the result.
 
 **Binding/applicability disposition (append-only).** The frozen manifest is never rewritten and no
 row is ever deleted: a pre-existing, self-imposed extra *audit* row stays in place with its original
