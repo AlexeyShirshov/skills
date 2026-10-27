@@ -15,31 +15,15 @@ invocation of PDCA; a collection is **not** an internal DO decomposition of one 
 has already been selected by the base entry PLAN (or explicitly named by the user), so no
 second PLAN reclassifies the collection.
 
-## Inheritance: the base contract is the single source of shared rules
+## Inheritance
 
-The **common cycle contract** in `../pdca/SKILL.md` governs each item's cycle (including
-incremental campaign steps), integration verification, corrective cycles, and the applicable
-shared requirements: original task and acceptance, roles and permissions, control modes,
-PLAN/DO/CHECK/ACT, counters and recurrence, escalation, evidence, approval, recovery,
-effort and safety. **These rules are inherited, not copied or replaced here.** On a shared
-rule, the base governs. This file adds **only the collection layer**: readiness, dependencies,
-group scheduling, lanes, integration and collection-specific status/outcome projection.
+`../pdca/SKILL.md` (§Common cycle contract) governs all item cycles, integration
+CHECK and corrective cycles. Load it alongside this file; on direct invocation,
+skip form reclassification. A `campaign` item also loads
+`../pdca-incremental/SKILL.md`. The planner's `plan_reference_path` resolves
+from the base `pdca` directory.
 
-**Loading.** The base entry PLAN selects Collection and continues here. On a direct load
-(the user explicitly named `pdca-collection`), load the base common cycle rules **with this
-file** and skip the entry classification: Collection is already a constraint, not a second
-decision. For PLAN dispatch, the planner's `plan_reference_path` is derived from the
-**base** `pdca/SKILL.md` directory; `references/plan.md` is read by `pdca-planner`
-only. CHECK and status writers load the base phase references under their own contracts.
-For a `campaign` item, also load `../pdca-incremental/SKILL.md`, which inherits
-the same base contract for each step.
-
-**Scope of inheritance.** Collection is a container, not an additional ordinary cycle:
-it has no parent `N`, `r` or `n/3` attempt counter. These belong to each actual item
-cycle or corrective cycle; the collection status tracks items, groups, integration
-and their outcome links. An integration CHECK is a check **of the integrated snapshot**,
-not proof that every original item goal was achieved. Full collection completion
-requires each item's own accepted whole-goal CHECK and the integration CHECK.
+Collection adds batch coordination, **not another cycle or attempt counter**.
 
 ## Batch terminology
 
