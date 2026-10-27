@@ -31,7 +31,7 @@ Execution, loads the selected specialized skill.
 |---|---|
 | Bounded Execution | this file — §Bounded Execution |
 | Incremental Execution | `pdca-incremental`, the campaign layer on §Common cycle contract |
-| Collection | `pdca-collection`, an independent, self-contained contract |
+| Collection | `pdca-collection`, the batch layer on §Common cycle contract |
 
 For **Bounded Execution** the planner selects a specialized skill when needed: none for non-coding
 tasks, `pdca-coder` for general programming (including Go or Rust), `pdca-dotnet` for .NET; loading
@@ -63,18 +63,23 @@ never replaces it.
 ### Where each form continues
 
 Bounded Execution continues in §Bounded Execution. Incremental Execution continues in
-`pdca-incremental`, which **inherits §Common cycle contract**: the shared rules are stated here and
-normative for it, and its text adds only the campaign layer. A direct load of `pdca-incremental` (the
-user named it) loads these common rules with it and skips the entry classification — the form is then
-given, not decided. Collection is **independent**: it does not inherit §Common cycle contract, and
-`pdca-collection` governs it in full, including its own status, counters and gates. **Routing ends
-here**: no later section re-classifies the task or selects another form.
+`pdca-incremental`, which **inherits §Common cycle contract** and adds only the campaign layer.
+Collection continues in `pdca-collection`, which **inherits the same common rules** for the
+individual item cycles, its final integration CHECK, corrective cycles and shared role/safety
+requirements, and adds only collection coordination (preparation barrier, dependencies, groups,
+lanes, integration and batch status). The collection's batch status and integration gate do not
+create another cycle, cycle attempt counter or substitute for an item's whole-goal CHECK.
+A direct load of either form skill loads the base common rules with it and skips the entry
+classification when the user named that form explicitly. **Routing ends here**: no later
+section re-classifies the task or selects another form.
 
 ## Common cycle contract
 
-This section is the **single source** for the rules below, for Bounded Execution and for every
-contract that inherits them. No form contract restates them as a competing local version of
-acceptance, gates, counters or evidence; a conflict on a shared rule is resolved here.
+This section is the **single source** for the shared rules below, for Bounded Execution and
+for inheriting forms: incremental campaign steps, collection item cycles, corrective cycles
+and applicable shared verification/role requirements. Each form adds only its own container,
+scheduling and status projections. No form contract restates common acceptance, cycle gates,
+counters or evidence as a competing local version; a conflict on a shared rule is resolved here.
 
 ### The user's task and its criteria
 
