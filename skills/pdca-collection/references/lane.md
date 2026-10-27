@@ -1,8 +1,10 @@
 # Lane: work stream, schedule revision and git model
 
-Reference for the D phase and for a running lane. The barrier, the clustering and the collection
-phases stay in `../SKILL.md`; collection gates and approval mechanics stay in `../SKILL.md` and
-`common-contract.md`; campaign steps inherit the base `../../pdca/SKILL.md`.
+Reference for the D phase and for a running lane. The collection's preparation barrier,
+group schedule, Git integration and statuses are defined in `../SKILL.md`. Shared cycle
+phases, acceptance, counters, roles and approval are inherited from
+`../../pdca/SKILL.md`; campaign steps additionally follow
+`../../pdca-incremental/SKILL.md`.
 
 ## One lane = one group
 
