@@ -1,6 +1,6 @@
 """Run the executable git-model check inside ``unittest discover``.
 
-``git-model-sim.sh`` encodes the git model (``references/lane.md`` §Git model) on throwaway temp
+``git-model-sim.sh`` encodes the git model (``SKILL.md`` §Git model) on throwaway temp
 repositories (branch chain, fast-forwarded group branch, ``merge --no-ff`` of
 completed groups, conflict detection, single-group isolation, ``incomplete``
 group preserved but never merged).  This wrapper only shells out to it, so the
@@ -25,7 +25,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SIM = SKILL_DIR / "tests/git-model-sim.sh"
 SKILL = SKILL_DIR / "SKILL.md"
-LANE_REF = SKILL_DIR / "references/lane.md"
+LANE_REF = SKILL_DIR / "SKILL.md"
 
 BASH = shutil.which("bash")
 GIT = shutil.which("git")
