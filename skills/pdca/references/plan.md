@@ -15,13 +15,18 @@ stay in `../SKILL.md`.
 - **carrying claims** with IDs — the central claims of the goal, mandatory criteria and hard
   validity constraints — listed separately from quality-rubric axes;
 - decomposition into units with dependencies, or an explicit decision not to split a simple task;
-- the **nearest useful step** and its observable result;
+- the **nearest useful result unit** and its observable outcome (an outer boundary, not an
+  implementation step);
 - **verification choice** — the cheapest sufficient method per carrying claim; for a bespoke
   checker, why existing or manual means are insufficient and the bound that keeps it proportional
   (§Verification economy);
 - means and access;
 - risks and stop conditions;
 - effort estimate and accounting (elapsed time/tokens/cost; an estimate, never a stop condition).
+
+None of these fields is a DO implementation step: PLAN defines the result contract and its
+verification, and DO chooses how to reach it. The only commands a plan freezes are the
+**verification** commands of §Plan command contract.
 
 For a campaign step the same fields are narrowed to that step, while the whole goal, requirements
 and constraints stay stored; a full backlog is not imitated. On a resume/replan, a still-valid form
@@ -118,20 +123,32 @@ The PLAN never requires from the observer an
 action its role forbids (for example computing a hash without shell). Otherwise the requirement is
 marked `unverified-by-design` up front or assigned to a role with the needed rights.
 
-## Step fields
+## Unit fields
 
-A step records, in the existing status fields and without a new reporting framework: the known
-basis; the useful part or the uncertainty; the minimal action; the expected observable; which
-decision it opens; the bounded cost/stop condition.
+A unit records, in the existing status fields and without a new reporting framework: the expected
+observable result; the acceptance criteria and the evidence each must return; dependencies, scope
+and outer bounds; the applicable stop conditions. It does **not** record implementation steps, a
+mandated algorithm or a shell command unless the user's constraint makes that exact means part of
+acceptance. The executor chooses the implementation inside this contract.
 
 ## Plan command contract (PLAN close)
 
-Every command or invocation the plan freezes is **validated before gate 1** — by `pdca-executor`,
-against the actual environment, with the result recorded in the status file. The contract is
-**conditional on an actual command**: when the verification choice is manual observation or a
-focused recomputation, the plan records that choice and does not invent a command line,
-selector or argument vector to fill these rows. A plan whose decisive command cannot produce a
-valid result is **not `ready`**:
+**Scope — verification commands only.** The command contract exists to prove that the commands
+which produce **acceptance evidence** can run: the test/build/measurement/observation invocations a
+criterion names as its verification method. It never freezes, prescribes or lints the
+implementation actions DO chooses to reach the result — those are DO's decision inside the approved
+contract, and their runs are recorded as evidence when they are executed. A criterion whose
+verification is manual observation needs no command line; a criterion whose verification is a run
+names that run and nothing about how the code is written. Where a frozen verification command is
+also executed during implementation (for example a test command used red→green), that is evidence
+production, not a prescription of the implementation.
+
+Every **verification** command the plan freezes is **validated before gate 1** — by
+`pdca-executor`, against the actual environment, with the result recorded in the status file. The
+contract is **conditional on an actual command**: when the verification choice is manual
+observation or a focused recomputation, the plan records that choice and does not invent a command
+line, selector or argument vector to fill these rows. A plan whose frozen verification command
+cannot produce a valid result is **not `ready`**:
 
 - **selector resolves** — the identifier names at least one target inside the declared scope; a
   short or ambiguous identifier is rejected even when the tool accepts it and exits `0`;
@@ -145,12 +162,17 @@ valid result is **not `ready`**:
   it happens to be red" is not a declaration.
 
 A violation is a **PLAN defect**: gate 1 fails and `pdca-planner` revises the plan. It is never
-absorbed as a recorded exception, a substituted command or a `Notice`.
+absorbed as a recorded exception, a substituted command or a `Notice`. A verification command that
+turns out to be unusable once DO has started is not a DO → PLAN detour: the contract cannot be met,
+so DO reports it to ACT as an incomplete outcome with the evidence.
 
 ## Machine projection: `commands.json` and `plan_lint.py`
 
-The prose command block is not machine-checkable, so a plan that freezes commands also emits a
-**projection** at `<evidence-dir>/inputs/commands.json` (same attempt child as the contract):
+The prose command block is not machine-checkable, so a plan that freezes **verification** commands
+also emits a **projection** at `<evidence-dir>/inputs/commands.json` (same attempt child as the
+contract). The projection is the plan's acceptance-evidence set, not a script of DO's work:
+implementation commands are not listed there, are not linted and are never thereby forbidden —
+DO chooses them and records their evidence. Its fields:
 
 - `task` and `plan_r` (required); `checkout`, `evidence_root`, `units`, `host_budget`,
   `integration_boundary_runs` (optional);
@@ -220,8 +242,9 @@ first edit, `pdca-executor` re-resolves every planned anchor and records the res
 
 - **cosmetic drift** — line numbers or moved declarations with the same identity → a `Notice` with
   the old→new pointers; no revision;
-- **semantic drift** — changed footprint, contract, symbol or behavior → DO → PLAN, a genuine
-  revision.
+- **semantic drift** — the footprint, contract, symbol or behavior the contract relies on changed
+  → DO cannot finish under the approved contract: report to ACT (blocked/incomplete) with the
+  evidence. A contract defect that CHECK observes goes to PLAN as a genuine revision.
 
 A plan may not execute stale anchors, and cosmetic drift may not manufacture a revision.
 
@@ -230,21 +253,23 @@ A plan may not execute stale anchors, and cosmetic drift may not manufacture a r
 PLAN depth follows risk, not ceremony: a small, well-understood change gets a compact plan; the full
 contract belongs to a change whose mechanism is unproven or whose blast radius is wide.
 
-**PLAN chooses the approach; DO develops the deliverable.** The plan fixes the approach, the
-nearest justified action, criteria/evidence, bounds and stop condition. It may carry the reasoning
-or calculation needed to choose the approach, but it does not pre-write the final artefact or solve
-every unresolved downstream choice. In the incremental form the first step resolves the leading
-unknown, later work stays conditional on its result rather than a full speculative backlog, and one
-increment may finish the goal. Do not change to incremental merely to excuse a larger plan; a
-compact ordinary plan is still correct for a known bounded task.
+**PLAN fixes the result contract; DO chooses the approach and develops the deliverable.** The plan
+fixes the outcome, acceptance/verification, constraints, outer dependencies and bounds. It may carry
+the reasoning or calculation needed to bound the result, but it does not pre-write the final artefact,
+prescribe implementation steps or solve every unresolved downstream choice. In the incremental form
+the first step resolves the leading unknown, later work stays conditional on its result rather than a
+full speculative backlog, and one increment may finish the goal. Do not change to incremental merely
+to excuse a larger plan; a compact ordinary plan is still correct for a known bounded task.
 
-**Order of work.** The nearest action resolves the decision-critical feasibility question —
-mechanism, geometry, envelope, algorithm — before dependent artefacts expand, **when the decision
-actually depends on it**. This is an ordering rule, not an extra gate: a known method or a
-theoretical request needs no additional feasibility phase, and no physical experiment is forced.
-Carry assumptions as assumptions, not as evidence that the mechanism works; a newly refuted
-mechanism or feasible-region conflict is returned to PLAN promptly instead of polishing an unchanged
-plan. One candidate class or prototype never proves the whole goal impossible.
+**Order of work.** Where the result depends on a decision-critical feasibility question — mechanism,
+geometry, envelope, algorithm — PLAN may bound the order or name the observable that resolves it,
+**when the decision actually depends on it**. This is an outer bound, not a mandate on the method and
+not an extra gate: a known method or a theoretical request needs no additional feasibility phase, and
+no physical experiment is forced. Carry assumptions as assumptions, not as evidence that the mechanism
+works; a newly refuted mechanism or feasible-region conflict is a contract-level finding. If it is
+found while the contract is still being framed (a bounded probe before gate 1), it refines the same
+pending PLAN; if it is found in DO, the executor reports it to ACT as an incomplete outcome, and a
+genuine contract revision is the planner's decision only after a CHECK finding.
 
 For a measurable target whose mechanism is **not yet demonstrated**, PLAN first authorises a
 **bounded probe** — one question, one observable answer, the evidence that decides it — and writes
@@ -254,11 +279,11 @@ failed and not merely because the current mechanism failed; if alternatives rema
 decision-relevant knowledge → PLAN before another full rewrite, not a STOP. It does not buy another
 revision hoping for a different number.
 
-**Revision accounting.** A revision is genuine only when the tasks/remediation actions actually
-change while the original criterion is preserved; a rename, a session reset or a rejected candidate
-is not a revision and does not reset `n`. Each revision records the outgoing failed attempt first.
-A new step resets no counter, history or accounting entry, and an unaccepted red step is never
-converted into extra accepted progress.
+**Revision accounting.** A revision is genuine only when the contract rows, units, dependencies or
+bounding approach actually change while the original acceptance criterion is preserved; a rename, a
+session reset or a rejected candidate is not a revision and does not reset `n`. Each revision
+records the outgoing failed attempt first. A new step resets no counter, history or accounting
+entry, and an unaccepted red step is never converted into extra accepted progress.
 
 ## Effort and time policy
 
@@ -294,13 +319,15 @@ means endless work: an accepted result ends the task normally.
 
 ## Plan-to-DO fidelity
 
-The initial admission **and every follow-up DO handoff** carry the plan's verification choice,
-prohibitions and scope by reference to the frozen plan — never an invented criterion, method or
-rationale. A brief that needs another means (a checker, script, experiment or wider scope), or a
-**refuted assumption or wrong method**, is a pending PLAN decision until the planner revises the
-plan; the executor returns the exact mismatch rather than obeying newly-added scope. The driver
-returns such a request to the planner and does not reinterpret the goal or judge whether a custom
-checker is necessary. No new report schema or general validator is introduced for this.
+The initial admission **and every follow-up DO handoff** carry the plan's result contract,
+verification choice, prohibitions and scope by reference to the frozen plan — never an invented
+criterion, method or rationale. DO chooses the implementation inside that contract. A brief that
+would add a criterion, checker, script, experiment or wider scope before DO is a pending PLAN
+decision; the executor returns the exact mismatch rather than obeying newly-added scope. When DO
+finds that a planned premise no longer holds and it cannot finish under the contract, it reports the
+cause, evidence and residual requirements to ACT; the driver does not reinterpret the goal or route
+it through PLAN. The planner sees that class of contract defect only through a CHECK finding. No new
+report schema or general validator is introduced for this.
 
 ## Frozen evidence manifest
 

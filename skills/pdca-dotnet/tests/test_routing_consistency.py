@@ -215,7 +215,8 @@ class GeneratedDiagramTest(unittest.TestCase):
     def test_named_edges_and_nodes_present_in_both_themes(self):
         expected_edges = {
             "check_security", "security_check_report", "security_escalate_tradeoff",
-            "escalate_do_nonexhausted", "escalate_plan_exhausted", "escalate_stop", "check_act",
+            "escalate_do_nonexhausted", "escalate_plan_exhausted", "escalate_act",
+            "act_stop", "do_act_incomplete", "check_act",
         }
         expected_nodes = {"PLAN", "DO", "CHECK", "ACT", "START", "EXIT",
                           "sec_check", "escalate", "stop"}
@@ -235,7 +236,9 @@ class GeneratedDiagramTest(unittest.TestCase):
             "security_escalate_tradeoff": ("sec_check", "escalate"),
             "escalate_do_nonexhausted": ("escalate", "DO"),
             "escalate_plan_exhausted": ("escalate", "PLAN"),
-            "escalate_stop": ("escalate", "stop"),
+            "escalate_act": ("escalate", "ACT"),
+            "act_stop": ("ACT", "stop"),
+            "do_act_incomplete": ("DO", "ACT"),
             "check_act": ("CHECK", "ACT"),
         }
         for edge_id, pair in expected.items():

@@ -8,24 +8,26 @@ disable-model-invocation: true
 
 # pdca-incremental: the incremental campaign
 
-**This is a form contract, not an overlay and not a second cycle.** It carries only what a campaign
-adds to the base: the campaign unit and its credit, the shared campaign state, the step boundary's
-bookkeeping, the baseline bootstrap and the stop rules. The state machine, gates, roles, counters
-(`N`/`r`/`n`/`rv`), approval, escalation, effort accounting, security and recovery are the base's and are not
-restated here.
+**This is a standalone form contract, not an overlay and not a second cycle.** It carries the
+campaign layer — the campaign unit and its credit, shared campaign state, the step boundary's
+bookkeeping, baseline bootstrap and stop rules — together with a local copy of the common PDCA
+contract. Invoked directly, this file plus `references/common-contract.md` is a complete contract:
+**loading the base `../pdca/SKILL.md` first is not required.**
 
-**Load order.** `../pdca/SKILL.md` first, then this file; the phase references
-(`../pdca/references/{plan,check,act}.md`) load at the start of their phase as the base says. When
-the step's work is code, the overlay (`../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md`) loads on
-top of both, for that step only.
+**Load order.** This file, then `references/common-contract.md`; campaign status detail is in
+`references/status.md`. The base phase references (`../pdca/references/{plan,check,act}.md`) may be
+consulted as optional deeper detail when they exist, but the contractual gates, counters, roles,
+approval, escalation, effort and safety rules are in the local common contract. When the step's work
+is code, the overlay (`../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md`) loads on top, for that
+step only.
 
 ## Form, not a second cycle
 
-**The base PLAN already decided.** One PLAN chose the form (incremental), the overlay and the
-**first useful step**; this contract starts from that plan. It does not classify the task, keeps no
-routing table of its own, and never runs a second PLAN on the same content. The discriminator
-between an ordinary cycle, a campaign and a collection lives in `../pdca/SKILL.md` §Forms and is
-owned there.
+**The form is fixed.** When the family router decided incremental, its PLAN already chose the
+form, the overlay and the **first useful result unit**; when the user named `pdca-incremental`
+directly, that explicit choice is the fixed form. This contract starts from that decision, does not
+classify the task, keeps no routing table of its own, and never runs a second PLAN on the same
+content.
 
 - The incremental form holds when the method is unknown **or** the volume is unknown, or when the
   composition/choice of the next actions genuinely depends on knowledge not yet obtained and cannot
@@ -34,8 +36,8 @@ owned there.
   re-route.
 - A step that turns out to be an ordinary bounded task does not leave the campaign on its own and
   does not change the form: it is a step whose PLAN is small, and the campaign continues from its
-  accepted result. A genuine strategy change follows the base §Strategic revision, not a per-step
-  re-classification.
+  accepted result. A genuine strategy change follows `references/common-contract.md` §Strategic revision and
+  recovery, not a per-step re-classification.
 
 **Decomposition is an output, not an input.** A collection makes decomposition an input (the list
 and footprints are known before the start); a campaign makes it an output — the step *is* the
@@ -45,8 +47,7 @@ the order may change after an accepted result.
 
 ## Driver coordination
 
-The DRIVER role is defined in the base (§Execution coordination) and applies to every execution
-form. In Incremental Execution, the designated cheap driver coordinates durable state, accepted
+The DRIVER role is defined in `references/common-contract.md` and applies to every execution form. In Incremental Execution, the designated cheap driver coordinates durable state, accepted
 results, counters, accumulated knowledge, effort accounting, and recovery across all steps.
 It dispatches the existing roles for each step's cycle inline, without spawning a new
 `pdca-orchestrator` per step. Only `pdca-planner` decides when the next step begins, and
@@ -56,7 +57,7 @@ The driver neither classifies the task, replans, nor judges in place of `pdca-ch
 cannot waive any gate, counter, or permission.
 
 **Normal mode.** The cheap-tier primary drives; the user approves each step's plan before
-that step's DO (base §Normal-mode approval). Missing or mismatched approval is an
+that step's DO (common contract §Entry and control mode). Missing or mismatched approval is an
 **approval-needed checkpoint**, never permission to start DO or a reason for a fresh PLAN.
 Autonomous mode has no intermediate plan-approval gate.
 
@@ -139,19 +140,19 @@ specialisation for measurable goals, not a universal gate.
 
 ## Campaign status
 
-One file is the campaign's source of truth: `.pdca/status/<campaign>.md`, under the base's `.pdca/`
-root (§Workspace and durable status); the project may add a subdirectory or a suffix inside
+One file is the campaign's source of truth: `.pdca/status/<campaign>.md`, under the common contract's `.pdca/`
+root; the project may add a subdirectory or a suffix inside
 `.pdca/status/`, never move it out of the workspace root. It holds **runtime only**, and there is no
 separate todo. The physical write is `pdca-executor`'s on explicit dispatch; the owner composes the
 content from the reports and passes it in the brief — the owner does not write files.
 
-Beyond the base's mandatory status content, the campaign file carries the accepted steps and their
+Beyond the common contract's mandatory status content, the campaign file carries the accepted steps and their
 credit, the current step (`cycle_id`, `N`, `r`, `n`), the increment unit and its expected
 observable, the accepted knowledge register, the deferred rows with triggers, the effort accounting, the
 checkpoint of the last step boundary and the commit policy. `references/status.md` has the full
 template, the field rules and the records.
 
-The base schema is unchanged and applies as written: the append-only progress log, the durable
+The common contract's status schema applies as written: the append-only progress log, the durable
 counters (`Current cycle N`, `Plan revision r`, `Attempt n`), the defect history and the status-file
 lifetime. A step boundary is **one** logged event like any other, and the current state always
 matches the last log line.
@@ -220,17 +221,21 @@ never shorten them. The step's plan is a full plan of **that step**, not a plan 
 
 ### 3. Step execution
 
-The step runs the **base cycle** — PLAN (`r`, `rv`) → DO → CHECK → ACT — under the base gates,
+The step runs the **common cycle** — PLAN (`r`, `rv`) → DO → CHECK → ACT — under the common gates,
 counters and approval. The campaign does not accept a result in place of CHECK and does not
-interfere with the step's gates. The dispatch selection rule is the base's: the step's cycle is
+interfere with the step's gates. The dispatch selection rule is the common contract's: the step's cycle is
 `pdca`, and the overlay the plan declared for that step (`pdca-coder`, or `pdca-dotnet` inheriting
 it) applies when the step's work is code — a step that touches no code runs without an overlay. The
 form is never re-decided per step, and the overlay never opens a second PLAN or a second status.
 
-If the step falls short, this is a loop-back **inside the step** — the §Step boundary revision of the
-same step identity — not "a next step with a shortfall". A red result is kept. Exhausting revisions
-and attempts follows the base: escalation or a STOP with the recorded remainder, never a silent move
-to the next step.
+If the step falls short, the route depends on the finding. An implementation defect is `CHECK → DO`
+inside the same step identity; a wrong or unachievable acceptance contract is `CHECK → PLAN` for a
+genuine revision (`r+1`). A DO that **cannot finish** makes no CHECK and no planner detour: it goes
+`DO → ACT`, which finalizes `blocked`/`incomplete` with the cause, evidence and residual
+requirements. The step is **not credited**, the campaign is **blocked** with that residual work, and
+a DO failure never earns an accepted increment, never auto-replans, and never advances to the next
+step. A red result is kept. Exhausting revisions and attempts follows the common contract: escalation
+or an ACT-finalized STOP with the recorded remainder, never a silent move to the next step.
 
 ## Step boundary
 
@@ -243,7 +248,7 @@ bookkeeping, not a second PLAN:
   increment). Then the brief of the next step, or STOP when the whole-goal end conditions are met.
 - **revise/reject the same step** — a corrected brief of the **same** step identity
   (repair/loop-back) or a justified STOP. The step number does not grow without acceptance, `r`/`n`
-  follow the base loop-back rules, the independent CHECK is never rewritten to `met`, and no
+  follow the common loop-back rules, the independent CHECK is never rewritten to `met`, and no
   increment is credited for bypassing a failed CHECK. A failed step never closes the rest of the
   campaign by itself: the blast radius is one step, and the route stays the planner's.
 - **a new step** — distinct from revising: history, counters and accounting are preserved, every
@@ -252,17 +257,17 @@ bookkeeping, not a second PLAN:
 
 **Whole-goal verification.** A STOP with `met`/`limited` requires a whole-goal CHECK,
 combined with the increment's CHECK when it already covers every original requirement and
-carrying claim, or performed separately when the last CHECK was local (base §Transition
-gates, gate 3). After a local CHECK, the planner issues the final-check brief and a
+carrying claim, or performed separately when the last CHECK was local (common contract §One loop,
+gate 4). After a local CHECK, the planner issues the final-check brief and a
 **pre-set completion condition in the same boundary call**. A whole-goal PASS on all
 carrying claims and applicable original requirements permits the designated outcome;
 otherwise the result loops back to the planner. On PASS, the driver routes the
-pre-approved STOP to `pdca-executor` for recording — without a new planner call or an
-independent verdict. A separate final CHECK is not a step and adds no planner call.
+pre-approved STOP to **ACT** for finalization by `pdca-executor` — without a new planner call or
+an independent verdict. A separate final CHECK is not a step and adds no planner call.
 `unreachable` still requires the proven remainder (§Stop).
 
 Planner calls are **accounted**, not capped: the successful path is `1 + number of steps`, plus
-genuine revisions (base §Strategic revision), the current step's loop-backs, and bounded
+genuine revisions (common contract §Strategic revision and recovery), the current step's loop-backs, and bounded
 continuations of the **same pending PLAN** for clarification or probe refinement. There are
 no hidden exempt planner calls: separate DECIDE → brief → STOP turns on unchanged content
 are a repeated PLAN and are not allowed. Example for one increment: initial PLAN → local
@@ -296,25 +301,29 @@ revised — the working result and the fact history are different things.
 
 ## Stop
 
-The stop decision is the planner's at the boundary, or the pre-set condition of the final-check
-brief recorded by the owner without a new call.
+A `met`/`limited` stop is the planner's decision at the boundary, or the pre-set condition of the
+final-check brief recorded by the owner without a new call. A **DO cannot finish** outcome is not a
+planner decision and not a CHECK: `DO → ACT` finalizes it directly.
 
 | condition | status | what is recorded |
 |---|---|---|
 | the whole-goal CHECK passed: the goal predicate is true on the **accepted** state, no carrying claim blocks, the original requirements are verified | `met` | the final result, the remainder, the evidence |
 | the remainder is provably unreachable | `unreachable` | per cluster: why, how it was proven, where it was redistributed |
 | an external blocker (ticket, environment, access) | `blocked` | the blocker and which goals it closes |
+| the DO of the current step cannot finish under the contract | `blocked` | the cause, evidence, residual `unmet`/`unverified` requirements; **no accepted increment**, no auto-replan, the campaign stays blocked with the residual work |
 | a verified blocker, security boundary or user stop | `stopped` | what is done, what remains, where to continue |
 | a carrying-claim block is removed by an explicit narrowing of the result inside the original goal | `limited` | what was narrowed, why, the blocking finding |
 
 `met` is the only success — the campaign record's `done` — and needs the whole-goal CHECK: a set of
 accepted increments and PASS on every mechanical row does **not** prove the whole goal, and a rubric
 score or a margin over a threshold never compensates a `confirmed`/`unverified` finding against a
-carrying claim (base §Claims and veto). `limited` is a narrowing inside the original goal, never a
+carrying claim (common contract §Claims and veto). `limited` is a narrowing inside the original goal, never a
 weakened goal, and in normal mode the user approves it. `unreachable` is proven with numbers (for
 example, the goal requires a product change or an unavailable source), never declared from fatigue.
-Under `blocked`/`stopped` the chain does not pretend to be closed: the next session continues from
-the last accepted basis, and invariant 9 decides whether the campaign is paused or finally closed.
+Every non-`met` row is finalized **in ACT**, not on a separate terminal path. Under
+`blocked`/`stopped` the chain does not pretend to be closed: the next session continues from the last
+accepted basis and the residual work recorded by ACT, and invariant 9 decides whether the campaign is
+paused or finally closed.
 
 ## Verification
 
@@ -324,7 +333,7 @@ the last accepted basis, and invariant 9 decides whether the campaign is paused 
   increment.
 - **Not per probe**: several related probes in one increment give one CHECK; a tool call starts no
   PLAN and owes no CHECK.
-- **No second judge by default** — only on the base triggers: a margin over the rubric threshold no
+- **No second judge by default** — only on the common triggers: a margin over the rubric threshold no
   larger than the value declared in the PLAN, an unresolved finding against a carrying claim, or an
   operator/plan requirement.
 - **No bespoke verifier "for completeness"** and no coverage audit because it can be built: the plan
@@ -345,9 +354,8 @@ normal mode the driver presents the planner's estimate and asks whether to stop 
 explicit user answer enables that stop, recorded in the existing approval record; the same cutoff
 persists across a normal-mode resume or genuine replan (not renewed) until the user changes or
 revokes it, and only a switch to autonomous drops it. Per-command timeouts, host capacity and user deadlines stay in
-force. The no-4th-pass rule, security/permissions boundaries and the protection of irreversible
-actions are the base's (§Effort and time policy, §Generic operating constraints) and this contract
-does not relax them. No new universal minutes or costs; the commit policy of invariant 10 is the
+force. The no-4th-pass rule, security/permission boundaries and the protection of irreversible actions are
+in `references/common-contract.md` and this contract does not relax them. No new universal minutes or costs; the commit policy of invariant 10 is the
 only campaign-specific permission, and `push` is never part of it.
 
 ## Economics and sizing
@@ -365,7 +373,7 @@ only campaign-specific permission, and `push` is never part of it.
 
 ## Red flags (self-check)
 
-The base list still governs; campaign-specific:
+The common contract and the following campaign-specific list govern:
 
 - I wrote a forecast or an intermediate value into the accepted column, or repeated a failed
   measurement for a nicer number.
@@ -386,14 +394,14 @@ The base list still governs; campaign-specific:
 
 ## Recovery
 
-The base's recovery order and the campaign-recovery rule (§Recovery) apply; campaign-specific:
+The common contract's recovery rules apply; campaign-specific:
 
 - A **checkpoint is recorded at every step boundary**: the accepted basis, the current step, the
   counters, the remaining accounting and the next-step seed.
 - After a lost controller, a host restart, a provider timeout or compaction, the owner restores from
   the status. **Accepted steps are never repeated**, `N`/`r`/`n`, the accounting and the defect history are **not reset**,
   and the work continues from the last checkpoint. An interrupted dispatch is retried no more than
-  the base retry rules allow.
+  the common retry rules allow.
 - Context compression/exhaustion of the driver's incremental execution session is a special case of controller
   loss: a **planned handover to a new session of the same cheap `pdca-orchestrator`** restores from
   the status at the last checkpoint — not a new role and not a second writer (the previous session
@@ -408,10 +416,10 @@ at 50 KiB / 2000 lines):
 
 - `references/status.md` — campaign status template and field rules, the preparation document, the
   baseline-bootstrap record and the checkpoint. Load at bootstrap and at every status write.
-- `../pdca/SKILL.md` — the base: one PLAN and the forms, control modes and driver coordination,
-  gates, counters, claims and veto, effort policy, overlays, strategic revision, recovery,
-  escalation, generic constraints, red flags. Lens/probe/increment definitions and step
-  boundaries are governed by this incremental contract.
+- `references/common-contract.md` — the self-contained common contract: entry and control mode,
+  the one loop, roles and tiers, counters, claims and veto, evidence and workspace, escalation and
+  guardrails. Load it with this file; the base `../pdca/SKILL.md` is optional deeper detail, not a
+  prerequisite.
 - `../pdca/references/plan.md`, `../pdca/references/check.md`, `../pdca/references/act.md` — phase
   detail (plan fields and calibration, the verdict and the veto, the status schema and the progress
   log).

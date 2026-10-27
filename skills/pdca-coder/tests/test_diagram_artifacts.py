@@ -85,6 +85,40 @@ class DiagramArtifactsTest(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertNotIn(BAD_TOKEN, read(DIAGRAM / name).lower())
 
+    def test_do_cannot_finish_routes_to_act_and_stop_is_act_finalised(self):
+        """DO → ACT; STOP is an ACT outcome; no DO → PLAN edge survives."""
+        for name in ("pdca-coder-hand.svg", "pdca-coder-hand-dark.svg"):
+            with self.subTest(name=name):
+                root = ET.parse(DIAGRAM / name).getroot()
+                boxes = {}
+                for el in root.iter():
+                    nid = el.get("data-node-id")
+                    if nid:
+                        boxes[nid] = tuple(float(el.get(a) or 0)
+                                           for a in ("x", "y", "width", "height"))
+                edges = {el.get("data-edge-id"): el for el in root.iter()
+                         if el.get("data-edge-id")}
+                self.assertIn("do_act_incomplete", edges)
+                self.assertNotIn("do_plan_blocker", edges)
+                self.assertIn("act_stop", edges)
+                self.assertNotIn("escalate_stop", edges)
+
+                def ends(edge):
+                    pts = [tuple(map(float, p.split(",")))
+                           for p in (edge.get("points") or "").split()]
+                    return pts[0], pts[-1]
+
+                def inside(node, point):
+                    x, y, w, h = boxes[node]
+                    return x - 1 <= point[0] <= x + w + 1 and y - 1 <= point[1] <= y + h + 1
+
+                start, end = ends(edges["do_act_incomplete"])
+                self.assertTrue(inside("DO", start))
+                self.assertTrue(inside("ACT", end))
+                start, end = ends(edges["act_stop"])
+                self.assertTrue(inside("ACT", start))
+                self.assertTrue(inside("stop", end))
+
     def test_emit_titles(self):
         for name in ("pdca-coder-hand.html", "pdca-coder-hand-dark.html"):
             print("title[%s] = %r" % (name, title_of(read(DIAGRAM / name))))

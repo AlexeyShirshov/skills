@@ -21,8 +21,8 @@ revision; a rejected candidate **without a plan change** is not a new revision a
 | B1 | Additive prerequisite | The original `D` stays active, criteria/remainder unchanged, no replacement mapping, gate 2 closed until the remainder completes |
 | B2 | Actual scope replacement | Explicit `superseded→replacement` mapping, the replacement is active and carries the criteria; `superseded` is not `done` |
 | C | r1: two failed CHECKs → a real replan r2 | `n` reset to 1 on r2; a recurrence of the same defect after a fix is still escalated |
-| D | One plan, three failed CHECKs | `pdca-escalate`, no 4th attempt; `DO → PLAN` is not a failed CHECK |
-| E | `pdca-planner` cannot classify the candidate | Point facts first (`pdca-scout`), then `pdca-escalate` on low confidence even without established externalness |
+| D | One plan, three failed CHECKs | `pdca-escalate`, no 4th attempt; a DO that cannot finish goes `DO → ACT`, not to PLAN |
+| E | A PLAN decision stays low-confidence | Point facts first (`pdca-scout`), then `pdca-escalate` on low confidence even without established externalness |
 | F | Autonomous: no criterion / resource unavailable | No question; gather/decide, then a blocked STOP with a recorded outcome; normal mode keeps questions and plan approval |
 | G | Three parallel DO streams | The only progress mirror is the status file: the aggregate `D:` and the truthful per-stream states in it |
 | H | Cheap-only orchestration; a medium/strong primary — decisions outside the cycle | Only the cheap-tier primary drives the cycle (effective tier, not the agent name); the initial PLAN/replan is `pdca-planner`'s; the roles carry only `# tier`, no `model:` |
@@ -80,7 +80,8 @@ missing, when a replacement is orphan/circular/self, or when a replacement is pe
 **Input:** revision r1: two failed CHECKs (attempt `n=3`); `pdca-planner` issues a revised plan
 → r2 (not a rejected candidate without a plan change). In addition: the same defect recurs
 after one fix on another revision.
-**Required outcome:** `DO → PLAN`/`CHECK → PLAN` do not consume the next revision's attempts; r2
+**Required outcome:** `CHECK → PLAN` does not consume the next revision's attempts, and there is no
+direct `DO → PLAN`: a DO that cannot finish under the contract goes to ACT. r2
 starts `PLAN(r2) → DO` with `n=1`; the outgoing failed attempt is recorded in the status file before the plan is
 replaced; the history of the same defect **is not erased** by a replan — a recurrence of the defect after one
 fix is escalated **before the second fix**. An exhausted revision (third failed CHECK) **does not
@@ -92,25 +93,28 @@ a rename/reword or a session reset is **not** a new revision.
 
 ## D. Third failed CHECK of one plan
 
-**Input:** one plan (revision r), three failed CHECKs in a row; the `DO → PLAN` transition
-inside the same revision (a new prerequisite/blocker) is considered separately.
+**Input:** one plan (revision r), three failed CHECKs in a row; separately, a DO that **cannot
+finish** under the contract inside the same revision (a new prerequisite/blocker or a refuted
+premise).
 **Required outcome:** after the third failed CHECK of **the same** revision `pdca-escalate` is called;
-there is no fourth attempt; the `DO → PLAN` itself is **not** a failed CHECK and does not consume
-the next revision's attempt.
+there is no fourth attempt; a DO that cannot finish goes **`DO → ACT`** (cause, evidence, residual
+`unmet`/`unverified`, no PASS and no `done`) — that is **not** a failed CHECK, does not consume the
+next revision's attempt and is **not** a `DO → PLAN`.
 **Operative sources:** SKILL §State machine (`third failed CHECK of the same revision`,
 `no 4th attempt`, `PLAN(r) → DO`, `CHECK → DO`); §Red flags (revision-local 4th attempt);
 `assets/opencode-agents/pdca-check.md`, `assets/opencode-agents/pdca-escalate.md`.
 
-## E. Unclassifiable candidate: facts, then low confidence
+## E. Low-confidence PLAN: facts, then escalation
 
-**Input:** `pdca-planner` cannot classify the DO candidate with confidence; the evidence is scarce and the
-external nature of the blocker is **not established**.
+**Input:** a PLAN decision (form, contract or criterion) stays low-confidence; the evidence is scarce and the
+external nature of the question is **not established**.
 **Required outcome:** point fact-gathering through `pdca-scout` first (`file:line`/URL), not an
 exhaustive sweep; with persistently low confidence — `pdca-escalate` under existing trigger 5
-**even without established externalness**; DO does not issue the final verdict and does not STOP.
+**even without established externalness**; DO does not issue the final verdict and does not STOP, and
+a DO that cannot finish under the contract goes to ACT.
 **Operative sources:** SKILL §Escalation (trigger 5, low confidence, without established
-externalness, provisional candidate); `assets/opencode-agents/pdca-planner.md` (item 10, four-way
-classification, insufficient evidence); `assets/opencode-agents/pdca-scout.md`.
+externalness); `assets/opencode-agents/pdca-planner.md` (low-confidence PLAN decision, insufficient
+evidence); `assets/opencode-agents/pdca-scout.md`.
 
 ## F. Autonomous mode: no questions
 
@@ -332,7 +336,8 @@ refused; PASS introduces no new class.
 **Input:** the plan names `file:line` from an older snapshot; a sibling task moved the lines while
 footprint, symbol and contract are unchanged.
 **Required outcome:** cosmetic drift → `Notice` with old→new pointers, no revision; semantic drift
-→ DO → PLAN and a genuine revision.
+→ `DO → ACT` with cause, evidence and residual `unmet`/`unverified`, no PASS and no credit; a genuine
+revision comes only from a CHECK finding — there is no `DO → PLAN`.
 **Operative sources:** SKILL §Re-anchoring at DO entry.
 
 ### R6. The mechanism of a measurable target is unproven

@@ -60,16 +60,16 @@ BLOCKS = {
         ("Декомпозиция", "units · зависимости", "medium"),
         ("Средства · доступ", "чем и куда", "medium"),
         ("Риски · стоп-условия", "когда остановиться", "medium"),
-        ("Контракт команд", "резолв · argv · исход", "medium"),
+        ("Свидетельства", "критерий · источник · путь", "medium"),
         ("Политика усилий", "оценка · учёт · не cutoff", "medium"),
     ],
     "D": [
-        ("Исполнение units", "по принятому плану", "weak"),
+        ("Исполнение контракта", "метод выбирает DO", "weak"),
         ("Evidence", "логи · артефакты", "weak"),
         ("Blockers", "фиксируются явно", "weak"),
         ("Unfinished", "остаётся открытым", "weak"),
-        ("Сверка якорей", "дрейф → PLAN", "weak"),
-        ("Provisional-отчёт", "без вердикта · без STOP", "weak"),
+        ("Сверка якорей", "дрейф → ACT incomplete", "weak"),
+        ("Provisional-отчёт", "без вердикта · без PASS", "weak"),
     ],
     "C": [
         ("Критерии", "met | unmet | unverified", "medium"),
@@ -77,14 +77,14 @@ BLOCKS = {
         ("Findings", "+ severity", "medium"),
         ("Нулевой прогон", "не успех", "medium"),
         ("Исключения", "каталог · порог", "medium"),
-        ("Маршрутизация", "дефект→DO · план→PLAN", "medium"),
+        ("Маршрутизация", "дефект→DO · контракт→PLAN", "medium"),
     ],
     "E": [
         ("Скаут", "pdca-scout · факты · file:line", "weak"),
         ("Триггеры", "неоднозначность · повтор", "strong"),
         ("3-й провал", "CHECK(r) исчерпан", "strong"),
         ("Необратимый trade-off", "цена решения", "strong"),
-        ("Решение → роутинг", "pdca-planner или STOP", "strong"),
+        ("Решение → роутинг", "plan или ACT-STOP", "strong"),
     ],
     "A": [
         ("Финализация", "принятого результата", "weak"),
@@ -96,12 +96,12 @@ BLOCKS = {
 
 # orchestrator strip: the per-phase inputs (as in the sibling diagrams)
 INPUTS = [
-    "PLAN ← «старт» · «реплан от DO / CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»",
+    "PLAN ← «старт» · «реплан от CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»",
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
     "CHECK ← «units done от DO»",
     "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»",
-    "ACT ← «все criteria met от CHECK»",
-    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в требуемом approval»",
+    "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «STOP-финализация»",
+    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT",
     "EXIT ← «ACT закрыт»",
 ]
 
@@ -111,7 +111,7 @@ DISPATCH = {
     "D": "план принят · апрув\nякоря сверены",
     "C": "все активные units done\nнулевой выбор ≠ успех",
     "E": "неоднозначность\nповтор · 3-й провал",
-    "A": "все criteria met",
+    "A": "criteria met\nили STOP → ACT",
 }
 
 # tier legend, cheap / medium / strong
@@ -175,27 +175,27 @@ _TR_EN = {
     "чем и куда": "with what, where",
     "Риски · стоп-условия": "Risks · stop rules",
     "когда остановиться": "when to stop",
-    "Контракт команд": "Command contract",
-    "резолв · argv · исход": "resolve · argv · outcome",
+    "Свидетельства": "Evidence",
+    "критерий · источник · путь": "criterion · source · path",
     "Политика усилий": "Effort policy",
-    "ревизии · время · замер": "revisions · time · measurement",
+    "оценка · учёт · не cutoff": "estimate · accounting · not a cutoff",
     # DO cards
-    "Исполнение units": "Execute units",
-    "по принятому плану": "per the accepted plan",
+    "Исполнение контракта": "Execute the contract",
+    "метод выбирает DO": "method chosen by DO",
     "логи · артефакты": "logs · artifacts",
     "Blockers": "Blockers",
     "фиксируются явно": "recorded explicitly",
     "остаётся открытым": "stays open",
     "Сверка якорей": "Anchor re-check",
-    "дрейф → PLAN": "drift → PLAN",
+    "дрейф → ACT incomplete": "drift → ACT incomplete",
     "Provisional-отчёт": "Provisional report",
-    "без вердикта · без STOP": "no verdict · no STOP",
+    "без вердикта · без PASS": "no verdict · no PASS",
     # CHECK cards
     "Критерии": "Criteria",
     "Согласованность": "Consistency",
     "частей между собой": "of the parts",
     "Маршрутизация": "Routing",
-    "дефект→DO · план→PLAN": "defect→DO · plan→PLAN",
+    "дефект→DO · контракт→PLAN": "defect→DO · contract→PLAN",
     "Нулевой прогон": "Zero-selection run",
     "не успех": "not success",
     "Исключения": "Exceptions",
@@ -209,7 +209,7 @@ _TR_EN = {
     "Необратимый trade-off": "Irreversible trade-off",
     "цена решения": "cost of the call",
     "Решение → роутинг": "Decision → routing",
-    "pdca-planner или STOP": "pdca-planner or STOP",
+    "plan или ACT-STOP": "plan or ACT-STOP",
     # ACT cards
     "Финализация": "Finalization",
     "принятого результата": "of the accepted result",
@@ -217,16 +217,17 @@ _TR_EN = {
     "границы финализации": "finalization bounds",
     "Статус-файл": "Status file",
     # orchestrator inputs
-    "PLAN ← «старт» · «реплан от DO / CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»":
-        "PLAN ← “start” · “replan from DO / CHECK” · “r+1 from ESCALATE” · “cycle N+1 from ACT”",
+    "PLAN ← «старт» · «реплан от CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»":
+        "PLAN ← “start” · “replan from CHECK” · “r+1 from ESCALATE” · “cycle N+1 from ACT”",
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»":
         "DO ← “approval from PLAN” · “defect from CHECK” · “r not exhausted from ESCALATE”",
     "CHECK ← «units done от DO»": "CHECK ← “units done from DO”",
     "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»":
         "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after pdca-scout”",
-    "ACT ← «все criteria met от CHECK»": "ACT ← “all criteria met from CHECK”",
-    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в требуемом approval»":
-        "STOP ← “no doable PLAN r+1” · “unsolvable constraint” · “refused required approval”",
+    "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «STOP-финализация»":
+        "ACT ← “all criteria met from CHECK” · “DO cannot finish” · “STOP finalization”",
+    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT":
+        "STOP ← “no doable PLAN r+1” · “unsolvable constraint” · “approval refused” — ACT outcome",
     "EXIT ← «ACT закрыт»": "EXIT ← “ACT closed”",
     # dispatch labels (per line, rendered through label())
     "факты собраны": "facts gathered",
@@ -238,7 +239,8 @@ _TR_EN = {
     "нулевой выбор ≠ успех": "zero selection ≠ success",
     "неоднозначность": "ambiguity",
     "повтор · 3-й провал": "repeat · 3rd failure",
-    "все criteria met": "all criteria met",
+    "criteria met": "criteria met",
+    "или STOP → ACT": "or STOP → ACT",
     # legend
     "дешёвая ступень": "cheap tier",
     "средняя ступень": "medium tier",
@@ -256,21 +258,22 @@ _TR_EN = {
     "закрыто": "closed",
     "следующий цикл · N+1": "next cycle · N+1",
     "контракт · апрув": "contract · approval",
-    "новое предусловие": "new precondition",
+    "не может завершить → ACT": "cannot finish → ACT",
     "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
-    "неверный план → pdca-planner · r+1 при ревизии": "wrong plan → pdca-planner · r+1 on revision",
+    "неверный контракт → CHECK → PLAN · r+1": "wrong contract → CHECK → PLAN · r+1",
     "r не исчерпан → DO": "r not exhausted → DO",
     "исчерпан r → PLAN r+1": "r exhausted → PLAN r+1",
-    "STOP: нет плана r+1": "STOP: no plan r+1",
+    "нет плана r+1 → ACT": "no plan r+1 → ACT",
     # escalation row
     "ЭСКАЛАЦИЯ": "ESCALATION",
     "решение": "decision",
     "терминал": "terminal",
+    "исход ACT": "ACT outcome",
     # footer
     "сплошная стрелка — переход": "plain arrow — a transition",
-    "дуга — loop-back до ACT": "arc — loop-back before ACT",
+    "дуга — loop-back до ACT": "arc — side route",
     "пунктир — следующий цикл": "dashed — next cycle",
-    "нижний ряд — эскалация и STOP": "bottom row — escalation and STOP",
+    "нижний ряд — эскалация; STOP — исход ACT": "bottom row — escalation; STOP is an ACT outcome",
 }
 
 
@@ -515,20 +518,20 @@ def render(P):
     s.append(curve(f"M988,{R1_TOP} C988,{R1_TOP-40} 376,{R1_TOP-40} 376,{R1_TOP}",
                    P["act"], "act_plan", "5,4"))
     s.append(label(682, R1_TOP - 44, "следующий цикл · N+1", P["label"]))
-    # loop-backs taken before ACT
-    s.append(curve(f"M566,{R1_TOP} C566,{R1_TOP-72} 334,{R1_TOP-72} 334,{R1_TOP}",
-                   P["arrow"], "do_plan_blocker"))
-    s.append(label(450, R1_TOP - 76, "новое предусловие", P["label"]))
+    # DO cannot finish: goes straight to ACT, never back to PLAN
+    s.append(curve(f"M566,{R1_TOP} C566,{R1_TOP-72} 1040,{R1_TOP-72} 1040,{R1_TOP}",
+                   P["arrow"], "do_act_incomplete"))
+    s.append(label(803, R1_TOP - 76, "не может завершить → ACT", P["label"]))
     s.append(curve(f"M798,{R1_TOP} C798,{R1_TOP-104} 566,{R1_TOP-104} 566,{R1_TOP}",
                    P["arrow"], "check_do_defect"))
     s.append(label(682, R1_TOP - 108, "дефект · n+1 (n/3)", P["label"]))
     s.append(curve(f"M798,{R1_TOP} C798,{R1_TOP-136} 334,{R1_TOP-136} 334,{R1_TOP}",
                    P["arrow"], "check_plan_replan"))
-    s.append(label(566, R1_TOP - 140, "неверный план → pdca-planner · r+1 при ревизии", P["label"]))
+    s.append(label(566, R1_TOP - 140, "неверный контракт → CHECK → PLAN · r+1", P["label"]))
 
     # escalation row
     s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "решение", P["escalate"], "ESCALATE"))
-    s.append(stnode(1184, R2_TOP, NW, NH, "STOP", "терминал", P["stop"], "STOP"))
+    s.append(stnode(1184, R2_TOP, NW, NH, "STOP", "исход ACT", P["stop"], "STOP"))
     r1b = R1_TOP + NH
     y2 = R2_TOP + NH / 2
     s.append(curve(f"M798,{r1b} C798,{r1b+80} 566,{R2_TOP-80} 566,{R2_TOP}",
@@ -538,15 +541,19 @@ def render(P):
     s.append(label(504, (R2_TOP + r1b) / 2, "r не исчерпан → DO", P["label"], "end"))
     s.append(poly([(488, y2), (334, y2), (334, r1b)], P["escalate"], edge_id="escalate_plan"))
     s.append(label(411, y2 - 10, "исчерпан r → PLAN r+1", P["label"]))
-    s.append(poly([(644, y2), (1184, y2)], P["escalate"], edge_id="escalate_stop"))
-    s.append(label(914, y2 - 10, "STOP: нет плана r+1", P["label"]))
+    s.append(poly([(644, y2), (980, y2), (980, r1b)], P["escalate"], edge_id="escalate_act"))
+    s.append(label(812, y2 - 10, "нет плана r+1 → ACT", P["label"]))
+    # STOP is finalized by ACT, not a path beside it
+    s.append(curve(f"M1060,{r1b} C1060,{r1b+60} 1262,{R2_TOP-60} 1262,{R2_TOP}",
+                   P["stop"], "act_stop"))
+    s.append(label(1128, (r1b + R2_TOP) / 2, "STOP · incomplete", P["label"], "end"))
 
     # footer arrow-type legend
     FIN = M4 + 18
     s.append(label(24, FIN, "сплошная стрелка — переход", P["sub"], "start"))
     s.append(label(320, FIN, "дуга — loop-back до ACT", P["sub"], "start"))
     s.append(label(600, FIN, "пунктир — следующий цикл", P["sub"], "start"))
-    s.append(label(860, FIN, "нижний ряд — эскалация и STOP", P["sub"], "start"))
+    s.append(label(860, FIN, "нижний ряд — эскалация; STOP — исход ACT", P["sub"], "start"))
 
     s.append('</svg>')
     return "\n".join(s)

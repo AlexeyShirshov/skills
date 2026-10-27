@@ -51,7 +51,7 @@ BLOCKS = {
         ("D · DO", "pdca-executor · edit/bash · facts", "cheap"),
         ("C · CHECK", "pdca-check · read-only · evidence", "medium"),
         ("A · ACT", "pdca-executor · status/docs", "cheap"),
-        ("Step exit", "accept · revise · new step", "medium"),
+        ("Step exit", "accept · revise · blocked → ACT", "medium"),
     ],
     "A": [
         ("Verdict", "pdca-check · read-only · by rows", "medium"),
@@ -288,7 +288,7 @@ def render(P):
         ("start_boot", "START", "BOOT", "start"),
         ("boot_plan", "BOOT", "PLAN", "recipe"),
         ("plan_step", "PLAN", "STEP", "brief"),
-        ("step_acc", "STEP", "ACC", "closed"),
+        ("step_acc", "STEP", "ACC", "closed | blocked (DO → ACT)"),
         ("acc_dec", "ACC", "DEC", "accepted"),
     ]
     for eid, a, b, lab in edges:
@@ -322,7 +322,7 @@ def render(P):
     s.append(f'<text x="{sx + NW / 2}" y="{R2_TOP + NH / 2 + 5}" class="st" fill="{STC["STOP"]}" '
              f'text-anchor="middle">STOP</text>')
     s.append(label(sx - 10, R2_TOP + NH / 2 + 4,
-                   "met · unreachable · blocked · stopped", P["label"], "end"))
+                   "ACT-finalized · met · unreachable · blocked · stopped", P["label"], "end"))
     # verify is an optional integrated gate, not a second increment
     s.append(label(graph_x, R2_TOP + NH + 24,
                    "verify — optional integrated gate: target = gate, does not move the baseline",

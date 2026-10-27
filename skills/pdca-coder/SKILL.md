@@ -137,7 +137,9 @@ CHECK detail: `references/check.md`.
 ### Build and test command forms
 
 The base command contract (selector resolves, argv survives the harness, phase is legal, scope matches
-the host capacity, expected outcome declared) applies unchanged. Code-specific additions:
+the host capacity, expected outcome declared) applies unchanged, and it covers only the
+**verification** commands that produce acceptance evidence: DO chooses its own implementation
+commands. Code-specific additions:
 
 - **Inner loop = the affected subset.** Build the affected project once when compilable inputs change,
   then run it: `dotnet test <project> --no-build --filter <selector>`, `pytest -k <expr> <path>`,

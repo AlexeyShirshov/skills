@@ -18,13 +18,13 @@
 </style>
 <rect x="24" y="24" width="1604" height="138" rx="10" class="band"/>
 <text x="42" y="48" class="bt">Orchestrator · cheap — normal: primary · autonomous: pdca-orchestrator</text>
-<text x="42" y="76" class="ol">← PLAN ← “start” · “replan from pdca-check/DO” · “cycle N+1 from ACT”</text>
+<text x="42" y="76" class="ol">← PLAN ← “start” · “replan from pdca-check” · “cycle N+1 from ACT”</text>
 <text x="42" y="94" class="ol">← DO ← “plan ready · approval/instant” · “defect fix from pdca-check (incl. security)” · “fix from pdca-escalate while r not exhausted”</text>
 <text x="42" y="112" class="ol">← CHECK ← “streams closed”</text>
 <text x="42" y="130" class="ol">← CHECK · security ← “if: auth / secrets / input / crypto” · “report → CHECK”</text>
-<text x="844.0" y="76" class="ol">← ACT ← “pdca-check pass”</text>
+<text x="844.0" y="76" class="ol">← ACT ← “pdca-check pass” · “DO cannot finish” · “STOP finalization”</text>
 <text x="844.0" y="94" class="ol">← ESCALATION ← “T1 ambiguity” · “T2 counter” · “T3 trade-off” · “T4 risky-diff” · “T5 low-confidence”</text>
-<text x="844.0" y="112" class="ol">← STOP ← “no doable PLAN r+1”</text>
+<text x="844.0" y="112" class="ol">← STOP ← “ACT outcome: no doable PLAN r+1”</text>
 <rect x="24" y="224" width="196" height="40" rx="8" fill="#2563eb"/><text x="122.0" y="249.0" class="h" text-anchor="middle">P · PLAN</text>
 <polyline points="122.0,264 122.0,280" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
 <rect x="24" y="280" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
@@ -56,7 +56,7 @@
 <rect x="162" y="535" width="50" height="18" rx="6" fill="#4f46e5"/>
 <text x="187.0" y="547.5" class="bm" fill="#cbd5e1" text-anchor="middle">medium</text>
 <text x="37" y="551" class="t">Tasks · risks</text>
-<text x="37" y="570" class="s">steps · no TBD</text>
+<text x="37" y="570" class="s">units · no TBD</text>
 <rect x="24" y="590" width="196" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="25" y="597" width="3" height="36" rx="1.5" fill="#4f46e5"/>
 <rect x="162" y="597" width="50" height="18" rx="6" fill="#4f46e5"/>
@@ -138,14 +138,14 @@
 <rect x="422" y="473" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="447.0" y="485.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
 <text x="291" y="489" class="t">Code</text>
-<text x="291" y="508" class="s">from the plan</text>
+<text x="291" y="508" class="s">inside the contract</text>
 <polyline points="262,491.0 276,491.0" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
 <rect x="278" y="528" width="202" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="279" y="535" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="422" y="535" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="447.0" y="547.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
 <text x="291" y="551" class="t">Tests</text>
-<text x="291" y="570" class="s">from the plan</text>
+<text x="291" y="570" class="s">DO chooses the method</text>
 <polyline points="262,553.0 276,553.0" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
 <rect x="278" y="590" width="202" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="279" y="597" width="3" height="36" rx="1.5" fill="#0d9488"/>
@@ -173,7 +173,7 @@
 <rect x="422" y="783" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="447.0" y="795.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
 <text x="291" y="799" class="t">Anchor re-check</text>
-<text x="291" y="818" class="s">drift → PLAN</text>
+<text x="291" y="818" class="s">drift → ACT incomplete</text>
 <polyline points="262,801.0 276,801.0" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>
 <line x1="262" y1="330" x2="262" y2="801.0" stroke="#64748b" stroke-width="1.5"/>
 <rect x="248" y="838" width="232" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
@@ -420,7 +420,7 @@
 <rect x="1426" y="272" width="208" height="438" rx="12" fill="none" stroke="#059669" stroke-opacity="0.6" stroke-width="1.6"/>
 <polyline points="106.0,162 106.0,224" fill="none" stroke="#94a3b8" data-edge-id="dispatch_p" marker-end="url(#arrow)"/>
 <text x="0" y="183.0" class="g" fill="#94a3b8" text-anchor="start">start</text>
-<text x="0" y="196.0" class="g" fill="#94a3b8" text-anchor="start">replan: pdca-check/DO</text>
+<text x="0" y="196.0" class="g" fill="#94a3b8" text-anchor="start">replan: pdca-check</text>
 <text x="0" y="209.0" class="g" fill="#94a3b8" text-anchor="start">cycle N+1</text>
 <polyline points="138.0,224 138.0,162" fill="none" stroke="#94a3b8" data-edge-id="return_p" marker-end="url(#arrow)"/>
 <polyline points="348.0,162 348.0,224" fill="none" stroke="#94a3b8" data-edge-id="dispatch_d" marker-end="url(#arrow)"/>
@@ -444,9 +444,11 @@
 <text x="1058.0" y="215.5" class="g" fill="#94a3b8" text-anchor="end">T5 low-confidence</text>
 <polyline points="1098.0,224 1098.0,162" fill="none" stroke="#94a3b8" data-edge-id="return_e" marker-end="url(#arrow)"/>
 <polyline points="1290.0,162 1290.0,224" fill="none" stroke="#94a3b8" data-edge-id="dispatch_s" marker-end="url(#arrow)"/>
-<text x="1282.0" y="196.0" class="g" fill="#94a3b8" text-anchor="end">no plan r+1</text>
+<text x="1282.0" y="189.5" class="g" fill="#94a3b8" text-anchor="end">no plan r+1</text>
+<text x="1282.0" y="202.5" class="g" fill="#94a3b8" text-anchor="end">→ ACT</text>
 <polyline points="1514.0,162 1514.0,224" fill="none" stroke="#94a3b8" data-edge-id="dispatch_a" marker-end="url(#arrow)"/>
-<text x="1506.0" y="196.0" class="g" fill="#94a3b8" text-anchor="end">pdca-check pass</text>
+<text x="1506.0" y="189.5" class="g" fill="#94a3b8" text-anchor="end">pdca-check pass</text>
+<text x="1506.0" y="202.5" class="g" fill="#94a3b8" text-anchor="end">or STOP → ACT</text>
 <polyline points="1546.0,224 1546.0,162" fill="none" stroke="#94a3b8" data-edge-id="return_a" marker-end="url(#arrow)"/>
 <rect x="24.0" y="1118" width="15" height="15" rx="4" fill="#0d9488"/>
 <text x="46.0" y="1130" class="lt">cheap tier</text>
@@ -490,12 +492,12 @@
 <text x="1323.5" y="1409.0" class="g" fill="#cbd5e1" text-anchor="middle">closed</text>
 <path d="M1188,1394 C1188,1358 375,1358 375,1394" fill="none" stroke="#94a3b8" stroke-dasharray="5 4" marker-end="url(#arrow)" data-edge-id="act_plan"/>
 <text x="781" y="1354" class="g" fill="#cbd5e1" text-anchor="middle">next cycle · N+1</text>
-<path d="M606,1394 C606,1326 420,1326 420,1394" fill="none" stroke="#94a3b8" marker-end="url(#arrow)" data-edge-id="do_plan_blocker"/>
-<text x="513" y="1322" class="g" fill="#cbd5e1" text-anchor="middle">new precondition/blocker</text>
+<polyline points="646,1438 646,1460 1188,1460 1188,1438" fill="none" stroke="#94a3b8" data-edge-id="do_act_incomplete" marker-end="url(#arrow)"/>
+<text x="917" y="1452" class="g" fill="#cbd5e1" text-anchor="middle">DO cannot finish → ACT (blocked / incomplete)</text>
 <path d="M880,1394 C880,1294 686,1294 686,1394" fill="none" stroke="#94a3b8" marker-end="url(#arrow)" data-edge-id="check_do_defect"/>
 <text x="786" y="1290" class="g" fill="#cbd5e1" text-anchor="middle">defect · n+1 (max 3)</text>
 <path d="M950,1394 C950,1262 415,1262 415,1394" fill="none" stroke="#94a3b8" marker-end="url(#arrow)" data-edge-id="check_plan_replan"/>
-<text x="683" y="1258" class="g" fill="#cbd5e1" text-anchor="middle">wrong plan · r+1 on revision</text>
+<text x="683" y="1258" class="g" fill="#cbd5e1" text-anchor="middle">wrong contract · r+1 on revision</text>
 <rect x="837" y="1526" width="160" height="44" rx="10" fill="#be123c" fill-opacity="0.08" stroke="#be123c" stroke-width="1.6" stroke-dasharray="5 4" data-node-id="sec_check"/>
 <text x="917.0" y="1553.0" class="st" fill="#be123c" text-anchor="middle">CHECK stream</text>
 <rect x="1100" y="1526" width="160" height="44" rx="10" fill="#b91c1c" fill-opacity="0.08" stroke="#b91c1c" stroke-width="1.6" data-node-id="escalate"/>
@@ -510,8 +512,10 @@
 <text x="1070" y="1460" class="g" fill="#cbd5e1" text-anchor="middle">pdca-escalate triggers (T1–T5)</text>
 <polyline points="997,1548.0 1100,1548.0" fill="none" stroke="#b91c1c" data-edge-id="security_escalate_tradeoff" marker-end="url(#arrow)"/>
 <text x="1048" y="1541.0" class="g" fill="#cbd5e1" text-anchor="middle">hard trade-off</text>
-<polyline points="1260,1548.0 1360,1548.0" fill="none" stroke="#b91c1c" data-edge-id="escalate_stop" marker-end="url(#arrow)"/>
-<text x="1310" y="1541.0" class="g" fill="#cbd5e1" text-anchor="middle">no plan r+1</text>
+<polyline points="1220,1526 1220,1438" fill="none" stroke="#b91c1c" data-edge-id="escalate_act" marker-end="url(#arrow)"/>
+<text x="1230" y="1482.0" class="g" fill="#cbd5e1" text-anchor="start">no plan r+1 → ACT</text>
+<polyline points="1240,1438 1240,1502 1440,1502 1440,1526" fill="none" stroke="#b91c1c" data-edge-id="act_stop" marker-end="url(#arrow)"/>
+<text x="1340" y="1495" class="g" fill="#cbd5e1" text-anchor="start">STOP · ACT outcome</text>
 <polyline points="1160,1570 1160,1600 646,1600 646,1438" fill="none" stroke="#94a3b8" data-edge-id="escalate_do_nonexhausted" marker-end="url(#arrow)"/>
 <text x="850" y="1592" class="g" fill="#cbd5e1" text-anchor="middle">decision · r not exhausted → DO</text>
 <polyline points="1200,1570 1200,1614 375,1614 375,1438" fill="none" stroke="#94a3b8" data-edge-id="escalate_plan_exhausted" marker-end="url(#arrow)"/>

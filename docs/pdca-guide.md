@@ -1285,7 +1285,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 - the role assets: only `# tier:` and permission blocks, no `model:` → `skills/pdca/SKILL.md §Roles and host requirements`;
   `skills/pdca-coder/SKILL.md §Composition`; `skills/pdca-dotnet/SKILL.md §Composition`
 - the orchestrator role (dispatcher) → `skills/pdca/SKILL.md §Roles and host requirements`
-- the control modes and the campaign owner (cycle-control / campaign-control) → `skills/pdca/SKILL.md §Control modes and the campaign owner`
+- the control modes and the campaign owner (cycle-control / campaign-control) → `skills/pdca/SKILL.md §Control modes`
 - `pdca-check` may open the evidence artifacts (scoped `read`) → `skills/pdca/SKILL.md:19-24`;
   `skills/pdca/references/check.md §What CHECK receives`; `skills/pdca-coder/references/check.md §Boundaries and output`
 
@@ -1293,7 +1293,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 - the state machine → `skills/pdca/SKILL.md §State machine and counters`
 - the counters `N/r/n` → `skills/pdca/SKILL.md §State machine and counters`
 - phase progress mirror → `skills/pdca/SKILL.md §Phase progress mirror`
-- the DO → PLAN candidate (a–d) → `skills/pdca/SKILL.md §DO → PLAN candidate`
+- the DO → PLAN candidate (a–d) → `skills/pdca/SKILL.md §DO outcome and ACT finalization`
 
 **Gates and escalation**
 - gates 1–5 → `skills/pdca/SKILL.md §Transition gates`
@@ -1301,7 +1301,7 @@ kept only for the short preamble before the first `##` heading and for non-skill
 - the phase contracts (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
 - re-entry after a terminal `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
   `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`
-- the normal/autonomous modes → `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval`
+- the normal/autonomous modes → `skills/pdca/SKILL.md §Control modes · §Normal-mode approval`
 - the collection caller handoff (`plan_handoff`) → `skills/pdca/SKILL.md §Normal-mode approval`;
   `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`
 - escalation and its triggers → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`

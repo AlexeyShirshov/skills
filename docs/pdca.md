@@ -332,21 +332,21 @@ short preamble before the first `##` heading. The "claim → source" map:
 | A fresh entry is `contract: pdca`, `form: UNDECIDED`; one deliverable is not a known method, and a chosen collection is handed to the cheap primary/collection owner | `skills/pdca/SKILL.md §Entry: one PLAN decides the form` |
 | The three forms and how they differ | `skills/pdca/SKILL.md §Forms` |
 | The overlays (`pdca-coder`, `pdca-dotnet` inheriting it) add differences, never a second cycle | `skills/pdca/SKILL.md §Overlays` |
-| Lens: probe, increment, step and what counts as credit | `skills/pdca/SKILL.md §Lens: probe, increment and step` |
+| Lens: probe, increment, step and what counts as credit | `skills/pdca-incremental/SKILL.md §Lens: probe, increment and step` |
 | Roles, tiers, fallback; an unavailable role is a resource blocker | `skills/pdca/SKILL.md §Roles and host requirements` |
 | `pdca-orchestrator` is a cheap dispatcher, not a sixth skill; its prompt ships as `assets/opencode-agents/pdca-orchestrator.md` in every skill | `skills/pdca/SKILL.md §Roles and host requirements`; `skills/pdca/assets/opencode-agents/pdca-orchestrator.md` |
 | CHECK sees the cycle's evidence artifacts directly (scoped `read`), but not the product | `skills/pdca/SKILL.md:19-24`; `skills/pdca/assets/opencode-agents/pdca-check.md:11-20,27-28` |
 | The orchestrator is a dispatcher; the ban on self-editing/self-reading/self-verdict | `skills/pdca/SKILL.md §Roles and host requirements` |
-| The cycle-control / campaign-control contexts and the campaign owner | `skills/pdca/SKILL.md §Control modes and the campaign owner` |
+| The cycle-control / campaign-control contexts and the campaign owner | `skills/pdca/SKILL.md §Control modes`; `skills/pdca-incremental/SKILL.md §Driver coordination` |
 | The state machine and the `DO → PLAN` branch | `skills/pdca/SKILL.md §State machine and counters` |
 | The counters `N`, `r`, `n/3` and the defect history | `skills/pdca/SKILL.md §State machine and counters` |
-| The DO candidate → PLAN; an additive precondition vs a scope replacement | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| The DO candidate → PLAN; an additive precondition vs a scope replacement | `skills/pdca/SKILL.md §DO outcome and ACT finalization · §Phase contracts (generic)` |
 | Gates 1–5 and the STOP finalization | `skills/pdca/SKILL.md §Transition gates` |
 | The carrying claims and the veto | `skills/pdca/SKILL.md §Claims and veto`; `skills/pdca/references/check.md §Carrying claims and the veto` |
 | The plan command contract, vacuous and `expected-negative` runs, the exception catalog, DO-entry re-anchoring, proportional planning and the effort policy, and one evidence location binding | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy · §One evidence location binding` |
 | The PLAN/DO/CHECK/ACT/STOP phase contracts, a state-dependent criterion, and the return after `incomplete` | `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | The frozen evidence manifest and the `.pdca/<task>/rv<k>/` directory | `skills/pdca/references/plan.md §Frozen evidence manifest` |
-| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval` |
+| The normal (plan approval) and autonomous (`Notice:`, no questions) modes | `skills/pdca/SKILL.md §Control modes · §Normal-mode approval` |
 | The collection `plan_handoff` at the PLAN → DO boundary | `skills/pdca/SKILL.md §Normal-mode approval`; `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | The status file as the only progress mirror, evidence, recovery | `skills/pdca/SKILL.md §Phase progress mirror · §Workspace and durable status · §Evidence over assertion · §Recovery` |
 | Escalation, triggers 1–5, the "no fourth attempt" rule | `skills/pdca/SKILL.md §Escalation (pdca-escalate)` |

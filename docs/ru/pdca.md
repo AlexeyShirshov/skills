@@ -323,21 +323,21 @@ CHECK в ревизии r1 даёт по критерию «методика в�
 | Свежий вход — `contract: pdca`, `form: UNDECIDED`; один артефакт не означает известный метод, а выбранная коллекция передаётся cheap primary/collection owner | `skills/pdca/SKILL.md §Entry: one PLAN decides the form` |
 | Три формы и их различие | `skills/pdca/SKILL.md §Forms` |
 | Оверлеи (`pdca-coder`, `pdca-dotnet` наследует его) добавляют отличия, а не второй цикл | `skills/pdca/SKILL.md §Overlays` |
-| Линза: probe, increment, шаг и что считается зачётом | `skills/pdca/SKILL.md §Lens: probe, increment and step` |
+| Линза: probe, increment, шаг и что считается зачётом | `skills/pdca-incremental/SKILL.md §Lens: probe, increment and step` |
 | Роли, тиры, fallback; недоступная роль — resource blocker | `skills/pdca/SKILL.md §Roles and host requirements` |
 | `pdca-orchestrator` — cheap-диспетчер, а не шестой скилл (промпт поставляется как `assets/opencode-agents/pdca-orchestrator.md` в каждом скилле) | `skills/pdca/SKILL.md §Roles and host requirements` |
 | CHECK видит артефакты доказательств цикла напрямую (scoped `read`), но не продукт | `skills/pdca/SKILL.md:19-24`; `skills/pdca/assets/opencode-agents/pdca-check.md:11-20,27-28` |
 | Оркестратор-диспетчер; запрет саморедактирования/самочтения/самовердикта | `skills/pdca/SKILL.md §Roles and host requirements` |
-| Контексты cycle-control / campaign-control и владелец кампании | `skills/pdca/SKILL.md §Control modes and the campaign owner` |
+| Контексты cycle-control / campaign-control и владелец кампании | `skills/pdca/SKILL.md §Control modes`; `skills/pdca-incremental/SKILL.md §Driver coordination` |
 | Машина состояний и ветка `DO → PLAN` | `skills/pdca/SKILL.md §State machine and counters` |
 | Счётчики `N`, `r`, `n/3` и история дефектов | `skills/pdca/SKILL.md §State machine and counters` |
-| Кандидат DO → PLAN; аддитивное предусловие vs замена области | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| Кандидат DO → PLAN; аддитивное предусловие vs замена области | `skills/pdca/SKILL.md §DO outcome and ACT finalization · §Phase contracts (generic)` |
 | Гейты 1–5 и финализация STOP | `skills/pdca/SKILL.md §Transition gates` |
 | Несущие утверждения и вето | `skills/pdca/SKILL.md §Claims and veto`; `skills/pdca/references/check.md §Carrying claims and the veto` |
 | Контракт команд плана, vacuous и `expected-negative` прогоны, каталог исключений, re-anchor на входе DO, пропорциональное планирование и политика усилий, единая привязка evidence | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy · §One evidence location binding` |
 | Фазовые контракты PLAN/DO/CHECK/ACT/STOP, критерий, зависящий от состояния, и возврат после `incomplete` | `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | Замороженный манифест доказательств и каталог `.pdca/<task>/rv<k>/` | `skills/pdca/references/plan.md §Frozen evidence manifest` |
-| Режимы normal (апрув плана) и autonomous (`Notice:`, без вопросов) | `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval` |
+| Режимы normal (апрув плана) и autonomous (`Notice:`, без вопросов) | `skills/pdca/SKILL.md §Control modes · §Normal-mode approval` |
 | Коллекционный `plan_handoff` на границе PLAN → DO | `skills/pdca/SKILL.md §Normal-mode approval`; `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | Статус-файл как единственное зеркало прогресса, доказательства, восстановление | `skills/pdca/SKILL.md §Phase progress mirror · §Workspace and durable status · §Evidence over assertion · §Recovery` |
 | Эскалация, триггеры 1–5, правило «нет четвёртой попытки» | `skills/pdca/SKILL.md §Escalation (pdca-escalate)` |

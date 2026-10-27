@@ -79,7 +79,11 @@ class RunnerAssetTest(unittest.TestCase):
         raw = read(ASSET)
         self.assertIn("inline in your own session", raw)
         self.assertIn("The next step starts **only on the planner's decision**", raw)
-        self.assertIn("record the STOP **without a new planner call**", raw)
+        # A pre-set STOP condition is routed, not recorded by the runner: the
+        # STOP is an ACT outcome finalized by pdca-executor.
+        self.assertIn("route the STOP to **ACT**", raw)
+        self.assertIn("without a new planner call", raw)
+        self.assertIn("an incomplete/STOP finalization → ACT", raw)
 
     def test_runner_invents_no_baseline_at_preparation(self):
         raw = read(ASSET)

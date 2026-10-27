@@ -189,7 +189,7 @@ flat-primary fallback помечается `Notice:`.
 
 Отдельного агента кампании нет и нового уровня `Task` нет; primary коллекции не становится
 исполнителем кампании — он ведёт статус коллекции, а не шаг. Коллекция не даёт кампании ни
-параллельных шагов, ни зачёта числа без ACCEPT (`skills/pdca-incremental/SKILL.md` §Ownership).
+параллельных шагов, ни зачёта числа без ACCEPT (`skills/pdca-incremental/SKILL.md` §Driver coordination).
 Standalone-модель при этом не меняется.
 
 **Контракт и оверлей принадлежат шагу, а не кампании.** У пункта-кампании нет контракта и
@@ -247,7 +247,7 @@ target/floor (конкретные значения или утверждённ�
 **PLAN шага и апрув.** Бриф шага не подменяет PLAN и не является апрувом. В normal mode каждый
 фактический шаг проходит полный PLAN своего контракта и оверлея и утверждается по действующему
 active contract; утверждение фиксируется durable pending approval ref, а текущая единица получает
-`disposition=paused` (`skills/pdca-incremental/SKILL.md` §Ownership; `skills/pdca/SKILL.md` §Normal-mode approval). В автономном
+`disposition=paused` (`skills/pdca-incremental/SKILL.md` §Driver coordination; `skills/pdca/SKILL.md` §Normal-mode approval). В автономном
 режиме кампания не изобретает апрув, которого контракт не требует.
 
 **Коммиты.** `Commit policy: none` означает отсутствие промежуточных step-коммитов и **не**
@@ -649,8 +649,8 @@ collection.
 
 | Утверждение в статье | Источник |
 | --- | --- |
-| Форма-контракт семейства, «не оверлей и не второй цикл»; порядок загрузки поверх базы и объявленного оверлея; владелец автономной кампании — `pdca-orchestrator` в campaign-control | `skills/pdca-incremental/SKILL.md` §Form, not a second cycle, §Ownership; `skills/pdca/SKILL.md` §Control modes and the campaign owner |
-| Роли, тиры и полномочия: блок → роль → тир → доступ → выход; правила primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate | `skills/pdca-incremental/SKILL.md` §Ownership |
+| Форма-контракт семейства, «не оверлей и не второй цикл»; порядок загрузки поверх базы и объявленного оверлея; владелец автономной кампании — `pdca-orchestrator` в campaign-control | `skills/pdca-incremental/SKILL.md` §Form, not a second cycle, §Driver coordination; `skills/pdca/SKILL.md` §Control modes |
+| Роли, тиры и полномочия: блок → роль → тир → доступ → выход; правила primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate | `skills/pdca-incremental/SKILL.md` §Driver coordination |
 | Когда выбирать и разведение с `pdca-collection` (известный список сам по себе коллекцию не выбирает) | `skills/pdca/SKILL.md` §Forms; `skills/pdca-incremental/SKILL.md` §Form, not a second cycle |
 | Инварианты кампании: цель/рецепт, единица, флор, baseline-цепочка, один замер, discovery, перенос состояния, серийность | `skills/pdca-incremental/SKILL.md` §Campaign invariants |
 | Статус кампании: единственный файл, поля, append-only, приоритет evidence | `skills/pdca-incremental/SKILL.md` §Campaign status; `skills/pdca-incremental/references/status.md` |
@@ -659,8 +659,8 @@ collection.
 | Brief: шесть блоков, почему это минимум, что закрывает каждый и почему нельзя короче/длиннее | `skills/pdca-incremental/SKILL.md` §2. Step brief |
 | Экономика флора и размера шага | `skills/pdca-incremental/SKILL.md` §Economics and sizing |
 | Красные флаги и восстановление после компакции | `skills/pdca-incremental/SKILL.md` §Red flags (self-check), §Recovery |
-| Автономный режим и flat-primary fallback с `Notice:` | `skills/pdca/SKILL.md` §Control modes and the campaign owner, §Roles and host requirements; `skills/pdca-incremental/SKILL.md` §Ownership |
-| Композиция: кампания как пункт коллекции (форма ≠ контракт/оверлей пункта), две исполняющие модели | `skills/pdca-collection/SKILL.md` §Items: form, contract, overlay; `skills/pdca-incremental/SKILL.md` §Ownership |
+| Автономный режим и flat-primary fallback с `Notice:` | `skills/pdca/SKILL.md` §Control modes, §Roles and host requirements; `skills/pdca-incremental/SKILL.md` §Driver coordination |
+| Композиция: кампания как пункт коллекции (форма ≠ контракт/оверлей пункта), две исполняющие модели | `skills/pdca-collection/SKILL.md` §Items: form, contract, overlay; `skills/pdca-incremental/SKILL.md` §Driver coordination |
 | Каркас и `preparation_ref` (ссылка, не копия), три операции, готовность ≠ завершение | `skills/pdca-collection/SKILL.md` §P — per-item PLANs, the barrier, clustering; `skills/pdca-incremental/SKILL.md` §0. Bootstrap (once), §Campaign status |
 | Пауза ≠ финал, per-item `disposition`, производная пауза лейна, явный resume | `skills/pdca-collection/references/status.md` §Routing campaign outcomes, §Invariants; `skills/pdca-collection/references/lane.md` §Lane pause; `skills/pdca-incremental/SKILL.md` §Stop |
 | Контракт и оверлей шага по содержанию; правило диспетчеризации принадлежит загруженному контракту | `skills/pdca-incremental/SKILL.md` §3. Step execution |

@@ -103,7 +103,9 @@ Report:
 - **criteria matrix** and the **claims status** (`confirmed` / `refuted` / `unverified` per ID);
 - **findings** with severity and evidence pointers;
 - **verification limits** — what was established and what remains unknown;
-- **correction routing** — implementation defect → DO; wrong plan → PLAN;
+- **correction routing** — implementation defect → DO; wrong or unachievable contract → PLAN;
+  a completed candidate that cannot be accepted and has no viable contract correction → ACT
+  finalizes the honest `incomplete`/STOP outcome;
 - for a re-gather: the exact **append instruction** for the same canonical manifest (CHECK never
   writes).
 
@@ -112,8 +114,10 @@ report is re-gathered, not counted as an invented defect.
 
 ## Honest limits
 
-When confirmation is impossible, the verdict says so: `unverified`, `blocked` or STOP under the
-existing rules — without an invented probability and without weakening the criterion. A requirement
-the observer's permissions cannot satisfy is marked `unverified-by-design` by the PLAN, or assigned
-to a role that can satisfy it; a denied specific operation proves only that operation was rejected,
-not that the tool is absent, and it is not retried or worked around by widening permissions.
+CHECK judges only a **completed** candidate: a DO that cannot finish goes directly to ACT and is not
+sent to CHECK. When confirmation is impossible for a completed candidate, the verdict says so:
+`unverified` or STOP under the existing rules, finalized in ACT — without an invented probability and
+without weakening the criterion. A requirement the observer's permissions cannot satisfy is marked
+`unverified-by-design` by the PLAN, or assigned to a role that can satisfy it; a denied specific
+operation proves only that operation was rejected, not that the tool is absent, and it is not retried
+or worked around by widening permissions.

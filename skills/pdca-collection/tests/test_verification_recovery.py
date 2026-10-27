@@ -730,11 +730,12 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 self.assertNotIn(("C", "EXIT"), pairs)
                 self.assertNotIn(("C", "DO"), pairs)
                 self.assertNotIn(("C", "P"), pairs)
-                self.assertNotIn(("REPAIR", "A"), pairs)
                 self.assertNotIn(("REPAIR", "EXIT"), pairs)
-                # the terminal corrective outcome is a real route to the distinct
-                # STOP node, never to the successful ACT/EXIT
-                self.assertIn(("REPAIR", "STOP"), pairs)
+                # an exhausted corrective revision is finalised by ACT (the
+                # honest incomplete/STOP), never on a terminal path beside it
+                self.assertIn(("REPAIR", "A"), pairs)
+                self.assertNotIn(("REPAIR", "STOP"), pairs)
+                self.assertIn(("A", "STOP"), pairs)
                 self.assertNotIn(("STOP", "A"), pairs)
                 self.assertNotIn(("STOP", "EXIT"), pairs)
                 self.assertNotIn(("STOP", "C"), pairs)
@@ -970,8 +971,8 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
 # `pdca-executor`.  The main diagram must show two real incoming MERGE dispatch routes
 # (initial all-lanes-terminal + post-escalate retry/skip) and a labelled
 # `E -> orchestrator` decision result; the lower state graph must expose an
-# explicit MERGE node (10 nodes / 14 edges, including the terminal corrective
-# STOP and the repeat-defect escalation) that both the conflict and the
+# explicit MERGE node (10 nodes / 15 edges, including the ACT-finalised
+# corrective STOP and the repeat-defect escalation) that both the conflict and the
 # incomplete return flow through instead of
 # jumping straight to `C`.
 #
@@ -998,7 +999,7 @@ MERGE_GRAPH_NODE_IDS = {
     "START", "P", "DO", "MERGE", "C", "A", "EXIT",
     "REPAIR", "ESCALATE", "STOP",
 }
-MERGE_GRAPH_EDGE_COUNT = 14
+MERGE_GRAPH_EDGE_COUNT = 15
 
 # Tolerant condition/event-word families: the contract fixes the semantics, the
 # implementation owns the exact prose.
@@ -1162,7 +1163,7 @@ class MergeRetryContractTest(unittest.TestCase):
 
     # --- lower state graph: explicit MERGE node and mediated return ----------
 
-    def test_lower_graph_exposes_merge_node_with_ten_nodes_fourteen_edges(self):
+    def test_lower_graph_exposes_merge_node_with_ten_nodes_fifteen_edges(self):
         for theme, stem in THEME_STEMS.items():
             with self.subTest(theme=theme):
                 root = parse_svg(self.assets[stem + ".svg"])
@@ -1177,7 +1178,7 @@ class MergeRetryContractTest(unittest.TestCase):
                 self.assertEqual(
                     MERGE_GRAPH_EDGE_COUNT,
                     len(edges),
-                    f"{theme}: expected 14 lower edges, got {len(edges)}",
+                    f"{theme}: expected 15 lower edges, got {len(edges)}",
                 )
                 pairs = edge_pairs(root)
                 self.assertIn(("DO", "MERGE"), pairs)
@@ -1275,8 +1276,8 @@ class MergeRetryContractTest(unittest.TestCase):
 #   * `P` has no invented `re-plan` event (there is no such lower edge).
 #
 # These tests read the real rendered artefacts and the independent literal alias
-# map below; the lower graph stays at ten nodes / fourteen edges (STOP and the
-# repeat-defect escalation included) and the main entries must not pollute the
+# map below; the lower graph stays at ten nodes / fifteen edges (the
+# ACT-finalised STOP and the repeat-defect escalation included) and the main entries must not pollute the
 # `data-from` lower-edge selector.
 # ---------------------------------------------------------------------------
 
@@ -1294,7 +1295,7 @@ for _main, _lower in MAIN_TO_LOWER.items():
     _LOWER_TO_MAIN.setdefault(_lower, []).append(_main)
 
 # Literal expected lower STATE_EDGES triples per main peer block.  Hand-derived
-# from the fourteen canonical edges; the terminal `REPAIR -> STOP` edge and the
+# from the fifteen canonical edges; the ACT-finalising `A -> STOP` edge and the
 # only edge whose target is not a peer block (`A -> EXIT finalized`) are not
 # incoming main events.
 EXPECTED_INCOMING = {
@@ -1315,7 +1316,7 @@ EXPECTED_INCOMING = {
         ("MERGE", "ESCALATE", "merge-conflict"),
         ("REPAIR", "ESCALATE", "same defect after 1 fix"),
     },
-    "A": {("C", "A", "PASS")},
+    "A": {("C", "A", "PASS"), ("REPAIR", "A", "revision exhausted · no plan")},
 }
 
 # Shared central human labels for the triples the lower graph already renders
@@ -1791,7 +1792,7 @@ class DispatchLabelConsistencyTest(unittest.TestCase):
     def test_no_stale_replan_or_resource_shadow_labels(self):
         self.assertEqual([], shadow_label_problems(self.assets))
 
-    def test_lower_graph_stays_ten_nodes_fourteen_edges_without_pollution(self):
+    def test_lower_graph_stays_ten_nodes_fifteen_edges_without_pollution(self):
         for theme, stem in THEME_STEMS.items():
             with self.subTest(theme=theme):
                 root = parse_svg(self.assets[stem + ".svg"])

@@ -252,7 +252,7 @@ configuration repository.
 | The three counters `N`, `r`, `n/3` | `skills/pdca/SKILL.md §State machine and counters` |
 | Gates 1–4 (PLAN → DO → CHECK → ACT) | `skills/pdca/SKILL.md §Transition gates` |
 | The plan command contract, vacuous/`expected-negative` runs, the exception catalog, DO-entry re-anchoring and the effort policy | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy` |
-| The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| The `DO → PLAN` candidate, an additive precondition vs a scope replacement, unit states | `skills/pdca/SKILL.md §DO outcome and ACT finalization · §Phase contracts (generic)` |
 | Re-entry after a terminal `incomplete`/STOP | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | The three parallel DO streams (code ∥ tests ∥ prose docs), the frozen shared contract | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |
 | Generated/API docs — after the code stream | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |

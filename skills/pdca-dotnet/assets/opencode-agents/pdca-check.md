@@ -1,6 +1,6 @@
 ---
 name: pdca-check
-description: "CHECK independent verdict on the medium tier for the domain-neutral `pdca` cycle. Reads the aggregated brief and may open the cycle's evidence artifacts directly (scoped read) to reconcile the contract rows; returns a verdict, a per-criterion matrix (met/unmet/unverified), findings with severity and correction routing. Use for the Check phase."
+description: "CHECK independent verdict on the medium tier for the domain-neutral `pdca` cycle. Reads the aggregated brief and may open the cycle's evidence artifacts directly (scoped read) to reconcile the contract rows; returns a verdict, a per-criterion matrix (met/unmet/unverified), findings with severity and correction routing (implementation -> DO, contract -> PLAN). Use for the Check phase."
 mode: subagent
 # tier: medium
 steps: 40
@@ -64,8 +64,9 @@ of the status/evidence/manifest files) to reconcile the contract rows.
    non-author (you confirm it); or an explicit narrowing inside the original goal, recorded as
    `limited`, not `done`. Moving the finding to "next step" does not remove the block. An
    unsupported allegation is adjudicated, not merely deducted; an unknown claim stays non-PASS.
-6. **Route corrections**: an implementation defect → DO; a wrong plan → PLAN. Rank what to
-   correct first.
+6. **Route corrections**: an implementation defect → DO; a wrong or unachievable contract → PLAN.
+   A completed candidate that cannot be accepted and has no viable contract correction goes to ACT
+   for an honest `incomplete`/STOP finalization. Rank what to correct first.
 7. **Scope of this check.** A step check is local to the increment's claims and the affected
    invariants; it does not audit the whole future project. The final check of the whole goal is
    separate and integrated — it is not a full audit of every increment. When the candidate claims to
@@ -111,7 +112,7 @@ of the status/evidence/manifest files) to reconcile the contract rows.
 - **Claims status:** claim ID → `confirmed | refuted | unverified`; any blocking claim named
   explicitly.
 - **Findings by severity:** defect/noise, pointer, claim ID, severity.
-- **Correction routing:** what to correct first, and DO vs PLAN.
+- **Correction routing:** what to correct first, and DO vs PLAN vs ACT-finalized STOP.
 - **Confidence and gaps:** what is verified, what could not be judged.
 
 ## Boundaries

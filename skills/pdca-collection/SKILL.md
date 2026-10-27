@@ -10,28 +10,30 @@ disable-model-invocation: true
 
 ## Role
 
-The **base** (`../pdca/SKILL.md`) is the entry: its single PLAN decided the **collection** form —
-a list of **independent goals**, not an internal split of one goal (§Forms) — and chose this
-contract, passing the plan by reference. This skill **does not classify the batch** and has no
+This contract is **self-contained**. Invoked directly, this file plus
+`references/common-contract.md` is a complete contract and **loading the base `../pdca/SKILL.md`
+first is not required**. When entered from the family router, its single PLAN already decided the
+**collection** form — a list of **independent goals**, not an internal split of one goal — and
+passed the plan by reference. Either way this skill **does not classify the batch** and has no
 routing table of its own: the form of the whole batch is already fixed.
 
-Collection planning then classifies **each item** by the same rules the base uses (§Forms) —
+Collection planning then classifies **each item** by the same rules as the common contract (§Forms) —
 ordinary cycle or incremental campaign — with the **same configured `pdca-planner`**; that is the
 per-item decision that starts each item's own PLAN, not a second PLAN of the batch. A batch may be
 heterogeneous; a **single-lane collection is the normal case**, not a degradation. The collection
 PLAN owns the batch: item ids, footprints, dependencies and the grouping decision.
 
 **Naming.** An item's **form** is `cycle` | `campaign`; the **contract** is `pdca` plus the
-**overlay** (`none` | `coder` | `coder+.NET`, applied to the chosen form, base §Overlays). A
+**overlay** (`none` | `coder` | `coder+.NET`, applied to the chosen form, common contract §Forms). A
 campaign item has **no item-level contract**: the contract/overlay belongs to each concrete **step**
 and is decided by `pdca-planner` for that step; the campaign itself is governed by
 `../pdca-incremental/SKILL.md`.
 
-The base is **not duplicated or overridden** here: gates, counters, roles, host requirements,
-approval mechanics, escalation, recovery, effort accounting and the generic operating constraints are the
-base's (§Generic operating constraints, §Red flags (self-check)); the campaign's step semantics are
-the incremental contract's. This skill adds only the batch level: the barrier, the clustering, the
-lanes, the merge decision and the collection status file.
+The common gates, counters, roles, approval mechanics, escalation, recovery, effort accounting and
+generic operating constraints are in `references/common-contract.md` (a local copy, so this form
+works without the base); the campaign's step semantics are the incremental contract's. This skill
+adds only the batch level: the barrier, the clustering, the lanes, the merge decision and the
+collection status file.
 
 You (the collection owner) **do not edit files and do not run commands yourself**. The
 infrastructure (worktrees, branches), `git merge --no-ff` and the mandatory checks of an item are
@@ -63,10 +65,10 @@ silent switch to another run mode. The absence of authorization is **not** an au
   `pdca-orchestrator` it dispatches as the group runner): the schedule, the ALL-barrier, the lane
   queue, the merge decision and the collection status file.
 - An item with the form **`cycle`** is executed by the same cheap dispatcher in **cycle-control**
-  (base §Control modes and the campaign owner): it receives one already-planned cycle, executes it
+  (common contract §Roles and tiers): it receives one already-planned cycle, executes it
   and returns the result; it does not advance the campaign, the queue or anything else.
 - An item with the form **`campaign`** has its campaign state owned by **one designated existing
-  cheap `pdca-orchestrator` in campaign-control** (base §Control modes and the campaign owner),
+  cheap `pdca-orchestrator` in campaign-control** (common contract §Roles and tiers),
   designated when the schedule is bound: it holds the campaign record, the effort accounting and the
   recovery, and it is the only writer of that record. **No competing writers** — the collection
   owner never writes or advances a campaign; a pause and a stop are durable in the campaign record
@@ -90,8 +92,7 @@ campaign, a collection inside a campaign and a collection inside a collection ar
 **Step and lens semantics follow the form.** A `campaign` item follows the incremental contract —
 one planner call per step boundary, an accepted negative candidate credited as knowledge, no forced
 second increment, a whole-goal final check before `done`, and the claims veto
-(`../pdca-incremental/SKILL.md` §Campaign cycle, §Stop; base §Lens: probe, increment and
-step, §Claims and veto). A `cycle` item follows the base gates as they are. Neither is restated
+(`../pdca-incremental/SKILL.md` §Campaign cycle, §Stop; common contract §Claims and veto). A `cycle` item follows the common gates as they are. Neither is restated
 here.
 
 ## Collection (P / D / C / A)
@@ -283,7 +284,7 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    successful repeated merge the **remaining pending/eligible** merges continue; the **full** CHECK
    of the parent collection is performed only when all selected `done` groups are integrated, there
    is no active conflict and no unfinished merge state. A repeated conflict again →
-   `git merge --abort` and `pdca-escalate` again (without a new attempt counter: the base `r`/`n`
+   `git merge --abort` and `pdca-escalate` again (without a new attempt counter: the common `r`/`n`
    are not introduced). The "mark `incomplete`" decision explicitly returns control to MERGE: the
    tip of that group is **fully excluded** from the integration (even if part of its items/commits
    is successful), and the **remaining `done` groups** are integrated by the usual policy; already
@@ -299,8 +300,8 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
 
 ### C — verification (the standard CHECK)
 
-The common verification of a collection is the **standard CHECK** of the base contract (two ticks:
-gather cheap → verdict `pdca-check` medium; base §Phase contracts (generic),
+The common verification of a collection is the **standard CHECK** of the common contract (two ticks:
+gather cheap → verdict `pdca-check` medium; common contract §One loop,
 `../pdca/references/check.md`), plus the overlay deltas of the contract applied to the checked work
 (`../pdca-coder/SKILL.md` §Code-specific check deltas; for .NET — `../pdca-dotnet/SKILL.md`
 §.NET check deltas), and **not** a separate bespoke stage of the collection. When all lanes are
@@ -314,15 +315,15 @@ The input of the common `C` is the **actual group statuses** plus the separate *
 `incomplete` groups: the **completion** report (how many items/groups were carried through) and the
 **verification verdict** of the integrated tree are **separate** fields. Even with no selected `done`
 group or with an `incomplete` current group the standard `C` still runs on the integrated tree; the
-source items are **not** marked `done` retroactively. Counters/escalation are the base ones (base
-§State machine and counters, §Escalation), without a collection counter.
+source items are **not** marked `done` retroactively. Counters/escalation are the common ones (common contract
+§Counters and history, §Escalation and guardrails), without a collection counter.
 
 The runner **always** — even when all checks are green — gathers through the existing
 `pdca-executor`/`pdca-scout` the mandatory reports about the raw measurements (command, exit code,
 log) and the observation-lens reports, and passes the **aggregate** to `pdca-check` (medium). The
 raw command measurements **never** decide gate PASS by themselves: the verdict of `C`
 (`pass`/`fail` + findings) is issued by `pdca-check`; `pdca-check` does not run hands and does not
-edit code. The claims and the veto apply unchanged (base §Claims and veto).
+edit code. The claims and the veto apply unchanged (common contract §Claims and veto).
 
 - **PASS** → the common ACT of the collection is allowed (§A).
 - **FAIL · a real defect** → the runner opens a **standard corrective cycle** (its form, contract
@@ -340,8 +341,8 @@ No automatic rerun/remerge/recluster/reset/revert and no new collection worktree
 corrective cycles are **separate records/links, not additional lanes**. While `C` is red — **no**
 success/cleanup, the results are preserved.
 
-The revision/escalation rules inside a corrective cycle are the **base `r`/`n/3`** (base §State
-machine and counters, §Escalation): the same defect after one fix → `pdca-escalate` **before the
+The revision/escalation rules inside a corrective cycle are the **common `r`/`n/3`** (common contract
+§Counters and history, §Escalation and guardrails): the same defect after one fix → `pdca-escalate` **before the
 second fix** even with a local CHECK=PASS and a new corrective id; a change of the cycle
 id/session/status file **does not** reset `r`/`n`/the defect history; an exhausted revision does
 **not** get a 4th implementation CHECK even after `pdca-escalate` — continuation only through a
@@ -354,11 +355,13 @@ corrective cycle by itself does not mean the success of the collection**.
 This is **not** mixed with the `incomplete` of an item inside a lane (`references/lane.md`
 §Failure): that one concerns the failure of a single item of a group and the decision of
 `pdca-planner` in its cycle, whereas the STOP of a corrective cycle is about a repeat of a defect of
-the **common** `C` and obeys the base `r`/`n`.
+the **common** `C` and obeys the common `r`/`n`.
 
 ### A — completion
 
-Only a **PASS of the common `C`** allows completion. Report (§Report); `pdca-executor` removes
+ACT finalizes the collection outcome. **Only a PASS of the common `C`** allows the success
+completion and cleanup; a `blocked`/`incomplete`/`STOP` outcome is finalized by the same ACT, with
+the honest outcome recorded and **no success path**. Report (§Report); `pdca-executor` removes
 **only disposable** worktrees and temporary group/task branches that are **`done`/`merged`**. The
 worktrees, branches, commits and patches of **`incomplete` groups are never deleted**: before any
 cleanup their refs and patch paths are preserved (simplest — leave their worktree and refs in
@@ -366,24 +369,24 @@ place, explicitly recording that in the status); the status/evidence paths stay 
 must not be deleted while they hold pointers to the preserved results. Push — **never**. If
 `pdca-escalate` does not issue an acceptable revised plan/STOP, the unresolved status, the evidence
 and the integrated work are preserved: **no** success and no cleanup, the parent collection stays
-**`unverified`**, and the source items keep their **previous** statuses. **A STOP before `C = PASS`
-— cleanup is forbidden.** **The success of a corrective cycle by itself does not mean the success of
-the collection.**
+**`unverified`**, and the source items keep their **previous** statuses. **A STOP or any
+non-`PASS` termination — cleanup and merging are forbidden.** **The success of a corrective cycle
+by itself does not mean the success of the collection.**
 
 A campaign item's outcome is routed to its item status by `references/status.md` §Routing campaign
 outcomes; campaign acceptance is not the common `C` and does not replace it.
 
 ## Report
 
-The format is the base ACT's (`../pdca/references/act.md`): what was done, how it was verified, what
+The report format follows ACT (`../pdca/references/act.md` when available; the common contract §One loop otherwise): what was done, how it was verified, what
 remains/blocked, the next step; in autonomous mode — without a message to the user. The completion
 report and the verification verdict of the integrated tree stay separate fields (§C).
 
 ## Approval barrier (normal mode)
 
 An item or step waiting for approval is `disposition=paused` with the status `in-progress`, and
-**not** `done`/`incomplete`. The mechanics are stated once in the base (`../pdca/SKILL.md`
-§Normal-mode approval): the durable pending approval ref, the approval recorded against the same
+**not** `done`/`incomplete`. The approval mechanics are stated once in `references/common-contract.md`
+§Entry and control mode: the durable pending approval ref, the approval recorded against the same
 ref, the applicability check on resume, the fresh approval after a real revision. The collection
 adds only what the collection owns:
 
@@ -402,9 +405,8 @@ adds only what the collection owns:
 
 ## Fallback
 
-The host requirements, the role table and the resource-blocker rules are the base's
-(`../pdca/SKILL.md` §Roles and host requirements, §Control modes and the campaign owner); this
-section keeps only the collection's own fallback.
+The host requirements, the role table and the resource-blocker rules are in
+`references/common-contract.md`; this section keeps only the collection's own fallback.
 
 If the harness forbids a subagent to delegate (no nested delegation), `pdca-orchestrator` cannot
 orchestrate pdca. Trigger: the launch of `pdca-orchestrator` fails with a
@@ -445,16 +447,17 @@ dependent action, not a weakening of the gate.
 | One group | work in the current worktree/branch; worktrees, group/task branches and the merge are not created; `incomplete` leaves the commits already made in the current branch |
 | Autocommit/merge right | given by a project overlay or an explicit user request; the skill itself grants no right; `>=2` groups without the right — a preflight blocker before the allocation; one group may go in the current tree without commits if allowed; push never |
 
-The roles, the tiers and their model bindings are the host's and the base's: this contract names
-roles only, carries no model id and adds no role.
+The roles, the tiers and their model bindings are the host's and the common contract's: this
+contract names roles only, carries no model id and adds no role.
 
 ## References
 
 Loaded **at the start of its phase**, not up front (the host truncates tool output at 50 KiB /
 2000 lines, so a truncated contract would lose the tail — usually the CHECK/ACT/STOP rules):
 
-- `../pdca/SKILL.md` — the base: entry and forms, control modes and the campaign owner, gates,
-  counters, claims and veto, effort accounting, overlays, escalation, recovery, normal-mode approval.
+- `references/common-contract.md` — the self-contained common contract: entry and control mode, the
+  loop, roles and tiers, counters, claims and veto, evidence, escalation and guardrails. Load it with
+  this file; the base `../pdca/SKILL.md` is optional deeper detail, not a prerequisite.
 - `../pdca-incremental/SKILL.md` — a campaign item: invariants, charter and status file, bootstrap,
   the step boundary, acceptance, the stop rules.
 - `../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md` — the overlays applied to the relevant work.

@@ -1,12 +1,14 @@
 # ACT: closing, status and handoff
 
-Reference for the ACT phase and the durable status file. Gate 4 stays in `../SKILL.md`.
+Reference for the ACT phase and the durable status file. Gates 4–6 stay in `../SKILL.md`.
 
 ## Closing order
 
-ACT is mandatory and ends, in normal mode, with **two artefacts**: the cycle status file (finalized
-and kept) and a ready message for the next session. In autonomous mode there is no second
-artefact — the status file remains and the work continues in the same session.
+ACT is mandatory for every outcome and ends, in normal mode, with the cycle status file (finalized
+and kept). On an **accepted** result it also ends with a ready message for the next session; on a
+`blocked`/`incomplete`/`STOP` outcome it records the honest final state and no next-session
+continuation. In autonomous mode there is no second artefact — the status file remains and the work
+continues in the same session.
 
 1. **Durable lesson** — if the host provides durable memory, record 0–2 transferable lessons
    (optional; a no-op is normal). Only what is reusable beyond this workspace and has no natural
@@ -17,15 +19,20 @@ artefact — the status file remains and the work continues in the same session.
    verdict is invalid and the cycle loops back. The cycle state is not written there.
 3. **Cycle status file — finalized by `pdca-executor`:** the driver passes the reports (CHECK
    verdict, executor run results, scout facts) and the executor fills in Done/Verified, Next plan
-   and Changed artefacts.
+   and Changed artefacts. For a non-accepted outcome it fills the cause, evidence, residual
+   `unmet`/`unverified` requirements, counters and defect history instead, with no PASS and no
+   `done`.
 4. **Status-file lifetime** — finalized and **kept**, never deleted: the next session's handoff in
    normal mode, the next PLAN's input in autonomous mode.
-5. **Message for the next session** — last, nothing after it; **not printed in autonomous mode**.
+5. **Message for the next session** — last, nothing after it; only after an accepted result, and
+   **not printed in autonomous mode**.
 
-ACT is bookkeeping only: it does not change product, tests or any checked artifact. Work found
-during finalization is either done in DO and re-checked by the final CHECK, or invalidates the
-accepted snapshot and loops back (implementation defect → DO, wrong plan → PLAN); it is never
-slipped in under ACT. `rework`/`replan` are not part of ACT — they are loop-backs before ACT.
+ACT is bookkeeping only: it does not change product, tests or any checked artifact and it never
+implements. Work found during finalization is either done in DO and re-checked by the final CHECK, or
+invalidates the accepted snapshot and loops back (implementation defect → DO, wrong contract → PLAN);
+it is never slipped in under ACT. `rework`/`replan` are not ACT steps — they are loop-backs before an
+accepted ACT. A `blocked`/`incomplete`/`STOP` outcome is finalized **by ACT**, not on a separate path
+beside it.
 
 ## Status file
 
@@ -40,9 +47,10 @@ Lifecycle:
    dependencies, means and access, risks/stop conditions, effort estimate and accounting) plus the
    log opened with `PLAN ready — awaiting user approval`.
 2. **Progress — every event** of DO/CHECK.
-3. **Replan** (CHECK → PLAN / DO → PLAN): a real revised plan bumps `r`, resets `n` to 1; an
-   unchanged plan does not. The **same** file's plan section is rewritten; the outgoing failed
-   attempt is recorded first, then `Replanned: <reason> (r <old>→<new>, iteration 1/3)`. No new file.
+3. **Replan** (CHECK → PLAN): a real revised plan bumps `r`, resets `n` to 1; an unchanged plan does
+   not. The **same** file's plan section is rewritten; the outgoing failed attempt is recorded first,
+   then `Replanned: <reason> (r <old>→<new>, iteration 1/3)`. No new file. There is no DO → PLAN
+   replan: a DO that cannot finish goes to ACT with its residual requirements.
 4. **Finalization in ACT:** Done/Verified, Next plan, Changed artefacts, pointers.
 
 **Progress log** — append-only, one line per event, never edited retroactively:
@@ -58,13 +66,14 @@ bytes as they are — a factual correction is added separately. The status file 
 authority; the log records the observed event.
 
 Must log: `PLAN ready — awaiting user approval`; `plan approved — DO started`; each `D:` unit state
-change; each `D:` closed (exit status + log path); DO → CHECK; each CHECK report; the verdict; each
-CHECK failure/fix/loop-back with its defect key and applied fix count (pointers, not logs); loop-back
-to DO / `Replanned` (with the outgoing failed attempt); an additive-prerequisite addition or a
-`superseded→replacement` mapping; a step boundary and the accepted increment; escalation and its
-outcome; `Recovered after compaction`; `Notice: …` (autonomous); ACT closed. Written **one event at
-a time** by a short `pdca-executor` dispatch (or as the last step of one). The current state must
-match the last log line.
+change; each `D:` closed (exit status + log path); DO → CHECK; `DO → ACT (cannot finish)` with the
+cause and residual requirements; each CHECK report; the verdict; each CHECK failure/fix/loop-back
+with its defect key and applied fix count (pointers, not logs); loop-back to DO / `Replanned` (with
+the outgoing failed attempt); an additive-prerequisite addition or a `superseded→replacement`
+mapping; a step boundary and the accepted increment; escalation and its outcome; `Recovered after
+compaction`; `Notice: …` (autonomous); ACT closed, including `STOP finalized in ACT` with its cause
+and residual criteria. Written **one event at a time** by a short `pdca-executor` dispatch (or as the
+last step of one). The current state must match the last log line.
 
 **Unit states** (per `D:` unit): exactly one of `pending | running | blocked | done | superseded`.
 `done` only when it satisfies gate 2; a blocker report leaves it `blocked`. An **additive
@@ -122,8 +131,10 @@ allows recovery.
 
 ## Message for the next session
 
-Right after the status file is finalized — **normal mode only** — close the response with this block,
-and nothing after it. In autonomous mode it is not printed and there is no wait state.
+Right after an **accepted** result's status file is finalized — **normal mode only** — close the
+response with this block, and nothing after it. On a `blocked`/`incomplete`/`STOP` outcome no
+continuation block is printed; the honest report and the kept status file are the handoff. In
+autonomous mode it is not printed and there is no wait state.
 
 Signature, verbatim:
 

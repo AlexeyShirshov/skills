@@ -41,7 +41,7 @@ LABELS = (
     "Discover · gap map", "Brief · six blocks", "Ranked seed",
     "P · PLAN", "D · DO", "C · CHECK", "A · ACT",
     # the step exit is the base step boundary, not a step-kind table
-    "Step exit", "accept · revise · new step",
+    "Step exit", "accept · revise · blocked → ACT",
     "Route", "next · revise · stop",
     "one writer · status write",
     "next step · baseline = accepted", "repair · parent N",
@@ -114,6 +114,19 @@ class DiagramArtifactsTest(unittest.TestCase):
         for name in (LIGHT + ".svg", DARK + ".svg"):
             with self.subTest(name=name):
                 self.assertIn('data-edge-id="decide_step"', read(DIAGRAM / name))
+
+    def test_a_step_that_cannot_finish_reaches_act_not_stop(self) -> None:
+        """DO failure is an ACT outcome: it never opens a second STOP path."""
+        for name in (LIGHT + ".svg", DARK + ".svg"):
+            text = read(DIAGRAM / name)
+            with self.subTest(name=name):
+                self.assertIn('data-edge-id="step_acc"', text)
+                self.assertIn("blocked (DO → ACT)", text)
+                # STOP hangs off the campaign decision only, never off STEP
+                self.assertNotIn('data-edge-id="step_stop"', text)
+                self.assertEqual(1, text.count('data-edge-id="decide_stop"'))
+                # the campaign STOP is finalized in ACT, not a parallel terminal
+                self.assertIn("ACT-finalized", text)
 
     def test_two_dark_crops_split_the_hand_diagram(self) -> None:
         def viewbox(name: str) -> tuple[float, float, float, float]:

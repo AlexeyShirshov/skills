@@ -41,7 +41,7 @@ The driver holds the active task, the approved PLAN and the `task_id` from `pdca
 - on a loop-back to DO for an implementation defect, the next CHECK of the **same task and unchanged
   PLAN** resumes the saved `task_id` and passes the **full, current** aggregated report (not a
   delta — earlier reports are history, not evidence);
-- reset `task_id` (new `pdca-check` session) after CHECK → PLAN / DO → PLAN, after ACT, before the
+- reset `task_id` (new `pdca-check` session) after CHECK → PLAN, after ACT, before the
   next task, and whenever it is lost. **This is independent of the counters:** it never resets `r`,
   `n` or the defect history (they live in the status file). A lost ID is not a passed gate; a
   resumed session waives no lens or triggered security verdict. Never recover an ID by slug alone —

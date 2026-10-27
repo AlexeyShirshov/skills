@@ -135,8 +135,9 @@ lenses stay the coder's; their .NET skill binding and the concrete look-at items
   manifest and its two-helper gate, the `pdca_evidence.py` pipeline, the append-only
   binding/applicability disposition, contract revision: `references/plan.md` (§Versioned evidence
   contract).
-- **The command projection and `plan_lint.py`.** The prose command block is not machine-checkable,
-  so PLAN also emits `<evidence-dir>/inputs/commands.json` and validates it before gate 1 and again
+- **The command projection and `plan_lint.py`.** The prose block of **verification** commands (the
+  ones that produce acceptance evidence — never DO's implementation actions) is not
+  machine-checkable, so PLAN also emits `<evidence-dir>/inputs/commands.json` and validates it before gate 1 and again
   on DO entry after re-anchoring:
   `python3 .pdca/scripts/plan_lint.py check --repo <checkout> --commands <projection> --receipt
   <evidence-dir>/plan-lint.json`, and `probe` when a harness probe is declared. Exit `0` ok, `2`

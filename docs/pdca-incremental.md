@@ -184,7 +184,7 @@ classify the task.
 There is no separate campaign agent and no new `Task` level; the collection primary does not become the
 campaign's executor — it keeps the collection status, not the step. A collection gives the campaign
 neither parallel steps nor crediting a number without ACCEPT
-(`skills/pdca-incremental/SKILL.md §Ownership`). The standalone model is unchanged.
+(`skills/pdca-incremental/SKILL.md §Driver coordination`). The standalone model is unchanged.
 
 **The contract and the overlay belong to the step, not to the campaign.** A campaign item has no
 item-level contract or overlay and no "campaign domain". Each step gets them from the step's content —
@@ -632,18 +632,18 @@ The "claim → source" map. Where they disagree, the contracts take precedence:
 
 | Claim in the article | Source |
 | --- | --- |
-| A form contract of the family, "not an overlay and not a second cycle"; load order over the base and the declared overlay; the campaign owner is `pdca-orchestrator` in campaign-control | `skills/pdca-incremental/SKILL.md §Form, not a second cycle · §Ownership`; `skills/pdca/SKILL.md §Control modes and the campaign owner` |
-| Roles, tiers and authority: block → role → tier → access → output; the primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate rules | `skills/pdca-incremental/SKILL.md §Ownership` |
+| A form contract of the family, "not an overlay and not a second cycle"; load order over the base and the declared overlay; the campaign owner is `pdca-orchestrator` in campaign-control | `skills/pdca-incremental/SKILL.md §Form, not a second cycle · §Ownership`; `skills/pdca/SKILL.md §Control modes` |
+| Roles, tiers and authority: block → role → tier → access → output; the primary/pdca-planner/pdca-check/pdca-scout/orchestrator/escalate rules | `skills/pdca-incremental/SKILL.md §Driver coordination` |
 | When to choose and the distinction from `pdca-collection` (a known list by itself does not select a collection) | `skills/pdca/SKILL.md §Forms`; `skills/pdca-incremental/SKILL.md §Form, not a second cycle` |
 | Campaign invariants: goal/recipe, unit, floor, baseline chain, one measurement, discovery, state transfer, seriality | `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | Campaign status: the single file, fields, append-only, evidence precedence | `skills/pdca-incremental/SKILL.md §Campaign status`; `skills/pdca-incremental/references/status.md` |
 | The cycle: bootstrap, discovery, the six-block brief, the step, acceptance, stop decisions, sizing | `skills/pdca-incremental/SKILL.md §Campaign cycle · §Stop` |
-| A step is a bounded campaign unit with no step kinds; a shortfall is a loop-back of the same step; the final whole-goal check is not a step, and the route after a step | `skills/pdca-incremental/SKILL.md §Step boundary`; `skills/pdca/SKILL.md §Lens: probe, increment and step` |
+| A step is a bounded campaign unit with no step kinds; a shortfall is a loop-back of the same step; the final whole-goal check is not a step, and the route after a step | `skills/pdca-incremental/SKILL.md §Step boundary`; `skills/pdca-incremental/SKILL.md §Lens: probe, increment and step` |
 | Brief: six blocks, why this is the minimum, what each closes and why not fewer/more | `skills/pdca-incremental/SKILL.md §2. Step brief` |
 | Floor economics and step size | `skills/pdca-incremental/SKILL.md §Economics and sizing` |
 | Red flags and recovery after compaction | `skills/pdca-incremental/SKILL.md §Red flags (self-check) · §Recovery` |
-| Autonomous mode and the flat-primary fallback with `Notice:` | `skills/pdca/SKILL.md §Control modes and the campaign owner · §Roles and host requirements`; `skills/pdca-incremental/SKILL.md §Ownership` |
-| Composition: a campaign as a collection item (form ≠ item contract/overlay), two execution models | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay`; `skills/pdca-incremental/SKILL.md §Ownership` |
+| Autonomous mode and the flat-primary fallback with `Notice:` | `skills/pdca/SKILL.md §Control modes · §Roles and host requirements`; `skills/pdca-incremental/SKILL.md §Driver coordination` |
+| Composition: a campaign as a collection item (form ≠ item contract/overlay), two execution models | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay`; `skills/pdca-incremental/SKILL.md §Driver coordination` |
 | The frame, `preparation_ref` as a reference (not a copy), the three operations, readiness ≠ completion | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-incremental/SKILL.md §0. Bootstrap (once) · §Campaign status` |
 | Pause ≠ final, per-item `disposition`, derived lane pause, explicit resume | `skills/pdca-collection/references/status.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/references/lane.md §Lane pause`; `skills/pdca-incremental/SKILL.md §Stop` |
 | The step's contract and overlay by content; the dispatch policy belongs to the loaded contract | `skills/pdca-incremental/SKILL.md §3. Step execution` |

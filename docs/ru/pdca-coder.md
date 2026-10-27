@@ -260,7 +260,7 @@ binding unmet-строки и audit-notes показываются раздел�
 | Три счётчика `N`, `r`, `n/3` | `skills/pdca/SKILL.md §State machine and counters` |
 | Гейты 1–4 (PLAN → DO → CHECK → ACT) | `skills/pdca/SKILL.md §Transition gates` |
 | Контракт команд плана, vacuous/`expected-negative` прогоны, каталог исключений, re-anchor на входе DO и политика усилий | `skills/pdca/references/plan.md §Plan command contract (PLAN close) · §Vacuous and expected-negative runs · §Recorded exceptions: catalog and repetition threshold · §Re-anchoring at DO entry · §Proportional planning and effort policy` |
-| Кандидат `DO → PLAN`, аддитивное предусловие vs замена объёма, состояния единиц | `skills/pdca/SKILL.md §DO → PLAN candidate · §Phase contracts (generic)` |
+| Кандидат `DO → PLAN`, аддитивное предусловие vs замена объёма, состояния единиц | `skills/pdca/SKILL.md §DO outcome and ACT finalization · §Phase contracts (generic)` |
 | Повторный вход после терминального `incomplete`/STOP | `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`; `skills/pdca/SKILL.md §Phase contracts (generic)` |
 | Три параллельных потока DO (код ∥ тесты ∥ прозаические доки), замороженный общий контракт | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |
 | Сгенерированные/API-доки — после потока кода | `skills/pdca-coder/SKILL.md §Parallel DO streams (code + tests + prose docs)` |

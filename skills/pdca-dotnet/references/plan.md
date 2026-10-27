@@ -57,7 +57,8 @@ checks. Planned artifact locations are expectations, not evidence. Do not fabric
 symbols or `file:line`; use verified existing references or explicitly planned sources. PLAN must also
 pin a finite CHECK re-gather budget and its owner, and the frozen evidence manifest path, in the
 status file. Every plan carries a **`PLAN-LINT`** row: the `plan_lint.py check` receipt (path + exit
-`0`) proving the frozen commands passed the plan command contract before gate 1 (§Machine projection).
+`0`) proving the frozen **verification** commands passed the plan command contract before gate 1
+(§Machine projection); DO's implementation commands are not part of it.
 
 ### Default evidence dir and the attempt child
 
@@ -213,8 +214,10 @@ existing plan-revision and attempt rules remain unchanged.
 
 The base plan command contract (§Plan command contract in `../../pdca/references/plan.md`) applies
 unchanged: selector resolves, argv survives the harness, phase and scope are legal, the expected
-outcome is declared. The prose command block is not machine-checkable, so PLAN also emits a
-**projection** at `<evidence-dir>/inputs/commands.json` (same attempt child as the contract): `task`,
+outcome is declared, and it covers only the commands that produce **acceptance evidence** — never
+DO's implementation actions, which DO chooses and whose runs it records as evidence. The prose block
+of verification commands is not machine-checkable, so PLAN also emits a **projection** at
+`<evidence-dir>/inputs/commands.json` (same attempt child as the contract): `task`,
 `plan_r`, optional `checkout`, `evidence_root`, `host_budget`, `integration_boundary_runs`, optional
 `units`, and one object per command — `id`, `phase`, `kind`, `argv[]`, `cwd`, `env`, `expected`,
 `expected_identity`, `min_selected`, `log`, `timeout_s`, `covers`, and for mutation a `harness_probe`

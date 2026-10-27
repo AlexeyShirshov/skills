@@ -1,7 +1,7 @@
 # Campaign status, preparation record and checkpoint
 
 Reference for the campaign's durable state. Load it at bootstrap and whenever the status content is
-composed. The base schema (`../pdca/references/act.md` §Status file) stays in force as written —
+composed. The base schema (`../../pdca/references/act.md` §Status file) stays in force as written —
 this file adds only the campaign fields and the records.
 
 ## One file, runtime only

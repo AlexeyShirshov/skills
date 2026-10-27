@@ -60,8 +60,8 @@ launched in parallel the same way — with several subagent dispatches per turn.
 template below, and the status file of **each** unit is created when its worktree is set up at the
 start of DO, inside that worktree.
 
-**While `pdca-planner` adjudicates a `DO → PLAN` candidate,** running streams must not keep
-rewriting the old-plan area.
+**When DO cannot finish under the contract, it hands the incomplete result to ACT** with the cause,
+evidence and residual requirements; running streams must not keep rewriting the old-plan area.
 
 ## Coder editing discipline (applying fixes)
 

@@ -38,7 +38,7 @@ BLOCKS = {
         ("Gather", "pdca-scout + dotnet-* (6 lenses)", "weak"),
         ("Decide · pdca-planner", "fix / defer · decomposition", "medium"),
         ("Criteria · goal", "goal · acceptance (+negative)", "medium"),
-        ("Tasks · risks", "steps · no TBD", "medium"),
+        ("Tasks · risks", "units · no TBD", "medium"),
         ("Tests · docs", "strategy · plan", "medium"),
         ("Perf decision", "measure? · tool · baseline", "medium"),
         ("Spike", "needed? · tool · PoC", "medium"),
@@ -51,12 +51,12 @@ BLOCKS = {
         ("DO", "journal · plan until approval", "weak"),
         ("Test scope", "structured · affected subset", "medium"),
         ("Brief gate", "validate_inner_loop · fail-closed", "weak"),
-        ("Code", "from the plan", "weak"),
-        ("Tests", "from the plan", "weak"),
+        ("Code", "inside the contract", "weak"),
+        ("Tests", "DO chooses the method", "weak"),
         ("Docs · prose", "README · DocFX", "weak"),
         ("DO ledger", "evidence by row ID/rv", "weak"),
         ("Build gate", "0 warnings · TreatWarningsAsErrors", "weak"),
-        ("Anchor re-check", "drift → PLAN", "weak"),
+        ("Anchor re-check", "drift → ACT incomplete", "weak"),
     ],
     "C": [
         ("CHECK · gather", "fork 4 streams + security", "weak"),
@@ -110,17 +110,17 @@ TAIL = {"D": [
 
 # orchestrator inputs, per phase
 INPUTS = [
-    "PLAN ← “start” · “replan from pdca-check/DO” · “cycle N+1 from ACT”",
+    "PLAN ← “start” · “replan from pdca-check” · “cycle N+1 from ACT”",
     "DO ← “plan ready · approval/instant” · “defect fix from pdca-check (incl. security)” · “fix from pdca-escalate while r not exhausted”",
     "CHECK ← “streams closed”",
     "CHECK · security ← “if: auth / secrets / input / crypto” · “report → CHECK”",
-    "ACT ← “pdca-check pass”",
+    "ACT ← “pdca-check pass” · “DO cannot finish” · “STOP finalization”",
     "ESCALATION ← “T1 ambiguity” · “T2 counter” · “T3 trade-off” · “T4 risky-diff” · “T5 low-confidence”",
-    "STOP ← “no doable PLAN r+1”",
+    "STOP ← “ACT outcome: no doable PLAN r+1”",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "start\nreplan: pdca-check/DO\ncycle N+1", "D": "plan ready · contract/approval\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
-            "SEC": "from CHECK · if\nauth/secrets/input/crypto\ngather (facts)\nreport → CHECK", "E": "T1 ambiguity\nT2 counter · 3rd CHECK(r)\nT3 trade-off · T4 risky-diff\nT5 low-confidence", "S": "no plan r+1", "A": "pdca-check pass"}
+DISPATCH = {"P": "start\nreplan: pdca-check\ncycle N+1", "D": "plan ready · contract/approval\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
+            "SEC": "from CHECK · if\nauth/secrets/input/crypto\ngather (facts)\nreport → CHECK", "E": "T1 ambiguity\nT2 counter · 3rd CHECK(r)\nT3 trade-off · T4 risky-diff\nT5 low-confidence", "S": "no plan r+1\n→ ACT", "A": "pdca-check pass\nor STOP → ACT"}
 
 # per-phase state-graph node colors (shared by both themes)
 STC = {"START": None, "PLAN": "#2563eb", "DO": "#7c3aed", "CHECK": "#d97706",
@@ -351,13 +351,14 @@ def render(P, title):
     # next cycle: ACT opens a new cycle N+1 (distinct from the terminal act_exit)
     s.append(f'<path d="M1188,{R1_TOP} C1188,{R1_TOP-36} 375,{R1_TOP-36} 375,{R1_TOP}" fill="none" stroke="{P["arrow"]}" stroke-dasharray="5 4" marker-end="url(#arrow)" data-edge-id="act_plan"/>')
     s.append(label(781, R1_TOP - 40, "next cycle · N+1", P["label"]))
-    # loop-backs taken before ACT
-    s.append(f'<path d="M606,{R1_TOP} C606,{R1_TOP-68} 420,{R1_TOP-68} 420,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="do_plan_blocker"/>')
-    s.append(label(513, R1_TOP - 72, "new precondition/blocker", P["label"]))
+    # loop-backs taken before ACT; DO cannot finish goes to ACT, never back to PLAN
+    s.append(poly([(646, R1_BOT), (646, R1_BOT + 22), (1188, R1_BOT + 22), (1188, R1_BOT)],
+                  P["arrow"], edge_id="do_act_incomplete"))
+    s.append(label(917, R1_BOT + 14, "DO cannot finish → ACT (blocked / incomplete)", P["label"]))
     s.append(f'<path d="M880,{R1_TOP} C880,{R1_TOP-100} 686,{R1_TOP-100} 686,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="check_do_defect"/>')
     s.append(label(786, R1_TOP - 104, "defect · n+1 (max 3)", P["label"]))
     s.append(f'<path d="M950,{R1_TOP} C950,{R1_TOP-132} 415,{R1_TOP-132} 415,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="check_plan_replan"/>')
-    s.append(label(683, R1_TOP - 136, "wrong plan · r+1 on revision", P["label"]))
+    s.append(label(683, R1_TOP - 136, "wrong contract · r+1 on revision", P["label"]))
     for _nid, _x, _t, _c, _d in [("sec_check", 837, "CHECK stream", "#be123c", True),
                                  ("escalate", 1100, "ESCALATE", "#b91c1c", False),
                                  ("stop", 1360, "STOP", "#b91c1c", False)]:
@@ -376,9 +377,13 @@ def render(P, title):
     # ONLY a hard security tradeoff escalates directly (no ordinary security fail bypass)
     s.append(poly([(997, _y2), (1100, _y2)], "#b91c1c", edge_id="security_escalate_tradeoff"))
     s.append(label(1048, _y2 - 7, "hard trade-off", P["label"]))
-    # pdca-escalate decides; cheap dispatcher routes: no actionable r+1 -> STOP
-    s.append(poly([(1260, _y2), (1360, _y2)], "#b91c1c", edge_id="escalate_stop"))
-    s.append(label(1310, _y2 - 7, "no plan r+1", P["label"]))
+    # pdca-escalate decides; no actionable r+1 -> ACT finalizes it, never a STOP beside ACT
+    s.append(poly([(1220, R2_TOP), (1220, R1_BOT)], "#b91c1c", edge_id="escalate_act"))
+    s.append(label(1230, (R1_BOT + R2_TOP) / 2, "no plan r+1 → ACT", P["label"], "start"))
+    # STOP is finalized by ACT and is not a path beside it
+    s.append(poly([(1240, R1_BOT), (1240, R2_TOP - 24), (1440, R2_TOP - 24), (1440, R2_TOP)],
+                  "#b91c1c", edge_id="act_stop"))
+    s.append(label(1340, R2_TOP - 31, "STOP · ACT outcome", P["label"], "start"))
     # pdca-escalate decision -> DO while r not exhausted (current plan)
     s.append(poly([(1160, R2_BOT), (1160, M4), (646, M4), (646, R1_BOT)], edge_id="escalate_do_nonexhausted"))
     s.append(label(850, M4 - 8, "decision · r not exhausted → DO", P["label"]))

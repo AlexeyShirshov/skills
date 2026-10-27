@@ -23,7 +23,7 @@
 <text x="42" y="94" class="ol">← DO ← «PLAN: all plans ready · groups/order fixed»</text>
 <text x="42" y="112" class="ol">← MERGE ← «all groups complete» · «ESCALATE: re-merge or incomplete skip»</text>
 <text x="746.0" y="76" class="ol">← CHECK ← «one group: no MERGE» · «MERGE complete» · «REPAIR completed» · «re-gather: blocked»</text>
-<text x="746.0" y="94" class="ol">← ACT ← «CHECK pass»</text>
+<text x="746.0" y="94" class="ol">← ACT ← «CHECK pass» · «STOP: no revised plan → ACT»</text>
 <g data-column="P">
 <g data-peer-header="P">
 <rect x="24" y="318" width="196" height="40" rx="8" fill="#2563eb"/><text x="122.0" y="343.0" class="h" text-anchor="middle">PLAN</text>
@@ -343,7 +343,12 @@
 <g data-bus="dispatch" data-origin="orchestrator" data-target="A" data-kind="dispatch">
 <polyline points="1300.0,162 1300.0,318" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
 <g data-entry-from="C" data-entry-to="A" data-entry-condition="PASS">
-<text x="1296.0" y="241.0" class="g" fill="#94a3b8" text-anchor="end">CHECK pass</text>
+<text x="1296.0" y="219.0" class="g" fill="#94a3b8" text-anchor="end">CHECK pass</text>
+</g>
+<g data-entry-from="REPAIR" data-entry-to="A" data-entry-condition="revision exhausted · no plan">
+<text x="1296.0" y="239.0" class="g" fill="#94a3b8" text-anchor="end">STOP: no</text>
+<text x="1296.0" y="251.0" class="g" fill="#94a3b8" text-anchor="end">revised plan →</text>
+<text x="1296.0" y="263.0" class="g" fill="#94a3b8" text-anchor="end">ACT</text>
 </g>
 </g>
 <g data-bus="result" data-origin="A" data-target="orchestrator" data-kind="result">
@@ -423,7 +428,7 @@
 <text x="936.0" y="1407.0" class="st" fill="#b91c1c" text-anchor="middle">STOP</text>
 </g>
 <g data-annotation="STOP">
-<text x="936.0" y="1440" class="nt" text-anchor="middle">unverified · no ACT/cleanup</text>
+<text x="936.0" y="1440" class="nt" text-anchor="middle">ACT-finalized · no success cleanup</text>
 </g>
 <g data-from="START" data-to="P" data-condition="start">
 <polyline points="184,1162.0 232,1162.0" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
@@ -471,14 +476,18 @@
 <text x="812.0" y="1316" class="g" fill="#cbd5e1" text-anchor="middle">same defect</text>
 <text x="812.0" y="1328" class="g" fill="#cbd5e1" text-anchor="middle">after 1 fix</text>
 </g>
-<g data-from="REPAIR" data-to="STOP" data-condition="revision exhausted · no plan">
-<polyline points="936.0,1304 936.0,1380" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
-<text x="982.0" y="1336.0" class="g" fill="#cbd5e1" text-anchor="start">STOP: no revised plan</text>
+<g data-from="REPAIR" data-to="A" data-condition="revision exhausted · no plan">
+<polyline points="998,1260 998,1234 1144.0,1234 1144.0,1184" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="1071.0" y="1227" class="g" fill="#cbd5e1" text-anchor="middle">STOP: no revised plan → ACT</text>
+</g>
+<g data-from="A" data-to="STOP" data-condition="incomplete/STOP · no cleanup">
+<polyline points="1224,1150 1244,1150 1244,1354 936.0,1354 936.0,1380" fill="none" stroke="#94a3b8" marker-end="url(#arrow)"/>
+<text x="1090.0" y="1347" class="g" fill="#cbd5e1" text-anchor="middle">incomplete/STOP · no cleanup</text>
 </g>
 <text x="24" y="1486" class="nt">One group — degradation: no worktree and no branches are created, work in the current branch, merge --no-ff is not needed; earlier commits remain, no auto-rollback · push — never</text>
 <text x="24" y="1502" class="nt">Commit — only in an explicitly authorized collection autocommit mode; otherwise/if forbidden the patch is preserved, there are no commits and no uncommitted branch chain (the exception is a project overlay, not global)</text>
 <text x="24" y="1518" class="nt">≥2: the barrier waits for terminality of ALL lanes (done | incomplete) — readiness, not success; MERGE only successful (done) tips, incomplete is skipped; conflict → abort → pdca-escalate</text>
-<text x="24" y="1534" class="nt">C: re-gather stays blocked (no report) — not a defect, no code edits; STOP of the corrective PDCA ≠ EXIT: unverified, evidence preserved, no ACT/cleanup; ACT cleans only DONE/merged, incomplete results (branches/patch/pointers) are preserved</text>
+<text x="24" y="1534" class="nt">C: re-gather stays blocked (no report) — not a defect, no code edits; STOP of the corrective PDCA ≠ EXIT: ACT finalises it as unverified, evidence preserved, no success cleanup; ACT cleans only DONE/merged, incomplete results (branches/patch/pointers) are preserved</text>
 <text x="24" y="1550" class="nt">Lane (work stream) — one parallel flow of work per group: a separate subagent, its own worktree and branch, tasks strictly one by one, a full pdca cycle per task; groups run in parallel (≤ cap), not tasks inside a lane.</text>
 <text x="24" y="1566" class="nt">Fallback: pdca-orchestrator unavailable (no agent / subagent_depth &lt; 2 / delegation forbidden) → primary leads the cycle itself · autonomous: Notice: + summary · normal: a message to the user</text>
 </svg>

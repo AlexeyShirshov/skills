@@ -49,7 +49,9 @@ as a **hypothesis to test**, not a contract to obey. PLAN owns plan quality rega
   vs reference types, absent/default/uninitialized, explicit projection vs whole object,
   per-provider behavior).
 - Never pass incompleteness to DO: resolve in PLAN (or record an assumption/blocker). A genuinely
-  new prerequisite/blocker surfaced by execution is a **DO → PLAN** loop-back, not improvised.
+  new prerequisite/blocker surfaced by execution means DO cannot finish under the contract: it goes
+  **DO → ACT** with the cause, evidence and residual requirements, not improvised and not to PLAN.
+  A wrong or unachievable contract is a CHECK finding and only CHECK returns to PLAN.
 - **PLAN assigns priority; CHECK applies it.** The severity map ("what is P1 by construction") is
   fixed in PLAN — from (1) the statement's explicit invariants, (2) the overlay's class-priority
   table, else (3) PLAN authors the row set from the execution path and the sibling's edge list (the
@@ -161,8 +163,9 @@ only dispatches, `pdca-planner` judges (measure cheaply → judge on medium).
 Hygiene (both): PoC lives **outside `src/`** behind an env gate; CHECK verifies it did not leak into
 the product diff. Result = reproducible command + numbers/observation + exact dependency version.
 Utilization: **delete** it or turn it into a test/benchmark — "kept just in case" is not allowed. The
-PoC changed the answer → return to PLAN (a DO → PLAN or CHECK → PLAN loop-back). A PoC may precede
-the plan but must not be the plan: for a shipping change gate 1 is not cancelled.
+PoC changed the answer → before the contract is frozen, refine the same pending PLAN; once in DO,
+report the changed premise to ACT (incomplete) and let a CHECK finding drive any contract revision.
+A PoC may precede the plan but must not be the plan: for a shipping change gate 1 is not cancelled.
 
 ## Test strategy (PLAN → TEST)
 

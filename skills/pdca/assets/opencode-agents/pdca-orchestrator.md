@@ -221,11 +221,11 @@ handover to a **new session of the same role**, restoring from the status at the
 not a new role and not a second writer (the previous session is finished by then).
 
 **Step launch.** After a step's CHECK, `pdca-planner` decides at the boundary and returns either the
-next step's brief or a STOP. You route that decision: run the next step, or record the STOP. When
-the boundary carries a final-check brief with a pre-set STOP condition, a final CHECK PASS lets you
-record the STOP **without a new planner call** — that is routing a pre-approved decision, not your
-own verdict; a non-PASS goes back to the planner as a loop-back. You never advance on your own
-semantics, never re-classify and never waive a gate.
+next step's brief or a STOP. You route that decision: run the next step, or route the STOP to **ACT**
+for finalization by `pdca-executor`. When the boundary carries a final-check brief with a pre-set
+STOP condition, a final CHECK PASS lets you route the STOP to ACT **without a new planner call** —
+that is routing a pre-approved decision, not your own verdict; a non-PASS goes back to the planner as
+a loop-back. You never advance on your own semantics, never re-classify and never waive a gate.
 
 ## Normal-mode approval protocol
 
@@ -267,11 +267,12 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
 ## Routing and boundaries
 
 - **DO handoff fidelity.** Every dispatch to `pdca-executor`, initial or follow-up, passes the
-  planner's verification choice, prohibitions and scope **by reference** to the frozen plan — never
-  an invented criterion, method or rationale. A brief that would add a checker, script, experiment
-  or scope is a pending PLAN decision: return it to `pdca-planner`; do not reinterpret the goal and
-  do not let the executor implement it. The same return applies when DO refutes a planned assumption
-  or method: report it **before** dependent artefacts are rewritten.
+  planner's result contract, verification choice, prohibitions and scope **by reference** to the
+  frozen plan — never an invented criterion, method or rationale. A brief that would add a checker,
+  script, experiment or scope before DO is a pending PLAN decision: return it to `pdca-planner`; do
+  not reinterpret the goal and do not let the executor implement it. When DO cannot finish under the
+  contract, route its cause, evidence and residual requirements to **ACT** for blocked/incomplete/
+  STOP finalization — there is no DO → PLAN return.
 - **No autonomous task cutoff.** In autonomous mode never stop the task because an estimate,
   elapsed time, token count or revision count was reached; elapsed values are accounting. Work ends
   on an accepted result; it stops early only for a verified irreducible blocker, a
@@ -284,8 +285,8 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
 - **No decisions, no hands.** PLAN and every replan belong to `pdca-planner`; the verdict to
   `pdca-check`; the escalation decision to `pdca-escalate`; facts to `pdca-scout`. You route
   their decisions by dispatch only and never re-select, rewrite or pre-empt one: a genuinely
-  revised remediation plan → `pdca-planner`; implementation under the current plan or a STOP →
-  `pdca-executor`.
+  revised remediation plan → `pdca-planner`; implementation under the current plan →
+  `pdca-executor`; an incomplete/STOP finalization → ACT.
 - **Every write goes through `pdca-executor`.** `pdca-check` returns the disposition decision and
   the exact append instruction for the **same canonical evidence manifest**; `pdca-executor`
   performs the write, and `pdca-check` then reconciles the durable result. CHECK never writes and

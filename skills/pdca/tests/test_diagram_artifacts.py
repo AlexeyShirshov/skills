@@ -189,6 +189,53 @@ class DiagramArtifactsTest(unittest.TestCase):
                 self.assertFalse(contains(rects["EXIT"], *end),
                                  "act_plan must not terminate in EXIT")
 
+    def test_do_cannot_finish_goes_to_act_not_plan(self):
+        for stem in (LIGHT_STEM, DARK_STEM):
+            with self.subTest(stem=stem):
+                root = ET.parse(DIAGRAM / (stem + ".svg")).getroot()
+                declared = {
+                    el.get("data-edge-id") for el in root.iter()
+                    if el.get("data-edge-id")
+                }
+                self.assertIn("do_act_incomplete", declared)
+                self.assertNotIn("do_plan_blocker", declared)
+                start, end = edge_endpoints(root, "do_act_incomplete")
+                rects = node_rects(root)
+                self.assertTrue(contains(rects["DO"], *start),
+                                "do_act_incomplete must start in DO")
+                self.assertTrue(contains(rects["ACT"], *end),
+                                "do_act_incomplete must end in ACT")
+                self.assertFalse(contains(rects["PLAN"], *end),
+                                 "DO must never route back to PLAN")
+
+    def test_stop_is_an_act_outcome(self):
+        for stem in (LIGHT_STEM, DARK_STEM):
+            with self.subTest(stem=stem):
+                root = ET.parse(DIAGRAM / (stem + ".svg")).getroot()
+                rects = node_rects(root)
+                declared = {
+                    el.get("data-edge-id") for el in root.iter()
+                    if el.get("data-edge-id")
+                }
+                self.assertIn("act_stop", declared)
+                self.assertNotIn("escalate_stop", declared)
+                start, end = edge_endpoints(root, "act_stop")
+                self.assertTrue(contains(rects["ACT"], *start),
+                                "act_stop must start in ACT")
+                self.assertTrue(contains(rects["STOP"], *end),
+                                "act_stop must end in STOP")
+
+    def test_escalation_without_a_plan_routes_through_act(self):
+        for stem in (LIGHT_STEM, DARK_STEM):
+            with self.subTest(stem=stem):
+                root = ET.parse(DIAGRAM / (stem + ".svg")).getroot()
+                rects = node_rects(root)
+                start, end = edge_endpoints(root, "escalate_act")
+                self.assertTrue(contains(rects["ESCALATE"], *start),
+                                "escalate_act must start in ESCALATE")
+                self.assertTrue(contains(rects["ACT"], *end),
+                                "escalate_act must end in ACT")
+
     def test_svgs_are_wellformed_xml(self):
         for name in (LIGHT_STEM + ".svg", DARK_STEM + ".svg"):
             with self.subTest(name=name):

@@ -62,8 +62,8 @@ of items — that is how the queue survives compaction and a restart.
 
 An item with the form `campaign` is led by the **designated existing cheap `pdca-orchestrator` in
 campaign-control** — one controller per campaign item, chosen when the schedule is bound, with no
-competing writers (`../SKILL.md` §Ownership, `../../pdca/SKILL.md` §Control modes and the campaign
-owner). It holds the campaign state/status, the shared counters, the accumulated knowledge and the
+competing writers (`../SKILL.md` §Ownership, `../../pdca/SKILL.md` §Control modes and
+§Execution coordination). It holds the campaign state/status, the shared counters, the accumulated knowledge and the
 effort accounting, owns recovery, starts the next step **only on the planner's decision**, and runs the
 current step's cycle inline in its own session. A campaign is always single-threaded: one step at a
 time, one lane, no internal parallelism.
@@ -187,6 +187,6 @@ current-branch
 | A merge conflict of a group | `git merge --abort` → **`pdca-escalate`** (strong) decides (resolve/reorder/`incomplete`), but does not execute and does not run `pdca-executor`; the runner returns to MERGE and dispatches `pdca-executor` for a repeated `git merge --no-ff` of the unmerged tip; the `incomplete` decision excludes the group tip fully and integrates the remaining `done` groups; already merged ones are not touched; gate `C` is not passed until all selected `done` groups are integrated |
 | A regression of the mandatory checks/artefacts of an item | gate `C` is not passed; → `../SKILL.md` §C: an aggregate of the mandatory reports → the verdict of `pdca-check` (medium) → a standard corrective cycle, a re-gather of the missing report or a `blocked` state; the collection is not closed |
 | A missing/unreliable mandatory report or an environment failure | **not** a defect: no code edits; the condition of the common verification → **`blocked`**; the source transcript/evidence are preserved; after the environment is restored/the evidence obtained — a repeat of **the whole** common `C`; no unbounded auto-polling/retries |
-| A repeat of the same defect after one fix | `pdca-escalate` **before the second fix** (even with a local CHECK=PASS of the corrective cycle and a new corrective id); a change of the item id/session/status file **does not** reset `r`/`n`/the defect history (`../../pdca/SKILL.md` §Escalation) |
+| A repeat of the same defect after one fix | `pdca-escalate` **before the second fix** (even with a local CHECK=PASS of the corrective cycle and a new corrective id); a change of the item id/session/status file **does not** reset `r`/`n`/the defect history (`../../pdca/SKILL.md` §Escalation (`pdca-escalate`)) |
 | An exhausted revision / a STOP without a revised plan | there is no 4th implementation CHECK even after `pdca-escalate`; continuation only by a genuinely revised plan `r+1`; otherwise the unresolved status/evidence/integrated work are preserved, there is no success/cleanup, the parent collection is **`unverified`**, the source items — their **previous** statuses |
 | The lane returned "no result" | the group = `incomplete`, no merge is done, refs/patch are preserved |

@@ -258,7 +258,9 @@ declared budget».
 **Вход:** plan указывает `file:line` на снимке, sibling-задача сместила строки; footprint,
 символ и контракт не изменились.
 **Требуемый исход:** cosmetic drift → `Notice` со старыми→новыми указателями, без r+1;
-semantic drift → DO → PLAN и настоящая ревизия.
+semantic drift → DO не может выполнить контракт: `DO → ACT` с причиной, evidence и остатком
+`unmet`/`unverified`, **без** PASS, `done` и зачётной единицы; настоящая ревизия — только по
+находке CHECK, прямого `DO → PLAN` нет.
 **Оперативные источники:** SKILL §Re-anchoring at DO entry.
 
 ### R6. Механизм измеримой цели не доказан

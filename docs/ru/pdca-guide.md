@@ -1376,7 +1376,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - ассеты ролей: только `# tier:` и блоки прав, без `model:` → `skills/pdca/SKILL.md §Roles and host requirements`;
   `skills/pdca-coder/SKILL.md §Composition`; `skills/pdca-dotnet/SKILL.md §Composition`
 - роль оркестратора (диспетчер) → `skills/pdca/SKILL.md §Roles and host requirements`
-- режимы контроля и владелец кампании (cycle-control / campaign-control) → `skills/pdca/SKILL.md §Control modes and the campaign owner`
+- режимы контроля и владелец кампании (cycle-control / campaign-control) → `skills/pdca/SKILL.md §Control modes`
 - `pdca-check` может открывать артефакты свидетельств (scoped `read`) → `skills/pdca/SKILL.md:19-24`;
   `skills/pdca/references/check.md §What CHECK receives`; `skills/pdca-coder/references/check.md §Boundaries and output`
 
@@ -1385,7 +1385,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - машина состояний → `skills/pdca/SKILL.md §State machine and counters`
 - счётчики `N/r/n` → `skills/pdca/SKILL.md §State machine and counters`
 - зеркало прогресса фазы → `skills/pdca/SKILL.md §Phase progress mirror`
-- кандидат DO → PLAN (а–d) → `skills/pdca/SKILL.md §DO → PLAN candidate`
+- кандидат DO → PLAN (а–d) → `skills/pdca/SKILL.md §DO outcome and ACT finalization`
 
 **Гейты и эскалация**
 
@@ -1394,7 +1394,7 @@ CHECK **падает fail-closed**, а не предупреждает: недо
 - контракты фаз (PLAN/DO/CHECK/ACT/STOP) → `skills/pdca/SKILL.md §Phase contracts (generic)`
 - повторный вход после терминального `incomplete`/STOP → `skills/pdca/SKILL.md §Phase contracts (generic)`;
   `skills/pdca-coder/references/plan.md §Re-entry after a terminal \`incomplete\` / STOP`
-- обычный/автономный режимы → `skills/pdca/SKILL.md §Control modes and the campaign owner · §Normal-mode approval`
+- обычный/автономный режимы → `skills/pdca/SKILL.md §Control modes · §Normal-mode approval`
 - handoff вызывающей коллекции (`plan_handoff`) → `skills/pdca/SKILL.md §Normal-mode approval`;
   `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`
 - эскалация и её триггеры → `skills/pdca/SKILL.md §Escalation (pdca-escalate)`

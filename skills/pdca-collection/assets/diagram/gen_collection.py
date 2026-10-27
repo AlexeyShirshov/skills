@@ -62,16 +62,17 @@ MAIN_COLUMN_TO_STATE = {
 }
 
 # (from_id, to_id, condition) -- the single source of the lower arrows.
-# Forbidden shortcuts (C→DO, C→P, C→EXIT, REPAIR→A/EXIT, ESCALATE→C,
-# DO→ESCALATE) are absent by construction.  The normal path is DO→MERGE→C;
-# the single-group degradation keeps the direct DO→C bypass; a conflict goes
-# MERGE→ESCALATE and the resolution returns ESCALATE→MERGE (the orchestrator
-# re-dispatches the retry to `pdca-executor`, or the group tip is skipped as
-# `incomplete`).  MERGE therefore has exactly two inputs: the phase-DO
-# completion and the pdca-escalate decision.  The corrective `REPAIR` composition
-# returns to a full `C` on success and terminates in the distinct lower `STOP`
-# node when the corrective revision is exhausted with no actionable revised
-# plan (no 4th implementation CHECK; the collection stays `unverified`).
+# Forbidden shortcuts (C→DO, C→P, C→EXIT, REPAIR→EXIT, ESCALATE→C, DO→ESCALATE)
+# are absent by construction.  The normal path is DO→MERGE→C; the single-group
+# degradation keeps the direct DO→C bypass; a conflict goes MERGE→ESCALATE and
+# the resolution returns ESCALATE→MERGE (the orchestrator re-dispatches the retry
+# to `pdca-executor`, or the group tip is skipped as `incomplete`).  MERGE
+# therefore has exactly two inputs: the phase-DO completion and the pdca-escalate
+# decision.  The corrective `REPAIR` composition returns to a full `C` on success;
+# when the corrective revision is exhausted with no actionable revised plan it
+# returns to `A`, which finalises the honest `incomplete`/STOP -- STOP is an ACT
+# outcome, never a second terminal beside the success path (no 4th implementation
+# CHECK; the collection stays `unverified`, no cleanup).
 STATE_EDGES = [
     ("START", "P", "start"),
     ("P", "DO", "groups"),
@@ -89,7 +90,12 @@ STATE_EDGES = [
     # (base r/n, independent of task id/session): the corrective cycle routes
     # into the strong escalation instead of taking a second fix.
     ("REPAIR", "ESCALATE", "same defect after 1 fix"),
-    ("REPAIR", "STOP", "revision exhausted · no plan"),
+    # a corrective revision exhausted with no actionable plan is finalised by ACT
+    # (honest `incomplete`/STOP), never on a terminal path beside ACT.
+    ("REPAIR", "A", "revision exhausted · no plan"),
+    # ACT finalises the non-PASS outcome; STOP is an ACT outcome, not a second
+    # terminal beside the success path.
+    ("A", "STOP", "incomplete/STOP · no cleanup"),
 ]
 
 # The single central human-label map, keyed by the FULL edge triple.  Both the
@@ -110,7 +116,8 @@ EDGE_LABELS = {
     ("MERGE", "ESCALATE", "merge-conflict"): "MERGE fail",
     ("ESCALATE", "MERGE", "resolved/reorder/mark incomplete"): "ESCALATE: re-merge or incomplete skip",
     ("REPAIR", "ESCALATE", "same defect after 1 fix"): "same defect after 1 fix",
-    ("REPAIR", "STOP", "revision exhausted · no plan"): "STOP: no revised plan",
+    ("REPAIR", "A", "revision exhausted · no plan"): "STOP: no revised plan → ACT",
+    ("A", "STOP", "incomplete/STOP · no cleanup"): "incomplete/STOP · no cleanup",
 }
 
 # strict completeness guard: every edge into a mapped peer block must have a
@@ -354,8 +361,8 @@ R1_TOP = SG_TITLE_Y + 120
 R1_BOT = R1_TOP + NH
 R2_TOP = R1_BOT + 76
 R2_BOT = R2_TOP + NH
-# third graph row: the terminal corrective STOP (unrecoverable), a vertical
-# branch directly below `REPAIR`; lower-graph node only, never a main phase.
+# third graph row: the finalised corrective STOP outcome, reached only through
+# ACT; lower-graph node only, never a main phase and never a path beside ACT.
 R3_TOP = R2_BOT + 76
 R3_BOT = R3_TOP + NH
 M4 = R3_BOT + 34
@@ -387,7 +394,7 @@ STATE_NODES = {
                                   "or pdca-executor (implementation, STOP)"],
                    "annotation_x": GX["MERGE"] - 12, "annotation_anchor": "end"},
     "STOP":       {"x": GX["C"],     "y": R3_TOP, "label": "STOP",          "tier": None,
-                   "annotation": "unverified · no ACT/cleanup"},
+                   "annotation": "ACT-finalized · no success cleanup"},
 }
 
 STATE_COLOR = {"START": None, "P": "#2563eb", "DO": "#7c3aed", "MERGE": "#475569",
@@ -458,15 +465,22 @@ ROUTES = {
                                  EDGE_LABELS[("REPAIR", "ESCALATE", "same defect after 1 fix")],
                                  92),
                              "label": ((GX["C"] + 40 + GX["MERGE"] + NW / 2) / 2, R2_BOT + 12)},
-    # unrecoverable corrective outcome: the standard corrective revision is
-    # exhausted and there is no actionable revised plan -> STOP, a distinct
-    # terminal (never a successful EXIT), preserving evidence with no ACT.
-    ("REPAIR", "STOP"): {"points": [(_GCC, R2_BOT), (_GCC, R3_TOP)],
-                         "caption": _wrap_label(
-                             EDGE_LABELS[("REPAIR", "STOP", "revision exhausted · no plan")],
-                             200),
-                         "label": (_GCC + 46, _MID3 - 6),
-                         "anchor": "start"},
+    # corrective revision exhausted -> ACT finalises the honest incomplete/STOP;
+    # never a second terminal beside the success path.
+    ("REPAIR", "A"): {"points": [(GX["C"] + NW - 18, R2_TOP),
+                                 (GX["C"] + NW - 18, R2_TOP - 26),
+                                 (GX["A"] + NW / 2, R2_TOP - 26),
+                                 (GX["A"] + NW / 2, R1_BOT)],
+                      "caption": EDGE_LABELS[("REPAIR", "A", "revision exhausted · no plan")],
+                      "label": ((GX["C"] + NW - 18 + GX["A"] + NW / 2) / 2, R2_TOP - 33)},
+    # ACT finalises the non-PASS outcome: STOP is an ACT outcome, not a parallel sink.
+    ("A", "STOP"): {"points": [(GX["A"] + NW, R1_TOP + 10),
+                               (GX["A"] + NW + 20, R1_TOP + 10),
+                               (GX["A"] + NW + 20, R3_TOP - 26),
+                               (GX["C"] + NW / 2, R3_TOP - 26),
+                               (GX["C"] + NW / 2, R3_TOP)],
+                    "caption": EDGE_LABELS[("A", "STOP", "incomplete/STOP · no cleanup")],
+                    "label": ((GX["A"] + NW + 20 + GX["C"] + NW / 2) / 2, R3_TOP - 33)},
 }
 
 THEMES = {
@@ -914,8 +928,8 @@ def render(P, title):
         # STOP is not success; ACT cleanup preserves incomplete results;
         # re-gather is a blocked/no-defect state, never a code repair
         "C: re-gather stays blocked (no report) — not a defect, no code edits; "
-        "STOP of the corrective PDCA ≠ EXIT: unverified, evidence preserved, no ACT/cleanup; "
-        "ACT cleans only DONE/merged, incomplete results (branches/patch/pointers) are preserved",
+        "STOP of the corrective PDCA ≠ EXIT: ACT finalises it as unverified, evidence preserved, "
+        "no success cleanup; ACT cleans only DONE/merged, incomplete results (branches/patch/pointers) are preserved",
         # lane definition
         "Lane (work stream) — one parallel flow of work per group: a separate subagent, its own worktree and branch, "
         "tasks strictly one by one, a full pdca cycle per task; groups run in parallel (≤ cap), not tasks inside a lane.",
