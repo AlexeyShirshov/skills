@@ -31,6 +31,13 @@ class CollectionContractTest(unittest.TestCase):
             self.assertIn(phrase, self.text)
         self.assertIn("../pdca-incremental/SKILL.md", self.text)
 
+    def test_preflight_is_not_fallback(self):
+        self.assertIn("## Capability preflight", self.text)
+        self.assertLess(self.text.index("## Capability preflight"),
+                        self.text.index("## Collection (P / D / C / A)"))
+        self.assertNotIn("Capability preflight.",
+                         self.text.split("## Fallback", 1)[1].split("## Parameters", 1)[0])
+
     def test_unique_git_invariants_still_present(self):
         self.assertIn("Group and task branches are sibling Git refs", self.text)
         self.assertIn("disables intermediate step commits, not that authorized outer commit", self.text)
