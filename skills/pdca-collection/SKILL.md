@@ -203,7 +203,7 @@ classification of the batch.
    new facts requires the recorded planner decision and applicable approval
    (§Lane execution and schedule revision → Stale plan and schedule revision).
 
-5. **Durable tracking.** The collection status file (`§Collection status record`) is the only
+5. **Durable tracking.** The collection status file (§Collection status record) is the only
    batch progress mirror. The collection driver coordinates updates, but `pdca-executor`
    writes each transition, handoff, group stop, merge, correction and escalation **in the
    same turn**, without a competing sidebar list. On recovery the status is the source of
@@ -243,7 +243,7 @@ mode) go straight into it, `merge --no-ff` is not needed — there is nothing to
 barrier (§D.3), the group/task branches and the merge itself **do not apply**. On `incomplete` of
 such a group the commits already made **stay** in the current branch (no automatic rollback), and
 the uncommitted changes of the failed item are preserved as a patch; only the paths of that item are
-rolled back (`§Lane execution and schedule revision` §Failure). A one-item collection stays a collection; an empty input → report that there is nothing to do.
+rolled back (§Lane execution and schedule revision §Lane execution and schedule revision). A one-item collection stays a collection; an empty input → report that there is nothing to do.
 
 ### D — infrastructure, tracking, merge
 
@@ -257,7 +257,7 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    `merge --no-ff` — ordinary work in place (there is nothing to merge).
 2. In autonomous mode, available `pdca-orchestrator` group runners are started in parallel
    (one per group, up to `cap`); each may be the **designated item driver** and keeps a campaign's
-   driver across all its steps (§Items and execution ownership, `§Lane execution and schedule revision`). In normal
+   driver across all its steps (§Items and execution ownership, §Lane execution and schedule revision). In normal
    mode the primary itself drives the cycles/steps and obtains approval; it does not spawn a
    `pdca-orchestrator` as their driver. Actual lane concurrency is bounded by host capability.
    With one group there is one lane in the current worktree.
@@ -267,7 +267,7 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    message starts with `#<n>` for an issue item); a successfully integrated group moves `done` →
    `merged`. **An `incomplete` group is never merged**, even if before the failure it has successful
    items and commits: its tip does not enter the integration, the results are preserved (§A,
-   `§Lane execution and schedule revision` §Failure). **A running lane is not merged early.** With **one** group no
+   §Lane execution and schedule revision §Lane execution and schedule revision). **A running lane is not merged early.** With **one** group no
    merge/worktree/branches are created (see §P). If the merge conflicts — `pdca-executor` runs
    `git merge --abort`, the group **is escalated**: `pdca-escalate` (strong) makes the decision —
    resolve manually, reorder the order or mark the group `incomplete`; the other groups are not
@@ -296,7 +296,7 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    A separate integration note `skipped` ("not selected for integration" + the reason) is **not** a
    group status and does not extend the enumeration. The status is recorded in the same tick as the
    event: the status file is the only progress mirror, a divergence from it is an error. Details:
-   `§Collection status record`; running the lane: `§Lane execution and schedule revision`.
+   §Collection status record; running the lane: §Lane execution and schedule revision.
 
 ### C — integration verification
 
@@ -357,7 +357,7 @@ and the integrated work are preserved: **no** success and no cleanup, the parent
 non-`PASS` termination — cleanup and merging are forbidden.** **The success of a corrective cycle
 by itself does not mean the success of the collection.**
 
-A campaign item's outcome is routed to its item status by `§Collection status record` §Routing campaign
+A campaign item's outcome is routed to its item status by §Collection status record §Routing campaign
 outcomes; campaign acceptance is not the common `C` and does not replace it.
 
 ## Lane execution and schedule revision
@@ -381,18 +381,18 @@ For each item in the recorded order:
    `pdca-planner`/`pdca-executor`/`pdca-check`/`pdca-escalate`. A repeated PLAN is by default
    **not** started — the cycle continues from DO; PLAN is reopened only when staleness is
    detected (§Stale plan and schedule revision);
-3. autocommit after the item, **only in an allowed autocommit mode** (`this SKILL.md` §Scope and entry) —
+3. autocommit after the item, **only in an allowed autocommit mode** (§Scope and entry) —
    otherwise the next one does not branch from a committed result. Commit **only the files of the
    item** (`git add <paths>`), not `git add -A`: otherwise alien/artefact files are picked up.
 
 `pdca-orchestrator` **makes no decisions** — it only routes the plan: it does not decide that an
 item is impossible/not ready/independent, does not choose the scope and does not judge the result;
 any question goes to `pdca-planner`, not to the user. The status `incomplete` is a consequence of a
-failure or of an impossibility by the contract (§Failure), not a judgement of the lane.
+failure or of an impossibility by the contract (§Lane execution and schedule revision), not a judgement of the lane.
 
 ### The queue and the per-item continuation
 
-The source of truth of the queue is the collection status file (`§Collection status record`): the runner re-reads it
+The source of truth of the queue is the collection status file (§Collection status record): the runner re-reads it
 at the start and after each item, takes the first item with the status `pending` in the recorded
 order and updates its status; the launch prompt passes **the path to the file**, not an enumeration
 of items — that is how the queue survives compaction and a restart.
@@ -404,9 +404,9 @@ of items — that is how the queue survives compaction and a restart.
   ACT records a final `incomplete` with cause and evidence, preserving the patch and status.
 - A **final `incomplete` of an item stops the whole group**: the next item is not taken, all
   remaining `pending` items of the group are marked `incomplete` with the explicit reason **"the
-  group is stopped"** and are **not executed**; the group is **not merged** (`this SKILL.md` §D.3).
+  group is stopped"** and are **not executed**; the group is **not merged** (§D.3).
 - The commits of the group already made and the patch of the failed item are **preserved**
-  (§Failure, §Git model); **other groups continue** their work.
+  (§Git model details); **other groups continue** their work.
 - The lane summary is `done` | `incomplete` (per group); the status `blocked` does not exist for
   items/groups — `blocked` remains only a state of the parent verification.
 - With `>=2` groups the result of a `done` group is the tip of its branch
@@ -415,13 +415,14 @@ of items — that is how the queue survives compaction and a restart.
 - With one group no group/task branches are created: the commits (in the allowed mode) go to the
   current branch; `incomplete` leaves the commits already made without an automatic rollback, the
   uncommitted changes are preserved as a patch and rolled back only along the failed item's paths.
+- If the lane returns no result, mark the group `incomplete` and preserve its refs and patch.
 - The lane returns a compact summary of ≤8 lines without code/diffs/logs.
 
 ### A campaign item in a lane (designated item driver)
 
 An item with the form `campaign` has **one designated driver throughout its steps** — the
 primary in normal mode or the authorized cheap `pdca-orchestrator` in autonomous mode, with the
-permitted flat-primary fallback (`this SKILL.md` §Items and execution ownership,
+permitted flat-primary fallback (§Items and execution ownership,
 `../pdca/SKILL.md` §Control modes). It holds the campaign state/status, the shared counters, the accumulated knowledge and the
 effort accounting, owns recovery, starts the next step **only on the planner's decision**, and runs the
 current step's cycle inline in its own session. A campaign is always single-threaded: one step at a
@@ -466,7 +467,7 @@ applicability check, not a mandatory repeated PLAN and not the driver deciding i
   the barrier and the revision binding are updated and persisted. This is the only allowed revision
   window.
 - **After the lanes start** automatic `rerun`/`remerge`/`recluster`/`reset`/`revert` are forbidden
-  (`this SKILL.md` §C). A change incompatible with the approved groups (footprint overlap, a broken
+  (§C). A change incompatible with the approved groups (footprint overlap, a broken
   order) **stops** the continuation pending an explicit decision of `pdca-planner`/
   `pdca-escalate`; a silent old DAG and an automatic regrouping are inadmissible. Compatible local
   revisions may continue only with evidence from `pdca-planner` and a persisted updated revision
@@ -474,7 +475,7 @@ applicability check, not a mandatory repeated PLAN and not the driver deciding i
 - **A new campaign or a new item after the barrier.** An item or campaign added after the barrier
   does not mutate the DAG silently: it is an **explicit collection replan/reapprove**
   (`pdca-planner`, in normal mode — the user) taking into account the already started lanes and the
-  stop/scope constraints (`this SKILL.md` §C). The old identities, statuses and evidence are
+  stop/scope constraints (§C). The old identities, statuses and evidence are
   preserved; there is no automatic `recluster`. A compatible local change goes through the existing
   route (PLAN revision + a persisted revision binding); no new topology policy is introduced. The
   addition also consumes capacity explicitly: its queue position is recorded and it may not
@@ -500,11 +501,6 @@ integrated tip is not merged again, and the accepted steps are not recalculated.
 ## Git model details
 
 For multiple groups, a group's branch `collection/<id>/group-<g>` is fast-forwarded to each completed item tip, ending at the last item's commit. Sequential task branches `collection/<id>/task-<g>-<k>` branch from the previous committed tip; group and task refs are siblings, never path prefixes of each other. The outer item completion commit belongs to Collection; a campaign's `Commit policy: none` prohibits intermediate step commits but not an authorized outer commit. One group uses the current worktree/branch and needs no group/task branches, worktrees or merge. The group tip is its last commit; an incomplete group's tip remains evidence, never integrated. Commit only item paths (`git add <paths>`, not `git add -A`); push never. A multi-group explicit no-commit restriction is a preflight blocker, not an implicit patch-only execution mode.
-
-## Lane failure and preservation
-
-An item failure follows the base phase transitions: CHECK routes a product defect to DO or a contract defect to PLAN; DO that cannot finish goes straight to ACT. The same item's final `incomplete` halts its entire group: mark remaining pending items `incomplete` with reason "the group is stopped" without running them, keep successful commits and the failed item's patch, and never merge the incomplete group; other groups continue. Preserve refs, branches, commits and patch, restoring only failed-item paths to the last accepted tip. For one group keep earlier commits on the current branch (no automatic rollback). A missing or unreliable integration report or environment failure is a `blocked` common verification, not a product defect; re-gather then rerun the entire CHECK without automatic polling. A repeated defect after one attempted fix escalates before another fix across corrective-cycle identities; an exhausted revision does not grant a fourth attempt. If a lane returns no result, preserve its ref/patch and report its group incomplete. A revoked commit permission stops the affected multi-group lane safely, preserving all work; `incomplete` requires an explicit final disposition.
-
 
 ## Collection status record
 
@@ -661,4 +657,4 @@ must never be treated as complete:
   its exact absolute path, never loads or forwards it.
 - `../pdca/references/check.md` — loaded by CHECK for the base verdict/evidence contract.
 - `../pdca/references/act.md` — loaded by `pdca-executor` for cycle records
-  and status updates; batch projections remain in `§Collection status record`.
+  and status updates; batch projections remain in §Collection status record.
