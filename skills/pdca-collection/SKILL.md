@@ -16,13 +16,32 @@ form has already been selected by the entry PLAN (or explicitly named by the use
 reclassified here. This contract plus `references/common-contract.md` is self-contained: loading
 `../pdca/SKILL.md` first is not required.
 
-**Preparation barrier (ALL-barrier)** is the mandatory collection-wide readiness gate between
-item planning and execution: **every** `cycle` item must have a completed, persisted PLAN
-(`plan_state=ready`), and **every** `campaign` item must have a persisted preparation charter
-(`preparation_state=ready` and a valid `preparation_ref`). Until all items meet their own condition,
-no DAG/group scheduling or lane allocation and no substantive item DO may begin. The gate checks
-**preparation only**; it is neither user approval nor acceptance/completion of an item. Normal-mode
-DO still requires the relevant recorded user approval after the barrier.
+### Batch terminology
+
+- **Item preparation** — completing the pre-DO work for each goal: a persisted PLAN for a
+  `cycle` item (`plan_state=ready`), or a persisted preparation charter for a `campaign` item
+  (`preparation_state=ready` with a valid `preparation_ref`). No substantive item DO occurs yet.
+- **Preparation barrier (ALL-barrier)** — the gate requiring **every** item to be prepared
+  before the collection can build its schedule, allocate execution lanes or begin any item DO.
+  Readiness is **not** user approval or task completion; normal-mode DO still requires its
+  own recorded approval.
+- **Dependency DAG (directed acyclic graph)** — the graph of required order between items:
+  an edge `A → B` means B depends on A's result. It is built after the ALL-barrier and
+  contains no dependency cycles. File-write conflicts additionally constrain grouping.
+- **Group** — a set of items assigned to the same sequential execution queue because of
+  dependencies or shared/uncertain write surfaces. Distinct groups are scheduled so their
+  work does not conflict and may run in parallel within the host's limits.
+- **Lane** — one execution stream running **one group**, with that group's items in order.
+  With multiple groups each lane has an isolated Git worktree and group branch; with one
+  group it uses the current worktree and branch.
+- **Integration** — bringing the completed groups' results together: for multiple groups,
+  merge only `done` groups into the main tree, never `incomplete` groups; a single-group
+  collection needs no merge.
+- **Batch status** — the durable collection-wide record of preparation, groups, item outcomes,
+  integration and verification in `.pdca/status/collection-<slug>.md`.
+- **Final verification** — the independent CHECK of the integrated result, **in addition to**
+  each item's own acceptance CHECK. A verified partial integration is not completion of
+  the original goals left unfinished.
 
 The **collection driver** coordinates the batch, including its status, preparation barrier,
 schedule, group integration and final CHECK/ACT. It does not plan implementations, choose tests,
