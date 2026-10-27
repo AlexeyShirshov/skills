@@ -511,8 +511,7 @@ approval is not that opt-in, and no answer means no cap. An explicit opt-in is r
 as the same cutoff across normal-mode resume/replan (not renewed) until the user changes or revokes
 it; only a switch to autonomous drops it. Per-command timeouts, host capacity and user deadlines stay; a process timeout is failed-command
 evidence, not a STOP. The attempt budget and the same-defect recurrence
-threshold are the counter rules of §State machine and counters, never a total-work quota. Details:
-`references/plan.md` §Effort and time policy.
+threshold are the counter rules of §State machine and counters, never a total-work quota.
 
 ## Recovery
 
