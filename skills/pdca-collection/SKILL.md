@@ -243,7 +243,7 @@ mode) go straight into it, `merge --no-ff` is not needed — there is nothing to
 barrier (§D.3), the group/task branches and the merge itself **do not apply**. On `incomplete` of
 such a group the commits already made **stay** in the current branch (no automatic rollback), and
 the uncommitted changes of the failed item are preserved as a patch; only the paths of that item are
-rolled back (§Lane execution and schedule revision §Lane execution and schedule revision). A one-item collection stays a collection; an empty input → report that there is nothing to do.
+rolled back (§Lane execution and schedule revision → The queue and the per-item continuation). A one-item collection stays a collection; an empty input → report that there is nothing to do.
 
 ### D — infrastructure, tracking, merge
 
@@ -267,7 +267,7 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    message starts with `#<n>` for an issue item); a successfully integrated group moves `done` →
    `merged`. **An `incomplete` group is never merged**, even if before the failure it has successful
    items and commits: its tip does not enter the integration, the results are preserved (§A,
-   §Lane execution and schedule revision §Lane execution and schedule revision). **A running lane is not merged early.** With **one** group no
+   §Lane execution and schedule revision → The queue and the per-item continuation). **A running lane is not merged early.** With **one** group no
    merge/worktree/branches are created (see §P). If the merge conflicts — `pdca-executor` runs
    `git merge --abort`, the group **is escalated**: `pdca-escalate` (strong) makes the decision —
    resolve manually, reorder the order or mark the group `incomplete`; the other groups are not
