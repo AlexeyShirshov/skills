@@ -539,27 +539,21 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
 - Collection completeness (all original item goals accepted) / integrated-tree verification
   (independent CHECK verdict) / incomplete items and preserved results: these are distinct fields.
 
-### Routing campaign outcomes
+### Campaign item status projection
 
-Campaign acceptance (`met`) and the common verification of the collection are different events. The
-success or failure of a campaign **does not replace** the common `C` on the integrated tree: `C` is
-performed by its own rules, and `unverified`/`blocked`/`pass` remain its separate state.
+`../pdca-incremental/SKILL.md` (§Campaign invariants, §Stop) defines campaign
+outcomes, whole-goal acceptance, pauses and resume. Collection only maps the
+campaign's persisted outcome and item `disposition` to its own item status:
 
-| Campaign runtime status | Per-item `disposition` | Item status | Note |
-|---|---|---|---|
-| `preparation_state=pending`, no runtime | `active` | `pending` | the barrier is not passed |
-| `preparation_state=ready`, no runtime | `active` | `pending` | barrier-ready, not started; not `done` |
-| `running` | `active` | `in-progress` | an accepted step does not make the item `done` |
-| `met` (accepted) | `finalized` | `done` | the only success of a campaign |
-| `blocked` | `paused` | `in-progress` | a checkpoint, not final |
-| `stopped` | `paused` | `in-progress` | a checkpoint, not final |
-| `unreachable`, the next target is admissible within the unchanged goal/boundaries | `paused` | `in-progress` | a checkpoint; resume is explicit |
-| `unreachable`, the route is exhausted | `finalized` (failure) | `incomplete` + reason | only an explicit final unsuccessful disposition |
-| `blocked`/`stopped` with an explicit final unsuccessful disposition | `finalized` (failure) | `incomplete` + reason | group-stop |
-| the step is not accepted, a `repair`/new revision is in progress | `active` | `in-progress` | the campaign is not closed |
-| a `verify` failure | `active` or `paused` by the step's route | `in-progress` | the threshold is not lowered |
+- **Before campaign bootstrap** (including `preparation_state=ready`): `pending`.
+- **Running or paused** (`disposition=active` | `paused`): `in-progress`;
+  a pause stops progression within its group, not other groups.
+- **Finalized with accepted `met`**: `done`.
+- **Explicitly finalized without accepted `met`**: `incomplete` with reason;
+  apply the existing group-stop rule. A failed step or a checkpoint alone
+  never finalizes the item.
 
-
+The collection's integration CHECK remains independent of campaign acceptance.
 
 ## Report
 
