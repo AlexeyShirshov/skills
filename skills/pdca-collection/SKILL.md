@@ -108,36 +108,17 @@ silent switch to another run mode. The absence of authorization is **not** an au
 
 ## Items and execution ownership
 
-The base §The user's task and its criteria applies **per item**: every handoff preserves
-the original goal and any user-supplied acceptance criteria verbatim. Scheduling metadata
-is not an alternative goal or an acceptance requirement.
+Each item preserves its original goal and user criteria; scheduling metadata cannot
+redefine acceptance. In the item's first PLAN, `pdca-planner` selects `cycle` or
+`campaign` and any applicable specialized skill under the base rules. The collection
+driver neither classifies items nor inserts a second PLAN. A `cycle` resumes its
+saved PLAN at DO after the barrier; a `campaign` has no item-level contract/overlay:
+each step gets its own selection, without planning future steps during preparation.
 
-Each item's **first PLAN** is delegated to `pdca-planner`. It classifies the item's form under the
-same definitions as the base entry: **Bounded Execution** (`cycle`) when the method and scope are
-known and bounded, or **Incremental Execution** (`campaign`) when the method, volume or next
-actions genuinely require learning. It also selects the applicable specialized skill for a bounded
-coding item: `pdca-coder` for general programming or **only `pdca-dotnet`** for .NET; non-coding
-work requires none. No collection-driver preclassification or second PLAN is inserted. The
-planner requests missing facts through the driver, who calls `pdca-scout` and returns the findings
-to the **same pending PLAN**; a bounded choice probe is not a new cycle.
-
-- `cycle` — one complete PLAN → DO → CHECK → ACT for the item's entire goal. Store its saved plan,
-  form, selected specialized skill, revision and approval pointer; resume that same PLAN at DO
-  after the barrier, unless the planner finds a substantive contract defect.
-- `campaign` — one incremental invocation for the item's entire goal, with a preparation charter,
-  runtime record and successive complete cycles. The campaign has **no item-level step overlay**:
-  each concrete step's applicable specialized skill is selected for that step. Preparation does not
-  create or decide future steps. The same designated item driver retains state, history and
-  recovery across those steps.
-
-An item cannot be a nested collection; there is no campaign inside a campaign or collection
-inside a collection. The collection driver owns the batch schedule and integration, while the
-item driver owns its own cycle/campaign progression. `pdca-executor` is the physical writer of
-both records. No separate `cycle-control`, `campaign-control` or `collection owner` role exists.
-
-**Acceptance boundary.** Each item's `done` requires its own accepted whole-goal CHECK and ACT,
-not merely a ready plan, accepted increment or passing test. The collection's CHECK is additional:
-it verifies the actual integrated result and never supplies missing acceptance for an item.
+The collection driver owns scheduling and integration; one designated item driver
+owns the cycle or the full campaign across its steps. `pdca-executor` writes both
+records. Items cannot be nested collections, and campaigns cannot nest. Item
+`done` requires its own accepted whole-goal CHECK/ACT; integration CHECK is separate.
 
 ## Capability preflight
 
@@ -359,8 +340,7 @@ and the integrated work are preserved: **no** success and no cleanup, the parent
 non-`PASS` termination — cleanup and merging are forbidden.** **The success of a corrective cycle
 by itself does not mean the success of the collection.**
 
-A campaign item's outcome is routed to its item status by §Collection status record §Routing campaign
-outcomes; campaign acceptance is not the common `C` and does not replace it.
+A campaign item's outcome is routed to its item status by §Collection status record → Campaign item status projection; campaign acceptance is not the common `C` and does not replace it.
 
 ## Lane execution and schedule revision
 
@@ -408,7 +388,7 @@ of items — that is how the queue survives compaction and a restart.
   remaining `pending` items of the group are marked `incomplete` with the explicit reason **"the
   group is stopped"** and are **not executed**; the group is **not merged** (§D.3).
 - The commits of the group already made and the patch of the failed item are **preserved**
-  (§Git model details); **other groups continue** their work.
+  (§D, §A); **other groups continue** their work.
 - The lane summary is `done` | `incomplete` (per group); the status `blocked` does not exist for
   items/groups — `blocked` remains only a state of the parent verification.
 - With `>=2` groups the result of a `done` group is the tip of its branch
