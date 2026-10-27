@@ -291,7 +291,7 @@ PLAN → DO → CHECK → ACT of its contract+overlay, with `plan_state`; and `c
 an incremental campaign with its own goal, frame, runtime status and steps, and **no**
 item-level contract/overlay. Form, contract and overlay are different values: the collection PLAN
 (`pdca-planner`) decides them, the runner only reads the ready value
-(`skills/pdca-collection/SKILL.md §Items: form, contract, overlay`). A step of a campaign is
+(`skills/pdca-collection/SKILL.md §Items and execution ownership`). A step of a campaign is
 only a cycle of the family: neither "a campaign in a campaign" nor "a collection inside a campaign"
 (nor a collection inside a collection) is expressible.
 
@@ -433,7 +433,7 @@ precedence.
 | --- | --- |
 | The top-level role and stack-neutrality; the own PLAN stops at the PLAN→DO boundary and continues in the lane; the primary does not edit files | `skills/pdca-collection/SKILL.md §Role · §Ownership` |
 | Auto-commit only by project overlay or explicit request; `push` never; the one-group mode | `skills/pdca-collection/SKILL.md §Role` |
-| Items: form (`cycle` | `campaign`), contract (`pdca`) and overlay (`none` | `coder` | `coder+.NET`); a campaign item has no item-level contract; the recursion ban | `skills/pdca-collection/SKILL.md §Items: form, contract, overlay` |
+| Items: form (`cycle` | `campaign`), contract (`pdca`) and overlay (`none` | `coder` | `coder+.NET`); a campaign item has no item-level contract; the recursion ban | `skills/pdca-collection/SKILL.md §Items and execution ownership` |
 | P: each item's own PLAN before the DAG, the ALL-barrier, a gap without a `ready` placeholder, groups go to `pdca-planner`, the revision vector, lane allocation only after the schedule is bound; parallel PLANs up to `plan_cap` that do not fix the schedule, a serialized status-file write; a re-entry after a terminal `incomplete`/STOP requires proof or a new oracle; plan hygiene (command contract, effort policy) before `plan_state=ready` | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: the status file as the only progress mirror (per-group and per-item tables), one group → one lane, an empty input | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering` |
 | P: the barrier by item forms (`plan_state` for `cycle`, the preparation document for `campaign`) | `skills/pdca-collection/SKILL.md §P — per-item PLANs, the barrier, clustering`; `skills/pdca-incremental/references/status.md §Preparation document` |
