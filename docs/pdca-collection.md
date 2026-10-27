@@ -388,7 +388,7 @@ common CHECK on the integrated tree. The external commit/branch lifecycle of a u
 collection; `Commit policy: none` means no intermediate step commits and does not forbid the outer
 completion commit, and an explicit no-commit restriction that conflicts with the mandatory git model
 is a preflight blocker before the lanes are allocated
-(`skills/pdca-collection/SKILL.md §Git model`).
+(`skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge`).
 
 **Preflight and fallback.** Before lanes are allocated and before a campaign starts in its lane, the
 host's observable capability is checked: the mandatory roles and contracts, nested delegation for the
@@ -442,7 +442,7 @@ precedence.
 | A: completion only by a PASS, the report's composition, cleanup only of `done`/`merged`, preservation of `incomplete` results and of status/evidence paths, STOP | `skills/pdca-collection/SKILL.md §A — completion` |
 | The lane: item branches off the tip, continuing the saved PLAN from DO, stopping the group, preserving commits/patch, other groups continuing, `blocked` is not a group status | `skills/pdca-collection/SKILL.md §One lane = one group · §The queue and the per-item continuation` |
 | A stale plan and schedule revision (reopening PLAN, the ban on auto-recluster after the lanes start) | `skills/pdca-collection/SKILL.md §Stale plan and schedule revision` |
-| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `skills/pdca-collection/SKILL.md §Git model` |
+| The git model: 1 worktree per group, ff advancement, sibling refs, `--no-ff` merge, the tip | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge` |
 | The failure semantics (table) and the collection status with invariants (`plan_state`, `merged`, `skipped`, `blocked`, evidence preservation) | `skills/pdca-collection/SKILL.md §Failure (semantics)`; `skills/pdca-collection/SKILL.md §Invariants` |
 | Parameters: `cap`/`plan_cap` = 4 as the contract's scheduling choice (not a host setting), bounded by the declared host budget and observed concurrency, the worktree directory, the merge right | `skills/pdca-collection/SKILL.md §Parameters`; `skills/pdca-collection/SKILL.md §Report` |
 | The fallback (flat primary, including COLLECTION TASK PLAN and continuing the saved PLAN) | `skills/pdca-collection/SKILL.md §Fallback` |
@@ -450,7 +450,7 @@ precedence.
 | `met` as the only success, pause vs final, the explicit final unsuccessful disposition and the group-stop, the per-item `disposition` and the derived lane pause, the separate readiness/runtime/disposition spaces | `skills/pdca-collection/SKILL.md §Routing campaign outcomes · §Invariants`; `skills/pdca-collection/SKILL.md §Lane pause` |
 | The collection-lane driver (the same `pdca-orchestrator`, the campaign inline in campaign-control, one lane) and the step's PLAN/approval | `skills/pdca-collection/SKILL.md §A campaign item in a lane (campaign-control)`; `skills/pdca/SKILL.md §Normal-mode approval` |
 | Surface ownership and the conservative whole-task reservation; expansion as stop/reapproval | `skills/pdca-collection/SKILL.md §Surface reservation and its extension` |
-| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `skills/pdca-collection/SKILL.md §Git model`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
+| Commits: the collection owns the external lifecycle, `Commit policy: none` and the preflight blocker | `skills/pdca-collection/SKILL.md §D — infrastructure, tracking, merge`; `skills/pdca-incremental/SKILL.md §Campaign invariants` |
 | Preflight and the single fallback (`Notice:` + durable reason, resource stop, fail closed) | `skills/pdca-collection/SKILL.md §Fallback` |
 | The role tiers (cheap: `pdca-orchestrator`/`pdca-scout`/`pdca-executor`; medium: `pdca-planner`/`pdca-check`; strong: `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements` |
 | The cycle base: the two-beat CHECK, the `N`/`r`/`n/3` counters, escalation, the autonomous fallback and `Notice:`; the role names of the base (`pdca-planner`, `pdca-executor`, `pdca-check`, `pdca-escalate`) | `skills/pdca/SKILL.md §Roles and host requirements · §State machine and counters · §Escalation (pdca-escalate) · §Control modes`; `skills/pdca-coder/references/check.md §Two beats` |
