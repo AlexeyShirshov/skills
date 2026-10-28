@@ -20,8 +20,8 @@ again.
 | `opencode-go` (Go plan) | `deepseek/deepseek-flash` |
 | `openai` (ChatGPT Plus/Pro token sharing) | `opencode/<id>` — the same Sol/Codex model on Console, `-fast` stripped |
 
-Per-model overrides: `opencode-go/gemini-4-argon-contributor` → `opencode/gemini-4-argon`,
-`opencode-go/kimi-k3` → `moonshotai/kimi-k3`.
+Per-model overrides: `opencode-go/gemini-4-argon` (and the older
+`-contributor` id) → `opencode/gemini-4-argon`, `opencode-go/kimi-k3` → `moonshotai/kimi-k3`.
 
 ## What it switches
 

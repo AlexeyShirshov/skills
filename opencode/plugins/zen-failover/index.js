@@ -46,6 +46,7 @@ const RULES = parseRules(RULES_TEXT)
 const MODEL_MAP = parseMap(
   process.env.ZEN_FAILOVER_MAP ??
     [
+      "opencode-go/gemini-4-argon=opencode/gemini-4-argon",
       "opencode-go/gemini-4-argon-contributor=opencode/gemini-4-argon",
       "opencode-go/kimi-k3=moonshotai/kimi-k3",
     ].join(","),
