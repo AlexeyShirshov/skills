@@ -50,6 +50,12 @@ class CollectionContractTest(unittest.TestCase):
                      "final `incomplete`", "other groups continue"):
             with self.subTest(term=term): self.assertIn(term, self.text)
 
+    def test_lane_liveness_is_observed_not_counted(self):
+        self.assertIn("### Lane liveness", self.text)
+        self.assertIn("HEAD movement", self.text)
+        self.assertIn("a commit **tally** is not liveness", self.text.replace("\n", " "))
+        self.assertIn("(§Lane liveness)", self.text)
+
     def test_no_deleted_reference_links(self):
         self.assertNotIn("references/lane.md", self.text)
         self.assertNotIn("references/status.md", self.text)

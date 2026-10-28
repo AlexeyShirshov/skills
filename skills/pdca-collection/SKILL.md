@@ -381,7 +381,7 @@ of items — that is how the queue survives compaction and a restart.
 - With one group no group/task branches are created: the commits (in the allowed mode) go to the
   current branch; `incomplete` leaves the commits already made without an automatic rollback, the
   uncommitted changes are preserved as a patch and rolled back only along the failed item's paths.
-- If the lane returns no result, mark the group `incomplete` and preserve its refs and patch.
+- If the lane returns no result (§Lane liveness), mark the group `incomplete` and preserve its refs and patch.
 - The lane returns a compact summary of ≤8 lines without code/diffs/logs.
 
 ### A campaign item in a lane (designated item driver)
@@ -419,6 +419,23 @@ A lane pause is **derived** from `disposition=paused` of the current item and is
 separate authoritative field of the lane. The item status stays the existing `in-progress`: a pause
 is not a new status value, and no new item/group statuses are introduced. A paused lane does not go
 on to the next dependent item of its group; the other groups continue.
+
+### Lane liveness
+
+Lane **liveness** is an observation, never a status: the item/group enumerations stay as they are and
+the status file remains the only progress mirror. Two readings decide it:
+
+- **HEAD movement** — the lane's worktree HEAD or its `collection/<id>/group-<g>` / task-branch ref
+  changes (a new commit, an amend, a reset, a merge): the ref id `git rev-parse <ref>` and its
+  commit time `git log -1 --format=%cI`.
+- **A running process of the lane** — its runner, `pdca-executor` or `pdca-check` is still alive.
+
+Both readings are facts gathered **by the roles**, not by the driver: `pdca-executor` reads the refs
+and the process listing, `pdca-scout` observes the lane from outside. Commits in a lane accumulate at
+item boundaries (§One lane = one group), so a commit **tally** is not liveness: the count
+legitimately stands still while an item is being worked on, and it can grow from commits outside the
+lane. "The lane returned no result" (§The queue and the per-item continuation) is the lane's process
+ending without an outcome, not a quiet HEAD or an unchanged number of commits.
 
 ### Stale plan and schedule revision
 
