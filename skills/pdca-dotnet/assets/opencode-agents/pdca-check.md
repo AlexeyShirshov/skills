@@ -22,7 +22,7 @@ permission:
 permissions:
   # V2 form of the same policy as the `permission:` map above. Both blocks are
   # kept equivalent; last match wins, so the deny-broad rules come first.
-  - action: *
+  - action: "*"
     resource: "*"
     effect: deny
   - action: read

@@ -2,9 +2,11 @@ name: pdca-role-assets
 
 # Bounded guard for the shared PDCA role assets and the base entry/planning
 # rules: the six canonical roles and their generated overlay mirrors must stay
-# byte-identical, and the focused entry/forms/routing/contract guards run when
-# the base skill, its references or a canonical role changes. No network
-# integration, no host requirements, no publication.
+# byte-identical, every agent frontmatter must parse as real YAML (a malformed
+# block makes the host refuse to register the agent at all), and the focused
+# entry/forms/routing/contract guards run when the base skill, its references or
+# a canonical role changes. No network integration, no host requirements, no
+# publication.
 
 on:
   push:
@@ -19,6 +21,7 @@ on:
       - "skills/pdca/SKILL.md"
       - "skills/pdca/references/**"
       - "skills/pdca/tests/test_routing_consistency.py"
+      - "skills/pdca/tests/test_frontmatter_yaml.py"
       - ".github/workflows/pdca-role-assets.yml"
   pull_request:
     paths:
@@ -32,6 +35,7 @@ on:
       - "skills/pdca/SKILL.md"
       - "skills/pdca/references/**"
       - "skills/pdca/tests/test_routing_consistency.py"
+      - "skills/pdca/tests/test_frontmatter_yaml.py"
       - ".github/workflows/pdca-role-assets.yml"
 
 permissions:
@@ -50,7 +54,11 @@ jobs:
           python-version: "3.12"
       - name: Check canonical roles and mirrors
         run: python3 skills/pdca/scripts/sync_role_assets.py --check
+      - name: Install PyYAML (frontmatter gate dependency)
+        run: python3 -m pip install pyyaml
       - name: Run role-asset tests
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_role_assets.py' -v
+      - name: Run frontmatter YAML gate
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_frontmatter_yaml.py' -v
       - name: Run routing guards
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_routing_consistency.py' -v
