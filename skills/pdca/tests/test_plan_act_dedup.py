@@ -72,9 +72,10 @@ class PlanContractTest(unittest.TestCase):
             "choosing, validating and running the verification is check's work",
         ))
 
-    def test_do_handoff_keeps_its_gate(self) -> None:
+    def test_do_handoff_keeps_its_gate_and_evidence_root(self) -> None:
         check_present(self, PLAN, (
-            "only when that plan is complete", "no frozen verification procedure",
+            "only when that plan is complete", "evidence_root",
+            "§workspace and durable status", "no frozen verification procedure",
             "user's approval",
         ))
 

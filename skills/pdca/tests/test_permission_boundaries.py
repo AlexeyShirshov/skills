@@ -27,6 +27,12 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
 RUNNER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
+SCOUT_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-scout.md"
+
+# The scout's git literals: a wildcard before ` -- ` can swallow write flags
+# (`--output`), and a wrapper or repo override would escape the literal surface.
+GIT_PREFIXES = ("git diff", "git log", "git show", "git blame", "git ls-files")
+FORBIDDEN_KEY_TOKENS = ("git -C", "&&", ";", "|", "echo ", "sh -c", "$(")
 
 # Host config (agents/profiles/AGENTS.md/skills-keep) lives in the `opencode-config` repo,
 # not in this one. Point at it with OPENCODE_CONFIG_REPO to enable host-parity checks;
@@ -258,6 +264,95 @@ class ReadOnlyRoleBoundaryTest(unittest.TestCase):
         perm = perm_of("pdca-executor")
         self.assertEqual("allow", legacy_effective(perm, "edit", "*"))
         self.assertEqual("allow", legacy_effective(perm, "shell", "*"))
+
+
+def v2_shell_grants(path: Path) -> dict:
+    """The `permissions:` list's `shell` entries (V2 form) as resource -> effect."""
+    text = read(path)
+    body = text[text.index("\npermissions:"):]
+    pairs = re.findall(
+        r'- action: shell\n\s+resource: "([^"]+)"\n\s+effect: (\w+)', body
+    )
+    return dict(pairs)
+
+
+def flat(text: str) -> str:
+    return re.sub(r"\s+", " ", text).lower()
+
+
+class ScoutSurfaceTest(unittest.TestCase):
+    """The scout's read-only shell surface and the prose that describes it.
+
+    The frontmatter may not reach the role as instructions, so the runtime body
+    must carry the canonical working forms itself; it must not rely on a pointer
+    to the YAML block, and it must not drift from the granted commands.
+    """
+
+    def setUp(self) -> None:
+        self.text = read(SCOUT_ASSET)
+        self.perm = frontmatter(SCOUT_ASSET)["permission"]
+        self.bash = self.perm["bash"]
+        self.v2 = v2_shell_grants(SCOUT_ASSET)
+
+    def test_deny_default_and_no_write_actions(self) -> None:
+        self.assertEqual("deny", self.bash.get("*"))
+        self.assertEqual("deny", self.v2.get("*"))
+        for action in ("edit", "write", "task", "todowrite"):
+            with self.subTest(action=action):
+                self.assertEqual("deny", self.perm.get(action))
+
+    def test_both_permission_maps_agree(self) -> None:
+        allow_v1 = {k for k, v in self.bash.items() if v == "allow"}
+        allow_v2 = {k for k, v in self.v2.items() if v == "allow"}
+        self.assertEqual(allow_v1, allow_v2, "the V1/V2 shell maps drifted")
+
+    def test_fixed_head_reads_are_granted(self) -> None:
+        for form in (
+            "git status --porcelain",
+            "git log --oneline -n 1",
+            "git log -1 --oneline",
+            "git log --oneline -n 20",
+            "git show HEAD",
+            "git ls-files -- *",
+        ):
+            with self.subTest(form=form):
+                self.assertEqual("allow", self.bash.get(form))
+
+    def test_no_git_key_has_a_wildcard_before_double_dash(self) -> None:
+        for key, effect in self.bash.items():
+            if effect != "allow" or not key.startswith(GIT_PREFIXES):
+                continue
+            with self.subTest(key=key):
+                self.assertNotIn("*", key.split(" -- ", 1)[0])
+
+    def test_no_key_grants_a_repo_override_wrapper_or_compound(self) -> None:
+        for key in self.bash:
+            for token in FORBIDDEN_KEY_TOKENS:
+                with self.subTest(key=key, token=token):
+                    self.assertNotIn(token, key)
+
+    def test_runtime_hints_carry_the_concrete_forms(self) -> None:
+        rules = flat(self.text[self.text.index("## Rules"):self.text.index("## Tools")])
+        for token in (
+            "workdir",
+            "one allowed command per call",
+            "git status --porcelain",
+            "git log --oneline -n 1",
+            "git log -1 --oneline",
+            "git log --oneline -n 20",
+            "git show head",
+            "git ls-files -- src/",
+            "no `git -c",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, rules.replace("git -C", "git -c"))
+
+    def test_runtime_hints_do_not_defer_to_the_yaml_block(self) -> None:
+        rules = flat(self.text[self.text.index("## Rules"):self.text.index("## Tools")])
+        for phrase in ("see the allowlist above", "see the permission block",
+                       "as listed in the frontmatter"):
+            with self.subTest(phrase=phrase):
+                self.assertNotIn(phrase, rules)
 
 
 class CostReadNoWriteTest(unittest.TestCase):

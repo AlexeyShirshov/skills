@@ -1,0 +1,184 @@
+=== PDCA DO re-gather | task go-levenshtein | cycle N=1 | r=1 | attempt n=1 (unchanged) ===
+recorded_at_utc: 2026-10-28T06:49:43Z
+module_dir: /home/alex/sources/skills/experiments/levenshtein-go
+binary: /tmp/opencode/lev-check-bin
+host: Linux 6.18.33.2-microsoft-standard-WSL2 x86_64
+
+=== 1. go version ===
+$ go version
+--- stdout ---
+go version go1.27.3 linux/amd64
+--- stderr ---
+--- exit: 0 ---
+
+=== 2. gofmt -l . ===
+$ gofmt -l .
+--- stdout ---
+--- stderr ---
+--- exit: 0 ---
+
+=== 3. go vet ./... ===
+$ go vet ./...
+--- stdout ---
+--- stderr ---
+--- exit: 0 ---
+
+=== 4. go build -o /tmp/opencode/lev-check-bin . ===
+$ go build -o /tmp/opencode/lev-check-bin .
+--- stdout ---
+--- stderr ---
+--- exit: 0 ---
+
+=== 5. control set: built binary on CHECK rows ===
+$ /tmp/opencode/lev-check-bin '' ''
+--- stdout ---
+0
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 0 | observed: 0 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin kitten kitten
+--- stdout ---
+0
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 0 | observed: 0 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin кот кот
+--- stdout ---
+0
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 0 | observed: 0 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin кот ''
+--- stdout ---
+3
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 3 | observed: 3 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin '' ёлка
+--- stdout ---
+4
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 4 | observed: 4 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin kitten sitting
+--- stdout ---
+3
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 3 | observed: 3 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin flaw lawn
+--- stdout ---
+2
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 2 | observed: 2 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin gumbo gambol
+--- stdout ---
+2
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 2 | observed: 2 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin ab ba
+--- stdout ---
+2
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 2 | observed: 2 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin ca abc
+--- stdout ---
+3
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 3 | observed: 3 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin кот кит
+--- stdout ---
+1
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 1 | observed: 1 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin кот скат
+--- stdout ---
+2
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 2 | observed: 2 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin кот котёнок
+--- stdout ---
+4
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 4 | observed: 4 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin программирование программирования
+--- stdout ---
+1
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 1 | observed: 1 | equal: yes ---
+
+$ /tmp/opencode/lev-check-bin море гора
+--- stdout ---
+2
+--- stderr ---
+
+--- exit: 0 ---
+--- expected: 2 | observed: 2 | equal: yes ---
+
+=== 6. go run . кот котёнок ===
+$ go run . кот котёнок
+--- stdout ---
+4
+--- stderr ---
+--- exit: 0 ---
+
+=== 7. edge: single argument (expect exit 2) ===
+$ /tmp/opencode/lev-check-bin толькоодинаргумент
+--- stdout ---
+--- stderr ---
+levenshtein: want two words, got 1 arguments; usage: levenshtein <word1> <word2>
+--- exit: 2 ---
+
+=== summary table (observed vs expected) ===
+| `` | `` | 0 | 0 | yes |
+| `kitten` | `kitten` | 0 | 0 | yes |
+| `кот` | `кот` | 0 | 0 | yes |
+| `кот` | `` | 3 | 3 | yes |
+| `` | `ёлка` | 4 | 4 | yes |
+| `kitten` | `sitting` | 3 | 3 | yes |
+| `flaw` | `lawn` | 2 | 2 | yes |
+| `gumbo` | `gambol` | 2 | 2 | yes |
+| `ab` | `ba` | 2 | 2 | yes |
+| `ca` | `abc` | 3 | 3 | yes |
+| `кот` | `кит` | 1 | 1 | yes |
+| `кот` | `скат` | 2 | 2 | yes |
+| `кот` | `котёнок` | 4 | 4 | yes |
+| `программирование` | `программирования` | 1 | 1 | yes |
+| `море` | `гора` | 2 | 2 | yes |
+
+=== end ===

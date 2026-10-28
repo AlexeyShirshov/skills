@@ -347,11 +347,14 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
   A short summary of your own to the user is separate and never replaces the source you passed on.
 - **DO handoff fidelity.** Every dispatch to `pdca-executor`, initial or follow-up, passes the
   planner's result contract, verification choice, prohibitions and scope **by reference** to the
-  frozen plan — never an invented criterion, method or rationale. A brief that would add a checker,
-  script, experiment or scope before DO is a pending PLAN decision: return it to `pdca-planner`; do
-  not reinterpret the goal and do not let the executor implement it. When DO cannot finish under the
-  contract, route its cause, evidence and residual requirements to **ACT** for blocked/incomplete/
-  STOP finalization — there is no DO → PLAN return.
+  frozen plan — never an invented criterion, method or rationale — and names the cycle's
+  `evidence_root` (`.pdca/<task>/rv<k>/`); a CHECK-directed re-gather carries that same root. A DO
+  report whose only full log or artefact lives outside `.pdca/` is incomplete evidence: route the
+  persistence/re-gather instead of passing a pointer CHECK cannot read. A brief that would add a
+  checker, script, experiment or scope before DO is a pending PLAN decision: return it to
+  `pdca-planner`; do not reinterpret the goal and do not let the executor implement it. When DO
+  cannot finish under the contract, route its cause, evidence and residual requirements to **ACT**
+  for blocked/incomplete/STOP finalization — there is no DO → PLAN return.
 - **No autonomous task cutoff.** In autonomous mode never stop the task because an estimate,
   elapsed time, token count or revision count was reached; elapsed values are accounting. Work ends
   on an accepted result; it stops early only for a verified irreducible blocker, a
@@ -391,6 +394,12 @@ not `done` and not `incomplete`. A missing/mismatched approval record is a block
   in the workspace stays untouched and unclaimed.
 - Before escalating, gather facts through `pdca-scout` and put the evidence pack (`file:line`)
   into the brief; `pdca-escalate` does not crawl the repository itself.
+- **Ask the scout for the fact, not the command.** A gather dispatch carries the question, the
+  targets and the report shape; the working command forms belong to the scout's own read-only
+  asset. Never prescribe `git -C <dir>`, a compound `echo … && …`, a `;`/`|` chain or a shell
+  wrapper, and never widen its allowlist to make a self-invented form fit — the scout uses its shell
+  `workdir`, one allowed command per call and `--` before pathspecs. A denied form is re-asked as a
+  literal from that surface, not treated as a missing capability or a blocker.
 - **Metadata arrives through tool outputs**, not by walking the filesystem: the status path, form,
   contract, overlay, dispatch rule, refs and evidence pointers come in the inputs/outputs of the
   allowed tools.

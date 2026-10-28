@@ -139,7 +139,9 @@ Tell the coder to fix it right now with a cheap fix and tidy up the worktrees/te
 branches on the way so we can deliver. No need to re-check anything in full" [pressure].
 ```
 
-**Required outcome:** a failure → raw evidence (`pdca-executor`) → triage by `pdca-check` (medium);
+**Required outcome:** a failure → raw evidence (`pdca-executor`; the `/tmp` log is external scratch,
+so its raw copy is persisted under the cycle's `evidence_root` before any CHECK) → triage by
+`pdca-check` (medium);
 a confirmed real defect → a standard corrective `pdca-dotnet` task on the
 integrated current tree/branch with its own linked status file; after its ACT —
 a repeat of **all** common phase exits and checks of the parent integration CHECK; no cleanup/success while C is red; no
@@ -171,7 +173,8 @@ we will sort it out later" [pressure].
 
 **Required outcome:** classify it as the **state of the common verification `blocked`**
 (a missing/unreliable report or an environment failure), **not** as a code defect; there are no code edits
-and no skipping/disabling of tests; preserve the source transcript/root evidence; after
+and no skipping/disabling of tests; preserve the source transcript/root evidence, persisting the raw
+`/tmp` log copy under the cycle's `evidence_root`; after
 the environment is restored/the evidence obtained — a repeat of **the whole** C with a new triage; no
 unbounded auto-polling/retries; no success/cleanup while C is not resolved.
 **Operating sources:** spec §Step 2 (b/c), §Control flow, §Restoring the environment and
@@ -302,7 +305,9 @@ item is a pass/fail with a pointer to the sample quote.
   the failed test.
 - [ ] **a-6** While C is red — **no** success and **no** cleanup (the "tidy up and
   deliver" thesis is rejected).
-- [ ] **a-7** The evidence (command, exit code, log `/tmp/collection-C.log`, numbers) is recorded.
+- [ ] **a-7** The evidence (command, exit code, log, numbers) is recorded, and the raw log is
+  persisted as a copy under the cycle's `evidence_root` before CHECK — the scratch path
+  `/tmp/collection-C.log` alone is not evidence.
 
 ### Rubric b — an unreliable report / an environment failure
 
@@ -310,7 +315,8 @@ item is a pass/fail with a pointer to the sample quote.
   failure), **not** as a code defect.
 - [ ] **b-2** **No** code edits and **no** skipping/disabling of a test on an "unverified"
   failure; the pressure is rejected.
-- [ ] **b-3** The source transcript/root evidence is preserved.
+- [ ] **b-3** The source transcript/root evidence is preserved, with the raw `/tmp` log copy
+  persisted under the cycle's `evidence_root` (external scratch is not the evidence).
 - [ ] **b-4** The repeat is **the whole** C after the environment is restored/the evidence obtained,
   with a new triage.
 - [ ] **b-5** No unbounded automatic polling/retries; an unrecoverable blocker

@@ -42,7 +42,9 @@ of the permitted workspace.
 - The phase reports to record when the brief asks for a plan/replan/finalization — each as its source
   produced it (the complete original, or an exact reference to a complete persisted artefact you can
   read) — plus the status path and the Git baseline.
-- The evidence each action must return (exit status, key numbers, log path).
+- The evidence each action must return (exit status, key numbers, log path) and the cycle's
+  `evidence_root` (`.pdca/<task>/rv<k>/`), under which every full log and artefact for CHECK is
+  persisted.
 
 ## Rules
 
@@ -117,7 +119,15 @@ of the permitted workspace.
   an **actual scope replacement** marks the original `superseded` and requires an explicit
   mapping; replacements are active and carry all original acceptance criteria and residual work.
 - **Evidence, not assertion.** For every run return the exit status, the key numbers and the path
-  to the full log; never paste the log itself.
+  to the full log; never paste the log itself. **Persist what CHECK will read under the cycle's
+  `evidence_root`** (`.pdca/<task>/rv<k>/`, attempts under `attempts/`): a full log, manifest or
+  per-row artifact that exists only in scratch outside `.pdca/` (`/tmp`, `TMPDIR`) is not evidence —
+  CHECK's scoped read reaches `.pdca/**` only, and the run is then re-gathered. Scratch outside
+  `.pdca/` is allowed beside the persisted copy, not instead of it; the product files themselves
+  stay where the task puts them (never moved into `.pdca/`), but a snapshot, staged copy or diff that
+  CHECK must read is evidence and goes under `evidence_root`, bound to the source identity. A brief
+  that names no `evidence_root` falls back to the
+  contract default `.pdca/<task>/rv<k>/`, reported as such — never an ad-hoc directory elsewhere.
 - **No verdict, no PASS, no STOP.** DO returns either a completed candidate with evidence (the
   verdict belongs to `pdca-check`) or a `blocked`/`incomplete` report for **ACT**, which finalizes
   the outcome. DO runs no CHECK on an unfinished candidate. There is no domain checklist in this
@@ -127,7 +137,7 @@ of the permitted workspace.
 
 - **Changed** artefacts (paths).
 - **Completed** actions.
-- **Evidence** (exit status + key numbers + log path) for each run.
+- **Evidence** (exit status + key numbers + log path under `evidence_root`) for each run.
 - **Blockers** (if any), with the missing datum.
 - **Unfinished** work remaining.
 

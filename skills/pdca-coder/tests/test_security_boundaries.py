@@ -100,12 +100,16 @@ PATHSPEC_ALLOW = (
     "git status --porcelain -- *",
 )
 GIT_ALLOW = GIT_LITERAL_ALLOW + PATHSPEC_ALLOW
+# The fixed HEAD reads are a scout-only widening (a driver asks it "what is HEAD");
+# the auditor's minimal surface is unchanged and is a separate security decision.
+SCOUT_HEAD_ALLOW = ("git log --oneline -n 1", "git log -1 --oneline")
+SCOUT_GIT_ALLOW = GIT_LITERAL_ALLOW + SCOUT_HEAD_ALLOW + PATHSPEC_ALLOW
 # The shared read-only roles are not interchangeable: scout and the security
 # auditor inspect git facts, escalate makes decisions and needs no git access.
 # Keep one exact minimal set per role instead of widening all three to parity.
 ROLE_ALLOW = {
     "pdca-escalate": BASE_LITERAL_ALLOW + ("cd *",),
-    "pdca-scout": BASE_LITERAL_ALLOW + GIT_ALLOW,
+    "pdca-scout": BASE_LITERAL_ALLOW + SCOUT_GIT_ALLOW,
     "pdca-security-auditor": BASE_LITERAL_ALLOW + GIT_ALLOW,
 }
 GIT_ROLES = ("pdca-scout", "pdca-security-auditor")
@@ -140,10 +144,24 @@ NEGATIVE_PROBES = (
     "fi" + "le -C -m /x",
     SED + " -i s/a/b/ f",
     GIT_DIFF + " --output=/x",
+    "git log --oneline -n 1 --output=/x",
+    "git log -1 --oneline --output=/x",
+    "git log -1 --output=/x",
+    "git log -1 --oneline --follow",
+    GIT_DIFF + " --stat --output=/x -- src/foo.py",
+    "git ls-files --output=/x",
+    "git -C /x status --porcelain",
+    "echo hi && git status --porcelain",
+    "git status --porcelain; git log -1 --oneline",
 )
+
+# The shell surface is one literal command per call: no repo override, no wrapper,
+# no compound. `*` in an allow key would swallow all of these, so scan the keys.
+FORBIDDEN_KEY_TOKENS = ("git -C", "&&", ";", "|", "echo ", "sh -c", "$(")
 
 # Positive probes: every literal and every ` -- path` form is admitted.
 BASE_POSITIVE_PROBES = BASE_LITERAL_ALLOW
+SCOUT_GIT_POSITIVE_PROBES = SCOUT_HEAD_ALLOW
 GIT_POSITIVE_PROBES = GIT_LITERAL_ALLOW + (
     GIT_DIFF + " --stat -- src/foo.py",
     GIT_DIFF + " --name-only -- src/foo.py",
@@ -253,6 +271,49 @@ class WriteProofAllowlistTest(unittest.TestCase):
                         "%s: %r has a wildcard before ` -- `" % (role, key),
                     )
 
+    def test_no_allow_key_grants_a_repo_override_wrapper_or_compound(self):
+        for role in READ_ONLY_ROLES:
+            with self.subTest(role=role):
+                for key in self._grants(role):
+                    for token in FORBIDDEN_KEY_TOKENS:
+                        self.assertNotIn(
+                            token, key,
+                            "%s: %r grants a wrapper/override token %r"
+                            % (role, key, token),
+                        )
+
+    def test_scout_runtime_hints_match_the_granted_git_verbs(self):
+        # The body must carry the canonical working forms itself (the frontmatter
+        # may not reach the role as instructions); a verb named in prose that the
+        # allowlist does not grant is drift.
+        text = (ASSET_AGENTS / "pdca-scout.md").read_text(encoding="utf-8")
+        rules = text[text.index("## Rules"):text.index("## Tools")]
+        flat = re.sub(r"\s+", " ", rules).lower()
+        grants = bash_grants(ASSET_AGENTS / "pdca-scout.md")
+        for form in (
+            "git status --porcelain",
+            "git log --oneline -n 1",
+            "git log -1 --oneline",
+            "git log --oneline -n 20",
+            "git show head",
+            "git ls-files -- src/",
+            "workdir",
+            "one allowed command per call",
+        ):
+            with self.subTest(form=form):
+                self.assertIn(form, flat)
+        verbs = {
+            verb for verb in re.findall(r"`git ([a-z][a-z-]+)", flat)
+        }
+        self.assertTrue(verbs, "the runtime hints name no git verb")
+        for verb in verbs:
+            with self.subTest(verb=verb):
+                self.assertTrue(
+                    any(key == "git " + verb or key.startswith("git " + verb + " ") for key in grants),
+                    "scout hints name `git %s`, which the allowlist does not grant" % verb,
+                )
+        self.assertIn("no `git -c", flat.replace("git -C", "git -c"))
+
     def test_negative_write_probes_do_not_match_any_allow_key(self):
         for role in READ_ONLY_ROLES:
             with self.subTest(role=role):
@@ -277,7 +338,10 @@ class WriteProofAllowlistTest(unittest.TestCase):
                         "%s: no allow key matches %r" % (role, probe),
                     )
                 if role in GIT_ROLES:
-                    for probe in GIT_POSITIVE_PROBES:
+                    probes = GIT_POSITIVE_PROBES
+                    if role == "pdca-scout":
+                        probes = probes + SCOUT_GIT_POSITIVE_PROBES
+                    for probe in probes:
                         self.assertTrue(
                             any(glob_match(key, probe) for key in allow),
                             "%s: no allow key matches %r" % (role, probe),
@@ -310,14 +374,13 @@ class WriteProofAllowlistTest(unittest.TestCase):
                         "%s grants a bare diff form %r" % (role, key),
                     )
 
-    def test_git_block_is_identical_for_git_inspection_roles_only(self):
+    def test_git_blocks_differ_only_by_the_scout_head_reads(self):
         blocks = {}
         for role in READ_ONLY_ROLES:
-            blocks[role] = tuple(
-                sorted(k for k in self._allow(role) if k.startswith(GIT_PREFIXES))
-            )
-        self.assertEqual(blocks["pdca-scout"], blocks["pdca-security-auditor"])
-        self.assertEqual((), blocks["pdca-escalate"],
+            blocks[role] = {k for k in self._allow(role) if k.startswith(GIT_PREFIXES)}
+        self.assertEqual(blocks["pdca-scout"],
+                         blocks["pdca-security-auditor"] | set(SCOUT_HEAD_ALLOW))
+        self.assertEqual(set(), blocks["pdca-escalate"],
                          "escalate takes decisions and needs no git access")
 
     def test_installed_mirror_matches_source(self):

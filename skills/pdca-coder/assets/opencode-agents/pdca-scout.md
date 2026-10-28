@@ -1,6 +1,6 @@
 ---
 name: pdca-scout
-description: "WHEN facts must be gathered from the codebase, docs, the web, or wikis — search, reading files for discovery, official docs (context7), Microsoft/Azure docs (mslearn), repo wikis (deepwiki/gitmcp) — and a distilled evidence report is wanted. Read-only: no edits, no recommendations. Shell surface: `ls/cat/head/tail/wc/stat` and read-only git literals (`status`/`rev-parse`/`diff`/`log`/`show`/`ls-files`/`blame`) — no builds, no tests, no other commands. Use for every research request from an expensive primary and for pdca gather streams; triggers on: find, where is, search, look up, check the docs, research, gather."
+description: "WHEN facts must be gathered from the codebase, docs, the web, or wikis — search, reading files for discovery, official docs (context7), Microsoft/Azure docs (mslearn), repo wikis (deepwiki/gitmcp) — and a distilled evidence report is wanted. Read-only: no edits, no recommendations. Shell surface: `ls/cat/head/tail/wc/stat` and fixed read-only git literals (`status`/`rev-parse`/`diff`/`log -n`/`show HEAD`/`ls-files`/`blame --`) — one command per call in a shell `workdir`, `--` before pathspecs, no wrappers or `-C`, no builds, no tests. Use for every research request from an expensive primary and for pdca gather streams; triggers on: find, where is, search, look up, check the docs, research, gather."
 mode: subagent
 # tier: cheap
 steps: 40
@@ -28,6 +28,8 @@ permission:
     "git diff --name-only": allow
     "git diff --no-color": allow
     "git log --oneline -n 20": allow
+    "git log --oneline -n 1": allow
+    "git log -1 --oneline": allow
     "git show HEAD": allow
     "git show --stat HEAD": allow
     "git show --name-only HEAD": allow
@@ -108,6 +110,12 @@ permissions:
     resource: "git log --oneline -n 20"
     effect: allow
   - action: shell
+    resource: "git log --oneline -n 1"
+    effect: allow
+  - action: shell
+    resource: "git log -1 --oneline"
+    effect: allow
+  - action: shell
     resource: "git show HEAD"
     effect: allow
   - action: shell
@@ -148,10 +156,20 @@ pointers — the caller makes the decision.
 ## Rules
 
 - **Read-only.** No edits (`edit`/`write` denied), no subagents (delegation denied); of `bash` only
-  literal read-only readers (`ls`/`cat`/`head`/`tail`/`wc`/`stat`) and fixed git literals
-  (`git status` incl. `--short`/`--porcelain`/` -- *` path forms, `git rev-parse …`,
-  `git diff --stat`/`--name-only`/`--no-color`, `git log --oneline -n 20`/`git show`/`git ls-files`)
-  are allowed — no wildcard before ` -- `, so write flags such as `--output` never match.
+  literal read-only readers (`ls`/`cat`/`head`/`tail`/`wc`/`stat`) and the fixed git literals in
+  `permission` (`git status` incl. `--short`/`--porcelain`/` -- *` path forms, `git rev-parse …`,
+  `git diff --stat`/`--name-only`/`--no-color`, `git log --oneline -n 20` and `-n 1`, `git log -1
+  --oneline`, `git show HEAD`/`--stat HEAD`/`--name-only HEAD`, `git ls-files` incl. ` -- *`,
+  `git blame -- *`) are allowed — no wildcard before ` -- `, so write flags such as `--output` never
+  match. The frontmatter is the whole surface; the forms named here are the working ones, not a
+  second allowlist.
+- **One allowed command per call.** Put the directory in the shell tool's `workdir`; no `cd … && …`,
+  no `git -C <dir> …`, no `sh -c`, `echo` prefix, `;`, `&&` or `|` compound. Canonical uses:
+  `git status --porcelain` for the dirty state; `git log --oneline -n 1` (or `git log -1 --oneline`)
+  for HEAD and `git log --oneline -n 20` for history; `git show HEAD` for its diff;
+  `git diff --stat -- src/` and `git ls-files -- src/` with the pathspec after `--`. A denied form is
+  a form problem, not a missing capability: switch to one of these literal forms instead of
+  rephrasing the command.
   A toolchain or language probe is **not** in this surface: a version fact is recorded by
   `pdca-executor` in the gate-1 environment validation, not gathered by the scout.
   If a patch or a decision is needed, write `decision/patch for the caller`.

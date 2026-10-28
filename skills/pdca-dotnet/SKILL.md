@@ -237,14 +237,16 @@ security boundaries, handoff) apply unchanged.
   when the form defines one; put .NET facts in the matching existing sections — the actual
   project/runner configuration, artifact pointers, coverage baseline and runs under `## DO result` /
   `## CHECK record` as the base section owns them. No separate schema, top-level field, local counter
-  or mandated evidence path. The executor remains the sole status writer; the original task, phase
-  reports, dialogue language and Git ledger come from the base unchanged; per-unit evidence belongs
-  to the parent cycle record, not a per-unit status file.
+  or evidence path of its own: the overlay inherits the base `evidence_root` (base §Workspace and
+  durable status) and introduces no path that competes with it. The executor remains the sole status
+  writer; the original task, phase reports, dialogue language and Git ledger come from the base
+  unchanged; per-unit evidence belongs to the parent cycle record, not a per-unit status file.
 - **Artifacts and cleanup.** If CHECK's chosen method needs the full bodies of artifacts, a staged
-  copy may be used, with source identity and staged-vs-source fidelity verified by CHECK; no reviewer
-  pack is mandatory each task. The source identity includes the uncommitted working state when
-  present, so evidence is bound to the actual candidate rather than to `HEAD` alone, and a staged
-  copy is validated against the original. A drift after the snapshot makes CHECK reconsider the
+  copy may be used — persisted under the cycle's `evidence_root` with the original left in place —
+  with source identity and staged-vs-source fidelity verified by CHECK; no reviewer pack is
+  mandatory each task. The source identity includes the uncommitted working state when present, so
+  evidence is bound to the actual candidate rather than to `HEAD` alone, and a staged copy is
+  validated against the original. A drift after the snapshot makes CHECK reconsider the
   impacted conclusion per the base, not a new counter. A missing body or a staged-vs-source mismatch
   is `unverified` or an evidence blocker, never an automatic product fail or pass. Cleanup is not a
   phase gate and nothing is deleted automatically: preserve proof and recovery per the base, limit

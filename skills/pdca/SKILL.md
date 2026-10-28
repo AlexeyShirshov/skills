@@ -143,7 +143,7 @@ never widened.
 
 | Role | Agent | Responsibilities | Permissions | Tier |
 |---|---|---|---|---|
-| FACT-FINDING & OBSERVATION | `pdca-scout` | facts for PLAN/CHECK; independent observation when CHECK's method needs an outsider | read-only discovery and restricted read-only commands; writes only its pinned `observation-pack.md`; no delegation | cheap |
+| FACT-FINDING & OBSERVATION | `pdca-scout` | facts for PLAN/CHECK; independent observation when CHECK's method needs an outsider | read-only discovery and its fixed literal read-only commands (shell `workdir`, one command per call, `--` before pathspecs, no wrappers or `git -C`); writes only its pinned `observation-pack.md`; no delegation | cheap |
 | PLAN | `pdca-planner` | classify form and overlay, preserve task and supplied criteria, define criteria only where none were supplied, decide revisions and PLAN-terminal outcomes | default-deny; reads only the named plan reference and the brief; no delegation, execution or writes — `pdca-executor` persists the plan | medium |
 | DO | `pdca-executor` | execute, apply fixes, run the checks CHECK asks for, gather evidence, record cycle state | `edit`/`bash`/`read` within the host and cycle constraints | cheap |
 | CHECK | `pdca-check` | choose the method and sufficiency per criterion, judge independently against the original task and user-supplied criteria, route findings | default-deny; scoped read of `.pdca/**`; task inputs and the complete CHECK reference arrive inline in the brief; no delegation or writes — its runs and writes go through the driver to `pdca-executor` | medium |
@@ -249,12 +249,12 @@ other phases, not their instructions: it is forwarded and recorded **unchanged**
 translation or summarisation.
 
 **PLAN → DO** — only when that plan is complete, judgeable and covering the cycle scope. Every DO
-handoff carries the original task, criteria, constraints, prohibitions and scope by reference, and no
-frozen verification procedure; the plan is on disk and, in normal mode, carries the **user's
-approval**. On DO start `pdca-executor` logs `DO started`. Choosing, validating and running the
-verification is CHECK's work at CHECK time, not a pre-DO prerequisite; a method that proves unusable
-there is re-chosen, not a plan defect. No "ask the user for criteria" path: an indeterminate criterion
-blocks DO and routes **PLAN → ACT** instead.
+handoff carries the original task, criteria, constraints, prohibitions and scope by reference, the
+cycle's `evidence_root` (§Workspace and durable status) and no frozen verification procedure; the
+plan is on disk and, in normal mode, carries the **user's approval**. On DO start `pdca-executor` logs
+`DO started`. Choosing, validating and running the verification is CHECK's work at CHECK time, not a
+pre-DO prerequisite; a method that proves unusable there is re-chosen, not a plan defect. No "ask the
+user for criteria" path: an indeterminate criterion blocks DO and routes **PLAN → ACT** instead.
 
 **PLAN → ACT** — one of three terminal outcomes, each with its payload in `references/plan.md`:
 `acceptance criteria cannot be determined`, `original task is infeasible under the stated constraints`,
@@ -319,8 +319,9 @@ no reduced contract, no verdict from the agent prompt alone.
 **CHECK has three independent exits:**
 
 - **CHECK → DO** — an implementation defect: the criteria are sound but the result does not meet
-  them, or evidence the chosen method needs is missing. A missing report is re-gathered and is not a
-  counted defect or attempt until the facts are in.
+  them, or evidence the chosen method needs is missing. A missing report is re-gathered into the
+  cycle's `evidence_root` (§Workspace and durable status) and is not a counted defect or attempt
+  until the facts are in.
 - **CHECK → PLAN** — a criteria/contract defect: criteria contradictory, unverifiable or
   unachievable, or not covering the original requirements and explicit cycle scope. Only CHECK routes
   such a defect; the planner re-examines the findings with their facts, copying no verdict. No
@@ -368,9 +369,10 @@ picks the method:
 - **Method — `pdca-check`:** before any verdict, CHECK decides per criterion what evidence would be
   sufficient and how to obtain it; it never treats a PLAN-side procedure as binding.
 - **Run — `pdca-executor`:** have the proving action run or produced; return the exit status, key
-  numbers and the log **path**, not the log. A test written for CHECK runs against the **frozen**
-  result: it may execute it but never modifies the checked frozen version to obtain a pass (side
-  effects outside the checked source stay isolated).
+  numbers and the log **path under the cycle's `evidence_root`** (§Workspace and durable status), not
+  the log. A test written for CHECK runs against the **frozen** result: it may execute it but never
+  modifies the checked frozen version to obtain a pass (side effects outside the checked source stay
+  isolated).
 - **Observe — `pdca-scout`, when the method needs an outside observer:** observe the **actual frozen
   result** and the evidence the criterion names, not the author's restatement; distinguish observed,
   assumed and unverified, bind observations to the frozen identity, and state cross-part consistency
@@ -386,8 +388,9 @@ not claims.
 
 ### Workspace and durable status
 
-Everything this skill writes lives under **one** project-local root, `.pdca/`, in the project root
-(`git rev-parse --show-toplevel`); the name and layout are fixed.
+The cycle's **persistent PDCA state and evidence** live under **one** project-local root, `.pdca/`,
+in the project root (`git rev-parse --show-toplevel`); the name and layout are fixed. Product edits
+and temporary scratch are not PDCA state and follow their own rules (§Evidence root below).
 
 ```text
 .pdca/
@@ -398,8 +401,16 @@ Everything this skill writes lives under **one** project-local root, `.pdca/`, i
 
 - **Status path.** The driver passes an explicit `status_path` locating the current cycle's record;
   the Bounded Execution default is `.pdca/status/<task>-<N>.md`, while an inheriting form may keep one
-  file for several cycles. **Evidence** — `.pdca/<task>/rv<k>/`, attempts under
-  `.pdca/<task>/rv<k>/attempts/`.
+  file for several cycles.
+- **Evidence root.** The driver passes an explicit `evidence_root` in every DO dispatch — the initial
+  one, a follow-up and a CHECK-directed re-gather alike — with the contract default
+  `.pdca/<task>/rv<k>/` and attempts under `attempts/`. Everything a phase hands to CHECK is
+  **persisted** there: full logs, manifests, per-row artifacts. Temporary scratch files may live
+  outside `.pdca/` (a `TMPDIR`), but they are never the only source: the full log or artefact behind
+  a result is written under `evidence_root` before DO returns, because CHECK's scoped read reaches
+  `.pdca/**` only. The product files themselves stay wherever the task puts them — evidence never
+  relocates an original — but what CHECK must read of them (a snapshot, staged copy or diff) is a
+  separate artefact under `evidence_root`, bound to the source identity.
 - **Every write is by `pdca-executor`** — planner, check, escalate and the driver have no file
   permissions. The driver passes the **source reports** (PLAN's return, DO's result, CHECK's verdict)
   and the bookkeeping facts; it does not rewrite, summarise, translate or re-command them into the
