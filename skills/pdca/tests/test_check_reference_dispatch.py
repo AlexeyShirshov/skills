@@ -219,6 +219,56 @@ class ReferenceSourceTest(unittest.TestCase):
                                  "%s must inherit the base reference" % skill)
 
 
+class CheckDedupTest(unittest.TestCase):
+    """The inline section keeps the caller contract; the procedure lives in the reference."""
+
+    # The trimmed section is ~2596 bytes; the cap leaves room for a wording
+    # correction, not for a return of the ~2070 bytes of procedure moved out.
+    MAX_SECTION_BYTES = 2700
+    MAX_BASE_BYTES = 50000
+
+    def setUp(self) -> None:
+        self.text = read(BASE)
+        start = self.text.index("#### CHECK")
+        self.raw = self.text[start:self.text.index("#### ACT", start)]
+        self.body = norm(self.raw).lower()
+
+    def test_inline_section_stays_a_contract_not_a_procedure(self) -> None:
+        self.assertLessEqual(len(self.raw.encode("utf-8")), self.MAX_SECTION_BYTES)
+
+    def test_base_file_stays_under_the_fifty_kilobyte_ceiling(self) -> None:
+        self.assertLessEqual(len(self.text.encode("utf-8")), self.MAX_BASE_BYTES)
+
+    def test_the_shared_procedure_is_not_restated_inline(self) -> None:
+        for token in ("criteria matrix", "absence of a check", "stable criterion id"):
+            with self.subTest(token=token):
+                self.assertNotIn(token, self.body)
+
+    def test_gates_unique_to_this_phase_survive_the_trim(self) -> None:
+        for token in (
+            "explicit cycle scope",
+            "cross-part consistency",
+            "aggregate score cannot compensate",
+            "own scope only",
+            "whole-goal check",
+            "only check routes such a defect",
+            "re-examines the findings with their facts",
+            "copying no verdict",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.body)
+        self.assertIn("plan → act", self.body, "user criteria stay whole: PLAN → ACT only")
+
+    def test_the_reference_absorbs_the_moved_procedure(self) -> None:
+        body = norm(read(CHECK_REFERENCE))
+        for token in ("explicit cycle scope", "parts of a composite result are consistent"):
+            with self.subTest(token=token):
+                self.assertIn(token, body)
+        self.assertNotIn("an attempt is an actual execution", body,
+                         "attempt counters have one home: §State machine and counters")
+        self.assertIn("base contract's §Escalation — expert review", body)
+
+
 class PointerConsistencyTest(unittest.TestCase):
     """Every skill's pointer says the driver inlines the file, never that CHECK reads it."""
 

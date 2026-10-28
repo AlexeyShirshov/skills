@@ -258,7 +258,7 @@ PLAN → ACT (критерии не определены | исходная за
 | Машина состояний, STOP как исход ACT и правило всей цели | `skills/pdca/SKILL.md §State machine and counters`; §Phase contracts |
 | PLAN определяет контракт результата, терминальные исходы и не выбирает реализацию или метод проверки | `skills/pdca/SKILL.md §PLAN`; `skills/pdca/references/plan.md §Plan fields`; §Terminal PLAN outcomes |
 | У DO два исхода, и он не возвращается в PLAN | `skills/pdca/SKILL.md §DO` |
-| CHECK выбирает метод и маршрутизирует `CHECK → DO`, `CHECK → PLAN`, `CHECK → ACT` | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md` |
+| CHECK выбирает метод и маршрутизирует `CHECK → DO`, `CHECK → PLAN`, `CHECK → ACT` | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md §Verify the result · §Verdict and routing` |
 | ACT фиксирует приёмку и честный отказ; STOP — не путь рядом с ACT | `skills/pdca/SKILL.md §ACT`; `skills/pdca/references/act.md §Closing order` |
 | Четыре счётчика и порог дефекта | `skills/pdca/SKILL.md §State machine and counters` |
 | Доказательства важнее утверждений; разделение метод/запуск/наблюдение/судья | `skills/pdca/SKILL.md §Evidence over assertion` |

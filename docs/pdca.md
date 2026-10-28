@@ -254,7 +254,7 @@ the skill file wins. Line ranges are used only for the short preamble before the
 | The state machine, STOP as an ACT outcome and the whole-goal rule | `skills/pdca/SKILL.md §State machine and counters`; §Phase contracts |
 | PLAN defines the result contract, terminal outcomes and no implementation or verification procedure | `skills/pdca/SKILL.md §PLAN`; `skills/pdca/references/plan.md §Plan fields`; §Terminal PLAN outcomes |
 | DO has two outcomes and cannot return to PLAN | `skills/pdca/SKILL.md §DO` |
-| CHECK chooses the method and routes `CHECK → DO`, `CHECK → PLAN`, `CHECK → ACT` | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md` |
+| CHECK chooses the method and routes `CHECK → DO`, `CHECK → PLAN`, `CHECK → ACT` | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md §Verify the result · §Verdict and routing` |
 | ACT finalizes acceptance and honest non-acceptance; STOP is not a path beside ACT | `skills/pdca/SKILL.md §ACT`; `skills/pdca/references/act.md §Closing order` |
 | The four counters and the defect threshold | `skills/pdca/SKILL.md §State machine and counters` |
 | Evidence over assertion; the method/run/observe/judge split | `skills/pdca/SKILL.md §Evidence over assertion` |

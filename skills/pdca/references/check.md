@@ -1,7 +1,8 @@
 # CHECK: evidence, criteria and verdict
 
-Reference for the CHECK phase. Independence, permissions and the phase exits stay in `../SKILL.md`; this
-file holds what CHECK receives, how it verifies and what its verdict carries.
+Reference for the CHECK phase: the procedure delivered to `pdca-check`. The base contract
+(`../SKILL.md`) owns the state machine, the phase exits and the host and permission boundaries; this
+file holds what CHECK receives, how it verifies, and what its verdict carries.
 
 ## How this reference reaches you
 
@@ -27,9 +28,9 @@ An observation or run its chosen method needs is requested through the driver, w
 ## Assess the criteria
 
 Before judging the result, assess the criteria against the original task: do they cover its
-mandatory requirements, do they contradict each other or the task, is each one judgeable? Where the
-user supplied the criteria, they are the acceptance set: judge against them verbatim and do not
-accept the result against a different, weaker or enlarged set. Missing
+mandatory requirements and the explicit cycle scope, do they contradict each other or the task, is
+each one judgeable? Where the user supplied the criteria, they are the acceptance set: judge against
+them verbatim and do not accept the result against a different, weaker or enlarged set. Missing
 coverage, contradiction or an unjudgeable criterion is a criteria defect for PLAN, not a reason to
 judge the result against a weaker reading. One failed candidate is not proof that a criterion is
 unachievable.
@@ -53,8 +54,9 @@ rewrite.
 
 ## Verify the result
 
-CHECK verifies that assumptions are justified and conclusions are supported by the evidence. Findings
-for one candidate must not be generalized to the whole goal without additional evidence.
+CHECK verifies that assumptions are justified and conclusions are supported by the evidence, and that
+the parts of a composite result are consistent with each other. Findings for one candidate must not
+be generalized to the whole goal without additional evidence.
 
 CHECK chooses the verification method and the evidence sufficient for each criterion. Where the
 original task prescribes a method, source or tool, that constraint is respected; otherwise the choice
@@ -63,8 +65,9 @@ method examined, so a criterion is judged on that, not on the report about it.
 
 Where accepting a risky result needs a risk assessment CHECK cannot make confidently from the
 evidence it has, it may consult `pdca-escalate`. The opinion returns to CHECK, which keeps the
-verdict and the responsibility; the expert is not a final arbiter. The consultation protocol stays
-in §Escalation.
+verdict and the responsibility; the expert is not a final arbiter. The consultation protocol lives
+in the base contract's §Escalation — expert review (`pdca-escalate`), which the driver manages: CHECK
+reads no escalation reference itself and none is loaded on a routine CHECK.
 
 ## Matrix and findings
 
@@ -91,13 +94,14 @@ established and what remains unknown — plus the next authorized transition and
 - **→ PLAN** — a real criteria defect: criteria wrong or incomplete against the original
   requirements, contradictory, unjudgeable, or actually unachievable. A failed implementation or a
   failed verification method is not such a defect.
-- **→ ACT** — the result is accepted; or the terminal case of §CHECK and §Escalation: the current
-  revision's attempts are exhausted and the mandatory expert review found no criteria defect, so ACT
-  finalizes `incomplete`/`STOP` with no false PASS.
+- **→ ACT** — the result is accepted; or the terminal case of the base contract's §CHECK and
+  §Escalation — expert review (`pdca-escalate`): the current revision's attempts are exhausted and
+  the mandatory expert review found no criteria defect, so ACT finalizes `incomplete`/`STOP` with no
+  false PASS.
 
-Counter effects and their recording stay in §State machine and counters. Re-gathering missing
-evidence is not a product defect and is not an attempt; an attempt is an actual execution that
-corrects the product.
+Counter effects and their recording stay in the base contract's §State machine and counters.
+Re-gathering missing evidence is not a product defect and is not a counted attempt; it never extends
+the no-4th rule.
 
 ## Honest limits
 

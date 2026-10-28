@@ -22,8 +22,9 @@ execution actions nor verification methods. Missing facts are requested through 
 
 That entry PLAN settles, together (or after one bounded choice probe): the **form of execution**
 (§Forms); the specialized skill for Bounded Execution, if applicable; the **acceptance criteria** —
-criteria only, since how each criterion is verified is CHECK's decision (§CHECK). The plan's full
-content is listed in §PLAN. A form the user named explicitly is a **constraint**: the entry does not
+criteria only, since how each criterion is verified is CHECK's decision (§CHECK). The plan's fields
+are listed in `references/plan.md` (§Plan fields); §PLAN states the caller contract. A form the user
+named explicitly is a **constraint**: the entry does not
 run a second classification to choose it. The driver then selects the contract and, for Bounded
 Execution, loads the selected specialized skill.
 
@@ -236,64 +237,29 @@ PLAN defines the **result contract of the current cycle** — outcome, acceptanc
 constraints, bounds, risks and stop conditions — inside the unchanged original task and cycle scope.
 It prescribes neither implementation actions or a step-by-step DO (the executor chooses the
 implementation) nor verification methods, evidence sources or commands (that is CHECK's choice).
-PLAN uses the supplied information and the `references/plan.md` it reads itself, and gathers missing
-information only within existing authorized access: it widens no permission and runs no code or
-edits.
 
-PLAN names the **requested result** — the object the user's words ask for — before it writes any
-criterion, and its plan delivers that same object. If the criteria cannot be determined, PLAN does not
-guess: it returns `acceptance criteria cannot be determined` with the missing information and reason,
-and the driver proceeds to ACT without DO and without CHECK. If the supplied facts, the authorized
-gather or a planned bounded probe prove that the requested result cannot be produced under the stated
-constraints, PLAN returns `original task is infeasible under the stated constraints` with cause and
-evidence; one failed candidate is not proof about the whole task. If those facts already determine the
-requested result and nothing is left to produce, PLAN returns `requested result already established`
-with the result and its derivation. None of the three delivers another object: an explanation, a
-feasibility note or a smaller goal is not the requested result, and a plan that would hand one over is
-not a plan for this task. An assumption that would change the accepted outcome — the object, or a
-value the criteria judge — is returned to the user as a question through the driver, with the
-alternatives and the outcome each produces, never assumed. A
-**state-dependent** criterion is stated so that it is measurable where it matters — condition,
-observable, acceptable outcome — but PLAN neither picks CHECK's evidence source nor runs a probe; a
-contract-defined bounded evidence probe is authorized through the driver and run by its role —
-evidence gathering, not product DO. A criterion that cannot be made determinate is that PLAN-terminal
-outcome, never a `ready` placeholder.
+The planner reads `references/plan.md` itself — its **exact absolute path** comes from the directory
+of **this base contract** (`pdca/SKILL.md`), never from the loaded form contract — and the dispatch
+carries that `plan_reference_path`, the **unchanged original task**, its global requirements, the
+cycle's scope/criteria/constraints and the available facts. **`references/plan.md` is
+`pdca-planner` only**: beyond that read it widens no permission, runs no code, edits nothing and
+delegates nothing, and the driver neither reads, inlines nor forwards it; the plan reference is
+never part of a DO, CHECK or `pdca-escalate` dispatch. The plan it returns is shared **data** for the
+other phases, not their instructions: it is forwarded and recorded **unchanged** — no rewrite,
+translation or summarisation.
 
-`references/plan.md` is **`pdca-planner` only**: its **exact absolute path** comes from the directory
-of **this base contract** (`pdca/SKILL.md`), never from the loaded form contract, and is passed in the
-planner dispatch; the planner reads it there and the driver neither loads nor forwards it. The PLAN
-dispatch carries the **unchanged original task**, its global requirements, the cycle's
-scope/criteria/constraints, the available facts/evidence and that `plan_reference_path`; the plan
-reference is never part of a DO, CHECK or `pdca-escalate` dispatch (`references/check.md` follows its
-inline rule in §CHECK). The criteria and plan returned
-are shared **data** for the other phases, not their instructions, and the driver forwards the
-planner's output **unchanged** — no rewrite, translation, summarisation or new commands.
+**PLAN → DO** — only when that plan is complete, judgeable and covering the cycle scope. Every DO
+handoff carries the original task, criteria, constraints, prohibitions and scope by reference, and no
+frozen verification procedure; the plan is on disk and, in normal mode, carries the **user's
+approval**. On DO start `pdca-executor` logs `DO started`. Choosing, validating and running the
+verification is CHECK's work at CHECK time, not a pre-DO prerequisite; a method that proves unusable
+there is re-chosen, not a plan defect. No "ask the user for criteria" path: an indeterminate criterion
+blocks DO and routes **PLAN → ACT** instead.
 
-**PLAN returns:** goal and expected result with the **requested result** and the **delivered result**
-named (the same object); the **form** and specialized skill with a **form rationale** (the justified
-method and bound, or the missing knowledge that decides the next action);
-constraints; assumptions; acceptance criteria, each judgeable as met, unmet or unverified and covering
-the cycle scope; means and access; risks and stop conditions; in normal mode the effort estimate,
-never a cutoff; the plan itself, written to the status file by `pdca-executor`, or a terminal outcome
-in its place. On a resume or replan a still valid rationale is carried by reference.
-
-**PLAN → DO** — only when that plan is complete. Every DO handoff carries the original task,
-criteria, constraints, prohibitions and scope by reference and no frozen verification procedure; the
-plan is on disk and, in normal mode, carries the **user's approval**. On DO start `pdca-executor`
-logs `DO started` and records the transition. Choosing, validating and running the verification is
-CHECK's work at CHECK time, not a pre-DO prerequisite; a method that proves unusable there is
-re-chosen, not a plan defect. No "ask the user for criteria" path: unobtainable criteria end in
-**PLAN → ACT**, not in DO.
-
-**PLAN → ACT** — one of three distinct terminal outcomes, none requiring feasibility proof for every
-plan: `acceptance criteria cannot be determined` (not determinable from the information and
-authorized gather; carries the missing information and reason); `original task is infeasible under
-the stated constraints` (evidence proves the requested result cannot be produced; carries cause and
-evidence — uncertainty after a bounded probe and one failed candidate are not proof); or `requested
-result already established` (the supplied facts already determine the requested result and nothing is
-left to produce; carries the result, its derivation and the evidence pointers). No DO, no CHECK, no
-mandatory escalation detour, no invented criterion, no substitute deliverable; ACT finalizes without
-`PASS` or `done`.
+**PLAN → ACT** — one of three terminal outcomes, each with its payload in `references/plan.md`:
+`acceptance criteria cannot be determined`, `original task is infeasible under the stated constraints`,
+`requested result already established`. No DO, no CHECK, no mandatory escalation detour, no invented
+criterion and no substitute deliverable; ACT finalizes without `PASS` or `done`.
 
 #### DO
 
@@ -339,98 +305,59 @@ residual `unmet`/`unverified` requirements, with no `PASS`, no `done` and no cre
 
 #### CHECK
 
-`pdca-check` is an independent judge — not the author and not the planner's executor. It receives the
-**original task**, the global requirements, the cycle scope and criteria, and the actual frozen
-result with whatever evidence exists, and takes none of them as established. Where the user supplied
-the criteria, they are the acceptance set: CHECK judges against them and not against a different set.
-It assesses the original requirements and the criteria, then **chooses a suitable verification method
-for each criterion** — a public data source, a test it designs, the original requirement itself, an
-independent observation — obtains the evidence, and only then compares the result to the criteria.
-Where the original task prescribes a method, source or tool, CHECK respects it; otherwise the choice
-is its own and never inherited as binding from PLAN.
+`pdca-check` is an independent judge — not the author, not the planner's executor. It receives the
+**original task**, its global requirements, cycle scope and criteria, and the frozen result with its
+evidence, taking none as established; user-supplied criteria are the acceptance set CHECK judges
+against, not another set.
 
-Procedure: (1) assess the original requirements and the criteria — correspondence, completeness for
-the explicit cycle scope, contradictions, judgeability; (2) choose per criterion the method and
-sufficient evidence and obtain it — CHECK is read-only and delegates nothing, so a test it designs or
-a data request is written/run by `pdca-executor` through the driver, and an outside observer is
-`pdca-scout`; the driver routes the request but does not pick the method; (3) compare the result to
-the criteria and verify cross-part consistency.
-
-It reports a verdict, a criteria matrix with `met | unmet | unverified` per criterion, findings bound
-to the criterion or original requirement they concern (by ID where one exists), the evidence pointers
-behind each row and correction routing. **The absence of a check is NOT a pass:** a criterion not
-actually verified is `unverified`, and no numbers/pointers behind a statement → `unverified`, not
-`met`. Where accepting a risky result needs a **risk assessment** CHECK cannot make confidently, it
-may obtain expert reasoning through `pdca-escalate`; the method, verdict and acceptance remain
-CHECK's, and expert advice never waives CHECK.
-
-**The CHECK contract travels inline.** `references/check.md` is the single source of the procedure
-above. The driver reads that file in full and passes its **complete contents inline** in **every**
-`pdca-check` dispatch — the first CHECK, a recheck after DO, and a campaign step or collection item
-alike; CHECK has no permission to read the installed reference and receives no path or instruction
-to open one. If the driver cannot load the whole file, it raises an explicit blocker before
-dispatch: no reduced contract is sent and no verdict is produced from the agent prompt alone.
+**The CHECK contract travels inline.** `references/check.md` is the single source of the procedure:
+the driver reads it in full and passes its **complete contents inline** in **every** `pdca-check`
+dispatch — first CHECK, recheck, campaign step or collection item alike; CHECK cannot read the
+installed reference. A driver that cannot load it whole raises an explicit blocker before dispatch:
+no reduced contract, no verdict from the agent prompt alone.
 
 **CHECK has three independent exits:**
 
 - **CHECK → DO** — an implementation defect: the criteria are sound but the result does not meet
-  them, or the evidence the chosen method needs is missing. A missing report is re-gathered and is
-  not a counted defect or attempt until the facts are in.
+  them, or evidence the chosen method needs is missing. A missing report is re-gathered and is not a
+  counted defect or attempt until the facts are in.
 - **CHECK → PLAN** — a criteria/contract defect: criteria contradictory, unverifiable or
-  unachievable, or not covering the original requirements and the explicit cycle scope. One failed
-  candidate is not proof that a criterion is unachievable. Only CHECK routes such a defect; the
-  planner re-examines the findings with their facts itself and copies no verdict unexamined. A
-  revision never excludes, weakens, rewrites or replaces an explicit user requirement or
-  user-supplied criterion, and never narrows the goal to obtain a PASS; only a new explicit user
-  instruction changes those. A user-supplied criteria set is never refined: a criteria defect
-  resolves only through `PLAN → ACT`, never by rewriting the set. A genuine user-requested scope
-  change remains possible.
+  unachievable, or not covering the original requirements and explicit cycle scope. Only CHECK routes
+  such a defect; the planner re-examines the findings with their facts, copying no verdict. No
+  revision excludes, weakens, rewrites or replaces a user requirement or user-supplied criterion, or
+  narrows the goal for a PASS; only a new explicit user instruction changes those, and a user-supplied
+  criteria set is never refined: the defect resolves only through `PLAN → ACT`. A genuine
+  user-requested scope change remains possible.
 - **CHECK → ACT** — only if all criteria are `met` on **actual evidence**, no mandatory requirement
-  is `unmet` or `unverified`, and cross-part consistency is verified. **A result cannot be accepted
-  while any mandatory requirement is unmet or unverified; an aggregate score cannot compensate for
-  an unmet requirement.** The same transition carries the **terminal** case — no permitted attempt
-  left and the mandatory expert review found no criteria defect: ACT finalizes
-  `incomplete`/`STOP`, not an acceptance.
+  is `unmet` or `unverified`, cross-part consistency and the full explicit cycle scope are verified.
+  **A result cannot be accepted while any mandatory requirement is unmet or unverified; an aggregate
+  score cannot compensate for an unmet requirement.** It carries the **terminal** case — no permitted
+  attempt left and the mandatory expert review found no criteria defect: ACT finalizes
+  `incomplete`/`STOP`, no acceptance.
 
-Accepting a cycle accepts its **own scope only**; `done` still needs a whole-goal CHECK — the whole
-task in Bounded Execution, the campaign's final check in Incremental Execution — unless it is combined
-with the cycle's CHECK because the same candidate is the whole result and every global requirement is
-actually verified.
+Accepting a cycle accepts its **own scope only**: `done` needs a whole-goal CHECK — the whole task in
+Bounded Execution, the campaign's final check in Incremental Execution — unless a combined CHECK
+covers the same candidate and verifies every global requirement.
 
 #### ACT
 
-ACT records the cycle's outcome, reasons, completed and unfinished work, and the handoff. It changes
-no product, test or checked artifact, and has no separate subagent role — the driver and
-`pdca-executor` carry it out.
+ACT closes the cycle; the driver and `pdca-executor` carry it out — no separate subagent role — and it
+records the outcome the originating phase determined, never its own verdict or approval. It changes
+no product, test or checked artifact. `pdca-executor` reads `references/act.md` on status-file
+creation and on **every** status write: the payloads, the closing order and the skeleton live there.
 
-- **ACT → EXIT** — after an accepted CHECK: records conclusions, limitations, the actual status, the
-  accepted snapshot and the handoff, then `EXIT` (or the next cycle). In Bounded Execution this closes
-  the task; in an inheriting form it closes that cycle's scope and the campaign continues. The status
-  file is finalized and kept, and nothing changed after the accepted CHECK snapshot.
-- **ACT → STOP** — a `blocked`/`incomplete`/`STOP` outcome is finalized with cause, evidence, the
-  remaining `unmet`/`unverified` criteria, the counters and the defect history — no `PASS`, no `done`,
-  no credit, no bypass of the no-4th rule. A PLAN-terminal outcome is finalized the same way, carrying
-  the missing information or the proven cause and evidence instead of criteria that do not exist.
+- **ACT → EXIT** — after an accepted CHECK, on the untouched accepted snapshot: closes the cycle's
+  scope, or the whole task in Bounded Execution.
+- **ACT → STOP** — **STOP** is an **ACT outcome**, never a path beside it: the originating phase
+  confirmed no permitted continuation, so the record is an honest `blocked`/`incomplete`/`STOP` — not
+  an acceptance, no false `PASS`, no bypass of the no-4th rule.
 
-**PLAN → ACT finalization** — any terminal outcome reaches ACT directly: no DO, no CHECK, no
-mandatory detour through escalation, no substitute deliverable and no criterion invented to fill the
-report. ACT records the resolution verbatim — `acceptance criteria cannot be determined` with the
-missing information and reason, `original task is infeasible under the stated constraints` with the
-proven cause and evidence, or `requested result already established` with the result, its derivation
-and the evidence pointers — plus the counters and defect history, with no `PASS` and no `done`. The
-outcomes stay visibly distinct, and an established result records that no independent CHECK ran. Work found during finalization is done in DO and re-checked,
-or invalidates the accepted snapshot and loops back; it is never slipped in under ACT, and ACT never
-implements. Details: `references/act.md`.
+**PLAN → ACT** — a terminal PLAN outcome closes directly, without DO, CHECK or a mandatory expert
+detour: the originating outcome is recorded per `references/act.md`, including the absence of an
+independent CHECK for an established result.
 
-**STOP** is an **ACT outcome**, not a separate phase or path beside ACT: **no permitted continuation
-confirmed in the originating phase** — a consultation that leaves the dispute unresolved, a PLAN that
-cannot determine the criteria or proves the original task infeasible, an unresolvable constraint, a DO
-that cannot finish, a refused required approval, or a CHECK whose attempts are exhausted under the
-no-4th rule. A consultation alone never requires a new plan: only the phase that asked, applying its
-own transitions, decides that nothing permitted remains. STOP does **not** bypass the no-4th rule and
-is finalized by the permitted writer-executor **without a false PASS**: reasons, evidence, remaining
-`unmet`/`unverified` criteria, counters, defect history and handoff. It is never finalized beside ACT,
-and the cycle is never closed without ACT.
+Product work found during closure is not ACT's: it goes back to DO and a final CHECK. Every closure
+runs through ACT, never beside it.
 
 ### Evidence over assertion
 
@@ -512,18 +439,16 @@ Everything this skill writes lives under **one** project-local root, `.pdca/`, i
 
 ### Effort and time policy
 
-**No autonomous cutoff.** No planner-generated wall-clock, token, cost, compute, revision, step or
-measurement total terminates the task; elapsed values are accounting only and an estimate is not a
-stop condition. Work ends on an accepted result; otherwise it stops only on a verified irreducible
-blocker, a security/permission boundary or explicit user cancellation. Failed candidates and
-incomplete evidence are not blockers; they go to the step boundary.
+**No autonomous cutoff.** No planner metric — wall-clock, tokens, cost, compute, revisions, steps,
+measurements — ends a task; estimates and elapsed time are accounting only. End on acceptance;
+otherwise stop only for a verified irreducible blocker, a security/permission boundary or explicit
+user cancellation. Failed candidates and incomplete evidence go to the step boundary, not STOP.
 
 **Normal mode.** The driver presents the estimate and asks separately whether to stop; plan approval
-is not that opt-in, and no answer means no cap. An explicit opt-in is recorded and persists as the
-same cutoff across normal-mode resume/replan (not renewed) until the user changes or revokes it; only
-a switch to autonomous drops it. Per-command timeouts, host capacity and user deadlines stay; a
-process timeout is failed-command evidence, not a STOP. The attempt budget and same-defect threshold
-are the counter rules of §State machine and counters, never a total-work quota.
+is not that opt-in, silence means no cap. A recorded opt-in persists unchanged across resume/replan
+(not renewed) until the user changes or revokes it; only autonomous mode drops it. Timeouts, host
+capacity and deadlines remain; a process timeout is failed-command evidence, not STOP. Attempt budget
+and same-defect threshold follow §State machine and counters, not a work quota.
 
 ### Recovery
 
@@ -543,43 +468,13 @@ flags; (5) answer the five recovery questions from the scout report; (6) reconst
 
 ### Escalation — expert review (`pdca-escalate`)
 
-ESCALATE is an **additional expert review** on the strong tier of a difficult or disputed decision:
-not a stage of the machine, not a phase, not a substitute for a phase that feels unsure. PLAN and
-CHECK keep their decisions; the expert only advises the phase that referred the question.
+Seek advisory expert review for ambiguous criteria, exhausted counters or repeated defects
+(§State machine and counters), irreversible trade-offs, uncertain acceptance risk, or low confidence
+after targeted fact gathering. Missing facts stay with the responsible phase.
 
-**Grounds** — a **substantive judgment** with enough information to judge, but low-confidence or
-disputed: (1) a genuinely ambiguous requirement or criterion where guessing is unacceptable; (2) the
-cycle **not passing by the counter** — the attempt budget and same-defect threshold are defined once
-in §State machine and counters and never re-thresholded here; (3) a risky or irreversible
-**implementation** decision inside DO's authority, or a trade-off with long-lasting consequences;
-(4) an acceptance decision needing a **risk assessment** CHECK cannot make confidently; (5) a PLAN or
-DO decision still low-confidence after a targeted `pdca-scout` gather, reported as such by the
-responsible role.
-
-Routine execution, ordinary review, fact gathering and repetitive fixes are not grounds, and missing
-information never is: insufficient facts to determine criteria stay **PLAN → ACT** (as does an
-original task proven infeasible), and a DO that cannot finish stays **DO → ACT** — the expert
-supplies no facts the phase could not gather and is no detour. No ground creates a new authorization,
-approval or permission. A contract-level ambiguity or unachievable criterion is a **CHECK finding**
-for `pdca-planner`, which may itself ask for expert review of its low-confidence decision.
-
-**Input:** a narrow question with the original task; the phase and role that ask; the criteria it
-touches; the result, evidence (reused, not re-gathered), attempts, defect history and constraints. A
-missing fact may be gathered by `pdca-scout` within existing permissions — not mandatory per
-consultation. ESCALATE is read-only, may use that delegation, and never edits, runs state-changing
-work, or decides for the phase.
-
-**Conclusion:** reasoned judgment — reasoning, facts relied on, residual uncertainty and a
-**recommended disposition**; never a menu, an implementation or a product verdict. It does not accept
-in place of CHECK, rewrite criteria in place of PLAN, or implement in place of DO. It returns to the
-**phase that asked**; the driver forwards it without semantic re-decision and waives no gate, and
-that phase uses only its own transitions: PLAN may refine its criteria or return to ACT; DO may
-implement inside the contract or hand `cannot finish` to ACT; CHECK re-examines and routes as usual.
-
-Expert advice never waives CHECK, never replaces a required user approval, and never widens
-permissions; in **normal mode** a genuine criteria revision still needs a **fresh user approval**
-before DO. A consultation allocates no extra attempt; an exhausted revision follows §State machine and
-counters.
+Before dispatching `pdca-escalate`, the driver must read `references/escalate.md` and include its
+protocol with the question and evidence. Escalation is not a phase or extra attempt;
+PLAN/DO/CHECK retain their authority.
 
 ### Generic operating constraints
 
@@ -646,37 +541,28 @@ driver only; the roles' scoped read/write/execute rights are not narrowed here.
 
 ### Normal-mode approval
 
-The executor writes the plan to the status file; the driver gives the user the path, says the planner
-produced it, and asks them to approve it — that approval is the **only start signal** (any explicit
-approval counts). A question, a change request or a non-committal reply is not an approval; without
-approval nothing is created or edited **except the status file**. The request states the plan's
-**requested result** and **delivered result**, one line each, so the user sees before approving that
-the plan hands over the object they asked for; approval cannot cure a mismatch. A PLAN-terminal
-outcome needs no approval: nothing outside that file exists to approve, and the driver proceeds to
-PLAN → ACT.
-Approval starts the plan as written, not a different task or criteria set (§The user's task and its
-criteria). The request also states the effort estimate and asks the separate §Effort and time policy
-question; approving the plan alone never enables a cutoff.
+Before DO, the executor saves the plan in status. The driver links it, credits `pdca-planner`,
+states requested/delivered results (one line each), and requests explicit approval plus the separate
+§Effort and time policy choice. Questions, changes and silence are not approval; until approval
+only status may be created or edited. Approval covers that exact task/criteria, not a result
+mismatch. PLAN-terminal outcomes go to ACT without approval.
 
-**Durable approval protocol (caller-driven cycles).** A driver running the cycle on behalf of a
-parent/primary may plan but **never obtains or assumes approval**. `pdca-executor` persists a
-**pending approval ref** binding the stable task/`cycle_id`, the exact cycle `N`, plan revision `r`
-and the criteria set; the `plan_handoff` carries it as a pointer, the parent asks the user, and the
-executor records the approval against the **same** ref. A matching record continues the **same**
-cycle/step; a stale plan gets a genuine revision and a **fresh approval ref** the stale approval never
-authorizes. A mismatched or missing approval is an **approval-needed checkpoint** handed to the
-parent — not DO and not a fresh PLAN. Autonomous mode has no approval slots and no plan-approval
-gate; only an approval required by the environment or the user still blocks.
+In caller-driven cycles, the parent obtains approval, never the delegated driver. The executor
+persists a pending ref binding task/`cycle_id`, `N`, `r` and criteria; `plan_handoff` carries it.
+Approval recorded against that ref resumes the same cycle/step. Missing/mismatched approval returns
+an approval-needed checkpoint, not DO or fresh PLAN. Stale plans need revision, a fresh ref and fresh
+approval. Autonomous mode has no approval slots/gate except environment/user-required approvals.
 
 ### References
 
 Phase detail is disclosed per role; a supporting file is never auto-loaded by being mentioned, and the
 routing below keeps the scopes apart.
 
-- `references/plan.md` — **`pdca-planner` only**: plan fields, criteria, measurement, the machine
-  projection, evidence locations and thresholds. The driver supplies its **exact absolute path**
-  (from this base contract's directory) in the PLAN or criteria-revision dispatch; the planner reads
-  it itself and the driver never reads, inlines or forwards the plan reference.
+- `references/plan.md` — **`pdca-planner` only**: plan fields, criteria, terminal outcomes, gap
+  closure, numeric thresholds, the evidence boundary and revision accounting. The driver supplies its
+  **exact absolute path** (from this base contract's directory) in the PLAN or criteria-revision
+  dispatch; the planner reads it itself and the driver never reads, inlines or forwards the plan
+  reference.
 - `references/check.md` — the CHECK contract, delivered **inline by the driver as the complete
   contents** in every `pdca-check` dispatch (first CHECK, recheck, campaign step, collection item);
   CHECK cannot read the installed file, and a driver that cannot load it in full raises an explicit
@@ -685,6 +571,7 @@ routing below keeps the scopes apart.
 - `references/act.md` — read by `pdca-executor` on status-file **creation and every status write**,
   not only at ACT: the canonical skeleton, fixed headings, field rules and closing order, so the
   skeleton exists before the first ready plan record.
+- `references/escalate.md` — driver: read before expert dispatch; pass its protocol with the input.
 
 ## Bounded Execution
 

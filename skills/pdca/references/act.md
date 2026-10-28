@@ -43,6 +43,13 @@ own.
 The status file states the phase actually reached and names a check that did not happen as absent
 instead of reconstructing a history. Accepted and incomplete outcomes stay visibly distinct.
 
+**When STOP is the outcome.** STOP is an outcome of ACT, never a phase or a path beside it: it is
+finalized only once the **originating phase** confirms that no permitted continuation remains — an
+unresolved consultation, a PLAN that cannot determine the criteria or proves the original task
+infeasible, an unresolvable constraint, a DO that cannot finish, a refused required approval, or
+CHECK attempts exhausted under the no-4th rule — and only that phase, applying its own transitions,
+decides it; a consultation alone needs no new plan (`../SKILL.md` §Phase contracts → ACT).
+
 ## Status file
 
 Default path `.pdca/status/<task>-<N>.md`: `<task>` a kebab slug, `<N>` the task's cycle number

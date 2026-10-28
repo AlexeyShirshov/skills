@@ -838,7 +838,7 @@ CHECK → DO; `n` становится 2. Исполнитель расширя�
 | Машина состояний и её выходы | `skills/pdca/SKILL.md §State machine and counters`; §Phase contracts |
 | PLAN определяет контракт результата и терминальные исходы | `skills/pdca/SKILL.md §PLAN`; `skills/pdca/references/plan.md §Terminal PLAN outcomes` |
 | У DO два исхода, и он не возвращается в PLAN | `skills/pdca/SKILL.md §DO` |
-| Выбор метода CHECK, матрица и три выхода | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md §Verdict and routing` |
+| Выбор метода CHECK, матрица и три выхода | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md §Verify the result · §Matrix and findings · §Verdict and routing` |
 | Закрытие ACT, STOP и скелет статуса | `skills/pdca/SKILL.md §ACT`; `skills/pdca/references/act.md §Closing order`; `skills/pdca/references/act.md §Status file` |
 | Четыре счётчика | `skills/pdca/SKILL.md §State machine and counters` |
 | Доказательства важнее утверждений | `skills/pdca/SKILL.md §Evidence over assertion` |

@@ -34,8 +34,8 @@ CHECK chooses the verification method, the evidence sources and the commands at 
 (`../SKILL.md` §CHECK, §Evidence over assertion). So no field and no instruction in this file names a
 verification procedure, an evidence source, a command or a run as a plan requirement.
 
-The criteria must cover all mandatory task requirements and account for the conditions under which
-they apply.
+The criteria must cover all mandatory task requirements and the cycle scope, and account for the
+conditions under which they apply.
 
 ### Criteria
 
@@ -51,6 +51,12 @@ they apply.
 - Criteria come from the supplied information and from facts gathered read-only on the planner's
   request through the driver, within existing permissions; the planner edits nothing, runs nothing,
   delegates nothing and widens no permission.
+- A **state-dependent** criterion is stated so that it is measurable where it matters — condition,
+  observable, acceptable outcome — while the planner neither picks CHECK's evidence source nor runs
+  the probe: a contract-defined bounded evidence probe is authorized through the driver and executed
+  by its own role — evidence gathering, not product DO.
+- A criterion that cannot be made determinate is the `acceptance criteria cannot be determined`
+  outcome (§Terminal PLAN outcomes), never a `ready` placeholder.
 
 ## Terminal PLAN outcomes
 
@@ -80,7 +86,9 @@ A proven contradiction that makes the original task with its supplied criteria u
 `original task is infeasible under the stated constraints`; an ambiguous or unverifiable criterion
 that the authorized read-only gather cannot settle without changing the user input is `acceptance
 criteria cannot be determined`, carrying the supplied set verbatim and the concrete defect (not "no
-criteria"). Missing coverage is an explicit blocker, not permission to add a criterion; only a new
+criteria"). Missing mandatory coverage is an explicit blocker, not permission to add a criterion: the
+supplied set stays verbatim, no criterion is invented, and the cycle takes the `acceptance criteria
+cannot be determined` outcome (§Terminal PLAN outcomes) instead of a ready plan or DO; only a new
 explicit user instruction changes the input, and plan approval is not one.
 
 On a resume or replan a still-valid form rationale is carried **by reference**, not re-authored or

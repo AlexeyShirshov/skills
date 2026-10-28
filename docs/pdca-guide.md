@@ -830,7 +830,7 @@ names a section.
 | The state machine and its exits | `skills/pdca/SKILL.md §State machine and counters`; §Phase contracts |
 | PLAN defines the result contract and the terminal outcomes | `skills/pdca/SKILL.md §PLAN`; `skills/pdca/references/plan.md §Terminal PLAN outcomes` |
 | DO has two outcomes and never returns to PLAN | `skills/pdca/SKILL.md §DO` |
-| CHECK's method choice, matrix and three exits | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md §Verdict and routing` |
+| CHECK's method choice, matrix and three exits | `skills/pdca/SKILL.md §CHECK`; `skills/pdca/references/check.md §Verify the result · §Matrix and findings · §Verdict and routing` |
 | ACT closing, STOP and the status skeleton | `skills/pdca/SKILL.md §ACT`; `skills/pdca/references/act.md §Closing order`; `skills/pdca/references/act.md §Status file` |
 | The four counters | `skills/pdca/SKILL.md §State machine and counters` |
 | Evidence over assertion | `skills/pdca/SKILL.md §Evidence over assertion` |
