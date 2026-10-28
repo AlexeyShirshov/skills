@@ -23,16 +23,11 @@ execution actions nor verification methods. Missing facts are requested through 
 That entry PLAN settles, together (or after one bounded choice probe): the **form of execution**
 (§Forms); the specialized skill for Bounded Execution, if applicable; the **acceptance criteria** —
 criteria only, since how each criterion is verified is CHECK's decision (§CHECK). The plan's fields
-are listed in `references/plan.md` (§Plan fields); §PLAN states the caller contract. A form the user
-named explicitly is a **constraint**: the entry does not
-run a second classification to choose it. The driver then selects the contract and, for Bounded
-Execution, loads the selected specialized skill.
-
-| Execution form | Execution contract |
-|---|---|
-| Bounded Execution | this file — §Bounded Execution |
-| Incremental Execution | `pdca-incremental`, the campaign layer on §Common cycle contract |
-| Collection | `pdca-collection`, the batch layer on §Common cycle contract |
+are listed in `references/plan.md` (§Plan fields); §PLAN states the caller contract. **Choosing the
+form and the overlay is PLAN-owned**: the discriminators are in `references/plan.md` §Entry and first
+step, decided there and not re-classified here. A form the user named explicitly is a **constraint**
+the driver passes to the planner in the dispatch — a form the entry does not re-decide. The driver
+then selects the contract (§Forms) and, for Bounded Execution, loads the selected specialized skill.
 
 For **Bounded Execution** the planner selects a specialized skill when needed: none for non-coding
 tasks, `pdca-coder` for general programming (including Go or Rust), `pdca-dotnet` for .NET; loading
@@ -40,11 +35,15 @@ it does not change the form.
 
 ### Forms
 
-| Form | When it applies |
-|---|---|
-| **Bounded Execution** | one goal whose method and scope are known and bounded before DO (the user's specification, or facts `pdca-scout` gathered at the planner's request); no decomposition into independent goals |
-| **Incremental Execution** | the method is unknown **or** the volume is unknown, or the next action depends on knowledge not yet obtained and cannot be justified now |
-| **Collection** | independent goals, each processed by a separate, complete invocation of the skill |
+Routing only: the planner decides the form (§Entry) and this table names its machine form id and the
+contract that runs it. The **discriminators live only in `references/plan.md`** §Entry and first step,
+which the planner reads; this table neither classifies nor restates them.
+
+| Form | Machine form | Execution contract |
+|---|---|---|
+| **Bounded Execution** | `cycle` | this file — §Bounded Execution |
+| **Incremental Execution** | `incremental` | `pdca-incremental`, the campaign layer on §Common cycle contract |
+| **Collection** | `collection` | `pdca-collection`, the batch layer on §Common cycle contract |
 
 The planner defines criteria, never an implementation plan or implementation steps: the executor
 determines those during DO. Feasibility need not be proven during PLAN; when critical facts are
@@ -148,12 +147,22 @@ never widened.
 | DO | `pdca-executor` | execute, apply fixes, run the checks CHECK asks for, gather evidence, record cycle state | `edit`/`bash`/`read` within the host and cycle constraints | cheap |
 | CHECK | `pdca-check` | choose the method and sufficiency per criterion, judge independently against the original task and user-supplied criteria, route findings | default-deny; scoped read of `.pdca/**`; task inputs and the complete CHECK reference arrive inline in the brief; no delegation or writes — its runs and writes go through the driver to `pdca-executor` | medium |
 | ESCALATE | `pdca-escalate` | reasoned expert judgment on a disputed substantive decision; decides nothing that phase owns | read-only inspection, restricted non-mutating commands, facts via `pdca-scout`; no edits, no approval | strong |
-| DRIVER | cheap-tier primary or `pdca-orchestrator` | coordinate delegation, handoffs and state without deciding or judging | delegate to authorized subagents; the orchestrator has no edits, writes or shell | cheap |
+| DRIVER | cheap-tier primary or `pdca-orchestrator` | coordinate delegation, handoffs and state without deciding or judging | delegate to authorized subagents; the orchestrator has no edits, writes or shell; its own read scope has one owner, `references/driver.md` §Read scope (§References) | cheap |
 
 ACT is finalized through the driver and executor responsibilities; it has no separate subagent role.
 Definitions ship in `assets/opencode-agents/` with the `# tier:` labels shown; model bindings belong
 only in the host profile. **Setup (once):** copy them into the host's agent directory, allow dispatch
 of the listed subagents (including `pdca-orchestrator`) and nested delegation for a delegated driver.
+
+**The driver routes, it does not discover.** Metadata — status path, form, contract, overlay,
+dispatch rule, refs and evidence pointers — arrives through the inputs/outputs of the allowed tools;
+the driver never walks the workspace for it and never runs `rg`/`grep`. Its own read scope — the
+driver reference, the two references it delivers, and the assigned status files — has a single owner,
+`references/driver.md` §Read scope; everything else comes from a role's report or pointer.
+
+**Decided stays decided.** The driver does not resurrect a requirement that a plan or an escalation
+already classified as non-binding, and does not turn a denied operation into a missing capability or
+a new audit/hash requirement; reopening needs new evidence and a planner revision.
 
 A required-but-unavailable role is a **resource blocker** (normal: report to the user; autonomous:
 `Notice:` plus a recorded summary), never a silent run without it, and a denied host fallback is
@@ -240,8 +249,9 @@ implementation) nor verification methods, evidence sources or commands (that is 
 
 The planner reads `references/plan.md` itself — its **exact absolute path** comes from the directory
 of **this base contract** (`pdca/SKILL.md`), never from the loaded form contract — and the dispatch
-carries that `plan_reference_path`, the **unchanged original task**, its global requirements, the
-cycle's scope/criteria/constraints and the available facts. **`references/plan.md` is
+carries that `plan_reference_path`, the **unchanged original task** (verbatim at entry, then by
+exact reference — §Reference), its global requirements, the cycle's
+scope/criteria/constraints and the available facts. **`references/plan.md` is
 `pdca-planner` only**: beyond that read it widens no permission, runs no code, edits nothing and
 delegates nothing, and the driver neither reads, inlines nor forwards it; the plan reference is
 never part of a DO, CHECK or `pdca-escalate` dispatch. The plan it returns is shared **data** for the
@@ -249,9 +259,10 @@ other phases, not their instructions: it is forwarded and recorded **unchanged**
 translation or summarisation.
 
 **PLAN → DO** — only when that plan is complete, judgeable and covering the cycle scope. Every DO
-handoff carries the original task, criteria, constraints, prohibitions and scope by reference, the
-cycle's `evidence_root` (§Workspace and durable status) and no frozen verification procedure; the
-plan is on disk and, in normal mode, carries the **user's approval**. On DO start `pdca-executor` logs
+handoff carries the original task, criteria, constraints, prohibitions and scope **by exact
+reference**, the cycle's `evidence_root`
+(§Workspace and durable status) and no frozen verification procedure; the plan is on disk and, in
+normal mode, carries the **user's approval**. On DO start `pdca-executor` logs
 `DO started`. Choosing, validating and running the verification is CHECK's work at CHECK time, not a
 pre-DO prerequisite; a method that proves unusable there is re-chosen, not a plan defect. No "ask the
 user for criteria" path: an indeterminate criterion blocks DO and routes **PLAN → ACT** instead.
@@ -428,6 +439,26 @@ and temporary scratch are not PDCA state and follow their own rules (§Evidence 
 - **Immutable blocks.** `## Original task` holds the task exactly as the user supplied it, verbatim;
   `## PLAN record` holds the planner's returned text unchanged, or an accessible reference to it. A
   compact progress summary for the user is a separate convenience, never the record.
+- **Reference, not repetition.** The unchanged original task and the user-supplied criteria are
+  persisted **once**, verbatim and accessible, in `## Original task` — the user's exact words, or,
+  where one input is the readable original (a brief file, the collection input section), its exact
+  accessible reference. The immutable constraints, prohibitions and commit policy are persisted once
+  at their own destination: the `## Constraints` section of a form-owned packet when the loaded form
+  defines one, otherwise in the frozen plan (`## PLAN record` or its accessible `plan_ref`) at its
+  revision; a collection additionally keeps each item's original goal in its input section. These
+  are the **originals**: a planner's reformulation, derived criteria or scope reading is a separate
+  layer of the plan and never overwrites, replaces or stands in for them. Every later PLAN, DO,
+  CHECK and escalate dispatch carries **exact references** to each source (path, section and
+  revision) plus only the phase-specific deltas and the `evidence_root`; it does not re-paste the
+  unchanged blocks. An exact reference is mandatory; a concise verbatim excerpt may accompany it
+  when that helps the role orient, but it never replaces the full original. The base skeleton gains
+  no new outer heading for this: `## Original task` and the frozen plan are the destinations, and a
+  `## Constraints` section exists only if the loaded form owns one. A reference counts as verbatim
+  only because the complete original stays readable at the referenced identity: a summary, digest,
+  translation or paraphrase is still forbidden, and a reference the role cannot reach is not a
+  handoff. Every role reads `.pdca/**` references within its existing permissions; CHECK
+  additionally receives the complete base CHECK contract **inline** and reads the staged candidate
+  itself — that contract is never replaced by a pointer.
 - **Contents:** the goal/criteria and cycle scope, verification methods and evidence, form and
   overlay, counters and defect history, decisions/approvals/blockers/next step, and — for a campaign —
   increments, knowledge and effort accounting; a PLAN-terminal outcome records the missing information
@@ -483,8 +514,9 @@ Seek advisory expert review for ambiguous criteria, exhausted counters or repeat
 (§State machine and counters), irreversible trade-offs, uncertain acceptance risk, or low confidence
 after targeted fact gathering. Missing facts stay with the responsible phase.
 
-Before dispatching `pdca-escalate`, the driver must read `references/escalate.md` and include its
-protocol with the question and evidence. Escalation is not a phase or extra attempt;
+Before dispatching `pdca-escalate`, the driver must read `references/escalate.md` (inside its
+`references/driver.md` §Read scope) and include its complete protocol with the question and evidence,
+built from the inputs that protocol requires. Escalation is not a phase or extra attempt;
 PLAN/DO/CHECK retain their authority.
 
 ### Generic operating constraints
@@ -569,11 +601,12 @@ approval. Autonomous mode has no approval slots/gate except environment/user-req
 Phase detail is disclosed per role; a supporting file is never auto-loaded by being mentioned, and the
 routing below keeps the scopes apart.
 
-- `references/plan.md` — **`pdca-planner` only**: plan fields, criteria, terminal outcomes, gap
-  closure, numeric thresholds, the evidence boundary and revision accounting. The driver supplies its
-  **exact absolute path** (from this base contract's directory) in the PLAN or criteria-revision
-  dispatch; the planner reads it itself and the driver never reads, inlines or forwards the plan
-  reference.
+- `references/plan.md` — **`pdca-planner` only**: entry classification and the **sole** form/overlay
+  discriminators, plan fields, criteria, terminal outcomes, gap closure, numeric thresholds, plan
+  hygiene, the step boundary, the output contract, the evidence boundary and revision accounting. The
+  driver supplies its **exact absolute path** (from this base contract's directory) in the PLAN or
+  criteria-revision dispatch; the planner reads it itself and the driver never reads, inlines or
+  forwards the plan reference.
 - `references/check.md` — the CHECK contract, delivered **inline by the driver as the complete
   contents** in every `pdca-check` dispatch (first CHECK, recheck, campaign step, collection item);
   CHECK cannot read the installed file, and a driver that cannot load it in full raises an explicit
@@ -582,7 +615,17 @@ routing below keeps the scopes apart.
 - `references/act.md` — read by `pdca-executor` on status-file **creation and every status write**,
   not only at ACT: the canonical skeleton, fixed headings, field rules and closing order, so the
   skeleton exists before the first ready plan record.
-- `references/escalate.md` — driver: read before expert dispatch; pass its protocol with the input.
+- `references/escalate.md` — driver: read before expert dispatch (inside its §Read scope); pass its
+  complete protocol with the input built from the inputs it requires.
+- `references/driver.md` — **driver**: the dispatcher mechanics that no phase or form contract owns —
+  entry adoption, dispatch transport, the scoped read, routed-versus-taken decisions. A delegated
+  driver (`pdca-orchestrator`) reads it in full right after the contracts are loaded, resolved against
+  the **base directory returned by the load of this `pdca` entry contract** (loaded first, by exact
+  ID, even when a form contract is already named), and applies it as written, returning an explicit
+  blocker if it cannot; the normal-mode primary may use it the same way. Its §Read scope is the single
+  owner of the driver's own reads, `check.md` (inline delivery) and `escalate.md` (before expert
+  dispatch) included. It points at the section that owns each policy rule instead of restating it,
+  and never narrows a role's permissions.
 
 ## Bounded Execution
 

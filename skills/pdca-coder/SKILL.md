@@ -349,14 +349,14 @@ integrated candidate; leave the task branches in place so the work remains recov
 
 - **The base fixed shape is the cycle record.** Use the base `act.md` CYCLE RECORD skeleton with its
   canonical headings. A form-owned outer container stays that form's; within the cycle record, code
-  and stream fields nest under `## DO result` / `## Changed files`, and unit decomposition metadata
-  under `## PLAN record` where the base prescribes it. The overlay adds no additional top-level
-  section, log or per-unit status file.
+  and stream fields nest under `## DO result` / `## Changed files`; execution-unit metadata is DO's
+  and nests under `## DO result` (`../pdca/references/act.md` §Status file). The overlay adds no
+  additional top-level section, log or per-unit status file.
 - **Record rules follow `act.md`.** Original task, phase reports, dialogue language, sole writer,
   fixed template and Git state are as the base `act.md` states; no restated schema.
 - **Unit and stream metadata.** Keep the code-specific unit fields — state, criteria covered,
-  footprint/owner, evidence pointers — under the base section that owns them, never in a new status
-  path.
+  footprint/owner, evidence pointers — under `## DO result`, the base section that owns them, never
+  in a new status path.
 - **Bookkeeping.** Reuse the base touched-file ledger in all dispatches; no custom handoff.
 - **No invented ACT work.** Do not force an `AGENTS.md`/registry edit or fabricate a project lesson
   to close a cycle. Docs are finished in DO/CHECK, not ACT.

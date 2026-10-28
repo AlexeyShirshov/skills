@@ -102,6 +102,15 @@ class PlanContractTest(unittest.TestCase):
             "missing mandatory coverage", "instead of a ready plan or do",
         ))
 
+    def test_no_invented_audit_gates_keep_their_owner(self) -> None:
+        # Moved out of the planner asset with the rest of the procedure: the reference now owns it.
+        reference = norm(PLAN_REFERENCE.read_text(encoding="utf-8"))
+        check_present(self, reference, (
+            "no invented audit gates", "transitive reference graph", "retrospective hashes",
+            "diagnostic note", "must not force incomplete/stop or a new round",
+            "a finite audit goal the user agreed as a separate task",
+        ))
+
 
 class ActContractTest(unittest.TestCase):
     def test_reader_boundary_and_authority(self) -> None:

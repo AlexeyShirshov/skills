@@ -14,6 +14,15 @@ value of its enumeration.  The lint is header-driven, not schema-fixed: the
 header of each table is the schema for its rows, and only the enumerations and a
 small required set of columns are pinned.
 
+One optional typed column carries the PLAN-terminal projection: ``terminal`` is
+``execution`` (the default when the column is absent or the cell is a placeholder,
+so legacy records stay valid) or one of the three terminal causes.  A plan-terminal
+row must stay ``incomplete``, must not be ``plan_state=ready`` and must record
+``attempts=0``: a terminal resolution is neither readiness nor done and consumes
+no attempt.  A plan-terminal row fails closed when the table has no ``status``
+column to prove that ``incomplete``, and when the row's form is explicitly
+``campaign`` — a campaign's established step goes to independent CHECK.
+
 Usage::
 
     python3 .pdca/scripts/status_lint.py .pdca/status/collection-<slug>.md [...]
@@ -35,13 +44,21 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = 1
+VERSION = 2
 
 ITEM_STATUS = ("pending", "in-progress", "done", "incomplete")
 GROUP_STATUS = ITEM_STATUS + ("merged",)
 PLAN_STATE = ("pending", "running", "ready")
 PREPARATION_STATE = ("pending", "ready")
 DISPOSITION = ("active", "paused", "finalized")
+#: ``execution`` (default) or one of the three PLAN-terminal causes.
+TERMINAL = (
+    "execution",
+    "criteria-undetermined",
+    "infeasible",
+    "already-established",
+)
+PLAN_TERMINAL = TERMINAL[1:]
 
 #: A cell that states "not set" rather than a state value.
 PLACEHOLDERS = ("—", "–", "-", "n/a", "na", "none", "not set", "unset", "tbd", "empty")
@@ -170,6 +187,20 @@ def classify(names: list[str]) -> str:
 def leading(value: str) -> str:
     match = _LEADING_WORD.match(value.strip().lower())
     return match.group(0) if match else ""
+
+
+def is_placeholder(value: str) -> bool:
+    lowered = value.strip().lower()
+    return not lowered or lowered.startswith(PLACEHOLDERS)
+
+
+def attempts_violation(value: str, label: str) -> str | None:
+    text = value.strip()
+    if is_placeholder(text):
+        return None
+    if not re.fullmatch(r"\d+", text):
+        return "%s %r is not a non-negative integer" % (label, text)
+    return None
 
 
 def state_violation(value: str, allowed: tuple[str, ...], label: str) -> str | None:
@@ -310,6 +341,90 @@ def lint_text(text: str) -> tuple[list[Violation], int, int]:
                     message = state_violation(row[index], allowed, key)
                     if message:
                         violations.append(Violation(line_number, message))
+
+        if kind in ("items", "units"):
+            terminal_index = column(names, "terminal")
+            attempts_index = column(names, "attempts")
+            plan_index = column(names, "plan_state")
+            status_index = statuses[0] if statuses else None
+            for line_number, row in rows:
+                if len(row) != len(header):
+                    continue
+                identity = row[0].strip() or "?"
+                cause = "execution"
+                if terminal_index is not None:
+                    cause = leading(row[terminal_index]) or "execution"
+                    message = state_violation(row[terminal_index], TERMINAL, "terminal")
+                    if message:
+                        violations.append(Violation(line_number, message))
+                if cause not in PLAN_TERMINAL:
+                    if attempts_index is not None:
+                        message = attempts_violation(row[attempts_index], "attempts")
+                        if message:
+                            violations.append(Violation(line_number, message))
+                    continue
+                if attempts_index is None:
+                    violations.append(
+                        Violation(
+                            line_number,
+                            "plan-terminal item %r has no 'attempts' column: a terminal "
+                            "resolution consumes no attempt, record attempts 0" % identity,
+                        )
+                    )
+                elif row[attempts_index].strip() != "0":
+                    violations.append(
+                        Violation(
+                            line_number,
+                            "plan-terminal item %r records attempts %r: no attempt is "
+                            "consumed (0)" % (identity, row[attempts_index].strip()),
+                        )
+                    )
+                if status_index is None:
+                    violations.append(
+                        Violation(
+                            line_number,
+                            "plan-terminal item %r has no 'status' column: a terminal "
+                            "resolution is recorded as 'incomplete' and the record cannot "
+                            "be checked without that column" % identity,
+                        )
+                    )
+                elif leading(row[status_index]) != "incomplete":
+                    violations.append(
+                        Violation(
+                            line_number,
+                            "plan-terminal item %r is %r, not 'incomplete': a terminal "
+                            "resolution is neither done nor credit"
+                            % (identity, row[status_index].strip()),
+                        )
+                    )
+                form_index = next(
+                    (
+                        index
+                        for index, name in enumerate(names)
+                        if name == "form" or name.endswith(" form")
+                    ),
+                    None,
+                )
+                if form_index is not None and leading(row[form_index]) == "campaign":
+                    violations.append(
+                        Violation(
+                            line_number,
+                            "plan-terminal item %r has form 'campaign': a campaign's "
+                            "established step goes to an independent CHECK, not to a "
+                            "plan-terminal resolution" % identity,
+                        )
+                    )
+                if plan_index is not None:
+                    plan_value = row[plan_index]
+                    if leading(plan_value) != "pending" and not is_placeholder(plan_value):
+                        violations.append(
+                            Violation(
+                                line_number,
+                                "plan-terminal item %r has plan_state %r: a terminal "
+                                "resolution is not a ready plan"
+                                % (identity, plan_value.strip()),
+                            )
+                        )
 
     return violations, table_count, row_count
 

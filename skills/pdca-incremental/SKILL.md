@@ -351,19 +351,21 @@ recorded remainder, never a silent move on.
 
 ### Step boundary
 
-After the step's CHECK, **one** planner call decides and, in the same turn, emits either the next brief
-or a STOP; the driver routes and books, it does not run a second PLAN:
+After the step's CHECK, **one** planner call decides and, in the same turn, emits either the next
+brief or a STOP; the driver routes and books, it does not run a second PLAN. The decision procedure
+and the planner-call accounting are the planner's, in `../pdca/references/plan.md` §Step boundary —
+the campaign layer does not restate them.
 
-- **Accept the increment** — on a positive independent CHECK: a result change **or** decision-relevant
-  knowledge, including an accepted negative candidate credited as a knowledge increment. Then the next
-  brief, or STOP when the whole-goal end conditions are met.
-- **Revise/reject the same step** — a corrected brief of the **same** step identity (repair/loop-back)
-  or a justified STOP. The step number does not grow without acceptance, `r`/`n` follow the base
-  loop-back rules, the independent CHECK is never rewritten to `met`, and no increment is credited for
-  bypassing a failed CHECK. A failed step never closes the rest of the campaign by itself: the blast
-  radius is one step and the route stays the planner's.
-- **A new step** — history, counters and accounting are preserved; every actual cost and attempt
-  counts, and an unaccepted red step never becomes accepted progress.
+Campaign consequences of that decision:
+
+- **An accepted increment** advances the accepted basis and the index entry (§Acceptance and
+  carry-over). A rejected candidate is not credited, but the knowledge it produced is.
+- **A revised or rejected step** keeps its step identity: the step number does not grow without
+  acceptance, `r`/`n` follow the base loop-back rules, the independent CHECK is never rewritten to
+  `met`, and no increment is credited for bypassing a failed CHECK. A failed step never closes the
+  rest of the campaign by itself: the blast radius is one step and the route stays the planner's.
+- **A new step** preserves history, counters and accounting; every actual cost and attempt counts,
+  and an unaccepted red step never becomes accepted progress.
 
 **Whole-goal verification.** A STOP with `met` needs a whole-goal CHECK against **every** original
 mandatory requirement — combined with the increment's CHECK when that CHECK already covers them,
@@ -375,10 +377,8 @@ result loops back. On PASS the driver routes the pre-approved STOP to **ACT** fo
 finalize — no new planner call, no independent verdict. A separate final CHECK is not a step and adds
 no planner call; `unreachable` still requires the proven remainder.
 
-Planner calls are **accounted**, not capped: the successful path is `1 + number of steps`, plus genuine
-revisions, the current step's loop-backs and bounded continuations of the **same pending PLAN**.
-Separate DECIDE → brief → STOP turns on unchanged content are a repeated PLAN. A one-step campaign
-costs **two calls**: initial PLAN → local CHECK → boundary → final CHECK PASS → STOP.
+One campaign-side count stays explicit: a one-step campaign costs **two calls** — initial PLAN → local
+CHECK → boundary → final CHECK PASS → STOP.
 
 ## Acceptance and carry-over
 
@@ -501,7 +501,8 @@ The base self-check applies. On any of these — **stop, name the deviation, ret
 - `../pdca/SKILL.md` — the **common cycle contract** inherited here; the planner reference path is
   derived from that directory, never from this one.
 - `../pdca/references/act.md` — the canonical status skeleton the per-step cycle records use.
-- `../pdca/references/plan.md` — planner-only phase detail; the driver passes its exact absolute
-  path and never reads or inlines it.
+- `../pdca/references/plan.md` — the planner-only procedure and output contract
+  (classification, plan fields, step boundary); the driver passes its exact absolute path and never
+  reads or inlines it.
 - `../pdca/references/check.md` — the CHECK contract; the driver reads it in full and inlines it in
   every step `pdca-check` dispatch (CHECK cannot read the installed file).

@@ -30,10 +30,12 @@ Collection adds batch coordination, **not another cycle or attempt counter**.
 - **Item preparation** — completing the pre-DO work for each goal: a persisted PLAN for a
   `cycle` item (`plan_state=ready`), or a persisted preparation charter for a `campaign` item
   (`preparation_state=ready` with a valid `preparation_ref`). No substantive item DO occurs yet.
-- **Preparation barrier (ALL-barrier)** — the gate requiring **every** item to be prepared
-  before the collection can build its schedule, allocate execution lanes or begin any item DO.
-  Readiness is **not** user approval or task completion; normal-mode DO still requires its
-  own recorded approval.
+  A PLAN-terminal `cycle` item is **resolved**, not prepared (§PLAN-terminal item projection).
+- **Preparation barrier (ALL-barrier)** — the gate requiring **every** item to be **prepared**
+  (previous bullet) or to carry a recorded **PLAN-terminal resolution** (§P.3) before the collection
+  builds its schedule, allocates lanes or begins any item DO. A missing plan is not a resolution.
+  Readiness is **not** user approval or completion; a terminal resolution is neither readiness, nor
+  `done`, nor credit, and normal-mode DO still needs its recorded approval.
 - **Dependency DAG (directed acyclic graph)** — the graph of required order between items:
   an edge `A → B` means B depends on A's result. It is built after the ALL-barrier and
   contains no dependency cycles. File-write conflicts additionally constrain grouping.
@@ -150,10 +152,13 @@ classification of the batch.
 
    A PLAN-terminal `acceptance criteria cannot be determined`, proven
    `original task is infeasible under the stated constraints`, or `requested result already
-   established` goes to that item's ACT, without DO or CHECK, and **cannot** be marked ready. A
+   established` goes to that item's ACT, without DO or CHECK, and **cannot** be marked ready. Its
+   ACT records `terminal=<cause>` with `attempts=0`: no attempt is consumed and it is neither
+   `done` nor readiness — a **terminal resolution**, not a completed goal. A
    failed candidate or an unproven method alone does not establish infeasibility; no substitute goal
-   is created. Inside a `campaign` item the step rule holds instead: an established result goes to an
-   independent CHECK, never to a dummy increment.
+   is created. Only a `cycle` item has this outcome. Inside a `campaign` item the step rule holds
+   instead: an established result goes to an independent CHECK, never to a dummy increment or a
+   PLAN-terminal row.
    A re-entry after a terminal result preserves its cause and history rather than rerunning
    the same failed criterion unchanged.
 
@@ -165,12 +170,13 @@ classification of the batch.
    stay explicit and conservatively constrain later lane parallelism. Planning never
    locks files or promises that DO will use a prescribed implementation.
 
-3. **ALL-barrier.** The collection schedule and lanes are not allocated until **every** item
-   has a genuine saved `cycle` plan or `campaign` preparation charter. Readiness is neither
-   user approval nor completion, and normal-mode DO still requires recorded approval
-   against the exact pending ref (§Approval barrier). An undetermined/unreachable goal or
-   missing item preparation is an explicit gap: do not invent a `ready` placeholder, bypass
-   the barrier or start another item's DO early. Status updates and preparation writes are
+3. **ALL-barrier.** The collection schedule and lanes are not allocated until **every** item is
+   either prepared (a genuine saved `cycle` plan or `campaign` preparation charter) or carries a
+   recorded PLAN-terminal resolution (`terminal` = one of the three causes, status `incomplete`,
+   `attempts=0`). A terminal resolution satisfies the barrier as a **resolved outcome**: not
+   readiness, not `plan_state=ready`, not `done`, and adds no DO or CHECK (§Batch terminology for readiness and approval). An item with neither preparation nor a recorded
+   terminal resolution is an explicit gap: do not invent a `ready` placeholder, bypass the barrier
+   or start another item's DO early. Status updates and preparation writes are
    permitted before the barrier; substantive bootstrap and DO are not.
 
 4. **Clustering after the barrier.** `pdca-planner` builds the dependency DAG and
@@ -200,10 +206,12 @@ classification of the batch.
   `campaign_ref` — a pointer to the runtime record of the campaign: before the baseline bootstrap
   it may be absent and after it is mandatory; it is not a pointer to the charter and not a
   replacement for `preparation_ref`.
+- **plan-terminal (`cycle`)** — `terminal=<cause>` (§PLAN-terminal item projection): the barrier's
+  resolved outcome, never readiness, with no DO or CHECK.
 
-**Readiness ≠ completion.** `preparation_state=ready` without a runtime record is `barrier-ready`,
-not `started`: the item stays `pending` and never `done`. The only success of a campaign item is an
-accepted `met`; the barrier does not require what is created later.
+**Readiness ≠ completion.** A prepared charter without a runtime record is `barrier-ready`, not
+`started`: the item stays `pending`, never `done`. The only campaign success is an accepted `met`;
+the barrier does not require what is created later.
 
 If there is **one group** — keep the collection form and use a single lane. **No worktree and no group branch
 are created**: work in the **current** worktree on the current branch, the commits (in autocommit
@@ -260,7 +268,8 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    merged `done` groups are not touched and not reordered.
 4. You **define** the status records: an item `pending` | `in-progress` | `done` | `incomplete`; a
    group `pending` | `in-progress` | `done` | `incomplete` | `merged`; the physical write into the
-   file is performed by `pdca-executor`. `merged` is the status of an **integrated** `done` group
+   file is performed by `pdca-executor`. An item additionally carries the optional typed `terminal`
+   column (§PLAN-terminal item projection). `merged` is the status of an **integrated** `done` group
    (the transition is only `done` → `merged`); `incomplete` stays `incomplete` and never `merged`.
    A separate integration note `skipped` ("not selected for integration" + the reason) is **not** a
    group status and does not extend the enumeration. The status is recorded in the same tick as the
@@ -272,24 +281,39 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    brief) and runs it from the project root after every status write:
    `0` — the write stands; `2` — the row is repaired in the same turn and linted again (a raw `|`
    inside a note, a note wrapped onto the next line, a cell count differing from the header, an
-   unknown status); `1` — a resource blocker, reported as such. A status file that fails the lint is
-   not a written status.
+   unknown status, or a malformed plan-terminal row: `done`, plan-ready or a consumed attempt);
+   `1` — a resource blocker, reported as such. A status file that fails the lint is not a written status.
 
 ### C — integration verification
+
+**Stage the candidate before invoking C.** The collection owner dispatches `pdca-executor` to
+persist the integrated snapshot under an explicit **collection `evidence_root` inside `.pdca/`**
+(contract default `.pdca/<collection-id>/rv<k>/`) **before** any `pdca-check` dispatch. That
+snapshot holds staged copies of every file CHECK must read under `snapshot/` (the originals stay
+wherever the product puts them), a `sha256` manifest over those copies, and a source-identity
+record that ties the snapshot to the **actual final integrated state** — commit/ref and worktree
+state after the last integration or merge — with the item statuses and the relevant evidence
+pointers. `pdca-check` is invoked only after that write: its scoped read reaches `.pdca/**` only.
 
 The parent CHECK uses the **base `../pdca/SKILL.md` §Phase contracts → CHECK**:
 `pdca-check` independently chooses methods/evidence for the actual integrated result, with
 test execution through `pdca-executor` and outside observation through `pdca-scout`; its dispatch
-carries the complete inline base CHECK contract like every other CHECK.
-Its scope is the **integrated snapshot**, plus integration invariants and any relevant
-specialized-skill verification deltas (`../pdca-coder/SKILL.md` and
-`../pdca-dotnet/SKILL.md`). It does not replace each item's own whole-goal CHECK.
+carries the complete inline base CHECK contract like every other CHECK, plus the collection
+`evidence_root`. Its scope is the **staged integrated snapshot** at that root, plus integration
+invariants and any relevant specialized-skill verification deltas (`../pdca-coder/SKILL.md` and
+`../pdca-dotnet/SKILL.md`). It does not replace each item's own whole-goal CHECK. The dispatch
+neither widens a permission nor inlines candidates or product files: CHECK reads the staged
+candidate itself.
 
 The integration CHECK starts **after all lanes are terminal**. With multiple groups, all
 eligible `done` groups must already be merged, all `incomplete` groups excluded, and
 no merge conflict or unfinished merge state may remain. Its inputs include the actual
 group statuses and the separate integration note (`skipped` + reason), original item
-requirements, the integrated snapshot and evidence pointers.
+requirements, the staged integrated snapshot and evidence pointers.
+
+A **missing, incomplete or stale** snapshot (no staged copy, a manifest mismatch, or a source
+identity older than the final integrated state) is **not** a product failure and not a counted
+attempt: it routes to re-gather and the collection stays `unverified`.
 
 An integration `PASS` can coexist with `incomplete` groups: it verifies only the
 integration of work actually included. Keep the **integrated-tree verdict** and
@@ -335,7 +359,13 @@ and the integrated work are preserved: **no** success and no cleanup, the parent
 non-`PASS` termination — cleanup and merging are forbidden.** **The success of a corrective cycle
 by itself does not mean the success of the collection.**
 
-A campaign item's outcome is routed to its item status by §Collection status record → Campaign item status projection; campaign acceptance is not the common `C` and does not replace it.
+A **plan-terminal resolution** is neither completion nor credit: it satisfies the barrier and
+schedule but not the original goal, so it prevents full collection completion without becoming an
+execution failure. The final summary therefore states three separate buckets —
+**accepted goals** (`done`), **plan-terminal resolutions** (cause and evidence, `attempts=0`) and
+**execution failures** (`incomplete` after a real failure).
+
+A campaign item's outcome is routed by §Campaign item status projection; campaign acceptance is not the common `C`.
 
 ## Lane execution and schedule revision
 
@@ -379,9 +409,15 @@ of items — that is how the queue survives compaction and a restart.
 - **An item failure follows its own cycle's transition**: CHECK alone may send a contract defect
   to PLAN; an implementation defect goes CHECK → DO, and a DO that cannot finish goes DO → ACT.
   ACT records a final `incomplete` with cause and evidence, preserving the patch and status.
-- A **final `incomplete` of an item stops the whole group**: the next item is not taken, all
-  remaining `pending` items of the group are marked `incomplete` with the explicit reason **"the
-  group is stopped"** and are **not executed**; the group is **not merged** (§D.3).
+- **A plan-terminal item is not a group stop.** It closes through its own ACT with
+  `terminal=<cause>`, `attempts=0`, stays `incomplete`, and the queue takes the next item; it is
+  skipped for execution and never becomes `done` or an accepted goal. The group's status is decided
+  by its executed items, and the remaining items keep their own statuses and are executed normally,
+  wherever the terminal item sits in the order.
+- A **final `incomplete` of an execution failure** (`terminal=execution`, the default; not a
+  plan-terminal resolution) **stops the whole group**: the next item is not taken, all remaining
+  `pending` items of the group are marked `incomplete` with the explicit reason **"the group is
+  stopped"** and are **not executed**; the group is **not merged** (§D.3).
 - The commits of the group already made and the patch of the failed item are **preserved**
   (§D, §A); **other groups continue** their work.
 - The lane summary is `done` | `incomplete` (per group); the status `blocked` does not exist for
@@ -506,7 +542,9 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   splits or truncates the queue; a status cell is one of the enumerations below and nothing else.
   `scripts/status_lint.py` enforces the shape on every write (§D.4).
 
-- the input (the item list) and the `collection-id`;
+- the input (the item list) and the `collection-id`; each item's goal/brief stays **verbatim**
+  here and in its `## Original task`; later briefs reference that source exactly (base
+  §Reference, not repetition);
 - the table of groups: id, items, order, worktree, branch/ref, **status**
   (`pending` | `in-progress` | `done` | `incomplete` | `merged`): `merged` is an integrated `done`
   group (the transition is only `done` → `merged`); `incomplete` stays `incomplete` (never
@@ -518,7 +556,8 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   | `ready`), the item's **form** and (for `cycle`) its **contract** and **overlay**, `cycle_id`
   (including `N`), the canonical status path of the item, `plan_revision` (`r`), the baseline ref,
   the footprint/requirement/prerequisite refs, the reason + patch path for `incomplete`, a link to
-  the item's status file. `plan_state` (`ready` ≠ an approval and ≠ `done`) is not the execution
+  the item's status file, and the optional typed `terminal` column (§PLAN-terminal item projection).
+  `plan_state` (`ready` ≠ an approval and ≠ `done`) is not the execution
   status of the item but the readiness of its plan; the merge is at the group level, an item never
   has the status `merged`;
 - per item: the **form** (`cycle` | `campaign`); for `cycle` — `plan_state`, the contract with its
@@ -565,11 +604,32 @@ campaign's persisted outcome and item `disposition` to its own item status:
 
 The collection's integration CHECK remains independent of campaign acceptance.
 
+### PLAN-terminal item projection
+
+The item enumeration stays `pending` | `in-progress` | `done` | `incomplete`; the PLAN-terminal
+distinction is a **typed column**, not a new status, and applies to `cycle` items only — a
+`campaign` item has no such row (its established step goes to independent CHECK, §Campaign item
+status projection).
+
+- `terminal` — `execution` (the default when the column is absent or its cell is a placeholder, so
+  every legacy record stays valid) or one of the three base causes: `criteria-undetermined`,
+  `infeasible`, `already-established`.
+- A plan-terminal row uses `incomplete`, keeps `plan_state` not `ready`, and records `attempts=0`
+  (the `attempts` column is then required). `status_lint.py` rejects `done`, plan-ready, a
+  consumed attempt, a missing `attempts` or `status` column, or an explicit `campaign` form.
+- It is resolved for the barrier and the schedule — not `done`, not readiness, not a goal credit;
+  full completion still requires that goal's own acceptance.
+- It never triggers the group stop (only a final `incomplete` with `terminal=execution` does); the
+  queue continues with the remaining items.
+- The item's ACT carries the cause and evidence; the final summary counts accepted goals,
+  plan-terminal resolutions and execution failures separately.
+
 ## Report
 
 The report follows the base §Phase contracts → ACT and `../pdca/references/act.md`:
 what was done, what evidence verified it, what remains or is blocked and the next
-step. Keep collection completeness distinct from the integrated-tree verdict (§C).
+step. Keep collection completeness distinct from the integrated-tree verdict (§C), and keep the
+three outcome buckets apart: accepted goals, plan-terminal resolutions and execution failures.
 
 ## Approval barrier (normal mode)
 

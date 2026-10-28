@@ -93,6 +93,67 @@ class BrokenRowTest(unittest.TestCase):
         self.assert_violation("queue-missing-column.md", "items table has no 'plan_state' column")
 
 
+class PlanTerminalTest(unittest.TestCase):
+    """The optional typed `terminal` column: a PLAN-terminal row is a resolution.
+
+    Assertions stay on the executable result — exit code, the JSON `ok` flag and the
+    line numbers of the reported violations — so a rewording of a diagnostic is not a
+    test failure while a changed accept/reject decision still is.
+    """
+
+    def run_json(self, name: str) -> tuple[subprocess.CompletedProcess, dict]:
+        result = run(FIXTURES / name, json_output=True)
+        return result, json.loads(result.stdout or "{}")
+
+    def assert_rejected(self, name: str, line: int, needle: str) -> None:
+        result, payload = self.run_json(name)
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertFalse(payload["ok"], payload)
+        violations = payload["files"][0]["violations"]
+        self.assertEqual(1, len(violations), violations)
+        self.assertEqual(line, violations[0]["line"], violations)
+        self.assertIn(needle, violations[0]["message"], violations)
+
+    def assert_accepted(self, name: str, rows: int) -> None:
+        result, payload = self.run_json(name)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(payload["ok"], payload)
+        self.assertEqual([], payload["files"][0]["violations"], payload)
+        self.assertEqual(rows, payload["files"][0]["rows"], payload)
+
+    def test_terminal_items_pass_in_first_middle_and_last_position(self) -> None:
+        # T1 first, T3 middle, T5 last; execution rows in between stay `done`.
+        self.assert_accepted("queue-plan-terminal.md", 6)
+
+    def test_a_recorded_execution_failure_stays_valid(self) -> None:
+        self.assert_accepted("queue-execution-failure.md", 5)
+
+    def test_a_terminal_resolution_must_not_be_done(self) -> None:
+        self.assert_rejected("queue-terminal-done.md", 7, "'done'")
+
+    def test_a_terminal_resolution_must_not_be_plan_ready(self) -> None:
+        self.assert_rejected("queue-terminal-ready.md", 7, "'ready'")
+
+    def test_a_terminal_resolution_consumes_no_attempt(self) -> None:
+        self.assert_rejected("queue-terminal-attempts.md", 7, "'1'")
+
+    def test_a_terminal_resolution_requires_the_attempts_column(self) -> None:
+        self.assert_rejected("queue-terminal-no-attempts.md", 7, "'attempts'")
+
+    def test_a_terminal_row_without_a_status_column_fails_closed(self) -> None:
+        # A missing status column used to skip the "must stay incomplete" check.
+        self.assert_rejected("queue-terminal-no-status.md", 10, "'status'")
+
+    def test_a_terminal_row_on_a_campaign_form_fails_closed(self) -> None:
+        self.assert_rejected("queue-terminal-campaign.md", 10, "'campaign'")
+
+    def test_an_unknown_terminal_value_fails_with_the_enumeration(self) -> None:
+        self.assert_rejected("queue-terminal-unknown.md", 7, "criteria-undetermined | infeasible")
+
+    def test_legacy_rows_without_the_column_keep_the_execution_default(self) -> None:
+        self.assert_accepted("queue-ok.md", 5)
+
+
 class OperatorTest(unittest.TestCase):
     def test_a_missing_file_is_a_usage_error(self) -> None:
         result = run(FIXTURES / "does-not-exist.md")

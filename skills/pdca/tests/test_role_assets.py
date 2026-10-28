@@ -151,6 +151,24 @@ class SourceParityTest(unittest.TestCase):
             self.assertFalse((FAMILY / skill / "references").exists(),
                              f"{skill} must inherit the base references, not copy them")
 
+    def test_role_assets_point_at_the_phase_reference_owner(self) -> None:
+        # An agent is a thin adapter: it names the reference (or the skill load) that owns its
+        # procedure instead of carrying a second copy.
+        owners = {
+            "pdca-planner": "references/plan.md",
+            "pdca-check": "references/check.md",
+            "pdca-executor": "references/act.md",
+            "pdca-escalate": "references/escalate.md",
+            "pdca-orchestrator": "skill mechanism by exact ID",
+        }
+        for role, token in owners.items():
+            with self.subTest(role=role):
+                self.assertIn(
+                    token,
+                    (CANONICAL / f"{role}.md").read_text(encoding="utf-8"),
+                    f"{role} must name the owner of its contract",
+                )
+
     def test_net_inner_loop_and_helpers_stay_in_the_dotnet_overlay(self) -> None:
         skill = (FAMILY / "pdca-dotnet/SKILL.md").read_text(encoding="utf-8")
         for token in (

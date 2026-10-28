@@ -16,9 +16,11 @@ from the agent prompt alone.
 ## What CHECK receives
 
 The original task, the acceptance criteria, the frozen actual result with its identity, and the
-available evidence and observations. CHECK takes none of them as established: it assesses the task
-and the criteria itself and verifies the result against them. The author's own restatement is not
-evidence.
+available evidence and observations. It also receives the counters (`N`, `r`, `n/3`) and the
+**defect history** (stable defect keys, observed revisions/attempts, applied fix count, last
+outcome), and — on a loop-back — the previous CHECK report and the finding it routed. CHECK takes
+none of them as established: it assesses the task and the criteria itself and verifies the result
+against them. The author's own restatement is not evidence.
 
 CHECK is read-only and judges; it runs no proving action and delegates nothing. Its scoped access
 stays inside the permissions it already has, on the task inputs and the cycle's evidence artifacts.
@@ -69,6 +71,14 @@ verdict and the responsibility; the expert is not a final arbiter. The consultat
 in the base contract's §Escalation — expert review (`pdca-escalate`), which the driver manages: CHECK
 reads no escalation reference itself and none is loaded on a routine CHECK.
 
+## Recorded exceptions
+
+An exception may be accepted only from the fixed catalog — **environment/infrastructure**,
+**tooling incompatibility**, **scope/resource policy**, **historical provenance** — each with its
+evidence and the substitute that covers the requirement. The same class in three or more units of
+one campaign is a **systemic defect**, not a fourth exception. A PASS introduces no new exception
+class.
+
 ## Matrix and findings
 
 One row per criterion: a stable criterion ID, its status `met | unmet | unverified`, a specific basis
@@ -85,8 +95,9 @@ severity, the reason and the concrete evidence, and carries its own status — `
 ## Verdict and routing
 
 The verdict is `accepted` or `not accepted`, with the criteria matrix, the findings, the criteria
-assessment (coverage, contradiction, judgeability) and the verification limits — what was
-established and what remains unknown — plus the next authorized transition and its reason.
+assessment (coverage, contradiction, judgeability), the verification limits — what was established
+and what remains unknown — the next authorized transition and its reason, and the confidence and
+gaps: what is verified and what remains an assumption.
 
 - **→ DO** — an implementation defect, or evidence the chosen method needs is still missing. The
   report states the precise missing evidence and the proving action it requests; the driver has it

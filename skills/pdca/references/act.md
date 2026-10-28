@@ -197,11 +197,11 @@ its own section:
   with the source pointer.
 - **§PLAN record** — the planner's complete report per revision; constraints, assumptions, declared
   risks and stop conditions, including the bound access and resources the cycle relied on; in normal
-  mode the PLAN's effort estimate (recorded, never a cutoff); the **DO execution units** only when the
-  work was split: ID | state | criteria covered | dependency or `superseded → replacement` pointer
-  (`../SKILL.md` §DO, execution units); decisions made and why, accepted limitations and deferred work
-  with the signal that revives it.
-- **§DO result** — what was done, the candidate and its evidence pointers; never a verdict.
+  mode the PLAN's effort estimate (recorded, never a cutoff); decisions made and why, accepted
+  limitations and deferred work with the signal that revives it.
+- **§DO result** — what was done, the candidate and its evidence pointers; the **DO execution units**
+  only when the work was split: ID | state | criteria covered | dependency or
+  `superseded → replacement` pointer (`../SKILL.md` §DO, execution units); never a verdict.
 - **§CHECK record** — only where CHECK actually ran: acceptance criteria with their IDs where the
   criteria were determined, its outcome and the verification methods it chose with the evidence each
   produced (nothing frozen before DO); an absent CHECK is stated as absent, never filled with invented

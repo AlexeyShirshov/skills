@@ -24,6 +24,11 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def flat(text: str) -> str:
+    """One-space text, so a rewrapped paragraph does not fail a phrase assertion."""
+    return " ".join(text.replace("**", "").replace("`", "").split())
+
+
 class RunnerAssetTest(unittest.TestCase):
     def test_runner_asset_is_shipped(self):
         self.assertTrue(ASSET.is_file(), "assets/opencode-agents/pdca-orchestrator.md missing")
@@ -77,17 +82,19 @@ class RunnerAssetTest(unittest.TestCase):
 
     def test_runner_holds_the_campaign_inline_and_routes_the_stop(self):
         raw = read(ASSET)
-        self.assertIn("inline in your own session", raw)
-        self.assertIn("The next step starts **only on the planner's decision**", raw)
-        # A pre-set STOP condition is routed, not recorded by the runner: the
-        # STOP is an ACT outcome finalized by pdca-executor.
-        self.assertIn("route the STOP to **ACT**", raw)
-        self.assertIn("without a new planner call", raw)
-        self.assertIn("an incomplete/STOP finalization → ACT", raw)
+        text = flat(raw)
+        self.assertIn("inline in your own session", text)
+        self.assertIn("The next step starts only on the planner's decision", text)
+        # A pre-set STOP condition is routed, not taken by the runner: the STEP boundary
+        # decision is the planner's and an incomplete/STOP finalization is ACT's.
+        self.assertIn("you route that decision, you do not take it", text)
+        self.assertIn("a pre-approved STOP included", text)
+        self.assertIn("no second PLAN on the same content", text)
+        self.assertIn("an incomplete/STOP finalization → ACT", text)
 
     def test_runner_invents_no_baseline_at_preparation(self):
         raw = read(ASSET)
-        self.assertRegex(raw, r"Do \*\*not\*\*\s+require or invent a baseline")
+        self.assertIn("Do not require or invent a baseline", flat(raw))
         self.assertIn("preparation_handoff", raw)
 
     def test_runner_adds_no_agent_layers_and_keeps_the_family_roles(self):

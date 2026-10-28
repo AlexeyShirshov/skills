@@ -14,6 +14,9 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
+FAMILY = SKILL_DIR.parent
+DRIVER_REF = FAMILY / "pdca/references/driver.md"
+INCREMENTAL = FAMILY / "pdca-incremental/SKILL.md"
 FAMILY_ROLES = (
     "pdca-planner", "pdca-executor", "pdca-check", "pdca-escalate",
     "pdca-scout", "pdca-security-auditor",
@@ -22,6 +25,18 @@ FAMILY_ROLES = (
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def flatten(text: str) -> str:
+    """Whitespace-insensitive view: re-wrapping a paragraph is not a policy change."""
+    return " ".join(text.split())
+
+
+def _section(text: str, start_marker: str, end_marker: str) -> str:
+    """One named section of an owner file; a renamed heading raises instead of passing."""
+    start = text.index(start_marker)
+    end = text.index(end_marker, start + len(start_marker))
+    return text[start:end]
 
 
 class RunnerAssetTest(unittest.TestCase):
@@ -78,13 +93,21 @@ class RunnerAssetTest(unittest.TestCase):
 
     def test_runner_holds_the_campaign_inline_and_routes_the_stop(self):
         raw = read(ASSET)
+        flat = flatten(raw)
         self.assertIn("inline in your own session", raw)
-        self.assertIn("The next step starts **only on the planner's decision**", raw)
-        # A pre-set STOP condition is routed, not recorded by the runner: the
-        # STOP is an ACT outcome finalized by pdca-executor.
-        self.assertIn("route the STOP to **ACT**", raw)
-        self.assertIn("without a new planner call", raw)
+        self.assertIn("The next step starts **only on the planner's decision**", flat)
+        # The STOP is routed, not taken: the asset keeps the inline ownership and the
+        # boundary itself is owned by the loaded incremental contract, which the driver
+        # reference names. Assert the pointer, then the same semantics in the owner.
         self.assertIn("an incomplete/STOP finalization → ACT", raw)
+        self.assertIn("read `references/driver.md` in full", flat)
+        driver = flatten(read(DRIVER_REF))
+        self.assertIn("§Step boundary", driver)
+        boundary = flatten(
+            _section(read(INCREMENTAL), "### Step boundary", "## Acceptance and carry-over")
+        )
+        self.assertIn("routes the pre-approved STOP to **ACT**", boundary)
+        self.assertIn("no new planner call", boundary)
 
     def test_runner_adds_no_agent_layers_and_keeps_the_family_roles(self):
         raw = read(ASSET)

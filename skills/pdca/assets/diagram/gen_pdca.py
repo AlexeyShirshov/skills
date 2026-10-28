@@ -53,44 +53,47 @@ TIER_MODEL = {"weak": "cheap", "medium": "medium", "strong": "strong"}
 # Universal phase cards, with the responsible role tier on each.
 BLOCKS = {
     "P": [
-        ("Сбор · gather", "pdca-scout · факты · file:line", "weak"),
+        ("Сбор · gather", "pdca-scout · file:line", "weak"),
         ("Цель · результат", "что и зачем", "medium"),
-        ("Ограничения · допущения", "границы задачи", "medium"),
-        ("Критерии приёмки", "каждый + способ проверки", "medium"),
-        ("Декомпозиция", "units · зависимости", "medium"),
-        ("Средства · доступ", "чем и куда", "medium"),
+        ("Запрошено = отдано", "слова пользователя", "medium"),
+        ("Форма · скилл", "обоснование выбора", "medium"),
+        ("Границы · допущения", "ограничения задачи", "medium"),
+        ("Критерии приёмки", "ID · наблюдаемый итог", "medium"),
+        ("Средства · доступ", "ограничения, не выбор", "medium"),
         ("Риски · стоп-условия", "когда остановиться", "medium"),
-        ("Свидетельства", "критерий · источник · путь", "medium"),
-        ("Политика усилий", "оценка · учёт · не cutoff", "medium"),
+        ("Политика усилий", "оценка · не лимит", "medium"),
     ],
     "D": [
         ("Исполнение контракта", "метод выбирает DO", "weak"),
-        ("Evidence", "логи · артефакты", "weak"),
+        ("Units", "ID · связи · owner", "weak"),
+        ("Параллельность", "не пересекаются", "weak"),
+        ("Evidence", "лог под evidence_root", "weak"),
         ("Blockers", "фиксируются явно", "weak"),
         ("Unfinished", "остаётся открытым", "weak"),
-        ("Сверка якорей", "дрейф → ACT incomplete", "weak"),
-        ("Provisional-отчёт", "без вердикта · без PASS", "weak"),
+        ("Сверка якорей", "дрейф → incomplete", "weak"),
+        ("Candidate-отчёт", "без вердикта · без PASS", "weak"),
     ],
     "C": [
         ("Критерии", "met | unmet | unverified", "medium"),
+        ("Оценка критериев", "покрытие и логика", "medium"),
         ("Согласованность", "частей между собой", "medium"),
-        ("Findings", "+ severity", "medium"),
+        ("Findings", "+ severity · свой статус", "medium"),
         ("Нулевой прогон", "не успех", "medium"),
         ("Исключения", "каталог · порог", "medium"),
-        ("Маршрутизация", "дефект→DO · контракт→PLAN", "medium"),
+        ("Маршрутизация", "DO · PLAN · ACT", "medium"),
     ],
     "E": [
-        ("Скаут", "pdca-scout · факты · file:line", "weak"),
-        ("Триггеры", "неоднозначность · повтор", "strong"),
+        ("Скаут", "pdca-scout · file:line", "weak"),
+        ("Триггеры", "неоднозначность", "strong"),
         ("3-й провал", "CHECK(r) исчерпан", "strong"),
         ("Необратимый trade-off", "цена решения", "strong"),
-        ("Решение → роутинг", "plan или ACT-STOP", "strong"),
+        ("Рекомендация → фазе", "свой переход у каждой", "strong"),
     ],
     "A": [
-        ("Финализация", "принятого результата", "weak"),
+        ("Финализация", "PASS · incomplete", "weak"),
         ("Ограничения", "границы финализации", "weak"),
         ("Статус-файл", "source of truth", "weak"),
-        ("Handoff", "→ EXIT", "weak"),
+        ("Handoff", "EXIT · PLAN N+1 · STOP", "weak"),
     ],
 }
 
@@ -99,9 +102,9 @@ INPUTS = [
     "PLAN ← «старт» · «реплан от CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»",
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
     "CHECK ← «units done от DO»",
-    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»",
+    "ESCALATE ← «неоднозначность» · «повтор» · «счётчик исчерпан» · «trade-off» · «риск приёмки» · «низкая уверенность PLAN/DO»",
     "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «PLAN-терминал» · «STOP-финализация»",
-    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT",
+    "STOP ← «нет плана r+1» · «критерии не определены» · «CHECK исчерпан» · «отказ в approval» — исход ACT",
     "EXIT ← «ACT закрыт»",
 ]
 
@@ -162,40 +165,47 @@ _TR_EN = {
         "pdca · orchestrator — per-phase inputs · normal: primary · autonomous: pdca-orchestrator (cheap tier only)",
     # PLAN cards
     "Сбор · gather": "Gather",
-    "pdca-scout · факты · file:line": "pdca-scout: facts · file:line",
+    "pdca-scout · file:line": "pdca-scout · file:line",
     "Цель · результат": "Goal · result",
     "что и зачем": "what and why",
-    "Ограничения · допущения": "Constraints · assumptions",
-    "границы задачи": "task boundaries",
+    "Запрошено = отдано": "Requested = delivered",
+    "слова пользователя": "the user's own words",
+    "Форма · скилл": "Form · skill",
+    "обоснование выбора": "rationale for the choice",
+    "Границы · допущения": "Bounds · assumptions",
+    "ограничения задачи": "task constraints",
     "Критерии приёмки": "Acceptance criteria",
-    "каждый + способ проверки": "each + a pdca-check",
-    "Декомпозиция": "Decomposition",
-    "units · зависимости": "units · dependencies",
+    "ID · наблюдаемый итог": "ID · observable outcome",
     "Средства · доступ": "Means · access",
-    "чем и куда": "with what, where",
+    "ограничения, не выбор": "limits, not a choice",
     "Риски · стоп-условия": "Risks · stop rules",
     "когда остановиться": "when to stop",
-    "Свидетельства": "Evidence",
-    "критерий · источник · путь": "criterion · source · path",
     "Политика усилий": "Effort policy",
-    "оценка · учёт · не cutoff": "estimate · accounting · not a cutoff",
+    "оценка · не лимит": "estimate, not a cap",
     # DO cards
     "Исполнение контракта": "Execute the contract",
     "метод выбирает DO": "method chosen by DO",
-    "логи · артефакты": "logs · artifacts",
+    "Units": "Units",
+    "ID · связи · owner": "ID · links · owner",
+    "Параллельность": "Parallelism",
+    "не пересекаются": "stay disjoint",
+    "лог под evidence_root": "log under evidence_root",
     "Blockers": "Blockers",
     "фиксируются явно": "recorded explicitly",
     "остаётся открытым": "stays open",
     "Сверка якорей": "Anchor re-check",
-    "дрейф → ACT incomplete": "drift → ACT incomplete",
-    "Provisional-отчёт": "Provisional report",
+    "дрейф → incomplete": "drift → incomplete",
+    "Candidate-отчёт": "Candidate report",
     "без вердикта · без PASS": "no verdict · no PASS",
     # CHECK cards
     "Критерии": "Criteria",
+    "Оценка критериев": "Criteria assessment",
+    "покрытие и логика": "requirements · logic",
     "Согласованность": "Consistency",
     "частей между собой": "of the parts",
+    "+ severity · свой статус": "+ severity · own status",
     "Маршрутизация": "Routing",
-    "дефект→DO · контракт→PLAN": "defect→DO · contract→PLAN",
+    "DO · PLAN · ACT": "DO · PLAN · ACT",
     "Нулевой прогон": "Zero-selection run",
     "не успех": "not success",
     "Исключения": "Exceptions",
@@ -203,31 +213,31 @@ _TR_EN = {
     # ESCALATE cards
     "Скаут": "Scout",
     "Триггеры": "Triggers",
-    "неоднозначность · повтор": "ambiguity · repeat",
     "3-й провал": "3rd failure",
     "CHECK(r) исчерпан": "CHECK(r) exhausted",
     "Необратимый trade-off": "Irreversible trade-off",
     "цена решения": "cost of the call",
-    "Решение → роутинг": "Decision → routing",
-    "plan или ACT-STOP": "plan or ACT-STOP",
+    "Рекомендация → фазе": "Recommendation",
+    "свой переход у каждой": "each keeps its own",
     # ACT cards
     "Финализация": "Finalization",
-    "принятого результата": "of the accepted result",
+    "PASS · incomplete": "PASS · incomplete",
     "Ограничения": "Limitations",
     "границы финализации": "finalization bounds",
     "Статус-файл": "Status file",
+    "EXIT · PLAN N+1 · STOP": "EXIT · PLAN N+1 · STOP",
     # orchestrator inputs
     "PLAN ← «старт» · «реплан от CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»":
         "PLAN ← “start” · “replan from CHECK” · “r+1 from ESCALATE” · “cycle N+1 from ACT”",
     "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»":
         "DO ← “approval from PLAN” · “defect from CHECK” · “r not exhausted from ESCALATE”",
     "CHECK ← «units done от DO»": "CHECK ← “units done from DO”",
-    "ESCALATE ← «неоднозначность» · «повтор» · «3-й провал CHECK(r)» · «trade-off» · «рисковый результат перед ACT» · «низкая уверенность PLAN после pdca-scout»":
-        "ESCALATE ← “ambiguity” · “repeat” · “3rd CHECK(r) failure” · “trade-off” · “risky result before ACT” · “low PLAN confidence after pdca-scout”",
+    "ESCALATE ← «неоднозначность» · «повтор» · «счётчик исчерпан» · «trade-off» · «риск приёмки» · «низкая уверенность PLAN/DO»":
+        "ESCALATE ← “ambiguity” · “repeat” · “counter exhausted” · “trade-off” · “acceptance risk” · “low PLAN/DO confidence”",
     "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «PLAN-терминал» · «STOP-финализация»":
         "ACT ← “all criteria met from CHECK” · “DO cannot finish” · “PLAN terminal” · “STOP finalization”",
-    "STOP ← «нет выполнимого PLAN r+1» · «неразрешимое ограничение» · «отказ в approval» — исход ACT":
-        "STOP ← “no doable PLAN r+1” · “unsolvable constraint” · “approval refused” — ACT outcome",
+    "STOP ← «нет плана r+1» · «критерии не определены» · «CHECK исчерпан» · «отказ в approval» — исход ACT":
+        "STOP ← “no plan r+1” · “criteria undetermined” · “CHECK exhausted” · “approval refused” — ACT outcome",
     "EXIT ← «ACT закрыт»": "EXIT ← “ACT closed”",
     # dispatch labels (per line, rendered through label())
     "факты собраны": "facts gathered",
@@ -261,7 +271,10 @@ _TR_EN = {
     "не может завершить → ACT": "cannot finish → ACT",
     "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
     "неверный контракт → CHECK → PLAN · r+1": "wrong contract → CHECK → PLAN · r+1",
-    "критерии не определены · невозможность → ACT": "criteria undetermined · infeasible → ACT",
+    "критерии · невозможность · уже установлено → ACT":
+        "criteria · infeasible · already established → ACT",
+    "исчерпание": "exhausted",
+    "STOP · blocked/incomplete": "STOP · blocked/incomplete",
     "r не исчерпан → DO": "r not exhausted → DO",
     "исчерпан r → PLAN r+1": "r exhausted → PLAN r+1",
     "нет плана r+1 → ACT": "no plan r+1 → ACT",
@@ -330,7 +343,7 @@ def render(P):
             _badge,
             f'<text x="{_bx+_bw/2}" y="{_by+_bh/2+3.5}" class="bm" fill="{_btxt}" '
             f'text-anchor="middle">{TIER_MODEL[tier]}</text>',
-            f'<text x="{x+14}" y="{y+23}" class="t">{esc(_fit(_title, (x+w-12)-(x+14), 7.4))}</text>',
+            f'<text x="{x+14}" y="{y+23}" class="t">{esc(_fit(_title, (x+w-12)-(x+14), 8.0))}</text>',
         ]
         if sub:
             out.append(f'<text x="{x+14}" y="{y+42}" class="s">'
@@ -507,7 +520,7 @@ def render(P):
                                ("plan_do", "PLAN", "DO",
                                 ["контракт · апрув", "сразу (авто)", "· n=1/3"]),
                                ("do_check", "DO", "CHECK", ["units done"]),
-                               ("check_act", "CHECK", "ACT", ["criteria met"]),
+                               ("check_act", "CHECK", "ACT", ["criteria met", "исчерпание"]),
                                ("act_exit", "ACT", "EXIT", ["закрыто"])]:
         _x1, _x2 = stx[_a] + NW, stx[_b]
         s.append(poly([(_x1, ym), (_x2, ym)], edge_id=_eid))
@@ -529,10 +542,11 @@ def render(P):
     s.append(curve(f"M798,{R1_TOP} C798,{R1_TOP-136} 334,{R1_TOP-136} 334,{R1_TOP}",
                    P["arrow"], "check_plan_replan"))
     s.append(label(566, R1_TOP - 140, "неверный контракт → CHECK → PLAN · r+1", P["label"]))
-    # PLAN terminal: criteria cannot be determined, or the original task is proven infeasible.
+    # PLAN terminal: criteria cannot be determined, the original task is proven
+    # infeasible, or the supplied facts already establish the requested result.
     s.append(curve(f"M334,{R1_TOP} C334,{R1_TOP-190} 1040,{R1_TOP-190} 1040,{R1_TOP}",
                    P["arrow"], "plan_act_terminal"))
-    s.append(label(682, R1_TOP - 168, "критерии не определены · невозможность → ACT", P["label"]))
+    s.append(label(682, R1_TOP - 168, "критерии · невозможность · уже установлено → ACT", P["label"]))
 
     # escalation row
     s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "решение", P["escalate"], "ESCALATE"))
@@ -551,7 +565,7 @@ def render(P):
     # STOP is finalized by ACT, not a path beside it
     s.append(curve(f"M1060,{r1b} C1060,{r1b+60} 1262,{R2_TOP-60} 1262,{R2_TOP}",
                    P["stop"], "act_stop"))
-    s.append(label(1128, (r1b + R2_TOP) / 2, "STOP · incomplete", P["label"], "end"))
+    s.append(label(1128, (r1b + R2_TOP) / 2, "STOP · blocked/incomplete", P["label"], "end"))
 
     # footer arrow-type legend
     FIN = M4 + 18

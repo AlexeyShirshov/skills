@@ -105,18 +105,19 @@ routing**: a genuinely revised plan → `pdca-planner` (`r+1`), implementation u
 rule, scope or the authority boundaries; the orchestrator does not re-select it and does not
 rewrite the plan itself.
 
-The attempt counter is bound to the plan revision `r`: `PLAN(r) → DO` starts at `n=1`; a
-`CHECK → DO` return increments the attempt; different defects require escalation after the
-**third failed CHECK of the same revision `r`**; a real replan starts a new revision at `n=1`
-but **does not erase** the history of the **same defect** — that defect is still escalated
-before the second fix.
+Your grounds, the narrow question, the input it needs and the limits of the conclusion are in
+`references/escalate.md`, whose protocol the driver passes with the brief. The current counters
+(`N`, `r`, `n/3`) and the defect history arrive in that brief as inputs; this role applies no
+threshold of its own, adds no attempt and cuts nothing off.
 
 ## Inputs (what the brief contains)
 
-- The **narrow question** in one formulation, and the boundaries (what must not change).
-- The acceptance criterion in play.
-- What was already tried and why it did not work, with exact `file:line`/commands.
-- A **pre-gathered `pdca-scout` evidence pack** (`file:line`, signatures, observed behaviour).
+Your input is the protocol itself: the driver inlines `references/escalate.md` and fills the brief
+with **every item its §Input and permissions requires**, so the required inputs are not listed a second
+time here. The current counters (`N`, `r`, `n/3`) and the defect history arrive in that brief as
+inputs; this role applies no threshold of its own, adds no attempt and cuts nothing off. A brief
+missing a required item is incomplete: name the item and stop instead of re-opening the cycle to fill
+it yourself.
 
 ## What you do
 

@@ -25,6 +25,7 @@ BASE = SKILL_DIR / "SKILL.md"
 CHECK_REFERENCE = SKILL_DIR / "references/check.md"
 CHECK_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-check.md"
 DRIVER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
+DRIVER_REFERENCE = SKILL_DIR / "references/driver.md"
 FAMILY_SKILLS = ("pdca", "pdca-coder", "pdca-collection", "pdca-dotnet", "pdca-incremental")
 DOCS_POINTERS = (
     (REPO / "docs/pdca-incremental.md", "inlines"),
@@ -109,25 +110,28 @@ class BaseContractTest(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text)
-        driver = norm(read(DRIVER_ASSET)).lower()
+        # The driver-side copy moved to the single driver reference; it must still forbid the read.
+        driver = norm(read(DRIVER_REFERENCE)).lower()
         for token in (
-            "plan reference stays pdca-planner-only",
-            "still neither read nor inlined",
+            "plan_reference_path",
+            "never read or inline that file",
+            "forward its contents",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, driver)
 
 
 class DriverDispatchTest(unittest.TestCase):
-    """The driver inlines the full contract and fails closed before dispatch."""
+    """The driver reference routes the inline rule; the base owns its text and fail-closed form."""
 
     def test_driver_inlines_the_complete_contract_in_every_check_dispatch(self) -> None:
-        body = norm(read(DRIVER_ASSET)).lower()
+        body = norm(read(DRIVER_REFERENCE)).lower()
         for token in (
-            "check reference inlining",
-            "every pdca-check dispatch",
+            "in every pdca-check dispatch",
             "complete contents",
-            "references/check.md",
+            "check.md",
+            "inline",
+            "first check",
             "recheck",
             "campaign step",
             "collection lane/item",
@@ -138,24 +142,31 @@ class DriverDispatchTest(unittest.TestCase):
                 self.assertIn(token, body)
 
     def test_driver_fails_closed_before_a_reduced_contract(self) -> None:
-        body = norm(read(DRIVER_ASSET)).lower()
+        body = norm(read(DRIVER_REFERENCE)).lower()
         for token in (
-            "cannot be loaded whole",
-            "explicit blocker",
-            "before dispatch",
-            "never a reduced or summarised contract",
-            "never a verdict from the",
+            "if it cannot be loaded whole",
+            "blocker before dispatch",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, body)
+        # The fail-closed contract itself is the base's, not a reference-local rule.
+        base = norm(read(BASE)).lower()
+        for token in (
+            "explicit blocker",
+            "no reduced contract",
+            "no verdict from the agent prompt alone",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, base)
 
-    def test_every_shipped_driver_copy_carries_the_inline_rule(self) -> None:
+    def test_every_shipped_driver_copy_routes_the_inline_rule(self) -> None:
         for skill in FAMILY_SKILLS:
             path = FAMILY / skill / "assets/opencode-agents/pdca-orchestrator.md"
             body = norm(read(path)).lower()
             with self.subTest(skill=skill):
-                self.assertIn("check reference inlining", body)
-                self.assertIn("every pdca-check dispatch", body)
+                # The procedure is loaded once, from the base package, right after the skill.
+                self.assertIn("references/driver.md", body)
+                self.assertIn("inlined in every pdca-check dispatch", body)
 
 
 class CheckerAssetTest(unittest.TestCase):

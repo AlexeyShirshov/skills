@@ -68,9 +68,13 @@ class StateMachineTest(unittest.TestCase):
         self.assertIn("**only CHECK returns to PLAN** (never DO)", skill)
         self.assertIn("does not rewrite the plan", skill)
         self.assertIn("does not return to PLAN", skill)
+        # The planner's own transition rule lives in its phase reference, not in the agent asset.
+        plan = norm(read(PLAN_REF))
+        self.assertIn("DO never returns to PLAN", plan)
+        self.assertIn("Only CHECK can send a contract defect back here", plan)
         planner = norm(read(ASSETS / "pdca-planner.md"))
-        self.assertIn("There is no DO → PLAN path", planner)
-        self.assertIn("DO never returns to PLAN", planner)
+        self.assertIn("plan_reference_path", planner)
+        self.assertIn("§Output contract", planner)
 
     def test_check_is_mandatory_only_for_a_completed_result(self) -> None:
         skill = norm(read(SKILL))
@@ -120,9 +124,13 @@ class PlanDoesNotChooseActionsTest(unittest.TestCase):
 
     def test_planner_and_executor_assets_carry_the_scope(self) -> None:
         planner = norm(read(ASSETS / "pdca-planner.md"))
+        plan = norm(read(PLAN_REF))
         executor = norm(read(ASSETS / "pdca-executor.md"))
-        self.assertIn("PLAN fixes the result contract; DO chooses the", planner)
-        self.assertIn("Do not freeze a command, selector, test strategy or manifest row", planner)
+        # The planner reads the procedure from its reference; the reference states the split.
+        self.assertIn("plan_reference_path", planner)
+        self.assertIn("PLAN fixes the **result contract**", plan)
+        self.assertIn("DO chooses the implementation", plan)
+        self.assertIn("Do not freeze a command, selector, test strategy or manifest row", plan)
         self.assertIn("DO's own implementation actions and commands are your choice", executor)
 
     def test_plan_lint_is_documented_as_a_verification_lint(self) -> None:
@@ -286,7 +294,11 @@ class CampaignFailureSemanticsTest(unittest.TestCase):
 
     def test_step_boundary_is_one_planner_call(self) -> None:
         self.assertIn("**one** planner call decides", self.skill)
-        self.assertIn("Separate DECIDE → brief → STOP turns on unchanged content are a repeated PLAN", self.skill)
+        # The decision procedure and its accounting are the planner's phase reference.
+        self.assertIn("references/plan.md` §Step boundary", self.skill)
+        plan = norm(read(PLAN_REF))
+        self.assertIn("separate DECIDE → brief → STOP turns on unchanged content are a repeated PLAN", plan)
+        self.assertIn("1 + number of steps", plan)
 
 
 if __name__ == "__main__":

@@ -32,11 +32,17 @@ low-confidence decision.
 
 ## Input and permissions
 
-A **narrow question** with the original task; the phase and role that ask; the criteria it touches;
-the result, evidence (reused, not re-gathered), attempts, defect history and constraints. A missing
-fact may be gathered by `pdca-scout` within existing permissions — not mandatory per consultation.
-ESCALATE is read-only, may use that delegation, and never edits, runs state-changing work, or decides
-for the phase.
+A **narrow question**, with the boundaries of what must not change, and the original task; the phases
+and role that ask; the criteria it touches; the result; evidence (reused, not re-gathered); what was
+already tried and why it did not work, as pointers; attempts; constraints; the live cycle `N`, plan
+revision `r`, attempt `n/3` and the defect history as it stands — each defect key with its observed
+revisions/attempts and the applied fixes. A missing fact may be gathered by `pdca-scout`
+within existing permissions — not mandatory per consultation. ESCALATE is read-only, may use that
+delegation, and never edits, runs state-changing work, or decides for the phase.
+
+The threshold procedure is the base `../SKILL.md` §State machine and counters, already loaded by the
+driver that passes this protocol: the expert applies no threshold of its own and has no discretion to
+waive the counter rule, grant an extra attempt or erase the defect history.
 
 ## Conclusion and limits
 
