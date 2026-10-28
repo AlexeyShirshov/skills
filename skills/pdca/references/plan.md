@@ -8,6 +8,10 @@ unreadable or denied, report a resource blocker instead of assuming what this fi
 ## Plan fields
 
 - goal and expected result;
+- the **requested result** — the object the user's own words ask for (a value, a file, a behaviour, an
+  answer), named in one line before any criterion — and the **delivered result** the plan hands over.
+  They are the same object; a plan that would hand over another one is not a plan for this task
+  (§Terminal PLAN outcomes);
 - declared **form** (ordinary cycle / incremental / collection) and **specialized skill** (none,
   `pdca-coder`, `pdca-dotnet`), with a one-line form rationale naming **the method already justified
   and how the volume is bounded**, or **the missing knowledge that decides the next action**; one
@@ -50,18 +54,26 @@ they apply.
 
 ## Terminal PLAN outcomes
 
-Two outcomes replace a ready plan and go directly to ACT, with no DO and no CHECK:
+Three outcomes replace a ready plan and go directly to ACT, with no DO and no CHECK:
 
 - `acceptance criteria cannot be determined` — the supplied information and authorized gather cannot
   make the criteria determinate; carry the concrete missing information and the reason.
 - `original task is infeasible under the stated constraints` — the supplied facts, the authorized
-  gather or a planned bounded probe prove the **original task** cannot be achieved under the stated
-  constraints; carry the concrete cause and the evidence.
+  gather or a planned bounded probe prove that the **requested result** cannot be produced under the
+  stated constraints; carry the concrete cause and the evidence.
+- `requested result already established` — the supplied facts already determine the requested result
+  and nothing is left to produce: no artefact, no computation and no text beyond restating what those
+  facts establish. Carry the result itself, its derivation from the supplied facts and the evidence
+  pointers. Anything still to compute, run, judge or write is a ready plan, not this outcome.
 
 Feasibility need not be proven for every plan: uncertainty and the bounded probe remain, and one
 failed candidate is not proof about the whole task. A bounded probe run before DO for this question is
-not implementation of a changed task. Never return an explanation, a feasibility note or a smaller
-goal as a substitute for the requested result (`../SKILL.md` §Phase contracts → PLAN).
+not implementation of a changed task.
+
+Feasibility is judged on the **requested result**, never on a reformulation of it: asking a question
+does not turn a request for a value into a request for an explanation. An explanation, a feasibility
+note or a smaller goal is another object, and a plan that would deliver one is a plan for a different
+task — the route is the terminal outcome above (`../SKILL.md` §Phase contracts → PLAN).
 
 A **defective user-supplied criteria set** is never repaired, supplemented, widened or narrowed.
 A proven contradiction that makes the original task with its supplied criteria unachievable is
@@ -84,6 +96,11 @@ For initial form classification and routing, use the entry/form rules supplied i
 Every gap in the statement closes one of three ways: evidence actually available to the plan
 (supplied, or gathered read-only through the driver), an explicit assumption/risk, or a blocker. A
 silent guess is forbidden.
+
+An assumption may settle a gap in the means. An assumption that changes the **accepted outcome** — the
+requested result, or a value the criteria judge — is not the planner's to make: return it to the
+driver as a question to the user, with the alternatives and the outcome each one produces. The user's
+answer is a new instruction and settles the input; the planner never picks one silently.
 
 ### Numeric thresholds
 

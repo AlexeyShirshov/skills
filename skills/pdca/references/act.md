@@ -36,7 +36,7 @@ own.
 | Route | Recorded |
 |---|---|
 | `CHECK → ACT`, accepted | the accepted result, the criteria outcome per criterion, the evidence pointers, limitations, handoff |
-| `PLAN → ACT` | the resolution — `acceptance criteria cannot be determined` with the concrete missing information and reason, or `original task is infeasible under the stated constraints` with the proven cause and evidence; no invented criteria, no substitute deliverable, no `PASS`, no CHECK |
+| `PLAN → ACT` | the resolution — `acceptance criteria cannot be determined` with the concrete missing information and reason, `original task is infeasible under the stated constraints` with the proven cause and evidence, or `requested result already established` with the result, its derivation and the evidence pointers (recording that no independent CHECK ran); no invented criteria, no substitute deliverable, no `PASS`, no CHECK |
 | `DO → ACT` | the cause, what was completed, what remains (`unmet`/`unverified`), evidence pointers; no CHECK, no planner detour |
 | `CHECK → ACT`, terminal | the incomplete/`STOP` outcome with the remaining criteria, counters and defect history; no `PASS`, no `done` |
 

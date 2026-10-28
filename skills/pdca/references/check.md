@@ -3,6 +3,15 @@
 Reference for the CHECK phase. Independence, permissions and the phase exits stay in `../SKILL.md`; this
 file holds what CHECK receives, how it verifies and what its verdict carries.
 
+## How this reference reaches you
+
+The driver reads this file in full and passes its **complete contents inline** in every
+`pdca-check` dispatch — the first CHECK, a recheck after DO, a campaign step and a collection item
+alike. `pdca-check` has no permission to read the installed reference, so this text in the dispatch
+is its contract: it receives no path and no instruction to open one. If the complete text is absent,
+truncated or visibly incomplete, CHECK returns an explicit blocker and no verdict; it does not judge
+from the agent prompt alone.
+
 ## What CHECK receives
 
 The original task, the acceptance criteria, the frozen actual result with its identity, and the

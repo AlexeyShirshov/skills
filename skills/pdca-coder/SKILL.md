@@ -129,8 +129,9 @@ when it judges or requests a run.
   candidate itself; green components do not make a green integration, and component conclusions are
   re-evaluated against the actual combined result.
 - **Session reuse.** Reuse the current `pdca-check` session on a loop-back when the host offers one;
-  otherwise a fresh session reads the persisted evidence. This changes no independence or accounting
-  rule.
+  otherwise a fresh session reads the persisted evidence. Every loop-back dispatch still carries the
+  complete inline CHECK reference; reuse never shortens it. This changes no independence or
+  accounting rule.
 - **Routing and accounting are the base's.** An applicable failing check is a finding; the
   governing contract alone accounts findings and attempts.
 - **Finding form.** A finding carries the location, the problem, the required change, the check
@@ -396,6 +397,7 @@ no role API. These are the base contract's own reference paths, not this overlay
 
 - `../pdca/references/plan.md` — `pdca-planner` only; the dispatch carries its exact absolute path
   from the canonical base directory, including a criteria-revision dispatch as the base prescribes.
-- `../pdca/references/check.md` — read by `pdca-check` when CHECK starts.
+- `../pdca/references/check.md` — the CHECK contract; the driver reads it in full and inlines it in
+  every `pdca-check` dispatch (CHECK cannot read the installed file).
 - `../pdca/references/act.md` — read by `pdca-executor` at status-file creation and at every status
   write.

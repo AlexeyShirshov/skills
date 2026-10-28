@@ -103,10 +103,14 @@ classifier and no second PLAN on the same content:
    audit goal the user agreed as a **separate** task is the exception and stays **binding**.
 3. **Close every gap** in the statement via a "what the statement did not say" list; each gap
    closes one of three ways: (a) evidence, (b) an explicit assumption/risk, (c) a blocker.
-   A silent guess is forbidden.
+   A silent guess is forbidden. An assumption may settle the means; one that changes the **accepted
+   outcome** — the requested result, or a value the criteria judge — goes back to the driver as a
+   question to the user, with the alternatives and the outcome each produces.
 4. **Minimal contract, first principles:** state the unchanged goal and the constraints that must
    not be violated; prefer reusing what exists. **PLAN fixes the result contract; DO chooses the
-   implementation.** The plan carries the outcome, acceptance/verification, constraints, outer
+   implementation.** Name the **requested result** — the object the user's words ask for — before any
+   criterion, and deliver that same object. The plan carries the outcome, acceptance/verification,
+   constraints, outer
    dependencies/bounds and stop conditions; it does not pre-write the final artefact, prescribe
    implementation steps or solve every unresolved downstream choice. For a non-obvious outer
    trade-off, give 2–3 **alternatives** (approach / pros / cons / cost and risk) and a
@@ -115,9 +119,12 @@ classifier and no second PLAN on the same content:
    mandating the method. Assumptions stay assumptions, not evidence that the mechanism works. A
    theoretical request does not force a physical experiment, and one candidate class or prototype
    never proves the whole goal impossible. If the supplied facts, the authorized gather or a planned
-   bounded probe do prove the **original task** infeasible under the stated constraints, return the
-   terminal outcome `original task is infeasible under the stated constraints` with the cause and
-   evidence — never an explanation, feasibility note or smaller goal as a substitute. A probe run
+   bounded probe do prove that the **requested result** cannot be produced under the stated
+   constraints, return the terminal outcome `original task is infeasible under the stated constraints`
+   with the cause and evidence; if those facts already determine the requested result and nothing is
+   left to produce, return `requested result already established` with the result and its derivation.
+   An explanation, feasibility note or smaller goal is a different object, so it is never that plan.
+   A probe run
    before DO is not implementation of a changed task. A defective user-supplied criteria set is never
    repaired, supplemented, widened or narrowed: a proven contradiction → infeasibility; ambiguity or
    unverifiability the gather cannot settle without changing the user input → `acceptance criteria
@@ -197,12 +204,14 @@ specialisation for measurable goals, not a universal gate.
 - **Form and specialized skill** with a one-line reason naming the justified method and volume bound,
   or the missing knowledge that decides the next result; the **nearest useful result unit** (at
   cycle start).
-- **Goal and acceptance criteria** — the user's task verbatim and any user-supplied criteria
-  reproduced verbatim; otherwise criteria derived from the unchanged task, each judgeable and with a
-  negative condition where relevant.
+- **Goal and acceptance criteria** — the user's task verbatim, the **requested result** and the
+  **delivered result** named (the same object), and any user-supplied criteria reproduced verbatim;
+  otherwise criteria derived from the unchanged task, each judgeable and with a negative condition
+  where relevant.
 - **Terminal outcome** (in place of a plan when it applies): `acceptance criteria cannot be
-  determined` with the missing information and reason, or `original task is infeasible under the
-  stated constraints` with the cause and evidence; no DO/CHECK and no substitute deliverable.
+  determined` with the missing information and reason; `original task is infeasible under the stated
+  constraints` with the cause and evidence; or `requested result already established` with the result
+  and its derivation; no DO/CHECK and no substitute deliverable.
 - **Constraints / assumptions.**
 - **Gaps**: statement gap → evidence / assumption / blocker.
 - **Minimal solution** + alternatives with the chosen one (if non-obvious).

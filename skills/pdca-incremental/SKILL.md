@@ -336,7 +336,9 @@ The step runs the base cycle — PLAN → DO → CHECK → ACT — inline, with 
 counters, evidence rules and approval. The campaign accepts no result in place of CHECK and
 does not interfere with the step's exits. The step's cycle is the base `pdca` form; the declared
 overlay applies when the step's work is code, and a step touching no code runs without one. The form is
-never re-decided per step, and no overlay opens a second PLAN or status.
+never re-decided per step, and no overlay opens a second PLAN or status. Every step CHECK dispatch —
+first verdict and loop-back — carries the complete inline base CHECK contract; the campaign never
+shortens or replaces it.
 
 If the step falls short, the route follows the base phase contracts: an implementation defect is
 `CHECK → DO` in the same step identity; a wrong or unachievable contract is `CHECK → PLAN` for a
@@ -399,9 +401,9 @@ mandatory-requirement veto: a result cannot be accepted, and `done` cannot be re
 mandatory requirement or criterion is `unmet`/`unverified` (§CHECK in `../pdca/SKILL.md`), and no score,
 margin or rubric compensates. A metric or rubric that is part of the original requirement is a
 **criterion** with its evidence, not a parallel taxonomy. A local step acceptance never clears a global
-requirement. Independently refuting evidence is CHECK's ordinary judging under
-`../pdca/references/check.md` — no campaign-side or non-author gate — and `limited` exists only under
-the Stop rule below.
+requirement. Independently refuting evidence is CHECK's ordinary judging under the base CHECK
+contract (`../pdca/references/check.md`, inlined in full in every dispatch) — no campaign-side or
+non-author gate — and `limited` exists only under the Stop rule below.
 
 ## Stop
 
@@ -426,7 +428,9 @@ instruction both stay recorded verbatim, and nothing on the original task is sil
 `unreachable` is proven with numbers (a required product change, an unavailable source), never declared
 from fatigue. Every non-`met` row is finalized **in ACT**, not on a separate terminal path. A step's
 `PLAN → ACT` terminal outcome stays a cycle close in ACT: a **proven infeasible original task** projects
-to `unreachable`, otherwise `blocked`/`stopped` as the cause supports, with no new status value. Under
+to `unreachable`, otherwise `blocked`/`stopped` as the cause supports, with no new status value. A step
+whose requested result the baseline already establishes is not a terminal outcome here: no dummy
+increment is created and its result goes to an independent CHECK (§Campaign cycle → 0. Bootstrap). Under
 `blocked`/`stopped` the chain does not pretend to be closed: the next session continues from the last
 accepted basis and the residual work recorded by ACT, and invariant 5 decides whether the campaign is
 paused or finally closed.
@@ -497,5 +501,7 @@ The base self-check applies. On any of these — **stop, name the deviation, ret
 - `../pdca/SKILL.md` — the **common cycle contract** inherited here; the planner reference path is
   derived from that directory, never from this one.
 - `../pdca/references/act.md` — the canonical status skeleton the per-step cycle records use.
-- `../pdca/references/plan.md`, `../pdca/references/check.md` — phase detail for the planner and
-  CHECK, read by those roles as the base requires.
+- `../pdca/references/plan.md` — planner-only phase detail; the driver passes its exact absolute
+  path and never reads or inlines it.
+- `../pdca/references/check.md` — the CHECK contract; the driver reads it in full and inlines it in
+  every step `pdca-check` dispatch (CHECK cannot read the installed file).

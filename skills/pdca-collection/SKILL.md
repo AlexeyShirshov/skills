@@ -148,10 +148,12 @@ classification of the batch.
      `preparation_handoff`. No baseline, runtime record, substantive DO, future step plan
      or step count is required at the barrier.
 
-   PLAN-terminal `acceptance criteria cannot be determined` or proven
-   `original task is infeasible under the stated constraints` goes to that item's ACT,
-   without DO or CHECK, and **cannot** be marked ready. A failed candidate or an
-   unproven method alone does not establish infeasibility; no substitute goal is created.
+   A PLAN-terminal `acceptance criteria cannot be determined`, proven
+   `original task is infeasible under the stated constraints`, or `requested result already
+   established` goes to that item's ACT, without DO or CHECK, and **cannot** be marked ready. A
+   failed candidate or an unproven method alone does not establish infeasibility; no substitute goal
+   is created. Inside a `campaign` item the step rule holds instead: an established result goes to an
+   independent CHECK, never to a dummy increment.
    A re-entry after a terminal result preserves its cause and history rather than rerunning
    the same failed criterion unchanged.
 
@@ -277,7 +279,8 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
 
 The parent CHECK uses the **base `../pdca/SKILL.md` §Phase contracts → CHECK**:
 `pdca-check` independently chooses methods/evidence for the actual integrated result, with
-test execution through `pdca-executor` and outside observation through `pdca-scout`.
+test execution through `pdca-executor` and outside observation through `pdca-scout`; its dispatch
+carries the complete inline base CHECK contract like every other CHECK.
 Its scope is the **integrated snapshot**, plus integration invariants and any relevant
 specialized-skill verification deltas (`../pdca-coder/SKILL.md` and
 `../pdca-dotnet/SKILL.md`). It does not replace each item's own whole-goal CHECK.
@@ -629,6 +632,7 @@ must never be treated as complete:
 - `../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md` — the overlays applied to the relevant work.
 - `../pdca/references/plan.md` — base planner-only phase detail; the driver supplies
   its exact absolute path, never loads or forwards it.
-- `../pdca/references/check.md` — loaded by CHECK for the base verdict/evidence contract.
+- `../pdca/references/check.md` — the base verdict/evidence contract; the driver reads it in full
+  and inlines it in every item and integration `pdca-check` dispatch (CHECK cannot read it).
 - `../pdca/references/act.md` — loaded by `pdca-executor` for cycle records
   and status updates; batch projections remain in §Collection status record.

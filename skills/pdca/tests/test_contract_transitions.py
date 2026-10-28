@@ -58,7 +58,7 @@ class StateMachineTest(unittest.TestCase):
             "CHECK → DO (defect)",
             "CHECK → PLAN (contract)",
             "CHECK → ACT (STOP)",
-            "PLAN → ACT (criteria undetermined | original task infeasible)",
+            "PLAN → ACT (criteria undetermined | requested result infeasible | requested result already established)",
         ):
             with self.subTest(edge=edge):
                 self.assertIn(norm(edge), block)

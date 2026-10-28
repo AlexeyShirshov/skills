@@ -1,0 +1,255 @@
+"""Regression guards: the CHECK reference reaches `pdca-check` inline.
+
+The canonical reference lives once in ``pdca/references/check.md``.  `pdca-check`
+keeps its ``.pdca/**``-only scoped read, so it cannot open the installed reference:
+the driver (normal primary or `pdca-orchestrator`) must read the file in full and
+inline its complete text in every CHECK dispatch, and fail closed if it cannot.
+A missing contract is a blocker, never a verdict judged from the agent prompt.
+
+These are static contract guards in the style of the family's routing tests.
+
+Run:
+    python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
+"""
+
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
+FAMILY = REPO / "skills"
+BASE = SKILL_DIR / "SKILL.md"
+CHECK_REFERENCE = SKILL_DIR / "references/check.md"
+CHECK_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-check.md"
+DRIVER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
+FAMILY_SKILLS = ("pdca", "pdca-coder", "pdca-collection", "pdca-dotnet", "pdca-incremental")
+DOCS_POINTERS = (
+    (REPO / "docs/pdca-incremental.md", "inlines"),
+    (REPO / "docs/ru/pdca-incremental.md", "встраивает"),
+)
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text.replace("`", "").replace("*", "")).strip()
+
+
+def _parse_block(block: str) -> dict:
+    root: dict = {}
+    stack: list = [(-1, root)]
+    for raw in block.splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        key, _, val = raw.strip().partition(":")
+        key = key.strip().strip('"').strip("'")
+        val = val.strip().strip('"').strip("'")
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        if val == "":
+            stack[-1][1][key] = {}
+            stack.append((indent, stack[-1][1][key]))
+        else:
+            stack[-1][1][key] = val
+    return root
+
+
+def permission(path: Path) -> dict:
+    text = read(path)
+    end = text.find("\n---", 3)
+    node = _parse_block(text[3:end]).get("permission")
+    if not isinstance(node, dict) or not node:
+        raise AssertionError("%s: expected a non-empty `permission:` map" % path)
+    return node
+
+
+class BaseContractTest(unittest.TestCase):
+    """The base cycle contract names inline delivery as the only CHECK handoff."""
+
+    def test_check_section_requires_complete_inline_contract(self) -> None:
+        text = read(BASE)
+        start = text.index("#### CHECK")
+        end = text.index("#### ACT", start)
+        section = norm(text[start:end]).lower()
+        for token in (
+            "references/check.md",
+            "inline",
+            "complete contents",
+            "every pdca-check dispatch",
+            "recheck",
+            "campaign step",
+            "collection item",
+            "explicit blocker",
+            "no reduced contract",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, section)
+
+    def test_references_section_assigns_inline_delivery_to_the_driver(self) -> None:
+        text = read(BASE)
+        start = text.index("- `references/check.md`")
+        end = text.find("\n- `references/act.md`", start)
+        self.assertGreater(end, start, "check.md bullet not found before act.md")
+        bullet = norm(text[start:end]).lower()
+        for token in ("inline", "complete", "driver", "explicit blocker"):
+            with self.subTest(token=token):
+                self.assertIn(token, bullet)
+
+    def test_plan_reference_stays_planner_only_and_uninlined(self) -> None:
+        text = norm(read(BASE)).lower()
+        for token in (
+            "references/plan.md is pdca-planner only",
+            "the plan reference is never part of a do, check",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
+        driver = norm(read(DRIVER_ASSET)).lower()
+        for token in (
+            "plan reference stays pdca-planner-only",
+            "still neither read nor inlined",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, driver)
+
+
+class DriverDispatchTest(unittest.TestCase):
+    """The driver inlines the full contract and fails closed before dispatch."""
+
+    def test_driver_inlines_the_complete_contract_in_every_check_dispatch(self) -> None:
+        body = norm(read(DRIVER_ASSET)).lower()
+        for token in (
+            "check reference inlining",
+            "every pdca-check dispatch",
+            "complete contents",
+            "references/check.md",
+            "recheck",
+            "campaign step",
+            "collection lane/item",
+            "integration check",
+            "no path and no instruction to read it",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, body)
+
+    def test_driver_fails_closed_before_a_reduced_contract(self) -> None:
+        body = norm(read(DRIVER_ASSET)).lower()
+        for token in (
+            "cannot be loaded whole",
+            "explicit blocker",
+            "before dispatch",
+            "never a reduced or summarised contract",
+            "never a verdict from the",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, body)
+
+    def test_every_shipped_driver_copy_carries_the_inline_rule(self) -> None:
+        for skill in FAMILY_SKILLS:
+            path = FAMILY / skill / "assets/opencode-agents/pdca-orchestrator.md"
+            body = norm(read(path)).lower()
+            with self.subTest(skill=skill):
+                self.assertIn("check reference inlining", body)
+                self.assertIn("every pdca-check dispatch", body)
+
+
+class CheckerAssetTest(unittest.TestCase):
+    """`pdca-check` receives contract text, not a path it cannot open."""
+
+    def test_checker_is_given_the_contract_inline(self) -> None:
+        body = norm(read(CHECK_ASSET)).lower()
+        for token in (
+            "check contract",
+            "complete contents",
+            "inlined by the driver",
+            "no permission to read the installed reference",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, body)
+
+    def test_checker_returns_a_blocker_instead_of_a_reduced_verdict(self) -> None:
+        body = norm(read(CHECK_ASSET)).lower()
+        for token in (
+            "absent, truncated or visibly incomplete",
+            "explicit blocker",
+            "instead of judging from this prompt",
+            "not a verdict",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, body)
+
+    def test_checker_cannot_read_the_installed_reference(self) -> None:
+        perm = permission(CHECK_ASSET)
+        self.assertEqual("deny", perm.get("*"))
+        for action in ("read", "glob", "list"):
+            with self.subTest(action=action):
+                allowed = {k for k, v in perm[action].items() if v == "allow"}
+                self.assertEqual({".pdca/**"}, allowed,
+                                 "CHECK's scoped read must stay .pdca/** only")
+        for action in ("edit", "write", "bash", "external_directory"):
+            with self.subTest(action=action):
+                self.assertNotIn(action, perm, "CHECK must not gain `%s`" % action)
+
+
+class ReferenceSourceTest(unittest.TestCase):
+    """The single source describes its own inline delivery; no overlay copies it."""
+
+    def test_reference_describes_inline_delivery(self) -> None:
+        body = norm(read(CHECK_REFERENCE)).lower()
+        for token in (
+            "complete contents inline",
+            "every pdca-check dispatch",
+            "explicit blocker",
+            "agent prompt alone",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, body)
+
+    def test_overlays_do_not_ship_a_second_copy(self) -> None:
+        for skill in FAMILY_SKILLS:
+            if skill == "pdca":
+                continue
+            with self.subTest(skill=skill):
+                self.assertFalse((FAMILY / skill / "references").exists(),
+                                 "%s must inherit the base reference" % skill)
+
+
+class PointerConsistencyTest(unittest.TestCase):
+    """Every skill's pointer says the driver inlines the file, never that CHECK reads it."""
+
+    def _paragraphs(self, path: Path) -> list[str]:
+        return [
+            norm(part).lower()
+            for part in re.split(r"\n\s*\n", read(path))
+            if "references/check.md" in part
+        ]
+
+    def test_each_skill_pointer_describes_inline_delivery(self) -> None:
+        for skill in FAMILY_SKILLS:
+            paragraphs = self._paragraphs(FAMILY / skill / "SKILL.md")
+            with self.subTest(skill=skill):
+                self.assertTrue(paragraphs, "no check.md pointer")
+                self.assertTrue(
+                    any(("inline" in p or "inlines" in p) and ("full" in p or "complete" in p)
+                        for p in paragraphs),
+                    "pointer must say the driver inlines the complete reference",
+                )
+                for paragraph in paragraphs:
+                    self.assertNotIn("read by pdca-check", paragraph)
+                    self.assertNotIn("loaded by check", paragraph)
+
+    def test_docs_incremental_pointers_match(self) -> None:
+        for path, token in DOCS_POINTERS:
+            body = norm(read(path)).lower()
+            with self.subTest(path=str(path.relative_to(REPO))):
+                self.assertIn("references/check.md", body)
+                self.assertIn(token, body)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -306,6 +306,7 @@ no role API and no local reference set. Load:
 - `../pdca-coder/SKILL.md` — the generic programming overlay this one layers on;
 - the base phase references by role: `../pdca/references/plan.md` for `pdca-planner` only, whose
   exact absolute path the driver takes from the canonical base directory and routes without reading
-  or inlining it, never from this overlay; `../pdca/references/check.md` read by `pdca-check` at
-  CHECK start; and `../pdca/references/act.md` read by `pdca-executor` at status-file creation and
-  every status write.
+  or inlining it, never from this overlay; `../pdca/references/check.md`, the CHECK contract the
+  driver reads in full and inlines in every `pdca-check` dispatch (CHECK cannot read the installed
+  file); and `../pdca/references/act.md` read by `pdca-executor` at status-file creation and every
+  status write.
