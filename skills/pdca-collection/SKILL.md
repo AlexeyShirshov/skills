@@ -265,6 +265,14 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
    event: the status file is the only progress mirror, a divergence from it is an error. Details:
    §Collection status record; running the lane: §Lane execution and schedule revision.
 
+   **The queue is data.** `pdca-executor` stages `scripts/status_lint.py` from the collection skill
+   byte-identically into `.pdca/scripts/` (the driver names its installed absolute path in each write
+   brief) and runs it from the project root after every status write:
+   `0` — the write stands; `2` — the row is repaired in the same turn and linted again (a raw `|`
+   inside a note, a note wrapped onto the next line, a cell count differing from the header, an
+   unknown status); `1` — a resource blocker, reported as such. A status file that fails the lint is
+   not a written status.
+
 ### C — integration verification
 
 The parent CHECK uses the **base `../pdca/SKILL.md` §Phase contracts → CHECK**:
@@ -489,6 +497,11 @@ integrated tip is not merged again, and the accepted steps are not recalculated.
 ### File and content
 
 File: `.pdca/status/collection-<slug>.md`. It contains:
+
+- **Table shape.** Each table states its own header, and every row carries exactly those cells on
+  one physical line: a note never contains a raw `|` and never wraps onto the next line, since either
+  splits or truncates the queue; a status cell is one of the enumerations below and nothing else.
+  `scripts/status_lint.py` enforces the shape on every write (§D.4).
 
 - the input (the item list) and the `collection-id`;
 - the table of groups: id, items, order, worktree, branch/ref, **status**

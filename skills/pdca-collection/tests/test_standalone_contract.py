@@ -56,6 +56,13 @@ class CollectionContractTest(unittest.TestCase):
         self.assertIn("a commit **tally** is not liveness", self.text.replace("\n", " "))
         self.assertIn("(§Lane liveness)", self.text)
 
+    def test_queue_is_validated_as_data(self):
+        for phrase in ("**The queue is data.**", "scripts/status_lint.py",
+                       "**Table shape.**", "not a written status"):
+            with self.subTest(phrase=phrase): self.assertIn(phrase, self.text)
+        self.assertLess(self.text.index("scripts/status_lint.py"),
+                        self.text.index("## Collection status record"))
+
     def test_no_deleted_reference_links(self):
         self.assertNotIn("references/lane.md", self.text)
         self.assertNotIn("references/status.md", self.text)
