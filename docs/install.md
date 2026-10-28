@@ -88,8 +88,9 @@ development-only and not needed at runtime.
 Keep the durable record and drop the local by-product — add once, in the project that runs cycles:
 
 ```gitignore
-# PDCA: the status file is the durable record; evidence and staged helpers stay local
-.pdca/*/rv*/
+# PDCA: the status file is the durable record; evidence and staged helpers stay local.
+# A numeric `rv<k>` under a task/collection id is covered at any depth (nested items too).
+.pdca/*/**/rv[0-9]*/
 .pdca/scripts/
 ```
 
