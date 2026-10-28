@@ -50,6 +50,15 @@ hits_model() {
   grep "\"port\": $1," "$TEST/mock.jsonl" 2>/dev/null | grep -c "\"model\": \"$2\"" || true
 }
 
+# Probe sessions are throwaways: every one the plugin creates must be removed.
+probe_sessions() {
+  local db="$TEST/data/opencode/opencode.db" table
+  if [ ! -f "$db" ] || ! command -v sqlite3 >/dev/null; then echo 0; return; fi
+  table=$(sqlite3 -readonly "$db" "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_v2','session') ORDER BY name='session_v2' DESC LIMIT 1;" 2>/dev/null || true)
+  if [ -z "$table" ]; then echo 0; return; fi
+  sqlite3 -readonly "$db" "SELECT count(*) FROM $table WHERE title='zen-failover probe';" 2>/dev/null || echo 0
+}
+
 echo "== 1. fresh limit =="
 : > "$TEST/mock.jsonl"
 : > "$TEST/plugin.log"
@@ -120,6 +129,11 @@ ZEN_FAILOVER_PROBE_ON_START=1 run "t6b: restart while degraded" -c > "$TEST/t6b.
 grep -q "probe mockai: available, restored" "$TEST/plugin.log" || {
   echo "FAIL: the startup probe did not restore mockai"; exit 1
 }
+left=$(probe_sessions)
+[ "$left" -eq 0 ] || {
+  echo "FAIL: the probe left $left throwaway session(s) behind"; exit 1
+}
+echo "   ok: probe session removed after the probe"
 # The turn already in flight may still finish on the fallback; the next one must
 # be served by the subscription again.
 : > "$TEST/mock.jsonl"

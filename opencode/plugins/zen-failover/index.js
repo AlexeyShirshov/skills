@@ -391,8 +391,12 @@ async function probeSource(ctx, source, entry) {
   } finally {
     if (sessionID) {
       try {
-        await ctx.session.remove(sessionID)
-      } catch {}
+        // V2 host API takes an input object: `remove({ sessionID })`. A bare id
+        // removes nothing and leaves an empty probe session behind every minute.
+        await ctx.session.remove({ sessionID })
+      } catch (error) {
+        log(`probe ${source}: could not remove session ${sessionID} (${error?.message ?? error})`)
+      }
     }
   }
 }
