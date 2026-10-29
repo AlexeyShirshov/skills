@@ -3,17 +3,16 @@
 `npx skills add` copies a skill directory and nothing else — it has no post-install hook and no
 notion of a host subagent — so the role agents are never installed by the CLI.  The automation lives
 inside the skill instead: the base `pdca` preflights the roles before its first dispatch and, when
-one does not resolve, hands the user `assets/install-agents-prompt.md`, which ships with the skill
-and covers the copy, the tier bindings and the verification for OpenCode and Claude Code.
+one does not resolve, hands the user `assets/install-agents-prompt.md`.  The mechanical conversion is
+generated and checked in (`claude-agents/`, `codex-agents/`, guarded by
+`test_host_agent_artifacts.py`), so the prompt only copies files and binds models.
 
 These guards keep that prompt honest:
 
-* every role shipped in `assets/opencode-agents/` is named in it, so a new role cannot be forgotten;
-* it keeps the facts a host adapter needs — both OpenCode roots, both OpenCode config forms, the
-  Claude Code roots and frontmatter — and the refusal rules (no invented `model:`, no invented keys);
-* the Claude Code tool allowlist per role is parsed from the shipped table and checked for the
-  boundaries that matter: a read-only PLAN/CHECK, a shell only where the role needs it, and `Agent`
-  exactly on the two delegating roles;
+* every role shipped in any package is named in it, so a new role cannot be forgotten;
+* it keeps the facts a host adapter needs — the three shipped sets, the roots, both OpenCode config
+  forms, the Claude Code and Codex model-binding rules — and the refusal rules;
+* it copies the shipped set instead of translating at install time;
 * it exists once, in the base skill (the overlays are mirrors, not second sources);
 * `SKILL.md` points at it and stops before work instead of substituting a missing role;
 * the install docs point at it, so nobody hunts for a copy command.
@@ -31,12 +30,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 SKILL = REPO / "skills/pdca"
 PROMPT = SKILL / "assets/install-agents-prompt.md"
-ROLE_DIR = SKILL / "assets/opencode-agents"
 
 DOCS = ("README.md", "docs/install.md", "docs/ru/install.md", "docs/install-prompt.md")
-
-# `| `pdca-scout` | cheap | `Read, Grep, Glob, Bash` |` — the Claude Code mapping table.
-TABLE_ROW = re.compile(r"^\s*\|\s*`(pdca-[a-z-]+)`\s*\|\s*([a-z]+)\s*\|\s*`([^`]*)`\s*\|\s*$", re.M)
 
 
 def read(path: Path) -> str:
@@ -47,15 +42,17 @@ def norm(text: str) -> str:
     return " ".join(text.split())
 
 
+def shipped_roles() -> list[str]:
+    return sorted(
+        {path.stem for path in REPO.glob("skills/pdca*/assets/opencode-agents/*.md")}
+    )
+
+
 class PromptAssetTest(unittest.TestCase):
     def setUp(self) -> None:
         self.assertTrue(PROMPT.is_file(), "missing %s" % PROMPT)
         self.raw = read(PROMPT)
         self.text = norm(self.raw)
-        self.table = {
-            role: [tool.strip() for tool in tools.split(",") if tool.strip()]
-            for role, _tier, tools in TABLE_ROW.findall(self.raw)
-        }
 
     def test_prompt_is_a_copy_paste_block(self) -> None:
         blocks = re.findall(r"```[a-z]*\n(.*?)```", self.raw, re.S)
@@ -63,8 +60,8 @@ class PromptAssetTest(unittest.TestCase):
         self.assertIn("You are installing or refreshing", self.raw)
 
     def test_every_shipped_role_is_named(self) -> None:
-        roles = sorted(path.stem for path in ROLE_DIR.glob("*.md"))
-        self.assertTrue(roles, "no role assets found in %s" % ROLE_DIR)
+        roles = shipped_roles()
+        self.assertTrue(roles)
         missing = [role for role in roles if role not in self.text]
         self.assertEqual([], missing, "install prompt omits roles: %s" % ", ".join(missing))
 
@@ -73,8 +70,19 @@ class PromptAssetTest(unittest.TestCase):
         self.assertIn("pdca-coder", self.text)
         self.assertIn("pdca-dotnet", self.text)
 
+    def test_the_three_shipped_sets_are_named(self) -> None:
+        for folder in ("opencode-agents", "claude-agents", "codex-agents"):
+            with self.subTest(folder=folder):
+                self.assertIn(folder, self.text)
+
     def test_host_roots_are_present(self) -> None:
-        for root in ("~/.config/opencode/agents", ".opencode/agents", "~/.claude/agents"):
+        for root in (
+            "~/.config/opencode/agents",
+            ".opencode/agents",
+            "~/.claude/agents",
+            "$CODEX_HOME/agents",
+            ".codex/agents",
+        ):
             with self.subTest(root=root):
                 self.assertIn(root, self.text)
 
@@ -89,7 +97,7 @@ class PromptAssetTest(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(token, self.text)
 
-    def test_tier_bindings_are_covered_for_both_hosts(self) -> None:
+    def test_tier_bindings_are_covered_for_every_host(self) -> None:
         for token in ("cheap = pdca-scout", "medium = pdca-planner", "strong = pdca-escalate"):
             with self.subTest(token=token):
                 self.assertIn(token, self.text)
@@ -97,31 +105,13 @@ class PromptAssetTest(unittest.TestCase):
         self.assertIn("profiles/", self.text)
         self.assertIn("JSONC", self.text)
         self.assertRegex(self.text, r"keep every comment")
-        # Claude Code: the model field of the translated file is the binding
+        # Claude Code: the model field of the copied file is the binding
         self.assertIn("There is no separate profile map", self.text)
         self.assertIn("CLAUDE_CODE_SUBAGENT_MODEL_FORCE", self.text)
         self.assertIn("an alias (sonnet, opus, haiku, fable)", self.text)
-
-    def test_codex_schema_is_covered(self) -> None:
-        for token in (
-            "$CODEX_HOME/agents",
-            ".codex/agents",
-            "developer_instructions",
-            "features.shell_tool = false",
-            "model_reasoning_effort",
-            "escape every backslash",
-            "has no permission map",
-        ):
-            with self.subTest(token=token):
-                self.assertIn(token, self.text)
-
-    def test_codex_does_not_invent_a_depth_key(self) -> None:
-        self.assertIn("has no nesting-depth key", self.text)
-        self.assertIn("agents.max_spawn_depth", self.text)
-        self.assertIn("Do not invent it", self.text)
-        # the custom agent file cannot override the parent's sandbox/provider
-        self.assertIn("cannot set `sandbox_mode`", self.text)
-        self.assertIn("ignores them there", self.text)
+        # Codex: model and effort keys in the TOML file
+        self.assertIn("model_reasoning_effort", self.text)
+        self.assertIn("[agents] default_subagent_model", self.text)
 
     def test_claude_nesting_and_verification_are_covered(self) -> None:
         for token in (
@@ -134,14 +124,29 @@ class PromptAssetTest(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(token, self.text)
 
-    def test_claude_keeps_no_opencode_frontmatter(self) -> None:
-        # A leftover permission map would look enforced while Claude Code ignores it.
-        self.assertIn("Drop `mode`, `permission`, `permissions` and `steps`", self.text)
-        self.assertIn("unknown fields silently", self.text)
-        self.assertIn("would inherit every tool", self.text)
+    def test_codex_schema_is_covered(self) -> None:
+        for token in (
+            "developer_instructions",
+            "features.shell_tool = false",
+            "model_reasoning_effort",
+            "has no per-agent edit switch",
+            "cannot set `sandbox_mode`",
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, self.text)
+        self.assertIn("has no nesting-depth key", self.text)
+        self.assertIn("agents.max_spawn_depth", self.text)
+        self.assertIn("Do not invent it", self.text)
+
+    def test_the_prompt_copies_instead_of_translating(self) -> None:
+        self.assertIn("Copy every file of the host's set unchanged", self.text)
+        self.assertIn("Do not translate, rewrite, reformat", self.text)
+        self.assertNotIn("write a translated copy", self.text)
+        # the generator owns the conversion, and the prompt says what a refresh must re-apply
+        self.assertIn("must re-apply `model`", self.text)
 
     def test_refusal_rules_are_present(self) -> None:
-        self.assertIn("no `model:` in a shipped role file", self.text)
+        self.assertIn("no `model:` in a copied file", self.text)
         self.assertIn("Do not invent anything", self.text)
         self.assertRegex(self.text, r"stop and ask")
         self.assertIn("back it up first", self.text)
@@ -152,71 +157,6 @@ class PromptAssetTest(unittest.TestCase):
             for path in REPO.glob("skills/pdca*/assets/install-agents-prompt.md")
         )
         self.assertEqual(["skills/pdca/assets/install-agents-prompt.md"], copies)
-
-
-class ClaudeToolTableTest(unittest.TestCase):
-    """The parsed table is the source of the translated `tools:` lists."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.raw = read(PROMPT)
-        cls.table = {
-            role: set(tool.strip() for tool in tools.split(",") if tool.strip())
-            for role, _tier, tools in TABLE_ROW.findall(cls.raw)
-        }
-        cls.tiers = {
-            role: tier for role, tier, _tools in TABLE_ROW.findall(cls.raw)
-        }
-
-    def test_table_covers_every_shipped_role(self) -> None:
-        shipped = sorted(
-            {
-                path.stem
-                for path in REPO.glob("skills/pdca*/assets/opencode-agents/*.md")
-            }
-        )
-        self.assertEqual(shipped, sorted(self.table))
-
-    def test_read_only_roles_have_no_shell_and_no_write(self) -> None:
-        for role in ("pdca-planner", "pdca-check", "pdca-security-auditor"):
-            with self.subTest(role=role):
-                tools = self.table[role]
-                self.assertIn("Read", tools)
-                self.assertFalse(tools & {"Bash", "Edit", "Write", "Agent"}, sorted(tools))
-
-    def test_executor_can_work(self) -> None:
-        self.assertTrue(
-            {"Read", "Write", "Edit", "Bash"}.issubset(self.table["pdca-executor"]),
-            sorted(self.table["pdca-executor"]),
-        )
-
-    def test_scout_keeps_its_read_only_shell(self) -> None:
-        tools = self.table["pdca-scout"]
-        self.assertIn("Bash", tools)
-        self.assertFalse(tools & {"Edit", "Write", "Agent"}, sorted(tools))
-
-    def test_driver_dispatches_without_working(self) -> None:
-        tools = self.table["pdca-orchestrator"]
-        self.assertIn("Agent", tools)
-        self.assertFalse(tools & {"Bash", "Edit", "Write"}, sorted(tools))
-
-    def test_only_the_two_delegating_roles_may_spawn(self) -> None:
-        spawning = sorted(role for role, tools in self.table.items() if "Agent" in tools)
-        self.assertEqual(["pdca-escalate", "pdca-orchestrator"], spawning)
-
-    def test_tiers_match_the_role_contract(self) -> None:
-        self.assertEqual(
-            {
-                "pdca-scout": "cheap",
-                "pdca-executor": "cheap",
-                "pdca-orchestrator": "cheap",
-                "pdca-planner": "medium",
-                "pdca-check": "medium",
-                "pdca-security-auditor": "medium",
-                "pdca-escalate": "strong",
-            },
-            self.tiers,
-        )
 
 
 class SkillWiringTest(unittest.TestCase):
@@ -234,10 +174,9 @@ class SkillWiringTest(unittest.TestCase):
         self.assertIn("never a probe task", self.skill)
 
     def test_skill_stays_host_agnostic(self) -> None:
-        self.assertNotIn("~/.config/opencode", self.skill)
-        self.assertNotIn(".opencode/agents", self.skill)
-        self.assertNotIn("~/.claude", self.skill)
-        self.assertNotIn("tools:", self.skill)
+        for token in ("~/.config/opencode", ".opencode/agents", "~/.claude", "tools:"):
+            with self.subTest(token=token):
+                self.assertNotIn(token, self.skill)
 
 
 class DocsPointerTest(unittest.TestCase):
@@ -249,8 +188,23 @@ class DocsPointerTest(unittest.TestCase):
     def test_docs_explain_why_it_is_a_prompt(self) -> None:
         english = norm(read(REPO / "docs/install.md"))
         russian = norm(read(REPO / "docs/ru/install.md"))
-        self.assertRegex(english, r"prompt, not an installer script")
+        self.assertRegex(english, r"prompt, not an installer script|prompt and not a script")
         self.assertIn("Промпт, а не скрипт установки", russian)
+
+    def test_install_docs_describe_the_generated_sets(self) -> None:
+        for rel in ("docs/install.md", "docs/ru/install.md"):
+            with self.subTest(doc=rel):
+                text = norm(read(REPO / rel))
+                self.assertIn("claude-agents", text)
+                self.assertIn("codex-agents", text)
+                self.assertIn("gen_host_agents.py", text)
+
+    def test_install_docs_describe_the_claude_adapter(self) -> None:
+        for rel in ("docs/install.md", "docs/ru/install.md"):
+            with self.subTest(doc=rel):
+                text = norm(read(REPO / rel))
+                self.assertIn("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", text)
+                self.assertIn("pdca-orchestrator", text)
 
     def test_install_docs_describe_the_codex_adapter(self) -> None:
         for rel in ("docs/install.md", "docs/ru/install.md"):
@@ -259,13 +213,6 @@ class DocsPointerTest(unittest.TestCase):
                 self.assertIn("developer_instructions", text)
                 self.assertIn(".codex/agents", text)
                 self.assertIn("features.shell_tool", text)
-
-    def test_install_docs_describe_the_claude_adapter(self) -> None:
-        for rel in ("docs/install.md", "docs/ru/install.md"):
-            with self.subTest(doc=rel):
-                text = norm(read(REPO / rel))
-                self.assertIn("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", text)
-                self.assertIn("pdca-orchestrator", text)
 
 
 if __name__ == "__main__":

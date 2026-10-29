@@ -95,18 +95,20 @@ PROFILE=<профиль или пусто>
    - Тело скиллов должно остаться host-агностичным: не добавляй в SKILL.md пути конкретного хоста.
 
 2. Агенты-роли
-   - Скопируй $SKILLS_REPO/skills/$VARIANT/assets/opencode-agents/*.md в $AGENTS_ROOT, существующие
-     файлы — в бэкап.
-   - codex: один TOML-файл на роль — обязательны `name`, `description`, `developer_instructions`
-     (тело роли без frontmatter, экранировать обратные слэши и `"""`), плюс `model` и
-     `model_reasoning_effort` по тиру. `sandbox_mode`, `approval_policy`, `model_provider` и
-     `mcp_servers` в файле агента игнорируются; правок на агента там нет — read-only только
-     инструкцией (см. docs/install.md §3).
-   - Frontmatter ассетов несёт оба представления прав: V1-карту `permission:` и V2-список
-     `permissions:`; они должны выражать одну политику. Для OpenCode V1 и V2 копируй как есть
-     (V2 понимает оба, V1 — карту). Для claude переведи в формат Claude Code (`name`, `description`,
-     `tools`; права — allowlist инструментов), для codex/custom — в формат хоста; тело промпта роли
-     не меняй.
+   - Скопируй готовый набор своего хоста из $SKILLS_REPO/skills/$VARIANT/assets/ в $AGENTS_ROOT,
+     существующие файлы — в бэкап. Наборы уже в формате хоста, ничего не транслируй:
+     opencode → `opencode-agents/*.md` (канон: V1-карта `permission:` + V2-список `permissions:`),
+     claude   → `claude-agents/*.md` (`name`, `description`, `tools`; модель добавишь сам),
+     codex    → `codex-agents/*.toml` (`name`, `description`, `developer_instructions` как
+     TOML-literal + `features.shell_tool = false` у read-only ролей; модель добавишь сам).
+     Эти два набора генерируются из канона `skills/pdca/scripts/gen_host_agents.py` и стерегутся
+     `--check`; правь канон, а не сгенерированный файл.
+   - Привязка моделей (единственное, чего нет в наборе): opencode — `agents`-блок профиля;
+     claude — поле `model:` в каждом скопированном файле (алиас, полный id или `inherit`; помни про
+     `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`); codex — `model` и `model_reasoning_effort` в TOML.
+     `sandbox_mode`, `approval_policy`, `model_provider` и `mcp_servers` в файле Codex-агента
+     игнорируются, правок на агента там нет — read-only только инструкцией (docs/install.md §3).
+   - Если для хоста нет готового набора (custom/dsh) — тело роли не меняй, адаптируй только обёртку.
    - Убедись, что установленный pdca-orchestrator совпадает байт-в-байт с
      $SKILLS_REPO/skills/pdca/assets/opencode-agents/pdca-orchestrator.md (тело; frontmatter мог быть
      транслирован).

@@ -24,6 +24,10 @@ on:
       - "skills/pdca/tests/test_frontmatter_yaml.py"
       - "skills/pdca/assets/install-agents-prompt.md"
       - "skills/pdca/tests/test_install_agents_prompt.py"
+      - "skills/pdca*/assets/claude-agents/**"
+      - "skills/pdca*/assets/codex-agents/**"
+      - "skills/pdca/scripts/gen_host_agents.py"
+      - "skills/pdca/tests/test_host_agent_artifacts.py"
       - ".github/workflows/pdca-role-assets.yml"
   pull_request:
     paths:
@@ -40,6 +44,10 @@ on:
       - "skills/pdca/tests/test_frontmatter_yaml.py"
       - "skills/pdca/assets/install-agents-prompt.md"
       - "skills/pdca/tests/test_install_agents_prompt.py"
+      - "skills/pdca*/assets/claude-agents/**"
+      - "skills/pdca*/assets/codex-agents/**"
+      - "skills/pdca/scripts/gen_host_agents.py"
+      - "skills/pdca/tests/test_host_agent_artifacts.py"
       - ".github/workflows/pdca-role-assets.yml"
 
 permissions:
@@ -66,5 +74,9 @@ jobs:
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_frontmatter_yaml.py' -v
       - name: Run routing guards
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_routing_consistency.py' -v
+      - name: Check generated harness sets
+        run: python3 skills/pdca/scripts/gen_host_agents.py --check
       - name: Run install-prompt guards
         run: python3 -m unittest discover -s skills/pdca/tests -p 'test_install_agents_prompt.py' -v
+      - name: Run generated-agent guards
+        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_host_agent_artifacts.py' -v

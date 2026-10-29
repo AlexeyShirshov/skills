@@ -140,9 +140,9 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 
 ### Claude Code: `tools` and `model` replace the permission map
 
-Claude Code keeps the role body and translates the frontmatter (`name`, `description`, `tools`,
-`model`). It has no permission map and no profile `agents` block, so `tools` is the whole boundary
-and the model is bound in the file itself:
+`assets/claude-agents/` already carries the Claude Code envelope — the role body plus `name`,
+`description` and `tools`; the installer only adds `model`. Claude Code has no permission map and no
+profile `agents` block, so `tools` is the whole boundary and the model lives in the file itself:
 
 - `pdca-planner` and `pdca-check` get `Read, Grep, Glob` — no shell and no write tool;
 - `pdca-executor` gets `Read, Write, Edit, Bash, Glob, Grep`;
@@ -155,17 +155,17 @@ and the model is bound in the file itself:
 
 `Agent` (the `Task` tool before v2.1.63; the old name still works) is the spawning tool and has to be
 listed in the `pdca-orchestrator` and `pdca-escalate` definitions. Inside a subagent an `Agent(type)`
-allowlist is ignored, so the driver's child list stays a prompt-level rule. The per-role tool table
-and the translated-file rules ship in the in-skill prompt below.
+allowlist is ignored, so the driver's child list stays a prompt-level rule. The per-role tool split
+is fixed in `gen_host_agents.py` (`CLAUDE_TOOLS`) and guarded by the artifact tests.
 
 ### Codex: one TOML file per role
 
 Codex takes custom agents as standalone TOML files, one per role, in `$CODEX_HOME/agents`
-(normally `~/.codex/agents`) or `<project>/.codex/agents`. Three keys are required: `name`,
-`description`, `developer_instructions`. The first two come from the shipped frontmatter; the third
-is the shipped body with the frontmatter dropped — escape backslashes and `"""` inside the TOML
-string and keep the rest byte-for-byte. The `name` is the identity; matching the file name to it is
-only a convention.
+(normally `~/.codex/agents`) or `<project>/.codex/agents`. `assets/codex-agents/` already carries
+that envelope: `name`, `description`, `developer_instructions` (the role body as a TOML literal
+string, byte-for-byte) and `features.shell_tool = false` for the roles that must not run commands.
+The installer only adds `model` and `model_reasoning_effort`. The `name` is the identity; matching
+the file name to it is only a convention.
 
 - **tiers** — `model` and `model_reasoning_effort` in each file. The file wins over the `[agents]
   default_subagent_model` / `default_subagent_reasoning_effort` defaults, and a role that sets
@@ -182,10 +182,24 @@ only a convention.
   (`max_threads` is a legacy alias), and the two defaults above. The published configuration
   reference has no nesting-depth key; some builds accept `agents.max_spawn_depth` (§6).
 
+**Three ready-to-copy sets, one authored source.** `assets/opencode-agents/` is canonical; the
+other two are generated from it by `python3 skills/pdca/scripts/gen_host_agents.py` (`--check` runs
+in CI) and carry the same body byte-for-byte, with only the host envelope around it:
+
+| Folder | Harness | Envelope |
+|---|---|---|
+| `assets/opencode-agents/*.md` | OpenCode | V1 `permission:` map + V2 `permissions:` list |
+| `assets/claude-agents/*.md` | Claude Code | `name`, `description`, `tools` |
+| `assets/codex-agents/*.toml` | Codex | `name`, `description`, `developer_instructions`, shell feature flag |
+
+Every package carries the sets for exactly the roles it already mirrors, so a published package stays
+self-contained. None of the three carries a model (§8).
+
 **The executable version ships with the skill.** `pdca` carries the agent prompt at
 `assets/install-agents-prompt.md` (once installed: `<skills-root>/pdca/assets/install-agents-prompt.md`),
 so it travels with `npx skills add` and needs no checkout. Hand it to a session that may write host
-configuration; it places these files, then performs §8 — the tier bindings — and verifies both. The
+configuration; it copies the host's set unchanged, then performs §8 — the tier bindings — and
+verifies both. The
 skill's own preflight hands the user exactly that prompt when a role does not resolve (§1, §10), so
 no file has to be copied by hand.
 
@@ -204,6 +218,9 @@ agent files are deployed.
 
 - **one package** — copy `skills/pdca/assets/opencode-agents/*.md` (or the equivalent six-role
   mirror in `pdca-coder`/`pdca-dotnet`); add the form package's orchestrator if you use a form;
+- **generated harness sets** — `python3 skills/pdca/scripts/gen_host_agents.py --check` fails on a
+  missing, drifted or stale `claude-agents/` or `codex-agents/` file; `--fix` regenerates them from
+  the canonical OpenCode assets. Edit the canonical role, never a generated file;
 - **CI drift guard** — `python3 skills/pdca/scripts/sync_role_assets.py --check` fails on any
   missing or drifted mirror; `--fix` writes only the allowlisted mirror paths. The canonical files
   are never written by the generator.

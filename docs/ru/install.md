@@ -139,10 +139,23 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 > (`pdca-collection`/`pdca-incremental`) добавляет только оркестратор и ставится вместе с одним из
 > шестиролевых пакетов.
 
+**Три готовых набора, один авторский источник.** `assets/opencode-agents/` — канон; два других
+генерируются из него командой `python3 skills/pdca/scripts/gen_host_agents.py` (`--check` в CI) и
+несут то же тело байт-в-байт, отличаясь только обёрткой хоста:
+
+| Каталог | Хост | Обёртка |
+|---|---|---|
+| `assets/opencode-agents/*.md` | OpenCode | V1-карта `permission:` + V2-список `permissions:` |
+| `assets/claude-agents/*.md` | Claude Code | `name`, `description`, `tools` |
+| `assets/codex-agents/*.toml` | Codex | `name`, `description`, `developer_instructions`, feature-флаг шелла |
+
+Каждый пакет несёт наборы ровно для тех ролей, которые уже зеркалирует, поэтому опубликованный
+пакет самодостаточен. Ни в одном из трёх нет модели (§8).
+
 **Исполняемая версия поставляется вместе со скиллом.** У `pdca` есть промпт установки агентов —
 `assets/install-agents-prompt.md` (после установки:
 `<skills-root>/pdca/assets/install-agents-prompt.md`), поэтому он приезжает вместе с `npx skills add`
-и чекаут не нужен. Отдайте его сессии, которой можно писать конфиг хоста: он разложит те же файлы,
+и чекаут не нужен. Отдайте его сессии, которой можно писать конфиг хоста: он скопирует набор хоста без изменений,
 затем выполнит §8 — привязку моделей по тирам — и проверит и то, и другое. Preflight самого скилла
 выдаёт пользователю ровно этот промпт, когда роль не разрешается (§1, §10), так что копировать файлы
 руками не нужно.
@@ -154,9 +167,9 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 
 ### Claude Code: `tools` и `model` вместо карты прав
 
-Claude Code сохраняет тело роли и транслирует frontmatter (`name`, `description`, `tools`,
-`model`). Карты прав и профильного `agents`-блока там нет, поэтому `tools` — вся граница, а модель
-привязывается в самом файле:
+`assets/claude-agents/` уже несёт обёртку Claude Code — тело роли плюс `name`, `description` и
+`tools`; установщик добавляет только `model`. Карты прав и профильного `agents`-блока там нет,
+поэтому `tools` — вся граница, а модель живёт в самом файле:
 
 - `pdca-planner` и `pdca-check` получают `Read, Grep, Glob` — без шелла и без инструментов записи;
 - `pdca-executor` — `Read, Write, Edit, Bash, Glob, Grep`;
@@ -171,16 +184,18 @@ Claude Code сохраняет тело роли и транслирует front
 
 `Agent` (до v2.1.63 — инструмент `Task`; старое имя работает) — инструмент запуска субагентов, он
 должен быть в определениях `pdca-orchestrator` и `pdca-escalate`. Внутри субагента allowlist
-`Agent(type)` игнорируется, поэтому список детей драйвера остаётся правилом уровня промпта. Таблица
-инструментов по ролям и правила трансляции файла поставляются в промпте внутри скилла.
+`Agent(type)` игнорируется, поэтому список детей драйвера остаётся правилом уровня промпта. Разбиение
+инструментов по ролям зафиксировано в `gen_host_agents.py` (`CLAUDE_TOOLS`) и стерегут тесты
+артефактов.
 
 ### Codex: один TOML-файл на роль
 
 Codex принимает кастомных агентов как отдельные TOML-файлы, по одному на роль, в `$CODEX_HOME/agents`
-(обычно `~/.codex/agents`) или `<проект>/.codex/agents`. Обязательны три ключа: `name`,
-`description`, `developer_instructions`. Первые два берутся из поставляемого frontmatter, третий —
-тело роли без frontmatter: экранируйте обратные слэши и `"""` внутри TOML-строки, остальное
-сохраните байт-в-байт. Идентичность — `name`; совпадение имени файла с ним лишь соглашение.
+(обычно `~/.codex/agents`) или `<проект>/.codex/agents`. `assets/codex-agents/` уже несёт эту
+обёртку: `name`, `description`, `developer_instructions` (тело роли как TOML-literal, байт-в-байт) и
+`features.shell_tool = false` для ролей, которым нельзя запускать команды. Установщик добавляет
+только `model` и `model_reasoning_effort`. Идентичность — `name`; совпадение имени файла с ним лишь
+соглашение.
 
 - **тиры** — `model` и `model_reasoning_effort` в каждом файле. Файл перекрывает дефолты `[agents]
   default_subagent_model` / `default_subagent_reasoning_effort`, а роль без обоих наследует
@@ -208,6 +223,10 @@ Codex принимает кастомных агентов как отдельн
 - **один пакет** — копируйте `skills/pdca/assets/opencode-agents/*.md` (или эквивалентное
   шестиролевое зеркало в `pdca-coder`/`pdca-dotnet`); если используете форму, добавьте её
   оркестратор;
+- **сгенерированные наборы под хосты** — `python3 skills/pdca/scripts/gen_host_agents.py --check`
+  падает на отсутствующем, разошедшемся или лишнем файле в `claude-agents/`/`codex-agents/`;
+  `--fix` перегенерирует их из канонических OpenCode-ассетов. Правьте канон, никогда — сгенерированный
+  файл;
 - **CI-защита от дрейфа** — `python3 skills/pdca/scripts/sync_role_assets.py --check` падает на
   любом отсутствующем или разошедшемся зеркале; `--fix` пишет только пути из allowlist.
   Канонические файлы генератор не пишет.

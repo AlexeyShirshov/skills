@@ -1,13 +1,24 @@
 # Install prompt: the role agents for this skill
 
-The role definitions travel with the installed skill, in its own `assets/opencode-agents/` — nothing
-has to be copied by hand before this prompt is used. Hand the fenced prompt below to a session that
-may write host configuration (a `build` primary on OpenCode, the main session on Claude Code or
-Codex), with the values in `Context` filled in. It installs or refreshes the agents idempotently,
-binds models by tier, makes backups, and stops on anything it cannot verify.
+The role definitions travel with the installed skill in **three ready-to-copy sets**, one per
+harness, so nothing is translated at install time:
 
-The base `pdca` skill runs the same check before its first dispatch: when a role does not resolve, it
-stops and points here instead of substituting an agent.
+| Harness | Shipped set | Envelope |
+|---|---|---|
+| OpenCode | `assets/opencode-agents/*.md` | canonical — V1 `permission:` map and equivalent V2 `permissions:` list |
+| Claude Code | `assets/claude-agents/*.md` | `name`, `description`, `tools` |
+| Codex | `assets/codex-agents/*.toml` | `name`, `description`, `developer_instructions`, shell feature flag |
+
+The canonical set is authored by hand; the other two are generated from it by
+`skills/pdca/scripts/gen_host_agents.py` (`--check` in CI) and carry the role body byte-for-byte.
+None of the three sets carries a model — that is the one thing the installer must bind, and only
+the host knows which ids it offers.
+
+Hand the fenced prompt below to a session that may write host configuration (a `build` primary on
+OpenCode, the main session on Claude Code or Codex), with the values in `Context` filled in. It
+copies the files idempotently, binds models by tier, makes backups, and stops on anything it cannot
+verify. The base `pdca` skill runs the same check before its first dispatch: when a role does not
+resolve, it stops and points here instead of substituting an agent.
 
 ## Context (fill before sending)
 
@@ -38,54 +49,33 @@ PROFILE=<...>
 MODELS=<...>
 
 0. Resolve the paths and show the plan (files, target directory, backups, bindings) before writing.
-   - Source roles: $SKILL_DIR/assets/opencode-agents/*.md. If the coder or .NET overlay is
-     installed (pdca-coder / pdca-dotnet), take pdca-security-auditor from that skill's
-     assets/opencode-agents/ as well; the six shared roles always come from pdca.
+   - Source files are the host's own shipped set — OpenCode `assets/opencode-agents/*.md`,
+     Claude Code `assets/claude-agents/*.md`, Codex `assets/codex-agents/*.toml`. If the coder or
+     .NET overlay is installed (pdca-coder / pdca-dotnet), take pdca-security-auditor from that
+     skill's same directory; the six shared roles always come from pdca.
    - Target by host:
      opencode : <config>/agents (global, normally ~/.config/opencode/agents) or
                 <PROJECT>/.opencode/agents (project)
      claude   : ~/.claude/agents or <PROJECT>/.claude/agents
      codex    : $CODEX_HOME/agents (personal, normally ~/.codex/agents) or
-                <PROJECT>/.codex/agents (project) — one TOML file per role;
+                <PROJECT>/.codex/agents (project)
      custom (dsh, ...): the host's agent root — if you cannot establish it, ask instead of guessing.
-1. Write every role file.
-   - opencode: copy as-is. The frontmatter carries both the V1 `permission:` map and the equivalent
-     V2 `permissions:` list, and is meant to be used unchanged.
-   - claude: write a translated copy — frontmatter `name` (same as the shipped one), `description`
-     (same text), `tools` from this table, `model` from step 4; then the shipped body,
-     byte-identical. Drop `mode`, `permission`, `permissions` and `steps`: Claude Code ignores
-     unknown fields silently, so a leftover `permission:` map would look enforced while enforcing
-     nothing, and an absent `tools:` field would inherit every tool.
-
-     | Role | Tier | Claude Code `tools:` |
-     |---|---|---|
-     | `pdca-scout` | cheap | `Read, Grep, Glob, Bash` |
-     | `pdca-planner` | medium | `Read` |
-     | `pdca-executor` | cheap | `Read, Write, Edit, Bash, Glob, Grep` |
-     | `pdca-check` | medium | `Read, Grep, Glob` |
-     | `pdca-escalate` | strong | `Read, Grep, Glob, Agent` |
-     | `pdca-orchestrator` | cheap | `Read, Agent, Skill` |
-     | `pdca-security-auditor` | medium | `Read, Grep, Glob` |
-
-   - codex: one TOML file per role, `<role>.toml`, with only these keys:
-       name = "<role>"
-       description = "<the shipped description>"
-       developer_instructions = """<the shipped body, frontmatter dropped>"""
-     Convert the body into that multi-line string without reflowing it: escape every backslash and
-     any `"""` it contains, keep the rest byte-for-byte. Do not carry over `mode`, `permission`,
-     `permissions`, `steps` or the `# tier:` label — Codex has no permission map and reads only its
-     own keys. For the roles that must not run commands add `features.shell_tool = false`
-     (pdca-planner, pdca-check, pdca-orchestrator). Codex has no per-agent switch for file edits: a
-     read-only rule for pdca-executor or pdca-escalate stays an instruction in the body — say so in
-     the report.
-   - another host: keep the body unchanged and translate only the frontmatter.
+1. Copy every file of the host's set unchanged. Do not translate, rewrite, reformat or "fix" them:
+   the envelope is already the host's, and the body is the role contract.
+   - opencode: `.md` files as they are; the frontmatter carries both the V1 `permission:` map and
+     the equivalent V2 `permissions:` list.
+   - claude: `.md` files as they are; the frontmatter carries `name`, `description` and the `tools`
+     allowlist that is the role's whole permission boundary.
+   - codex: `.toml` files as they are; `developer_instructions` is the role body, and the read-only
+     roles already carry `features.shell_tool = false` (Codex has no per-agent edit switch, so
+     read-only for the other roles is an instruction in the body, not a setting).
    - An existing file with the same content: leave it untouched and report it as unchanged.
    - An existing file with different content: back it up first (the same file name plus
      `.bak-<UTC timestamp>`), then overwrite it. Never edit a role body in place.
-2. Do not invent anything: no `model:` in a shipped role file, no tool name, model id or
-   configuration key that this host does not have. On Claude Code a role whose `tools:` entry
-   resolves to nothing fails to launch; on Codex a key it does not know is a TOML error or is
-   silently ignored — verify both against the installed build.
+2. Do not invent anything: no `model:` in a copied file (models are bound in step 4), no tool name,
+   model id or configuration key that this host does not have. A Claude Code role whose `tools:`
+   entry resolves to nothing fails to launch; on Codex an unknown key is a TOML error or is silently
+   ignored — check the installed build rather than assuming.
 3. Allow dispatch and nested delegation:
    - opencode V2: `experimental.subagent_depth` in the `experimental` section — a top-level
      `subagent_depth` is ignored by V2. `permissions`: action `subagent` allowed for pdca-scout,
@@ -95,11 +85,11 @@ MODELS=<...>
      `"pdca-*": "allow"` (the `subagent` action and the `permissions` array are V2-only — do not
      create them in V1).
    - claude: nesting is on by default (three layers below the main conversation). The spawning tool
-     is `Agent` (older builds call it `Task`; the old name still works) and it must be in the
-     `tools:` list of the two delegating roles — pdca-orchestrator and pdca-escalate. The depth is
-     changed with CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH in settings.json (1 disables nesting); the
-     needed chain is primary → driver → role → scout. Note that inside a subagent an `Agent(type)`
-     list is ignored, so a child allowlist cannot be enforced by `tools` — the role body carries it.
+     is `Agent` (older builds call it `Task`; the old name still works) and the shipped set already
+     lists it for pdca-orchestrator and pdca-escalate. The depth is changed with
+     CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH in settings.json (1 disables nesting); the needed chain is
+     primary → driver → role → scout. Inside a subagent an `Agent(type)` list is ignored, so a child
+     allowlist cannot be enforced by `tools` — the role body carries it.
    - codex: multi-agent work is on unless `[agents] enabled = false`. `[agents]` also takes
      `max_concurrent_threads_per_session` (`max_threads` is a legacy alias), `default_subagent_model`
      and `default_subagent_reasoning_effort`. The published documentation has no nesting-depth key;
@@ -116,12 +106,13 @@ MODELS=<...>
      project `opencode.json(c)`), written as { "<role>": { "model": "<provider>/<model>" } }. That
      file is JSONC with comments and may be merged from several places: edit it as text, keep every
      comment, key order and the existing formatting. Never rewrite it with a JSON serializer.
-   - claude: the `model` field of each agent file — an alias (sonnet, opus, haiku, fable), a full
-     model id, or `inherit`. There is no separate profile map: the file is the binding, so a refresh
-     must re-apply `model` and never drop it. If CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 is set, the field
-     is ignored by the host — check and report that instead of pretending the binding works.
-   - codex: `model` and `model_reasoning_effort` in each role's TOML file — the file wins over the
-     `[agents]` default, and a role without them inherits the parent session. `[agents]
+   - claude: add `model:` to the frontmatter of each copied file — an alias (sonnet, opus, haiku,
+     fable), a full model id, or `inherit`. Keep `name`, `description` and `tools` intact. There is
+     no separate profile map: the file is the binding, so a refresh must re-apply `model` and never
+     drop it. If CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 is set, the field is ignored by the host — check
+     and report that instead of pretending the binding works.
+   - codex: add `model` and `model_reasoning_effort` to each copied `.toml` file — the file wins over
+     the `[agents]` default, and a role without them inherits the parent session. `[agents]
      default_subagent_model` is one model for every spawned agent; use it only when the user wants
      no tier split. Choose an effort the selected model supports; do not invent levels.
    - If MODELS is empty or says "ask": do not guess and do not copy an id from another host. List
@@ -135,10 +126,11 @@ MODELS=<...>
    actually reads, and each role runs on the model its binding names.
    - opencode: `opencode debug agents` and `opencode debug config` (V1: `opencode agent list`).
    - codex: the agent is identified by its `name`; open a new thread so the agent files are loaded
-     again, then delegate to a role on a throwaway task — the agent thread opening under that name is the check, and the thread shows
-     the model it runs on. Roles inherit the parent's skills, and skill discovery under
-     `$CODEX_HOME/skills`, `~/.agents/skills` and the project `.agents/skills`/`.codex/skills` varies
-     by build, so confirm the `pdca` skill is listed as available in the same session.
+     again, then delegate to a role on a throwaway task — the agent thread opening under that name is
+     the check, and the thread shows the model it runs on. Roles inherit the parent's skills, and
+     skill discovery under `$CODEX_HOME/skills`, `~/.agents/skills` and the project
+     `.agents/skills`/`.codex/skills` varies by build, so confirm the `pdca` skill is listed as
+     available in the same session.
    - claude: edits under an existing agents directory are picked up within seconds; a newly created
      agents directory needs a restarted session. `/agents` lists the subagents (builds up to
      2.1.197 open a wizard), `/tasks` shows the model each running subagent uses, and
@@ -153,27 +145,21 @@ MODELS=<...>
 
 - One shared set: the six roles are canonical in `pdca` and byte-identical mirrors in the overlays,
   so refreshing from `pdca` updates them all. `pdca-security-auditor` is the one coder/.NET
-  specialist and comes from that overlay.
-- **Why a prompt and not a script.** Copying the files is mechanical; the rest is not. On OpenCode
-  the tier bindings live in a commented JSONC profile merged from more than one place; on Claude Code
-  they are the `model:` field of each translated file, with a per-role tool allowlist; on Codex they
-  are the `model` and `model_reasoning_effort` keys of each TOML file, and the role body has to
-  survive the conversion into a TOML string unchanged. All three need ids the host really offers. A
-  script can copy bytes; it cannot choose a model, a tool set or an escaped body without inventing
-  values or destroying the file it edits.
-- **What Claude Code cannot enforce, and how it is handled here.** There is no per-agent permission
-  map and no per-command shell scoping: `Bash` is granted whole. So `pdca-scout` keeps `Bash` (its
-  fixed read-only literals are its job) and `pdca-escalate` gets facts through `pdca-scout` instead
-  of a shell of its own; `pdca-planner` and `pdca-check` get no `Bash` and no write tool at all. The
-  driver's child allowlist becomes a prompt-level rule, because `Agent(type)` is ignored inside a
-  subagent. Add `permissions.deny` rules in settings.json if the session needs those boundaries
-  enforced rather than declared.
-- **What Codex cannot enforce.** A custom agent file inherits the parent's sandbox, approval policy
-  and MCP servers, and the only capability switches are feature toggles such as
-  `features.shell_tool`. There is no per-agent permission map and no per-agent edit switch, so the
-  read-only roles rely on their instructions plus, where it applies, `features.shell_tool = false`.
-  Whether a subagent may spawn its own children is host-managed in the documented configuration —
-  check the installed build before promising the autonomous chain.
+  specialist and comes from that overlay. `claude-agents/` and `codex-agents/` are generated from
+  the same canonical files — edit the canonical asset, then run
+  `python3 skills/pdca/scripts/gen_host_agents.py --fix`, never a generated file.
+- **Why a prompt and not a script.** The conversion is mechanical, so it is generated and checked in;
+  what remains is the part a generator cannot decide: which model ids this host offers, where its
+  bindings live, and whether the installed build actually supports the delegation chain. A script
+  can copy bytes; it cannot pick a model without inventing an id.
+- **What each host cannot enforce, and how the shipped set is shaped.** Claude Code has no
+  permission map and no per-command shell scoping: `Bash` is granted whole, so `pdca-scout` keeps it
+  (its fixed read-only literals are its job) and `pdca-escalate` gets facts through `pdca-scout`
+  instead of a shell of its own, while `pdca-planner` and `pdca-check` get no `Bash` and no write
+  tool. Codex inherits the parent's sandbox, approval policy and MCP servers, and its only switches
+  are feature toggles — hence `features.shell_tool = false` on the roles that must not run commands
+  and no per-agent edit switch at all. Add `permissions.deny` rules in the host's settings if those
+  boundaries must be enforced rather than declared.
 - The full host checklist — delegation depth, permissions, model bindings, restart and the
   verification status — is in the repository's `docs/install.md` §3–§9; this prompt covers the
   agents and their bindings.
