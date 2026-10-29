@@ -52,6 +52,14 @@ A fresh dispatch carries `contract: pdca`, `form: UNDECIDED` and no persisted pl
 
 ## Dispatch transport
 
+**Dispatchability gate (before any DO dispatch).** A plan about to be dispatched must name, for a
+measurable goal, its measurement method (block 4 of a step brief) and targets the goal's own domain
+allows one to point at. A plan naming only an area, cluster, theme or category where pointable items
+exist **is not dispatchable**: return it to the same planner, missing block named. The driver fills
+no such gap itself or through DO discovery, and DO-discovered work never replaces the plan's
+targets. Where the domain genuinely has no such items, say so in the dispatch: that absence belongs
+to the goal, not a licence for vague targets.
+
 Compose a dispatch from the receiving phase's own contract inputs, plus only these transport items:
 
 - **PLAN** — `plan_reference_path` above; the task by exact reference; the facts as pointers.

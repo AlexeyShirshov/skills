@@ -97,9 +97,11 @@ user prescribed stays binding.
   revising it on measurement is a `supersede` record with reason and evidence, not a goal change. A
   threshold backed by a measured baseline or set by the user changes only as a goal change; "red and
   on baseline" is asserted by measurement.
-- **Floor and target** — the floor is the smallest increment worth its fixed price; the target is
-  `baseline + floor` for a measurable goal, or the next decision for a knowledge increment. Neither
-  adds an automatic cutoff.
+- **Floor and target** — the floor is the smallest **detectable** increment of the metric: a
+  **credit threshold, not a work quota**. Any delta at or above it earns credit, and one step may
+  deliver a batch far above it — size the work by the goal. An expensive measurement buys more
+  steps, never a higher floor. The target is `baseline + floor`, or the next decision for a
+  knowledge increment; neither adds an automatic cutoff.
 - **Baseline.** The campaign's opening step computes the current state **on a basis comparable under
   the method that will accept steps**: exact value, composition (included and filtered out), the
   capture actually used (command or instrumentation), exit status, clock timestamp, evidence path and
