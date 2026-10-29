@@ -173,6 +173,17 @@ class SkillWiringTest(unittest.TestCase):
         # the preflight is a lookup, never work of its own
         self.assertIn("never a probe task", self.skill)
 
+    def test_preflight_hands_the_prompt_over_verbatim(self) -> None:
+        # Observed failure: a cheap primary never opened the prompt, invented `assets/agents/`
+        # and told the user to copy role files by hand instead.
+        self.assertIn("the path is relative to this `SKILL.md`", self.skill)
+        self.assertIn("hand the user its fenced prompt **verbatim**", self.skill)
+        self.assertIn("never reconstruct it from memory", self.skill)
+        self.assertIn("assets/opencode-agents/", self.skill)
+        self.assertIn("there is no `assets/agents/` directory", self.skill)
+        self.assertIn("Never replace the prompt with your own copy instructions", self.skill)
+        self.assertIn("name the exact path instead of improvising an installer", self.skill)
+
     def test_skill_stays_host_agnostic(self) -> None:
         for token in ("~/.config/opencode", ".opencode/agents", "~/.claude", "tools:"):
             with self.subTest(token=token):

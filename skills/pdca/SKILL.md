@@ -162,12 +162,17 @@ delegated driver allowed.
 
 **Preflight — roles before work.** Before the first dispatch, establish that every role the task
 needs resolves as an agent. The check is a lookup, not work: never a probe task, a dummy step or a
-probe edit. If a role is missing, **stop before any work** and hand the user the install prompt
-shipped in this skill at `assets/install-agents-prompt.md` — it copies these same files from this
-installed skill, binds their models by tier where this host keeps bindings (a profile map or the agent
-file itself), and verifies the result on the host's own agent list. Do not substitute another agent,
-do not weaken the contract, and do not install agents silently inside a cycle; a role that is still
-missing afterwards is a **resource blocker**.
+probe edit. If a role is missing, **stop before any work**, then **read**
+`assets/install-agents-prompt.md` — the path is relative to this `SKILL.md` — and hand the user its
+fenced prompt **verbatim**, with only its `Context` block filled in. Do not paraphrase it, do not
+summarise it, and never reconstruct it from memory: the role files live in `assets/opencode-agents/`
+(`claude-agents/` and `codex-agents/` for those hosts), there is no `assets/agents/` directory, and a
+path you did not read is not a path. Never replace the prompt with your own copy instructions. The
+prompt copies those files from this installed skill, binds their models by tier where this host keeps
+bindings (a profile map or the agent file itself), and verifies the result on the host's own agent
+list. Do not substitute another agent, do not weaken the contract, and do not install agents silently
+inside a cycle; a role that is still missing afterwards is a **resource blocker**. If the prompt file
+cannot be read, say so and name the exact path instead of improvising an installer.
 
 **The driver routes, it does not discover.** Metadata — status path, form, contract, overlay,
 dispatch rule, refs and evidence pointers — arrives through the inputs/outputs of the allowed tools;
