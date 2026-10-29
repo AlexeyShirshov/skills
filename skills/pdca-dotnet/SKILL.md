@@ -1,6 +1,6 @@
 ---
 name: pdca-dotnet
-description: ".NET/C# domain overlay for the PDCA family — adds only .NET/C# specifics to the form and overlay the base already selected: the dotnet toolchain, Roslyn-first C# symbol work, and .NET test and documentation facts. User-invoked — runs only when the user explicitly names `pdca-dotnet`."
+description: ".NET/C# domain overlay for the PDCA family — adds only .NET/C# specifics to the form and overlay the base already selected: the dotnet toolchain, Roslyn-first C# symbol work, and .NET test and documentation facts. The base PLAN selects it whenever the task's code component is .NET/C#, and it inherits `pdca-coder`, so plain `pdca-coder` is never the right choice for .NET work. Hidden from the host's own auto-selection (`metadata.opencode/autoinvoke: false`): that keeps it out of the skill picker, it does not forbid PLAN from choosing it."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true

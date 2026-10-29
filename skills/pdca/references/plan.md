@@ -139,7 +139,11 @@ and no second PLAN on the same content:
   PLAN.
 - **Overlay.** None, `coder` (software work) or `coder+.NET` (.NET/C#). Auxiliary verification code
   (a checker, script or utility) makes that component coding work; it does not reclassify an
-  otherwise non-coding goal.
+  otherwise non-coding goal. A host flag that hides a skill from automatic selection (`autoinvoke`,
+  `disable-model-invocation`), or a description that mentions explicit invocation, is **not a
+  prohibition and not a routing signal**: those flags only keep an overlay out of the host's own
+  skill picker. A .NET/C# code component takes `coder+.NET`, which inherits `coder`; choosing plain
+  `coder` for it drops the .NET facts.
 - **Entry scope.** The nearest useful result the contract starts from — the whole goal for a cycle,
   the first increment for a campaign, the item set for a collection — named as an observable outcome
   only. No units, per-unit criteria, dependencies or ordering: execution units are DO's

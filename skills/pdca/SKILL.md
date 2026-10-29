@@ -31,7 +31,9 @@ then selects the contract (§Forms) and, for Bounded Execution, loads the select
 
 For **Bounded Execution** the planner selects a specialized skill when needed: none for non-coding
 tasks, `pdca-coder` for general programming (including Go or Rust), `pdca-dotnet` for .NET; loading
-it does not change the form.
+it does not change the form. A host's auto-selection flags keep an overlay out of its own skill
+picker; they never forbid the base PLAN from selecting one, and a description that mentions explicit
+invocation is not a routing constraint.
 
 ### Forms
 
@@ -154,8 +156,18 @@ never widened.
 
 ACT is finalized through the driver and executor responsibilities; it has no separate subagent role.
 Definitions ship in `assets/opencode-agents/` with the `# tier:` labels shown; model bindings belong
-only in the host profile. **Setup (once):** copy them into the host's agent directory, allow dispatch
-of the listed subagents (including `pdca-orchestrator`) and nested delegation for a delegated driver.
+only in the host profile. **Setup (once):** the role files must exist in the host's agent directory,
+with dispatch of the listed subagents (including `pdca-orchestrator`) and nested delegation for a
+delegated driver allowed.
+
+**Preflight — roles before work.** Before the first dispatch, establish that every role the task
+needs resolves as an agent. The check is a lookup, not work: never a probe task, a dummy step or a
+probe edit. If a role is missing, **stop before any work** and hand the user the install prompt
+shipped in this skill at `assets/install-agents-prompt.md` — it copies these same files from this
+installed skill, binds their models by tier where this host keeps bindings (a profile map or the agent
+file itself), and verifies the result on the host's own agent list. Do not substitute another agent,
+do not weaken the contract, and do not install agents silently inside a cycle; a role that is still
+missing afterwards is a **resource blocker**.
 
 **The driver routes, it does not discover.** Metadata — status path, form, contract, overlay,
 dispatch rule, refs and evidence pointers — arrives through the inputs/outputs of the allowed tools;

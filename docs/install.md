@@ -52,6 +52,10 @@ Map the skills root to your host:
 | Codex | `~/.codex/skills/` (or `$CODEX_HOME/skills`), project `.agents/skills/` |
 | custom (`dsh`, …) | the host's own skills root; same layout `<root>/<id>/SKILL.md` |
 
+Codex builds have read more than one skills root (project `.agents/skills/`, `.codex/skills/`;
+personal `$CODEX_HOME/skills`, `~/.agents/skills`). Any of the documented roots makes the skill
+discoverable — confirm it is listed in the session's available skills rather than assuming the path.
+
 The commands below are the OpenCode reference adapter — for another host, replace the destination
 root.
 
@@ -105,7 +109,7 @@ and translates the frontmatter:
 |---|---|---|
 | OpenCode | `~/.config/opencode/agents/`, `.opencode/agents/` | both: V1 `permission:` map and V2 `permissions:` list are shipped and kept equivalent; other hosts translate the body |
 | Claude Code | `~/.claude/agents/`, `.claude/agents/` | `name`, `description`, `tools`; express permissions via the tool allowlist, drop `mode`/`permission` |
-| Codex | the host's subagent/workflow directory | keep the body, adapt the frontmatter |
+| Codex | `$CODEX_HOME/agents/` (normally `~/.codex/agents/`), `.codex/agents/` | one TOML file per role: `name`, `description`, `developer_instructions` (§3) |
 | custom (`dsh`, …) | the host's agent root | keep the body, adapt the frontmatter |
 
 If the host has no subagents, the cycle runs in the flat-primary fallback defined by the skill.
@@ -133,6 +137,62 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 > Copying `pdca`/`pdca-coder`/`pdca-dotnet` assets therefore yields the same six roles; a form package
 > (`pdca-collection`/`pdca-incremental`) contributes only the orchestrator and is combined with one of
 > those six-role packages.
+
+### Claude Code: `tools` and `model` replace the permission map
+
+Claude Code keeps the role body and translates the frontmatter (`name`, `description`, `tools`,
+`model`). It has no permission map and no profile `agents` block, so `tools` is the whole boundary
+and the model is bound in the file itself:
+
+- `pdca-planner` and `pdca-check` get `Read, Grep, Glob` — no shell and no write tool;
+- `pdca-executor` gets `Read, Write, Edit, Bash, Glob, Grep`;
+- `pdca-scout` keeps `Bash` for its fixed read-only literals, because `Bash` cannot be scoped to one
+  agent; `pdca-escalate` therefore gathers facts through `pdca-scout` instead of a shell of its own;
+- `pdca-orchestrator` gets `Read, Agent, Skill` — no write and no shell tool;
+- `model:` takes `sonnet`, `opus`, `haiku`, `fable`, a full model id or `inherit`; that field is the
+  tier binding on Claude Code, so a refresh must re-apply it rather than drop it. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`
+  overrides every `model:` field — check it before claiming a binding works.
+
+`Agent` (the `Task` tool before v2.1.63; the old name still works) is the spawning tool and has to be
+listed in the `pdca-orchestrator` and `pdca-escalate` definitions. Inside a subagent an `Agent(type)`
+allowlist is ignored, so the driver's child list stays a prompt-level rule. The per-role tool table
+and the translated-file rules ship in the in-skill prompt below.
+
+### Codex: one TOML file per role
+
+Codex takes custom agents as standalone TOML files, one per role, in `$CODEX_HOME/agents`
+(normally `~/.codex/agents`) or `<project>/.codex/agents`. Three keys are required: `name`,
+`description`, `developer_instructions`. The first two come from the shipped frontmatter; the third
+is the shipped body with the frontmatter dropped — escape backslashes and `"""` inside the TOML
+string and keep the rest byte-for-byte. The `name` is the identity; matching the file name to it is
+only a convention.
+
+- **tiers** — `model` and `model_reasoning_effort` in each file. The file wins over the `[agents]
+  default_subagent_model` / `default_subagent_reasoning_effort` defaults, and a role that sets
+  neither inherits the parent session. Per-role bindings are what make the tiers real; a single
+  `[agents]` default flattens them.
+- **capability** — the only documented levers in a custom agent file are the feature toggles
+  (`features.shell_tool`, `features.apps`, `features.plugins`, `features.memories`,
+  `features.request_permissions_tool`) and the skill switches. `pdca-planner`, `pdca-check` and
+  `pdca-orchestrator` set `features.shell_tool = false`. There is **no** per-agent switch for file
+  edits, so a read-only rule for any other role is instruction-level only.
+- **inheritance** — `sandbox_mode`, `approval_policy`, `model_provider` and `mcp_servers` in a
+  custom agent file are ignored: the agent uses the parent session's. Do not write them.
+- **delegation** — `[agents] enabled` (default `true`), `max_concurrent_threads_per_session`
+  (`max_threads` is a legacy alias), and the two defaults above. The published configuration
+  reference has no nesting-depth key; some builds accept `agents.max_spawn_depth` (§6).
+
+**The executable version ships with the skill.** `pdca` carries the agent prompt at
+`assets/install-agents-prompt.md` (once installed: `<skills-root>/pdca/assets/install-agents-prompt.md`),
+so it travels with `npx skills add` and needs no checkout. Hand it to a session that may write host
+configuration; it places these files, then performs §8 — the tier bindings — and verifies both. The
+skill's own preflight hands the user exactly that prompt when a role does not resolve (§1, §10), so
+no file has to be copied by hand.
+
+> The prompt is a prompt, not an installer script, because of §8: model ids live in the host profile,
+> a commented JSONC file merged from several places, and may only be ids the host actually offers.
+> Copying bytes is mechanical; choosing a model per tier without inventing an id or destroying the
+> comments is not.
 
 ## 4. One authoritative source, host adapters kept separate
 
@@ -218,6 +278,17 @@ a budget for that counting rule, not a capability certificate: a configured valu
 **not** prove that the installed build supports the chain. Record the installed build's version and
 rely on the smoke run (§9), not on the number. The value shown above is an example of a configured
 setting, not a validated budget.
+
+Claude Code nests by default — three layers below the main conversation — and reads
+`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` from `settings.json` (`1` disables nesting); the delegating
+roles must list the `Agent` tool (§3). As on OpenCode, the configured limit is a budget, not proof
+that the chain works: the smoke run decides.
+
+Codex documents no depth key in the current configuration reference: multi-agent work is toggled by
+`[agents] enabled`, the fan-out is capped by `max_concurrent_threads_per_session`, and some builds
+accept `agents.max_spawn_depth`. Check the installed build and do not invent the key; whether a
+subagent may spawn its own children decides if the autonomous driver can run at all, and the smoke
+run is the only proof.
 
 The forms are not interchangeable: V2 accepts a top-level `subagent_depth` but **ignores** it
 (warning `omitted unsupported legacy setting`), and V1 ignores `experimental.subagent_depth`. In both
@@ -318,8 +389,8 @@ Agents load at startup; the check differs per host:
 | Host | Restart | Verify |
 |---|---|---|
 | OpenCode | `opencode service restart` | `opencode debug agents`, `opencode debug config` |
-| Claude Code | start a new session | `/agents` lists the subagents |
-| Codex | start a new session | the host's agent/workflow listing |
+| Claude Code | edits under an existing agents directory load within seconds; a newly created `agents` directory needs a new session | `/agents` lists the subagents, `/tasks` shows the model each one runs on, `claude plugin validate <agents-dir>` reports frontmatter that does not parse |
+| Codex | a new thread (agent files are loaded again) | delegating to the role opens its agent thread under the expected `name` and shows the model it runs on; the `pdca` skill is listed as available in that session |
 | custom (`dsh`, …) | per host | the host's equivalent of the two checks below |
 
 OpenCode reference:

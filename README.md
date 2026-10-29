@@ -65,6 +65,14 @@ nested delegation (`experimental.subagent_depth`) and `subagent` permissions. Ev
 is in [`docs/install.md`](docs/install.md) ([`docs/ru/install.md`](docs/ru/install.md)); an agent
 can perform the whole checklist from [`docs/install-prompt.md`](docs/install-prompt.md).
 
+Nothing has to be copied by hand. `pdca` checks the roles before its first dispatch and, when one
+does not resolve, hands you the install prompt it ships at `assets/install-agents-prompt.md`: the
+agent then places the same files in the host's agent directory, binds the models by tier (an OpenCode
+profile map, the `model:` field of a Claude Code agent file, or the model keys of a Codex agent
+TOML) and verifies the result. That prompt
+is a prompt rather than a script on purpose — those bindings need model ids the host really offers,
+and on Claude Code a translated `tools:` allowlist per role.
+
 ### From a checkout
 
 Clone the repository and copy the skill directories you want into an opencode skills directory.

@@ -471,5 +471,61 @@ class AdditiveIntegrationTest(unittest.TestCase):
                 self.assertNotIn(name, lines)
 
 
+class OverlaySelectionTest(unittest.TestCase):
+    """An overlay is hidden from host auto-selection, never forbidden to PLAN.
+
+    Defect guarded: the `pdca-dotnet` description read "User-invoked — runs only when the user
+    explicitly names it".  The planner treats a skill description as routing evidence, so it read
+    that as a prohibition and routed a .NET task to the coder overlay.  A description must say who
+    selects the overlay, the plan reference must say that auto-selection flags are not routing, and
+    the base contract must say the same for the flags themselves.
+    """
+
+    OVERLAYS = ("pdca-coder", "pdca-dotnet")
+    # Wording that reserves the skill for an explicit user invocation.
+    RESERVED = re.compile(
+        r"user[- ]invoked|only when the user explicitly names|"
+        r"только когда пользователь|только по явному требованию",
+        re.I,
+    )
+    LIMIT = 1024  # the host refuses a longer skill description
+
+    def description(self, name: str) -> str:
+        return frontmatter(FAMILY / name / "SKILL.md").get("description", "")
+
+    def test_overlay_descriptions_do_not_reserve_the_skill_for_the_user(self) -> None:
+        for name in self.OVERLAYS:
+            with self.subTest(skill=name):
+                description = self.description(name)
+                self.assertTrue(description, "%s has no description" % name)
+                self.assertIsNone(self.RESERVED.search(description), description)
+                self.assertIn("PLAN", description, "%s does not name its selector" % name)
+
+    def test_dotnet_is_selected_by_plan_and_inherits_the_coder_overlay(self) -> None:
+        dotnet = self.description("pdca-dotnet")
+        coder = self.description("pdca-coder")
+        self.assertIn("pdca-coder", dotnet)
+        self.assertIn("pdca-dotnet", coder)
+        self.assertIn(".NET", dotnet)
+
+    def test_descriptions_stay_within_the_host_limit(self) -> None:
+        for name in FAMILY_SKILLS:
+            with self.subTest(skill=name):
+                description = self.description(name)
+                self.assertTrue(description, "%s has no description" % name)
+                self.assertLessEqual(len(description), self.LIMIT)
+
+    def test_plan_reference_says_autoselection_is_not_routing(self) -> None:
+        plan = " ".join(read(SKILL_DIR / "references/plan.md").split())
+        self.assertIn("not a prohibition and not a routing signal", plan)
+        self.assertIn("autoinvoke", plan)
+        # the .NET route must be stated where the planner decides
+        self.assertIn("`coder+.NET`", plan)
+
+    def test_base_skill_says_a_hidden_overlay_is_not_forbidden(self) -> None:
+        base = " ".join(read(BASE).split())
+        self.assertIn("never forbid the base PLAN from selecting one", base)
+
+
 if __name__ == "__main__":
     unittest.main()

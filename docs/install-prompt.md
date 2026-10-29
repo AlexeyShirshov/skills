@@ -9,6 +9,11 @@ custom host (`dsh`, …); the roots and the subagent frontmatter differ and are 
 For OpenCode the prompt detects the major (V1 or V2) and uses the matching delegation/permission
 keys; V2 is the reference adapter.
 
+Need only the role agents — install, refresh, or bind models by tier? The base skill ships a short
+prompt for exactly that: `<skills-root>/pdca/assets/install-agents-prompt.md`. It needs no checkout,
+it is the same prompt the cycle's preflight hands you when a role does not resolve, and the full
+checklist below stays the reference for the other steps.
+
 ## Inputs (fill before sending)
 
 ```text
@@ -61,7 +66,8 @@ PROFILE=<профиль или пусто>
    - Разреши корни по хосту (таблица — в docs/install.md §2/§3):
      opencode : skills ~/.config/opencode/skills, agents ~/.config/opencode/agents
      claude   : skills ~/.claude/skills,           agents ~/.claude/agents
-     codex    : skills ~/.codex/skills (или $CODEX_HOME/skills), agents — каталог субагентов хоста
+     codex    : skills ~/.codex/skills (или $CODEX_HOME/skills), agents — $CODEX_HOME/agents
+              (обычно ~/.codex/agents), по одному TOML-файлу на роль
      dsh/custom: возьми SKILLS_ROOT и AGENTS_ROOT из Inputs; если пусты — спроси, не гадай.
    - Только для HOST=opencode: определи major. `opencode --version` → первый компонент
      (1.x → V1, 2.x → V2). Если OPENCODE_MAJOR=1|2 и найденный major не совпал — остановись
@@ -91,6 +97,11 @@ PROFILE=<профиль или пусто>
 2. Агенты-роли
    - Скопируй $SKILLS_REPO/skills/$VARIANT/assets/opencode-agents/*.md в $AGENTS_ROOT, существующие
      файлы — в бэкап.
+   - codex: один TOML-файл на роль — обязательны `name`, `description`, `developer_instructions`
+     (тело роли без frontmatter, экранировать обратные слэши и `"""`), плюс `model` и
+     `model_reasoning_effort` по тиру. `sandbox_mode`, `approval_policy`, `model_provider` и
+     `mcp_servers` в файле агента игнорируются; правок на агента там нет — read-only только
+     инструкцией (см. docs/install.md §3).
    - Frontmatter ассетов несёт оба представления прав: V1-карту `permission:` и V2-список
      `permissions:`; они должны выражать одну политику. Для OpenCode V1 и V2 копируй как есть
      (V2 понимает оба, V1 — карту). Для claude переведи в формат Claude Code (`name`, `description`,

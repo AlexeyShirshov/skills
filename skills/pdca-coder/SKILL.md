@@ -1,6 +1,6 @@
 ---
 name: pdca-coder
-description: "Programming domain overlay for the PDCA family — adds only code-specific criteria forms, evidence, command safety and DO/CHECK/ACT additions to the form and overlay the base already selected. User-invoked — runs only when the user explicitly names `pdca-coder`."
+description: "Programming domain overlay for the PDCA family — adds only code-specific criteria forms, evidence, command safety and DO/CHECK/ACT additions to the form and overlay the base already selected. The base PLAN selects it for programming work in any stack; for .NET/C# it selects `pdca-dotnet`, which inherits this overlay. Hidden from the host's own auto-selection (`metadata.opencode/autoinvoke: false`): that keeps it out of the skill picker, it does not forbid PLAN from choosing it."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
