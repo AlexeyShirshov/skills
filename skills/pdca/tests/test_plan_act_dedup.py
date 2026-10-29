@@ -87,6 +87,7 @@ class PlanContractTest(unittest.TestCase):
     def test_terminal_labels_are_inline_but_their_payloads_are_not(self) -> None:
         check_present(self, PLAN, (
             "acceptance criteria cannot be determined",
+            "goal cannot be measured under the available means",
             "original task is infeasible under the stated constraints",
             "requested result already established", "no mandatory escalation detour",
             "no substitute deliverable", "act finalizes without",

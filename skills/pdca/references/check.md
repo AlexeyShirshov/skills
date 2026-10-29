@@ -50,6 +50,10 @@ resolves only as a PLAN-terminal outcome:
   determine acceptance of the original task without a supplement is an explicit blocker, not an
   edit to the criteria.
 
+A measurable goal whose value no available method computes is the same class of defect and resolves as
+`goal cannot be measured under the available means`, carrying the missing metric, instrument or
+comparable basis — never a proxy invented at CHECK time.
+
 Only a **new explicit user instruction** changes the criteria, and plan approval is not one. This is
 not a proactive ask-the-user detour: PLAN records the terminal outcome/blocker; it does not solicit a
 rewrite.

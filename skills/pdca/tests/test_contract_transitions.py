@@ -58,7 +58,7 @@ class StateMachineTest(unittest.TestCase):
             "CHECK → DO (defect)",
             "CHECK → PLAN (contract)",
             "CHECK → ACT (STOP)",
-            "PLAN → ACT (criteria undetermined | requested result infeasible | requested result already established)",
+            "PLAN → ACT (criteria undetermined | goal not measurable | requested result infeasible | requested result already established)",
         ):
             with self.subTest(edge=edge):
                 self.assertIn(norm(edge), block)
@@ -110,7 +110,7 @@ class PlanDoesNotChooseActionsTest(unittest.TestCase):
     def test_plan_reference_scopes_itself_to_the_result_contract(self) -> None:
         plan = norm(read(PLAN_REF))
         self.assertIn(
-            "does not prescribe a manifest row, an evidence source, a method or a script",
+            "does not prescribe a manifest row, an evidence source, a verification method or a script",
             plan,
         )
         self.assertIn("no pre-DO condition depends on them", plan)

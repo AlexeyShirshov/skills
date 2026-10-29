@@ -142,8 +142,9 @@ writes are permitted before the barrier; substantive bootstrap and DO are not.
   `.pdca/<collection-id>/items/<item-id>/preparation.md`, the readiness `preparation_state`
   (`pending` | `ready`) and the **single authoritative** `preparation_ref` of the form `<path>@r<k>`
   in the item record. `ready` is not `met` and is not the campaign's completion. `campaign_ref` is a
-  pointer to the campaign's runtime record: it may be absent before the baseline bootstrap and is
-  mandatory after it; it is neither a pointer to the charter nor a replacement for `preparation_ref`.
+  pointer to the campaign's runtime record: it may be absent before the campaign's current-state step
+  and is mandatory once that step opens the runtime record; it is neither a pointer to the charter nor
+  a replacement for `preparation_ref`.
 
 **Readiness is not completion.** `preparation_state=ready` without a runtime record is
 `barrier-ready`, not `started`: the item stays `pending` and never `done`. The only success of a
@@ -459,8 +460,8 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
 - per item: the **form** (`cycle` | `campaign`); for a `cycle` — `plan_state`, the contract with its
   overlay and the pending approval ref pointer (normal mode); for a `campaign` — `preparation_state`
   (`pending` | `ready`), the **single authoritative** `preparation_ref`
-  (`.../preparation.md@r<k>`) and `campaign_ref` (optional before the baseline bootstrap, mandatory
-  after). There is no item-level contract for a campaign: the contract/overlay of a concrete step is
+  (`.../preparation.md@r<k>`) and `campaign_ref` (optional before the campaign's current-state step,
+  mandatory once its runtime record opens). There is no item-level contract for a campaign: the contract/overlay of a concrete step is
   recorded in the step's durable record. The per-item `disposition` (`active` | `paused` | `finalized`)
   is an explicit field of **both** forms, and the step's pending approval refs are recorded here;
 - **three different things**: readiness (`plan_state`/`preparation_state`), the campaign runtime status

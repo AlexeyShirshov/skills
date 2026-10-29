@@ -615,17 +615,20 @@ bounded task does not leave the campaign: it is simply a small step.
 - A **step** is a bounded unit with an observable result and a stop condition. Its credit is a result
   change or knowledge that affects the next decision. The whole project is never one step.
 
-**Goal and measurement.** The goal is fixed at the start and written verbatim into the campaign
-status: the predicate, the measurement recipe (unit, denominator, filters, threshold/floor,
-comparability conditions), the increment unit, the floor and target, and the known limits. A numeric
-threshold without a measured baseline is **provisional**; revising it on measurement is a `supersede`
-record with reason and evidence, not a goal change. A change of the goal, recipe, threshold or floor
-is a **new campaign with a new baseline**.
+**Goal and measurement.** The goal and its **measurement method** are fixed at PLAN and written
+verbatim into the campaign status: the predicate, the metric (unit, denominator, filters,
+comparability conditions), the increment unit, the floor and target, and the known limits. A metric
+that requires a value but has no available method is rejected at PLAN, never improvised at DO. A
+numeric threshold without a measured baseline is **provisional**; revising it on measurement is a
+`supersede` record with reason and evidence, not a goal change. A change of the goal, metric,
+threshold or floor is a **new campaign with a new baseline**.
 
-**Baseline.** The baseline is captured before the first step's DO, on a basis comparable under the
-recipe that will accept the steps: exact value, composition, capture used, exit status, timestamp,
-evidence path and the frozen identity of the measured surface. It is not a step and earns no credit.
-If it already satisfies the goal, it goes to an independent CHECK rather than a dummy increment.
+**Baseline.** The campaign's first step computes the current state, on a basis comparable under the
+method that will accept the steps: exact value, composition, capture used, exit status, timestamp,
+evidence path and the frozen identity of the measured surface. Its DO changes no product, its CHECK
+verifies the measurement, and its ACT writes the baseline before any change-producing step. A current
+value the plan's facts already establish is the baseline without a measurement step; a value that
+already satisfies the goal closes the campaign on the whole-goal CHECK, with no dummy step.
 
 **The chain.** The next step starts from the **accepted** state of the previous one — the accepted
 measurement or knowledge, never a forecast, an intermediate value or "about the same". No accepted
@@ -639,12 +642,13 @@ contains the campaign record plus every step's cycle record. Its container has i
 `## Checkpoint`, `## Step records`, `## Campaign outcome`, `## Progress log` — and the base cycle
 skeleton is nested and demoted inside each `### Step <id>`. There is exactly one shared event log.
 
-**Bootstrap.** Preparation and baseline are separate operations, and neither substitutes for the
-other. The **preparation record** — written on explicit dispatch — holds the goal predicate and
-recipe, increment unit, floor/target, allowed surface, campaign criteria and definition of done,
-first-step candidates, effort accounting and commit policy. It is not the baseline and it is never
-copied into the status; the status references its revision. The **baseline bootstrap** runs after the
-barrier and before the first step's DO, then opens the runtime status.
+**Bootstrap.** Preparation and the current-state measurement are separate operations, and neither
+substitutes for the other. The **preparation record** — written on explicit dispatch — holds the goal
+predicate and the measurement method returned by PLAN, increment unit, floor/target, allowed surface,
+campaign criteria and definition of done, the first step, effort accounting and commit policy. It is
+not the baseline and it is never copied into the status; the status references its revision. The
+**current-state step** runs after the barrier: its DO computes the value, its CHECK verifies it, and
+its ACT writes the baseline and opens the runtime status before any change-producing step.
 
 **The campaign cycle.** Before each step, `pdca-scout` assembles a fresh gap map and a ranked seed;
 `pdca-planner` decides the next step. The step's brief is passed by reference and carries six blocks:

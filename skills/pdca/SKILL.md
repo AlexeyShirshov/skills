@@ -61,10 +61,13 @@ Feasibility is judged on that object, never on a rephrasing of it: asking a ques
 request for a value into a request for an explanation. If sufficient evidence proves that the
 requested result cannot be produced under the stated constraints — not merely that one candidate
 failed — execution stops: PLAN returns `original task is infeasible under the stated constraints` with
-cause and evidence, and ACT finalizes an honest `blocked`/`STOP` carrying that answer. If the supplied
-facts already establish the requested result and nothing is left to produce, execution also stops
-before DO: PLAN returns `requested result already established`, and ACT records the result with its
-derivation, the evidence pointers and the fact that no independent CHECK ran.
+cause and evidence, and ACT finalizes an honest `blocked`/`STOP` carrying that answer. If the task
+requires a value no available method can compute, execution stops the same way: PLAN returns
+`goal cannot be measured under the available means` with the missing metric, instrument or comparable
+basis, and ACT finalizes the rejection without a DO. If the supplied facts already establish the
+requested result and nothing is left to produce, execution also stops before DO: PLAN returns
+`requested result already established`, and ACT records the result with its derivation, the evidence
+pointers and the fact that no independent CHECK ran.
 
 ### Where each form continues
 
@@ -143,7 +146,7 @@ never widened.
 | Role | Agent | Responsibilities | Permissions | Tier |
 |---|---|---|---|---|
 | FACT-FINDING & OBSERVATION | `pdca-scout` | facts for PLAN/CHECK; independent observation when CHECK's method needs an outsider | read-only discovery and its fixed literal read-only commands (shell `workdir`, one command per call, `--` before pathspecs, no wrappers or `git -C`); writes only its pinned `observation-pack.md`; no delegation | cheap |
-| PLAN | `pdca-planner` | classify form and overlay, preserve task and supplied criteria, define criteria only where none were supplied, decide revisions and PLAN-terminal outcomes | default-deny; reads only the named plan reference and the brief; no delegation, execution or writes — `pdca-executor` persists the plan | medium |
+| PLAN | `pdca-planner` | classify form and overlay, preserve task and supplied criteria, define criteria only where none were supplied, choose the measurement method for a measurable goal, decide revisions and PLAN-terminal outcomes | default-deny; reads only the named plan reference and the brief; no delegation, execution or writes — `pdca-executor` persists the plan | medium |
 | DO | `pdca-executor` | execute, apply fixes, run the checks CHECK asks for, gather evidence, record cycle state | `edit`/`bash`/`read` within the host and cycle constraints | cheap |
 | CHECK | `pdca-check` | choose the method and sufficiency per criterion, judge independently against the original task and user-supplied criteria, route findings | default-deny; scoped read of `.pdca/**`; task inputs and the complete CHECK reference arrive inline in the brief; no delegation or writes — its runs and writes go through the driver to `pdca-executor` | medium |
 | ESCALATE | `pdca-escalate` | reasoned expert judgment on a disputed substantive decision; decides nothing that phase owns | read-only inspection, restricted non-mutating commands, facts via `pdca-scout`; no edits, no approval | strong |
@@ -183,7 +186,7 @@ reason; in normal mode, report to the user.
 ```text
 PLAN → DO (normal mode: after approval) → CHECK → ACT → (EXIT | PLAN)
 DO → ACT (cannot finish) | CHECK → DO (defect) | CHECK → PLAN (contract) | CHECK → ACT (STOP)
-PLAN → ACT (criteria undetermined | requested result infeasible | requested result already established)
+PLAN → ACT (criteria undetermined | goal not measurable | requested result infeasible | requested result already established)
 ```
 
 The diagram is the whole machine; exits are detailed in §Phase contracts. **CHECK is mandatory to
@@ -241,7 +244,7 @@ by phases and no separate gate numbering is used.
 
 #### PLAN
 
-`pdca-planner` decides; the form and specialized skill are classified once at entry. Every later
+`pdca-planner` decides; form and specialized skill are classified once at entry. Every later
 PLAN defines the **result contract of the current cycle** — outcome, acceptance criteria,
 constraints, bounds, risks and stop conditions — inside the unchanged original task and cycle scope.
 It prescribes neither implementation actions or a step-by-step DO (the executor chooses the
@@ -252,8 +255,8 @@ of **this base contract** (`pdca/SKILL.md`), never from the loaded form contract
 carries that `plan_reference_path`, the **unchanged original task** (verbatim at entry, then by
 exact reference — §Reference), its global requirements, the cycle's
 scope/criteria/constraints and the available facts. **`references/plan.md` is
-`pdca-planner` only**: beyond that read it widens no permission, runs no code, edits nothing and
-delegates nothing, and the driver neither reads, inlines nor forwards it; the plan reference is
+`pdca-planner` only**: beyond that read it widens no permission, runs no code, edits/delegates
+nothing, and the driver neither reads, inlines nor forwards it; the plan reference is
 never part of a DO, CHECK or `pdca-escalate` dispatch. The plan it returns is shared **data** for the
 other phases, not their instructions: it is forwarded and recorded **unchanged** — no rewrite,
 translation or summarisation.
@@ -267,10 +270,11 @@ normal mode, carries the **user's approval**. On DO start `pdca-executor` logs
 pre-DO prerequisite; a method that proves unusable there is re-chosen, not a plan defect. No "ask the
 user for criteria" path: an indeterminate criterion blocks DO and routes **PLAN → ACT** instead.
 
-**PLAN → ACT** — one of three terminal outcomes, each with its payload in `references/plan.md`:
-`acceptance criteria cannot be determined`, `original task is infeasible under the stated constraints`,
-`requested result already established`. No DO, no CHECK, no mandatory escalation detour, no invented
-criterion and no substitute deliverable; ACT finalizes without `PASS` or `done`.
+**PLAN → ACT** — four terminal outcomes, each with its payload in `references/plan.md`:
+`acceptance criteria cannot be determined`, `goal cannot be measured under the available means`,
+`original task is infeasible under the stated constraints`, `requested result already established`. No
+DO, no CHECK, no mandatory escalation detour, no invented criterion and no substitute deliverable; ACT
+finalizes without `PASS` or `done`.
 
 #### DO
 

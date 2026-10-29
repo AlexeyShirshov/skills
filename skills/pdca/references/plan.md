@@ -10,6 +10,11 @@ here; the driver routes them and `pdca-executor` records them.
 ## Plan fields
 
 - goal and expected result;
+- for a measurable goal, the **measurement method chosen here**: metric and unit, denominator,
+  inclusion/exclusion filters, comparability conditions and the threshold with its provenance (task or
+  user, or provisional until a measured baseline). It fixes what the value means and when two values
+  are comparable; the capture instrument and command stay DO's and CHECK's choice unless the user
+  prescribed them;
 - the **requested result** — the object the user's own words ask for (a value, a file, a behaviour, an
   answer), named in one line before any criterion — and the **delivered result** the plan hands over.
   They are the same object; a plan that would hand over another one is not a plan for this task
@@ -31,10 +36,10 @@ here; the driver routes them and `pdca-executor` records them.
 - in normal mode, an effort estimate, never an execution cutoff.
 
 None of these fields is a DO implementation step. PLAN fixes the **result contract** — the requested
-outcome and the criteria that decide it. DO chooses the implementation and the decomposition itself;
-CHECK chooses the verification method, the evidence sources and the commands at CHECK time. So no
-field and no instruction in this file names a verification procedure, an evidence source, a command
-or a run as a plan requirement.
+outcome, the criteria that decide it and, for a measurable goal, the measurement method that makes it
+computable. DO chooses the implementation and the decomposition itself; CHECK chooses the verification
+method, the evidence sources and the commands at CHECK time. So no field and no instruction in this
+file names a verification procedure, an evidence source, a command or a run as a plan requirement.
 
 The criteria must cover all mandatory task requirements and the cycle scope, and account for the
 conditions under which they apply.
@@ -63,13 +68,19 @@ conditions under which they apply.
   by its own role — evidence gathering, not product DO.
 - A criterion that cannot be made determinate is the `acceptance criteria cannot be determined`
   outcome (§Terminal PLAN outcomes), never a `ready` placeholder.
+- A measurable goal whose value no available method computes is its own rejection — `goal cannot be
+  measured under the available means` — never a campaign that measures by improvisation.
 
 ## Terminal PLAN outcomes
 
-Three outcomes replace a ready plan and go directly to ACT, with no DO and no CHECK:
+Four outcomes replace a ready plan and go directly to ACT, with no DO and no CHECK:
 
 - `acceptance criteria cannot be determined` — the supplied information and authorized gather cannot
   make the criteria determinate; carry the concrete missing information and the reason.
+- `goal cannot be measured under the available means` — the task requires a value the plan cannot
+  compute by any available method: no metric, no instrument or data source, no comparable basis, or a
+  metric the user reserved and did not supply. Rejected here, immediately: no preparation, no DO, no
+  CHECK, and no invented metric, proxy or threshold.
 - `original task is infeasible under the stated constraints` — the supplied facts, the authorized
   gather or a planned bounded probe prove that the **requested result** cannot be produced under the
   stated constraints; carry the concrete cause and the evidence.
@@ -77,6 +88,11 @@ Three outcomes replace a ready plan and go directly to ACT, with no DO and no CH
   and nothing is left to produce: no artefact, no computation and no text beyond restating what those
   facts establish. Carry the result itself, its derivation from the supplied facts and the evidence
   pointers. Anything still to compute, run, judge or write is a ready plan, not this outcome.
+
+Measurability is decided on the same evidence and is not a matter of optimism: a method counts only
+when its instrument or data source and its comparability basis are actually available. Uncertainty
+about the value is not uncertainty about the method, and an unavailable method is not repaired by a
+DO that improvises one.
 
 Feasibility need not be proven for every plan: uncertainty and the bounded probe remain, and one
 failed candidate is not proof about the whole task. A bounded probe run before DO for this question is
@@ -128,6 +144,11 @@ and no second PLAN on the same content:
   the first increment for a campaign, the item set for a collection — named as an observable outcome
   only. No units, per-unit criteria, dependencies or ordering: execution units are DO's
   (§Output contract).
+- **Measurement first (incremental).** A campaign opens with the **current state computed by the
+  chosen method** — a step whose DO calculates the goal, not work toward it. When the supplied facts
+  already establish a comparable current value, that value is the baseline and the first step is the
+  change; when the established current state already satisfies the goal, the plan is the terminal
+  outcome `requested result already established` and the task goes straight to ACT.
 
 On a resume or replan a still-valid form rationale is carried **by reference**, not re-authored or
 re-classified.
@@ -141,9 +162,26 @@ silent guess is forbidden.
 An assumption may settle a gap in the means. An assumption that changes the **accepted outcome** — the
 requested result, or a value the criteria judge — is not the planner's to make: return it to the
 driver as a question to the user, with the alternatives and the outcome each one produces. The user's
-answer is a new instruction and settles the input; the planner never picks one silently.
+answer is a new instruction and settles the input; the planner never picks one silently. A missing
+measurement method is not a gap an assumption may close: it is the terminal rejection
+`goal cannot be measured under the available means` (§Terminal PLAN outcomes).
 
 ### Numeric thresholds and calibration
+
+A measurable goal needs its **measurement method chosen here, at PLAN** — never improvised at
+preparation, DO or CHECK: the metric and unit, the denominator, the inclusion/exclusion filters, the
+comparability conditions and the known limits of the method. Without it the goal has no determinate
+predicate, and a campaign would learn only after entry that its numbers cannot be compared.
+
+The method exists only when an available means can compute a comparable value: a metric, an
+instrument or data source, and a basis on which two measurements are comparable. Supplied facts,
+authorized read-only gather or one bounded probe settle that question; the planner invents neither a
+metric nor a proxy, and never fills in a metric the user reserved but did not supply.
+
+A goal that requires a value but has no such method is **rejected immediately**: the plan is the
+terminal outcome `goal cannot be measured under the available means` (§Terminal PLAN outcomes), never
+a ready campaign that sends a DO to find out. The rejection also applies when every available
+measurement fails to distinguish the goal state from the current one.
 
 A numeric threshold must come from the task requirements or have an explicit rationale. Missing
 information must not be hidden behind an arbitrary value.
@@ -155,10 +193,12 @@ specialisation for measurable goals, not a universal gate.
 
 ## Plan hygiene (checked before you return)
 
-- **No verification procedure.** PLAN states the result contract and the criteria; CHECK chooses the
-  verification method, the evidence sources and the commands at CHECK time. Do not freeze a command,
-  selector, test strategy or manifest row in the plan, and do not make a pre-DO condition depend on
-  one. A user-prescribed method is carried as a requirement, not extended into a procedure.
+- **No verification procedure.** PLAN states the result contract, the criteria and, for a measurable
+  goal, the measurement method; CHECK chooses the verification method, the evidence sources and the
+  commands at CHECK time. The measurement method fixes the metric, the basis and the comparability
+  conditions — not how the capture is instrumented. Do not freeze a command, selector, test strategy
+  or manifest row in the plan, and do not make a pre-DO condition depend on one. A user-prescribed
+  method is carried as a requirement, not extended into a procedure.
 - **Proportional depth.** A small, well-understood change gets a compact plan; the full contract and
   variant matrix are for a wide blast radius or an unproven mechanism. When the mechanism is
   unproven, plan a **bounded probe** first (one question, one observable answer, its evidence bound)
@@ -173,8 +213,9 @@ specialisation for measurable goals, not a universal gate.
 ## Evidence boundary
 
 PLAN assigns each criterion a stable ID and does not prescribe a manifest row, an evidence source, a
-method or a script: evidence generation, binding and append mechanics are not PLAN outputs, and no
-pre-DO condition depends on them.
+verification method or a script: evidence generation, binding and append mechanics are not PLAN
+outputs, and no pre-DO condition depends on them. The measurement method is not an exception: it
+specifies what a value means, not the evidence that proves it.
 
 The planner returns the plan, its criteria and its complete report as **data to the driver**, which
 passes that report to `pdca-executor` unchanged — verbatim, or by an exact reference to a complete
@@ -197,6 +238,10 @@ turn**; separate DECIDE → brief → STOP turns on unchanged content are a repe
   STOP condition**: a PASS on all mandatory criteria and original requirements permits the outcome,
   otherwise the result comes back to you as another boundary. A negative candidate whose confirmed
   knowledge is accepted credits a **knowledge increment**, not the rejected candidate.
+- **Measurement first.** The campaign's current-state step is accepted as a knowledge increment — the
+  baseline — and the next brief is the change that starts from it. When its CHECK already proves the
+  goal predicate, the pre-set STOP is the whole-goal end condition and no implementation brief is
+  issued. No change-producing step is opened before an accepted baseline.
 - **Revise/reject an unaccepted step** → a corrected brief of the **same** step (repair/loop-back)
   or a justified STOP: the step is not credited, and the independent CHECK is never rewritten to
   `met`.
@@ -217,10 +262,14 @@ step and adds no call.
   **delivered result** named (the same object), and any user-supplied criteria reproduced verbatim;
   otherwise criteria derived from the unchanged task, each judgeable and with a negative condition
   where relevant.
+- **Measurement method** (for a measurable goal): metric and unit, denominator, filters, comparability
+  conditions, threshold and its provenance — the specification that makes the goal computable and two
+  values comparable.
 - **Terminal outcome** (in place of a plan when it applies): `acceptance criteria cannot be
-  determined` with the missing information and reason; `original task is infeasible under the stated
-  constraints` with the cause and evidence; or `requested result already established` with the result
-  and its derivation; no DO/CHECK and no substitute deliverable.
+  determined` with the missing information and reason; `goal cannot be measured under the available
+  means` with the missing metric/instrument/basis and the evidence; `original task is infeasible
+  under the stated constraints` with the cause and evidence; or `requested result already established`
+  with the result and its derivation; no DO/CHECK and no substitute deliverable.
 - **Constraints / assumptions.**
 - **Gaps**: statement gap → evidence / assumption / blocker.
 - **Minimal solution** + alternatives with the chosen one (if non-obvious).
@@ -243,6 +292,7 @@ A revision is genuine only when the criteria or the result contract actually
 change while the original user requirements and user-supplied criteria are preserved; those are
 never a revision target. A change of implementation strategy, a
 command, a verification method, a rename, a session reset or a rejected candidate is not a revision
-and resets nothing. Name the revision and its reason; you neither bump `r`/`n` nor record the
-outgoing attempt — `pdca-executor` books both in the cycle record, so history is never erased by a
-revision and an unaccepted attempt is never converted into accepted progress.
+and resets nothing. A change of the **measurement method** after a baseline exists is a new campaign
+with a new baseline, never a revision of this one. Name the revision and its reason; you neither bump
+`r`/`n` nor record the outgoing attempt — `pdca-executor` books both in the cycle record, so history
+is never erased by a revision and an unaccepted attempt is never converted into accepted progress.

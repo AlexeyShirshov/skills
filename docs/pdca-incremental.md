@@ -60,14 +60,18 @@ does not reclassify a non-coding campaign.
 
 ## 4. Goal, measurement and baseline
 
-The campaign's goal is fixed at the start and written verbatim into the status. For a measurable goal
-it includes the **goal predicate**, the **unit of measurement**, the **denominator**, the exclusion
-filters, the thresholds, the increment unit, the floor and the target, and the known limitations of
-the recipe. The goal must be verifiable by that recipe, not by a narrative.
+The campaign's goal and its **measurement method** are fixed by `pdca-planner` at the start and
+written verbatim into the status. For a measurable goal the record includes the **goal predicate**, the
+**unit of measurement**, the **denominator**, the exclusion filters, the thresholds, the increment
+unit, the floor and the target, and the known limitations of the method. The goal must be computable
+by that method, not by a narrative. A goal that requires a value but has no available method — no
+metric, no instrument or data source, or no comparable basis — is rejected at PLAN
+(`goal cannot be measured under the available means`) and never enters the campaign.
 
 **The recipe is a measurement specification, not a frozen procedure.** It defines what the result
 means and when two values are comparable: metric and unit, denominator, inclusion/exclusion filters,
-threshold and floor, the accepted baseline, and the conditions under which a delta is credited. It is
+threshold and floor, the accepted baseline, and the conditions under which a delta is credited. Its
+metric and basis are PLAN's; the capture instrument is DO's and its comparability is CHECK's. It is
 not a PLAN-side execution or verification method. CHECK chooses how to collect and test evidence; if
 its method differs, it establishes comparability with the accepted baseline **before** credit.
 Otherwise no delta is credited until a valid baseline exists. A method the user prescribed stays
@@ -82,11 +86,16 @@ binding.
 - **Floor and target.** The floor is the smallest increment worth its fixed price; the target is
   `baseline + floor` for a measurable goal, or the next decision for a knowledge increment. Neither
   adds an automatic cutoff.
-- **Baseline.** Captured **before the first step's DO**, on a basis comparable under the recipe that
-  will accept steps: exact value, composition (included and filtered out), the capture actually used,
-  its exit status, clock timestamp, evidence path and the frozen identity of the measured surface. It
-  is not a step: no credit and no product change. A baseline that already satisfies the goal goes to
-  an independent CHECK, not a dummy increment.
+- **Baseline.** The campaign's opening step computes the current state **on a basis comparable under
+  the method that will accept steps**: exact value, composition (included and filtered out), the
+  capture actually used, its exit status, clock timestamp, evidence path and the frozen identity of the
+  measured surface. Its DO changes no product; its CHECK verifies the measurement; its ACT writes the
+  baseline and finalizes the status before any change-producing step. When the plan's supplied facts
+  already establish a comparable current value, that value is the baseline and the first step is the
+  change; when the supplied facts already prove the goal is met, the plan is the terminal outcome
+  `requested result already established` and the task goes straight to ACT. A measured current state
+  that already satisfies the goal goes to the whole-goal CHECK and closes `met` — no dummy
+  implementation step.
 - **Accepted basis.** The next step starts from the accepted state of the previous one — the accepted
   measurement or knowledge, never a forecast, an intermediate value or "about the same". No accepted
   step, no next step.
@@ -210,13 +219,15 @@ terminal value: the same file and counters continue, and only an explicit resume
 ### 7.1. Preparation record
 
 Holds the immutable **preparation document**: a revision the status points at, written once per
-revision by `pdca-executor` on explicit dispatch. It records the goal predicate and recipe (metric and
-unit, denominator, filters, thresholds, comparability conditions, a baseline-less threshold marked
-provisional, known limitations); the increment unit and, for a measurable goal, floor and
-`target = baseline + floor`; the allowed surface and protected/foreign areas; the **criteria** of the
-campaign's result and its definition of done (which whole-goal CHECK closes it) — not DO's
-implementation, commands or a plan of the whole volume; the candidate list for the first step; the
-effort accounting and commit policy with who granted it; `preparation_state` and `preparation_ref`.
+revision by `pdca-executor` on explicit dispatch. It records the goal predicate and the **measurement
+method returned by PLAN** (metric and unit, denominator, filters, thresholds, comparability conditions,
+a baseline-less threshold marked provisional, known limitations) — never a method invented at
+preparation; the increment unit and, for a measurable goal, floor and `target = baseline + floor`; the
+allowed surface and protected/foreign areas; the **criteria** of the campaign's result and its
+definition of done (which whole-goal CHECK closes it) — not DO's implementation, commands or a plan of
+the whole volume; the first step (the current-state measurement, or the change when the plan's facts
+already establish the baseline); the effort accounting and commit policy with who granted it;
+`preparation_state` and `preparation_ref`.
 
 A change to any of it is a **new revision**, never an edit in place: the status references the revision
 it worked from, previous revisions stay, and it is never copied into the status. The goal is not
@@ -224,11 +235,13 @@ measured at this point.
 
 ### 7.2. Baseline record
 
-Written once, before the first step's DO, by a dedicated `pdca-executor` dispatch, on a basis
-comparable under the recipe that will accept steps: the exact baseline and the composition of the
-measurement; the capture actually used, its exit status and clock timestamp; the evidence path of the
-captured baseline and the frozen identity of its surface; the `preparation_ref@r<k>` the runtime status
-is opened against. It is not a step.
+Written by the current-state step's ACT, after its CHECK and before the first change-producing step's
+DO, on a basis comparable under the method that will accept steps: the exact current value and the
+composition of the measurement; the capture actually used, its exit status and clock timestamp; the
+evidence path of the captured value and the frozen identity of its surface; the `preparation_ref@r<k>`
+the runtime status is opened against. When the plan's supplied facts already establish a comparable
+current value, the record cites that value and its evidence and no measurement step runs; when the
+value already satisfies the goal, the same ACT finalizes `met`.
 
 ### 7.3. Checkpoint
 
@@ -249,17 +262,23 @@ The campaign's PLAN work has two owners: `pdca-scout` gathers facts (discovery),
 Three operations that never substitute for each other:
 
 1. **Preparation record** — on explicit dispatch, before any DO (for a collection item, before or at
-   the barrier): the preparation document, its state, reference and refs. The goal is not measured,
-   the product does not change, and no runtime status is created.
-2. **Baseline bootstrap** — after the barrier, before the first step's DO: capture the baseline on a
-   basis comparable under the accepting recipe, store its evidence, open the runtime status
-   (`Status: running`) referencing the preparation record.
-3. **Change-producing DO** — only after the baseline and the step's own PLAN.
+   the barrier): the preparation document, its state, reference and refs, carrying the measurement
+   method returned by PLAN. The goal is not measured, the product does not change, and no runtime
+   status is created.
+2. **Current-state step** — the campaign's first step, after the barrier: open the runtime status
+   (`Status: running`, referencing the preparation record); the step's DO computes the current value by
+   the chosen method and changes no product; its CHECK verifies that the measurement is valid,
+   comparable and complete; its ACT writes `## Baseline record` and fixes the accepted basis. No
+   change-producing step starts before that acceptance. A comparable current value already established
+   by the plan's facts replaces the step and is recorded as the baseline with its evidence; a value
+   that already satisfies the goal goes to the whole-goal CHECK and ACT `met`.
+3. **Change-producing DO** — only after the accepted baseline and the step's own PLAN.
 
-If the bootstrap shows the recipe inapplicable, the goal unreachable within the bounds or the surface
-insufficient, the question returns to `pdca-planner` and the active approval — never a silent
-restatement of the criteria. If the baseline already satisfies the goal, no dummy increment is created:
-it goes to an independent CHECK against the goal criteria and the campaign can close.
+If the measurement cannot produce a comparable value, its CHECK fails: the step is not credited, no
+baseline is invented, and the boundary finalizes `blocked` with the proven cause; a method change is a
+new campaign, never a silent repair. A recipe shown inapplicable, a goal unreachable within the bounds
+or an insufficient surface returns to `pdca-planner` and the active approval — never a silent
+restatement of the criteria.
 
 ### 8.1. Discovery (before each step)
 

@@ -161,5 +161,45 @@ class CampaignFailureSemanticsTest(unittest.TestCase):
                 self.assertIn(rule, self.skill)
 
 
+class MeasurementFirstTest(unittest.TestCase):
+    """PLAN owns the measurement method and the campaign measures before it changes anything."""
+
+    def setUp(self) -> None:
+        self.skill = norm(read(SKILL))
+
+    def test_unmeasurable_goal_is_rejected_at_plan(self) -> None:
+        for phrase in (
+            "goal cannot be measured under the available means",
+            "rejected at PLAN",
+            "never enters the campaign",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.skill)
+
+    def test_current_state_is_the_first_step(self) -> None:
+        for phrase in (
+            "the campaign's first step",
+            "current-state step",
+            "No change-producing step starts before that acceptance",
+            "## Baseline record",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.skill)
+
+    def test_an_already_met_goal_does_not_open_an_implementation_step(self) -> None:
+        for phrase in (
+            "requested result already established",
+            "goes straight to ACT",
+            "already satisfies the goal",
+            "no dummy implementation step",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.skill)
+
+    def test_the_baseline_is_not_described_as_a_pre_step_probe(self) -> None:
+        self.assertNotIn("It is not a step", read(SKILL))
+        self.assertNotIn("Baseline bootstrap —", read(SKILL))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -150,15 +150,14 @@ classification of the batch.
      `preparation_handoff`. No baseline, runtime record, substantive DO, future step plan
      or step count is required at the barrier.
 
-   A PLAN-terminal `acceptance criteria cannot be determined`, proven
-   `original task is infeasible under the stated constraints`, or `requested result already
-   established` goes to that item's ACT, without DO or CHECK, and **cannot** be marked ready. Its
-   ACT records `terminal=<cause>` with `attempts=0`: no attempt is consumed and it is neither
-   `done` nor readiness — a **terminal resolution**, not a completed goal. A
-   failed candidate or an unproven method alone does not establish infeasibility; no substitute goal
-   is created. Only a `cycle` item has this outcome. Inside a `campaign` item the step rule holds
-   instead: an established result goes to an independent CHECK, never to a dummy increment or a
-   PLAN-terminal row.
+   A PLAN-terminal `acceptance criteria cannot be determined`, `goal cannot be measured under the
+   available means`, proven `original task is infeasible under the stated constraints` or
+   `requested result already established` goes to that item's ACT without DO or CHECK and **cannot**
+   be marked ready. Its ACT records `terminal=<cause>` with `attempts=0`: no attempt is consumed, no
+   `done`/readiness — a **terminal resolution**, not a completed goal. A failed candidate or an
+   unproven method alone does not establish infeasibility. A `campaign` item takes the same
+   resolutions at PLAN; inside a prepared campaign the current-state measurement is the first step
+   after the barrier, never a dummy increment or a change before the baseline.
    A re-entry after a terminal result preserves its cause and history rather than rerunning
    the same failed criterion unchanged.
 
@@ -203,10 +202,10 @@ classification of the batch.
   `.pdca/<collection-id>/items/<item-id>/preparation.md`, the readiness `preparation_state`
   (`pending` | `ready`) and the **single authoritative** `preparation_ref` of the form `<path>@r<k>`
   in the item record. `ready` is not `met` and is not the completion of the campaign.
-  `campaign_ref` — a pointer to the runtime record of the campaign: before the baseline bootstrap
-  it may be absent and after it is mandatory; it is not a pointer to the charter and not a
-  replacement for `preparation_ref`.
-- **plan-terminal (`cycle`)** — `terminal=<cause>` (§PLAN-terminal item projection): the barrier's
+  `campaign_ref` — a pointer to the runtime record of the campaign: it may be absent before the
+  current-state step and mandatory once that step opens the record; it is not a charter or
+  `preparation_ref` replacement.
+- **plan-terminal (`cycle` or `campaign`)** — `terminal=<cause>` (§PLAN-terminal item projection): the barrier's
   resolved outcome, never readiness, with no DO or CHECK.
 
 **Readiness ≠ completion.** A prepared charter without a runtime record is `barrier-ready`, not
@@ -563,8 +562,8 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
 - per item: the **form** (`cycle` | `campaign`); for `cycle` — `plan_state`, the contract with its
   overlay and the pending approval ref pointer (normal mode); for `campaign` —
   `preparation_state` (`pending` | `ready`), the **single authoritative** `preparation_ref`
-  (`.../preparation.md@r<k>`) and `campaign_ref` (optional before the baseline bootstrap, mandatory
-  after); no item-level contract for a campaign — the contract/overlay of a concrete step is
+  (`.../preparation.md@r<k>`) and `campaign_ref` (optional before the current-state step, mandatory
+  after its runtime record opens); no item-level contract for a campaign — the contract/overlay of a concrete step is
   recorded in the step's durable record; the per-item `disposition` (`active` | `paused` |
   `finalized`) — an explicit field of **both** forms; the pending approval refs of the step;
 - **three different things:** readiness (`plan_state`/`preparation_state`), the campaign runtime

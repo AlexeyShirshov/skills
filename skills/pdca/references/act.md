@@ -36,7 +36,7 @@ own.
 | Route | Recorded |
 |---|---|
 | `CHECK → ACT`, accepted | the accepted result, the criteria outcome per criterion, the evidence pointers, limitations, handoff |
-| `PLAN → ACT` | the resolution — `acceptance criteria cannot be determined` with the concrete missing information and reason, `original task is infeasible under the stated constraints` with the proven cause and evidence, or `requested result already established` with the result, its derivation and the evidence pointers (recording that no independent CHECK ran); no invented criteria, no substitute deliverable, no `PASS`, no CHECK |
+| `PLAN → ACT` | the resolution — `acceptance criteria cannot be determined` with the concrete missing information and reason, `goal cannot be measured under the available means` with the missing metric/instrument/basis and the evidence, `original task is infeasible under the stated constraints` with the proven cause and evidence, or `requested result already established` with the result, its derivation and the evidence pointers (recording that no independent CHECK ran); no invented criteria, no substitute deliverable, no `PASS`, no CHECK |
 | `DO → ACT` | the cause, what was completed, what remains (`unmet`/`unverified`), evidence pointers; no CHECK, no planner detour |
 | `CHECK → ACT`, terminal | the incomplete/`STOP` outcome with the remaining criteria, counters and defect history; no `PASS`, no `done` |
 
@@ -45,10 +45,11 @@ instead of reconstructing a history. Accepted and incomplete outcomes stay visib
 
 **When STOP is the outcome.** STOP is an outcome of ACT, never a phase or a path beside it: it is
 finalized only once the **originating phase** confirms that no permitted continuation remains — an
-unresolved consultation, a PLAN that cannot determine the criteria or proves the original task
-infeasible, an unresolvable constraint, a DO that cannot finish, a refused required approval, or
-CHECK attempts exhausted under the no-4th rule — and only that phase, applying its own transitions,
-decides it; a consultation alone needs no new plan (`../SKILL.md` §Phase contracts → ACT).
+unresolved consultation, a PLAN that cannot determine the criteria, proves the goal unmeasurable or
+proves the original task infeasible, an unresolvable constraint, a DO that cannot finish, a refused
+required approval, or CHECK attempts exhausted under the no-4th rule — and only that phase, applying
+its own transitions, decides it; a consultation alone needs no new plan (`../SKILL.md` §Phase
+contracts → ACT).
 
 ## Status file
 
