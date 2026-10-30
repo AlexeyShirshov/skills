@@ -154,6 +154,57 @@ class PlanTerminalTest(unittest.TestCase):
         self.assert_accepted("queue-ok.md", 5)
 
 
+class CapsTest(unittest.TestCase):
+    """Caps are recorded, not inherited silently: default 4, a lowering needs a reason.
+
+    The defect this pins: an entry plan that never names ``plan_cap`` used to end
+    up sequential because the driver read "absent" as the safe value 1.  Silence
+    now means the contract default 4, and a real host limit must be written down.
+    """
+
+    def run_json(self, name: str) -> tuple[subprocess.CompletedProcess, dict]:
+        result = run(FIXTURES / name, json_output=True)
+        return result, json.loads(result.stdout or "{}")
+
+    def test_recorded_caps_pass(self) -> None:
+        result, payload = self.run_json("queue-caps-ok.md")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(payload["ok"], payload)
+        self.assertEqual(5, payload["files"][0]["rows"], payload)
+
+    def test_a_form_without_caps_is_rejected_not_read_as_one(self) -> None:
+        result, payload = self.run_json("queue-caps-missing.md")
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        violations = payload["files"][0]["violations"]
+        self.assertEqual(2, len(violations), violations)
+        self.assertEqual({4}, {item["line"] for item in violations}, violations)
+        joined = " ".join(item["message"] for item in violations)
+        for needle in ("plan_cap", "lane_cap", "never a serialized 1"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, joined)
+
+    def test_a_lowering_without_a_reason_is_rejected(self) -> None:
+        result, payload = self.run_json("queue-caps-low-unreasoned.md")
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        violations = payload["files"][0]["violations"]
+        self.assertEqual(1, len(violations), violations)
+        self.assertEqual(5, violations[0]["line"], violations)
+        self.assertIn("cap_reason", violations[0]["message"], violations)
+
+    def test_a_reasoned_lowering_passes(self) -> None:
+        result, payload = self.run_json("queue-caps-low-reasoned.md")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(payload["ok"], payload)
+        self.assertEqual(5, payload["files"][0]["rows"], payload)
+
+    def test_a_non_integer_cap_is_rejected(self) -> None:
+        result, payload = self.run_json("queue-caps-bad.md")
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        violations = payload["files"][0]["violations"]
+        self.assertEqual(1, len(violations), violations)
+        self.assertIn("not a positive integer", violations[0]["message"], violations)
+
+
 class OperatorTest(unittest.TestCase):
     def test_a_missing_file_is_a_usage_error(self) -> None:
         result = run(FIXTURES / "does-not-exist.md")

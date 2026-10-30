@@ -23,6 +23,12 @@ no attempt.  A plan-terminal row fails closed when the table has no ``status``
 column to prove that ``incomplete``, and when the row's form is explicitly
 ``campaign`` — a campaign's established step goes to independent CHECK.
 
+The header block also carries the parallelism caps.  ``plan_cap`` and ``lane_cap``
+are integers 1–32 with the contract default 4; a record that declares
+``form: collection`` must state both, and a value below 4 needs a
+``cap_reason:``.  An unrecorded cap means 4, never a serialized 1 — so silence can
+no longer turn a parallel collection into a sequential one.
+
 Usage::
 
     python3 .pdca/scripts/status_lint.py .pdca/status/collection-<slug>.md [...]
@@ -44,7 +50,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = 2
+VERSION = 3
 
 ITEM_STATUS = ("pending", "in-progress", "done", "incomplete")
 GROUP_STATUS = ITEM_STATUS + ("merged",)
@@ -60,11 +66,18 @@ TERMINAL = (
 )
 PLAN_TERMINAL = TERMINAL[1:]
 
+#: Contract default for the planning and lane ceilings.  A lower recorded value
+#: needs a ``cap_reason``; an unrecorded one is this default, never ``1``.
+DEFAULT_CAP = 4
+MAX_CAP = 32
+CAP_KEYS = ("plan_cap", "lane_cap")
+
 #: A cell that states "not set" rather than a state value.
 PLACEHOLDERS = ("—", "–", "-", "n/a", "na", "none", "not set", "unset", "tbd", "empty")
 
 _SEPARATOR = re.compile(r"^:?-+:?$")
 _LEADING_WORD = re.compile(r"[a-z][a-z0-9_\-]*")
+_HEADER_ITEM = re.compile(r"^[-*]\s+\**([A-Za-z][A-Za-z0-9 _-]*?)\**\s*:\**\s*(.+?)\s*$")
 
 
 class Violation:
@@ -136,6 +149,89 @@ def truncates_table(lines: list[str], tail: int | None) -> bool:
         return False
     text = lines[tail - 1].strip()
     return bool(text) and not is_row(text) and not text.startswith("#")
+
+
+# --------------------------------------------------------------------------- #
+# Header parameters (parallelism caps)
+# --------------------------------------------------------------------------- #
+
+
+def header_items(lines: list[str]) -> list[tuple[int, str, str]]:
+    """``(line_number, key, value)`` for the leading ``- key: value`` block.
+
+    The block ends at the first heading or table: later bullets are record body,
+    not header, and are never read as parameters.
+    """
+    items: list[tuple[int, str, str]] = []
+    for index, line in enumerate(lines):
+        text = line.strip()
+        if not text:
+            continue
+        if text.startswith("#"):
+            # A document title precedes the block; any later heading ends it.
+            if items or text.startswith("##"):
+                break
+            continue
+        if is_row(line):
+            break
+        match = _HEADER_ITEM.match(text)
+        if match:
+            items.append((index + 1, match.group(1).strip().lower(), match.group(2).strip()))
+    return items
+
+
+def cap_violations(items: list[tuple[int, str, str]]) -> list[Violation]:
+    """Caps are recorded, not inherited silently: default 4, a lowering needs a reason.
+
+    A record that declares ``form: collection`` must state ``plan_cap`` and
+    ``lane_cap``; an unrecorded cap reads as ``DEFAULT_CAP``, so a sequential run
+    is always an explicit choice with a ``cap_reason`` and never a quiet default.
+    """
+    caps: dict[str, tuple[int, str]] = {}
+    form_line: int | None = None
+    reason = ""
+    for line, key, value in items:
+        name = key.replace("-", "_")
+        if name in CAP_KEYS:
+            caps[name] = (line, value)
+        elif name == "cap_reason":
+            reason = value.strip()
+        elif name == "form" and value.strip().strip("`").lower().startswith("collection"):
+            form_line = line
+
+    violations: list[Violation] = []
+    if form_line is not None:
+        for key in CAP_KEYS:
+            if key not in caps:
+                violations.append(
+                    Violation(
+                        form_line,
+                        "header declares 'form: collection' but records no %r: an "
+                        "unrecorded cap is the contract default %d, never a "
+                        "serialized 1" % (key, DEFAULT_CAP),
+                    )
+                )
+    for key, (line, value) in caps.items():
+        text = value.strip().strip("`")
+        if not re.fullmatch(r"\d+", text):
+            violations.append(
+                Violation(line, "%s %r is not a positive integer" % (key, value.strip()))
+            )
+            continue
+        number = int(text)
+        if not 1 <= number <= MAX_CAP:
+            violations.append(
+                Violation(line, "%s %d is outside 1..%d" % (key, number, MAX_CAP))
+            )
+        elif number < DEFAULT_CAP and not reason:
+            violations.append(
+                Violation(
+                    line,
+                    "%s %d is below the contract default %d without a 'cap_reason'"
+                    % (key, number, DEFAULT_CAP),
+                )
+            )
+    return violations
 
 
 # --------------------------------------------------------------------------- #
@@ -222,7 +318,7 @@ def state_violation(value: str, allowed: tuple[str, ...], label: str) -> str | N
 
 def lint_text(text: str) -> tuple[list[Violation], int, int]:
     lines = text.splitlines()
-    violations: list[Violation] = []
+    violations: list[Violation] = cap_violations(header_items(lines))
     table_count = row_count = 0
 
     for header_line, header, separator_line, separator, rows, tail in tables(lines):

@@ -117,6 +117,8 @@ and history rather than rerunning the same failed criterion unchanged.
 
 **Parallel preparation** is allowed up to `plan_cap` and observed host capacity, accepting handoffs as
 they finish. Physical writes to the shared collection status are serialized through `pdca-executor`.
+`plan_cap` is recorded in the status header; an unrecorded value is the contract default **4**, never a
+serialized **1**, and running preparation one item at a time is legal only with a recorded `cap_reason`.
 Independent planning does not need predecessor artefacts. Estimated write surfaces are **non-binding
 claims** derived from known constraints; uncertain surfaces stay explicit and conservatively constrain
 later lane parallelism. Planning never locks files or promises that DO will use a prescribed
@@ -445,6 +447,10 @@ steps are not recalculated.
 File: `.pdca/status/collection-<slug>.md`. It contains:
 
 - the input (the item list) and the `collection-id`;
+- the **header parameters**: `form: collection`, `plan_cap` and `lane_cap` (integers 1–32, contract
+  default **4**), plus `cap_reason` when a cap is below 4. An unrecorded cap is 4, never a serialized 1;
+  `status_lint.py` rejects a `form: collection` record without both caps and a lowering without a
+  reason, so a sequential run is always an explicit choice;
 - the table of groups: id, items, order, worktree, branch/ref and **status**
   (`pending` | `in-progress` | `done` | `incomplete` | `merged`). `merged` is an integrated `done`
   group (the transition is only `done` → `merged`); `incomplete` stays `incomplete` and never merges.
@@ -515,8 +521,8 @@ unchanged.
 
 | Parameter | Default |
 |---|---|
-| PLAN parallelism ceiling | `min(#items without a ready plan/charter, plan_cap)`; `plan_cap = 4` is a scheduling choice of this contract, not a host setting. It is bounded by what the host actually runs at once; only the write of the common status is serialized. |
-| Lane parallelism ceiling | `min(#groups, cap)`; `cap = 4` is a scheduling choice of this contract, not a host setting. It is bounded by observed concurrency **and** the declared host budget. A budget that cannot carry four lanes lowers `cap` and is recorded, not discovered later as timeouts. |
+| PLAN parallelism ceiling | `min(#items without a ready plan/charter, plan_cap)`; `plan_cap` is recorded in the status header, default 4 — a scheduling choice of this contract, not a host setting. An unrecorded value means 4, never 1, and sequential preparation requires a recorded `cap_reason`. Only the write of the common status is serialized. |
+| Lane parallelism ceiling | `min(#groups, lane_cap)`; `lane_cap` is recorded in the status header, default 4 — a scheduling choice of this contract, not a host setting. It is bounded by observed concurrency **and** the declared host budget. A budget that cannot carry four lanes lowers `lane_cap` and records the `cap_reason`, not discovered later as timeouts. |
 | Worktree directory | `<repo>-worktrees/<collection-id>/<group>` (not created with a single group) |
 | Merge | With two or more groups, wait for **all** lanes to be terminal, then `git merge --no-ff` for the **`done` groups only**, sequentially. Not needed with one group; `incomplete` is never merged. |
 | One group | Work in the current worktree and branch; no worktrees, group/task branches or merge; `incomplete` leaves already-made commits on the current branch. |

@@ -63,6 +63,14 @@ class CollectionContractTest(unittest.TestCase):
         self.assertLess(self.text.index("scripts/status_lint.py"),
                         self.text.index("## Collection status record"))
 
+    def test_parallelism_caps_are_recorded_not_assumed(self):
+        # An unrecorded plan_cap used to mean "safe" 1 and silently serialized the run.
+        flat = " ".join(self.text.split())
+        for phrase in ("`plan_cap`", "`lane_cap`", "`cap_reason:`", "default **4**",
+                       "An unrecorded cap is 4, never 1"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, flat)
+
     def test_no_deleted_reference_links(self):
         self.assertNotIn("references/lane.md", self.text)
         self.assertNotIn("references/status.md", self.text)

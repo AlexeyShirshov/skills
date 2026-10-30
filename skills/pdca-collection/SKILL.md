@@ -162,8 +162,8 @@ classification of the batch.
    the same failed criterion unchanged.
 
    **Parallel preparation.** Send the initial PLAN/preparation dispatches concurrently up to
-   `plan_cap` and observed host capacity, accepting handoffs as they finish; the physical
-   writes to the shared collection status are serialized through `pdca-executor`.
+   `plan_cap` (default 4, §Parameters) and observed host capacity, accepting handoffs as they finish;
+   the physical writes to the shared collection status are serialized through `pdca-executor`.
    Independent planning does not require predecessor artefacts. Estimated write surfaces
    are **non-binding claims** derived from known constraints; uncertain or unknown surfaces
    stay explicit and conservatively constrain later lane parallelism. Planning never
@@ -181,7 +181,8 @@ classification of the batch.
 4. **Clustering after the barrier.** `pdca-planner` builds the dependency DAG and
    groups from item dependencies, estimated write conflicts and host capacity. Overlapping
    or uncertain write surfaces must run in one sequential lane; independent groups may run
-   in parallel. Persist the schedule and PLAN revision vector before allocating lanes.
+   in parallel. Persist the schedule, `plan_cap`/`lane_cap` and the PLAN revision vector in the status
+   header before allocating lanes.
    Later changes require a planner decision and applicable approval
    (§Lane execution and schedule revision → Stale plan and schedule revision).
    DO chooses implementation.
@@ -228,23 +229,20 @@ the persistent binding of the schedule (§P.3–§P.4). Before that step they do
 1. Through `pdca-executor`: one worktree per group
    `<repo>-worktrees/<collection-id>/<group>` and the branch `collection/<id>/group-<g>`.
    Group and task branches are sibling Git refs, never name-prefixes of each other.
-   **If there is one group** — no worktree and no branches (`group-<g>`, `task-<g>-<k>`) are
-   created: work in the current worktree on the current branch, the commits go there too; instead of
-   `merge --no-ff` — ordinary work in place (there is nothing to merge).
+   **One group** — no worktree, branches or merge (§P).
 2. In autonomous mode, available `pdca-orchestrator` group runners are started in parallel
-   (one per group, up to `cap`); each may be the **designated item driver** and keeps a campaign's
-   driver across all its steps (§Items and execution ownership, §Lane execution and schedule revision). In normal
-   mode the primary itself drives the cycles/steps and obtains approval; it does not spawn a
-   `pdca-orchestrator` as their driver. Actual lane concurrency is bounded by host capability.
-   With one group there is one lane in the current worktree.
+   (one per group, up to the recorded `lane_cap`); each may be the **designated item driver** and
+   keeps a campaign's driver across all its steps (§Items and execution ownership, §Lane execution and
+   schedule revision). In normal mode the primary itself drives the cycles/steps and obtains approval;
+   it does not spawn a `pdca-orchestrator` as their driver. Actual lane concurrency is bounded by host
+   capability.
 3. **Merge barrier**: with `>=2` groups the merge starts only when **all** lanes are terminal
    (`done` | `incomplete` with an explicit outcome) — readiness = terminality, **not** success. Then
    `pdca-executor` sequentially performs `git merge --no-ff` **only for the `done` groups** (the
    message starts with `#<n>` for an issue item); a successfully integrated group moves `done` →
    `merged`. **An `incomplete` group is never merged**, even if before the failure it has successful
    items and commits: its tip does not enter the integration, the results are preserved (§A,
-   §Lane execution and schedule revision → The queue and the per-item continuation). **A running lane is not merged early.** With **one** group no
-   merge/worktree/branches are created (see §P). If the merge conflicts — `pdca-executor` runs
+   §Lane execution and schedule revision → The queue and the per-item continuation). **A running lane is not merged early.** If the merge conflicts — `pdca-executor` runs
    `git merge --abort`, the group **is escalated**: `pdca-escalate` (strong) makes the decision —
    resolve manually, reorder the order or mark the group `incomplete`; the other groups are not
    touched; gate `C` is not passed until the conflict is resolved.
@@ -423,10 +421,7 @@ of items — that is how the queue survives compaction and a restart.
   items/groups — `blocked` remains only a state of the parent verification.
 - With `>=2` groups the result of a `done` group is the tip of its branch
   `collection/<id>/group-<g>`, ff-advanced to the last completed item; with one group it is the
-  current branch.
-- With one group no group/task branches are created: the commits (in the allowed mode) go to the
-  current branch; `incomplete` leaves the commits already made without an automatic rollback, the
-  uncommitted changes are preserved as a patch and rolled back only along the failed item's paths.
+  current branch, which also keeps the commits already made and the failed item's patch (§P, §D).
 - If the lane returns no result (§Lane liveness), mark the group `incomplete` and preserve its refs and patch.
 - The lane returns a compact summary of ≤8 lines without code/diffs/logs.
 
@@ -544,6 +539,11 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
 - the input (the item list) and the `collection-id`; each item's goal/brief stays **verbatim**
   here and in its `## Original task`; later briefs reference that source exactly (base
   §Reference, not repetition);
+- **Header caps.** `form: collection`, `plan_cap` and `lane_cap` (1–32, default **4**; below 4 needs
+  `cap_reason:`) are recorded in the header. An unrecorded cap is 4, never 1; an old record gains the
+  fields on its next write. `scripts/status_lint.py` rejects a `form: collection` record without both
+  caps, a non-integer or out-of-range value, and a lowering without a reason — a sequential run is
+  always an explicit choice;
 - the table of groups: id, items, order, worktree, branch/ref, **status**
   (`pending` | `in-progress` | `done` | `incomplete` | `merged`): `merged` is an integrated `done`
   group (the transition is only `done` → `merged`); `incomplete` stays `incomplete` (never
@@ -654,8 +654,9 @@ Host role and resource-blocker rules are inherited from `../pdca/SKILL.md`
 When an autonomous `pdca-orchestrator` is absent or cannot delegate, use the **flat cheap primary**
 as driver with `Notice:` and a durable reason, if the host permits it. It drives one current item
 per lane and delegates PLAN/DO/CHECK to their required roles; a campaign still has one designated
-driver for all steps. Independent groups may be processed concurrently up to `cap` only if the
-host permits that concurrency; otherwise they are sequential. Normal mode already uses the
+driver for all steps. Independent groups may be processed concurrently up to the recorded `lane_cap`
+only if the host permits that concurrency; otherwise they are sequential, recorded as `cap_reason`.
+Normal mode already uses the
 primary driver and must not treat the lack of orchestrator delegation as a reason to skip approval.
 The fallback never promotes a driver into PLAN, CHECK, execution or expert-review authority.
 
@@ -666,11 +667,11 @@ collection preparation, barrier and handoffs remain unchanged.
 
 | Parameter | Default |
 |---|---|
-| PLAN parallelism ceiling | `min(#items without a ready plan/charter, plan_cap)`; `plan_cap` = 4 is a **scheduling choice of this contract**, not a host setting (the host exposes no such key); always bounded by what the host actually runs at once, and only the write of the common status is serialized |
-| Lane parallelism ceiling | `min(#groups, cap)`; `cap` = 4 is a **scheduling choice of this contract**, not a host setting; bounded by the host's observed concurrency **and by the declared host budget** (memory, measurement locks, container capacity) — a declared budget that cannot carry four lanes lowers `cap` and is recorded, not discovered later as timeouts |
+| PLAN parallelism ceiling | `min(#items without a ready plan/charter, plan_cap)`; `plan_cap` is recorded in the status header, default 4 (unrecorded = 4, never 1; below 4 needs `cap_reason`) — a scheduling choice of this contract, not a host setting; only the common status write is serialized |
+| Lane parallelism ceiling | `min(#groups, lane_cap)`; `lane_cap` is recorded in the status header, default 4 (below 4 needs `cap_reason`) — a scheduling choice of this contract, not a host setting; bounded by observed concurrency **and the declared host budget** (memory, measurement locks, containers) — a budget that cannot carry four lanes lowers `lane_cap` and records why, not discovered later as timeouts |
 | Worktree directory | `<repo>-worktrees/<collection-id>/<group>` (not created with a single group) |
-| Merge | with `>=2` groups wait for **all** lanes to be terminal, then `git merge --no-ff` of **the `done` groups only** sequentially (not needed with one group); `incomplete` is not merged |
-| One group | work in the current worktree/branch; worktrees, group/task branches and the merge are not created; `incomplete` leaves the commits already made in the current branch |
+| Merge | `>=2` groups: after all lanes are terminal, `git merge --no-ff` of the `done` groups only, sequentially; not with one group; `incomplete` is not merged |
+| One group | work in the current worktree/branch; no worktrees, branches or merge; `incomplete` keeps the commits already made |
 | Autocommit/merge right | given by a project overlay or an explicit user request; the skill itself grants no right; `>=2` groups without the right — a preflight blocker before the allocation; one group may go in the current tree without commits if allowed; push never |
 
 The roles, the tiers and their model bindings are the host's and the common contract's: this
