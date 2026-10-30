@@ -116,7 +116,10 @@ gaps: what is verified and what remains an assumption.
 
 Counter effects and their recording stay in the base contract's §State machine and counters.
 Re-gathering missing evidence is not a product defect and is not a counted attempt; it never extends
-the no-4th rule.
+the no-4th rule. A criterion gets **one** such round per revision: when its evidence is still missing
+after that round, record it `unverified` and return a verdict on the artefacts that exist — the same
+criterion is not sent out for a second round in the same revision, and a repeated request is itself
+the signal to route to PLAN, to escalation, or to the containing form's boundary decision.
 
 ## Honest limits
 

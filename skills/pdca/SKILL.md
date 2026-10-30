@@ -239,7 +239,8 @@ a separate todo or a second event log is never opened.
   `unverified` — not a defect and not an attempt. After the **third failed substantive CHECK of the
   same revision** → `pdca-escalate` before a fourth. `CHECK → PLAN` does **not** consume the next
   revision's attempts; a new revision resets `n` to 1 and never erases the same-defect history. A DO
-  → ACT incomplete finalization adds no attempt and no pass.
+  → ACT incomplete finalization adds no attempt and no pass. **One** re-gather round per criterion
+  per revision (`references/check.md`).
 - **Contract revision `rv`** — names the criteria/contract, not an attempt: grows only when the
   criteria or required rows actually change, and appears only in the evidence path.
 
