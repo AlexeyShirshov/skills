@@ -1,6 +1,0 @@
-PROBE2 done
-2026-10-19T09:24:56.913Z c160e5d3 loaded path=v1 powershell=/tmp/opencode/fake-ps
-2026-10-19T09:24:56.914Z c160e5d3 skip-excluded complete session=k1 title="Background job" match="Background"
-2026-10-19T09:24:56.914Z c160e5d3 toast done:k1
-2026-10-19T09:24:56.917Z c160e5d3 skip complete key=done:k1 event.id=undefined
-2026-10-19T09:24:56.918Z c160e5d3 toast done:k2
