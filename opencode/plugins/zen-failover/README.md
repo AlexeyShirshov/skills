@@ -9,8 +9,9 @@ again.
   default model, and the session that hit the limit.
 - **No false positives on bursts**: a bare per-minute `429` is retried; only an
   explicit quota wording or a `402` degrades a subscription.
-- **Availability probe**: while degraded, the plan is asked once a minute; the
-  first successful answer restores the original bindings.
+- **Availability probe**: while degraded, the plan is asked once every five
+  minutes — once per process, not once per loaded copy; the first successful
+  answer restores the original bindings.
 - **Persisted**: a restart does not silently go back to a plan that is still out.
 
 ## Rules
@@ -34,12 +35,16 @@ Per-model overrides: `opencode-go/gemini-4-argon` (and the older
 4. The decision is persisted per source and re-applied on the next OpenCode
    start, so a restart does not silently go back.
 5. **Availability probe**: while a source is degraded, every
-   `ZEN_FAILOVER_PROBE_MS` (default 60s) the plugin creates a throwaway session
-   on one of the source's original models, asks for one word, and removes it.
-   A successful answer means the plan is usable again, so the transforms are
-   disposed and the switched sessions return to their original models — without
-   waiting for the cooldown. The probe also runs once at process start (capped
-   by `ZEN_FAILOVER_PROBE_START_WAIT_MS`, default 5s).
+   `ZEN_FAILOVER_PROBE_MS` (default 5 min) the plugin creates a throwaway
+   session on one of the source's original models, asks for one word, and
+   removes it. A successful answer means the plan is usable again, so the
+   transforms are disposed and the switched sessions return to their original
+   models — without waiting for the cooldown. The probe also runs once at
+   process start (capped by `ZEN_FAILOVER_PROBE_START_WAIT_MS`, default 5s).
+   The host loads the plugin once per location, so a process can hold several
+   copies; the request itself is issued once per interval for the whole process
+   and every copy reuses the verdict, so a degraded plan sees one rejection per
+   interval instead of one per location.
 6. The cooldown (`resetAt`) stays as a backstop: if probing is disabled or keeps
    failing, the source is restored when the cooldown expires.
 
@@ -63,7 +68,7 @@ untouched, and vice versa.
 | --- | --- |
 | rules | `opencode-go=deepseek/deepseek-flash;openai=opencode/<id>` |
 | quota-only sources | `openai` (bare 429 is transient there) |
-| availability probe | every `60s` while degraded; also once at start (max 5s wait) |
+| availability probe | every `5 min` while degraded (one request per process); also once at start (max 5s wait) |
 | cooldown per source | `7d` (backstop); `ZEN_FAILOVER_RESET_<SOURCE>` = `5h`, `7d`, `month` |
 
 Env overrides: `ZEN_FAILOVER_RULES`, `ZEN_FAILOVER_MAP`

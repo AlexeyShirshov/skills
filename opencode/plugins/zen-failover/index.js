@@ -18,16 +18,21 @@
 // 2026-10-20 (ChatGPT at 95%/79% remaining, Sol moved to Console).
 //
 // Once degraded, the plugin does not wait for the cooldown: every
-// ZEN_FAILOVER_PROBE_MS (default 60s, 0 disables) it asks the source directly —
-// a throwaway session on the source model, one minimal generation — and
-// restores the agents/sessions as soon as that probe succeeds. The cooldown in
-// `resetAt` stays as a backstop.
+// ZEN_FAILOVER_PROBE_MS (default 5 min, 0 disables) it asks the source
+// directly — a throwaway session on the source model, one minimal generation —
+// and restores the agents/sessions as soon as that probe succeeds. The cooldown
+// in `resetAt` stays as a backstop.
+//
+// The host instantiates this plugin once per location, so one process can hold
+// several copies. The probe is a real request to the plan (and, while the plan
+// is out, a real rejection in its usage log): it fires once per interval per
+// degraded source for the whole process, and the copies share the verdict.
 //
 // Env:
 //   ZEN_FAILOVER_RULES         source=fallback rules (see above)
 //   ZEN_FAILOVER_MAP           "src/model=dst/model,..." per-model override
 //   ZEN_FAILOVER_QUOTA_ONLY    sources where a bare 429 is not a limit (openai)
-//   ZEN_FAILOVER_PROBE_MS      availability probe interval, 0 disables (60000)
+//   ZEN_FAILOVER_PROBE_MS      availability probe interval, 0 disables (300000)
 //   ZEN_FAILOVER_PROBE_ON_START  "0" skips the probe at process start (on)
 //   ZEN_FAILOVER_PROBE_START_WAIT_MS  max startup wait for that probe (5000)
 //   ZEN_FAILOVER_RESET_<SRC>   cooldown, "7d" | "5h" | "month" (default 7d)
@@ -65,12 +70,13 @@ const QUOTA_ONLY = new Set(
 const QUOTA_TEXT =
   /usage.?limit|quota|insufficient|weekly limit|plan limit|subscription limit|exceeded your/i
 const RATE_TEXT = /rate.?limit|limit reached|too many requests|budget|exceeded/i
-const PROBE_MS = Number(process.env.ZEN_FAILOVER_PROBE_MS ?? 60 * 1000)
+const PROBE_MS = Number(process.env.ZEN_FAILOVER_PROBE_MS ?? 5 * 60 * 1000)
 const PROBE_ON_START = process.env.ZEN_FAILOVER_PROBE_ON_START !== "0"
 const PROBE_START_WAIT_MS = Number(process.env.ZEN_FAILOVER_PROBE_START_WAIT_MS ?? 5000)
 const PROBE_PROMPT = "Reply with the single word OK."
 const STORAGE_KEY = "zen-failover"
 const STORAGE_VERSION = 2
+const PROBE_LOOP_KEY = Symbol.for("opencode.zen-failover.probe-loop")
 
 let registrations = null
 let applying = null
@@ -392,7 +398,7 @@ async function probeSource(ctx, source, entry) {
     if (sessionID) {
       try {
         // V2 host API takes an input object: `remove({ sessionID })`. A bare id
-        // removes nothing and leaves an empty probe session behind every minute.
+        // removes nothing and leaves an empty probe session behind on every probe.
         await ctx.session.remove({ sessionID })
       } catch (error) {
         log(`probe ${source}: could not remove session ${sessionID} (${error?.message ?? error})`)
@@ -401,15 +407,71 @@ async function probeSource(ctx, source, entry) {
   }
 }
 
+/** State shared by every copy of the module loaded in this process. */
+function probeLoop() {
+  return (globalThis[PROBE_LOOP_KEY] ??= {
+    key: "",
+    at: 0,
+    verdicts: null,
+    inFlight: null,
+  })
+}
+
+/** Identity of the degraded set: a new degrade invalidates a cached verdict. */
+function degradedKey(state) {
+  return Object.entries(state.sources)
+    .filter(([source]) => RULES.has(source))
+    .map(([source, entry]) => `${source}:${entry.degradedAt}`)
+    .sort()
+    .join(",")
+}
+
+/**
+ * Ask every degraded source at most once per PROBE_MS for the whole process.
+ * A copy that arrives while a sweep is running awaits it instead of starting
+ * its own; a copy that arrives later reuses the fresh verdict. Each copy then
+ * applies the verdict to its own location, so the switch stays whole-server
+ * while the plan sees one probe per interval instead of one per location.
+ */
+async function probeVerdicts(ctx, state) {
+  const loop = probeLoop()
+  const key = degradedKey(state)
+  if (loop.verdicts && loop.key === key && Date.now() - loop.at < PROBE_MS) {
+    return loop.verdicts
+  }
+  if (loop.inFlight) {
+    const verdicts = await loop.inFlight
+    if (loop.key === key) return verdicts
+  }
+  const sweep = (async () => {
+    const current = await loadState(ctx)
+    const verdicts = {}
+    for (const [source, entry] of Object.entries(current.sources)) {
+      if (!RULES.has(source)) continue
+      verdicts[source] = await probeSource(ctx, source, entry)
+    }
+    loop.key = degradedKey(current)
+    loop.at = Date.now()
+    loop.verdicts = verdicts
+    return verdicts
+  })()
+  loop.inFlight = sweep
+  try {
+    return await sweep
+  } finally {
+    if (loop.inFlight === sweep) loop.inFlight = null
+  }
+}
+
 async function probeDegraded(ctx) {
   if (probeInFlight) return
   probeInFlight = true
   try {
     const state = await loadState(ctx)
+    const verdicts = await probeVerdicts(ctx, state)
     const restored = []
-    for (const [source, entry] of Object.entries(state.sources)) {
-      if (!RULES.has(source)) continue
-      if (!(await probeSource(ctx, source, entry))) continue
+    for (const [source, available] of Object.entries(verdicts)) {
+      if (!available || !state.sources[source]) continue
       await restoreSource(ctx, source, state)
       log(`probe ${source}: available, restored`)
       restored.push(source)
@@ -432,7 +494,11 @@ function stopProbes() {
   }
 }
 
-/** One timer for all degraded sources: probe now, then every PROBE_MS. */
+/**
+ * One timer per copy (the host loads the plugin once per location), so every
+ * location notices a restore; the network probe itself is shared across copies
+ * by `probeVerdicts`.
+ */
 async function startProbes(ctx, { immediate = false } = {}) {
   stopProbes()
   if (PROBE_MS <= 0) return

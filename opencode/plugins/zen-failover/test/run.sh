@@ -143,5 +143,15 @@ run "t6c: next turn after the restore" -c > "$TEST/t6c.out"
 grep -q "OK-PRIMARY" "$TEST/t6c.out" || { echo "FAIL: wrong answer after restore"; exit 1; }
 echo "   ok: probe found the plan available and restored the bindings"
 
+echo "== 7. probe deduplication across plugin copies =="
+if command -v node >/dev/null; then
+  ZEN_FAILOVER_PROBE_MS=600000 ZEN_FAILOVER_LOG="$TEST/plugin-dedupe.log" \
+    node "$ROOT/dedupe.mjs" start
+  ZEN_FAILOVER_PROBE_MS=200 ZEN_FAILOVER_LOG="$TEST/plugin-dedupe.log" \
+    node "$ROOT/dedupe.mjs" ticks
+else
+  echo "   skip: node not installed"
+fi
+
 echo
 echo "PASS: zen-failover end-to-end"
