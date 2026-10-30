@@ -3,3 +3,4 @@ dist/
 *.pdf
 *.pptx
 slides-export*
+!slides-export.pdf
