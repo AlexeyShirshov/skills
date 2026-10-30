@@ -16,6 +16,11 @@
           "name": "Mock DeepSeek V4.1 Flash (Go)",
           "limit": { "context": 200000, "output": 32000 },
           "capabilities": { "tools": true, "input": ["text"], "output": ["text"] }
+        },
+        "beam-free": {
+          "name": "Mock free model (Go)",
+          "limit": { "context": 200000, "output": 32000 },
+          "capabilities": { "tools": true, "input": ["text"], "output": ["text"] }
         }
       }
     },
@@ -58,7 +63,8 @@
   "agent": {
     "build": { "model": "mockgo/deepseek-v4.1-flash" },
     "coder": { "model": "mockgo/deepseek-v4.1-flash" },
-    "scout": { "model": "mockgo/deepseek-v4.1-flash" }
+    "scout": { "model": "mockgo/deepseek-v4.1-flash" },
+    "free-exec": { "model": "mockgo/beam-free" }
   },
   "plugins": ["__PLUGIN__"],
   "permissions": [{ "action": "*", "resource": "*", "effect": "allow" }]

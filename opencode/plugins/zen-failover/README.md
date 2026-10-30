@@ -24,6 +24,11 @@ again.
 Per-model overrides: `opencode-go/gemini-4-argon` (and the older
 `-contributor` id) → `opencode/gemini-4-argon`, `opencode-go/kimi-k3` → `moonshotai/kimi-k3`.
 
+**Free models are exempt.** A model that costs nothing (every price tier is 0) or whose id ends in
+`-free` is never switched off a degraded source, a limit it hits itself never degrades the source,
+and a probe prefers a paid model. A free model does not consume the paid allowance, so it keeps
+working while the plan is exhausted.
+
 ## What it switches
 
 1. **Every agent** whose model belongs to the degraded source, via a live agent
@@ -112,16 +117,19 @@ opencode/plugins/zen-failover/test/run.sh
 ```
 
 Two mock subscription providers (Go on 18081, ChatGPT on 18083) answer `429`;
-a mock fallback (18082) streams a reply. Six scenarios:
+a mock fallback (18082) streams a reply. Eight scenarios:
 
 1. fresh Go limit → agents + session switched, retry answered by the fallback;
 2. new process with the persisted state → first request goes straight to the
    fallback (zero Go hits);
 3. continued session → stays on the fallback;
-4. fresh ChatGPT-style limit → switches to its own fallback, Go untouched;
-5. transient `429` on a quota-only source → retried, not switched;
-6. the plan answers again → the startup probe restores the original bindings,
-   and the next turn reaches the subscription.
+4. free model (`beam-free`) on a degraded source → keeps its binding and is
+   served by the subscription;
+5. fresh ChatGPT-style limit → switches to its own fallback, Go untouched;
+6. transient `429` on a quota-only source → retried, not switched;
+7. the plan answers again → the startup probe restores the original bindings,
+   and the next turn reaches the subscription;
+8. probe deduplication across plugin copies.
 
 The test never uses real providers or the real session database. Point it at a
 candidate build with `ZEN_FAILOVER_PLUGIN=/path/to/plugin`.

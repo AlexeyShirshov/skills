@@ -85,6 +85,18 @@ run "t3: continue the switched session" -c > "$TEST/t3.out"
 [ "$(hits 18082)" -ge 1 ] || { echo "FAIL: no fallback request"; exit 1; }
 echo "   ok: continued session stayed on the fallback"
 
+echo "== 8. free model survives a degraded subscription =="
+: > "$TEST/mock.jsonl"
+: > "$TEST/plugin.log"
+run "t8: free model while Go is degraded" --agent free-exec > "$TEST/t8.out"
+[ "$(hits_model 18081 beam-free)" -ge 1 ] || { echo "FAIL: free model did not reach the subscription"; exit 1; }
+[ "$(hits_model 18082 beam-free)" -eq 0 ] || { echo "FAIL: free model was switched off the subscription"; exit 1; }
+grep -q "OK-FREE" "$TEST/t8.out" || { echo "FAIL: free model did not answer"; exit 1; }
+if grep -q "switchModel .*beam-free" "$TEST/plugin.log"; then
+  echo "FAIL: free model was switched by the transform"; exit 1
+fi
+echo "   ok: free model kept its binding while Go was degraded"
+
 echo "== 4. fresh ChatGPT-style limit =="
 rm -rf "$TEST/data" "$TEST/state" "$TEST/cache"
 mkdir -p "$TEST/data" "$TEST/state" "$TEST/cache"

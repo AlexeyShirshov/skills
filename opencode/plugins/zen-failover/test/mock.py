@@ -73,8 +73,9 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
         port = self.server.server_address[1]
         record(port, self.path, body)
+        free = str(body.get("model") or "").endswith("-free")
 
-        if port == 18081 or (port == 18083 and not self.flipped()):
+        if (port == 18081 and not free) or (port == 18083 and not self.flipped()):
             messages = [m for m in (body.get("messages") or []) if isinstance(m, dict)]
             transient = any("transient" in str(m.get("content") or "") for m in messages)
             if port == 18083 and not transient:
@@ -97,6 +98,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         answer = "OK-PRIMARY" if port == 18083 else "OK-FALLBACK"
+        if port == 18081 and free:
+            answer = "OK-FREE"
 
         if not body.get("stream"):
             self._send(

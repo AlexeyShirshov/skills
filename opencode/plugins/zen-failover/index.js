@@ -11,6 +11,12 @@
 // Trigger: two limit errors from the same source within five minutes, or one
 // 402. A single transient 429 is retried without switching.
 //
+// Free models (zero cost per token, or an id ending in `-free`) are exempt:
+// degrading a subscription never switches them, a limit they hit themselves
+// never degrades the source, and a probe prefers a paid model. A free model
+// does not consume the paid allowance, so it keeps working while the plan is
+// exhausted.
+//
 // Sources listed in ZEN_FAILOVER_QUOTA_ONLY (default: openai) must name an
 // exhausted quota in the error text: a subscription answers a transient
 // per-minute 429 with the same status, and switching the whole server off the
@@ -89,6 +95,9 @@ let restoreRegistration = null
 let probeTimer = null
 let probeInFlight = false
 const recentHits = new Map()
+// Zero-cost models are exempt from failover: degrading a subscription must not
+// take away a model that never touches its paid allowance.
+let freeModels = new Set()
 
 function log(line) {
   try {
@@ -102,6 +111,46 @@ function debug(line) {
 
 function unwrap(value) {
   return value && typeof value === "object" && "data" in value ? value.data : value
+}
+
+/** A price tier that bills nothing for input, output or cache. */
+function zeroTier(tier) {
+  return (
+    Number(tier?.input) === 0 &&
+    Number(tier?.output) === 0 &&
+    Number(tier?.cache?.read ?? 0) === 0 &&
+    Number(tier?.cache?.write ?? 0) === 0
+  )
+}
+
+/**
+ * A free model never consumes the source's paid allowance, so a degraded
+ * subscription must leave it alone. The catalog is authoritative where it has
+ * prices; the `-free` suffix keeps the rule working for providers whose models
+ * carry no price metadata (custom/mock providers).
+ */
+function isFreeModel(providerID, ref) {
+  const id = modelID(ref)
+  if (!id) return false
+  return /-free$/.test(id) || freeModels.has(`${providerID}/${id}`)
+}
+
+async function loadFreeModels(ctx) {
+  try {
+    const models = unwrap(await ctx.model.list()) ?? []
+    const next = new Set()
+    for (const model of models) {
+      const cost = model?.cost ?? []
+      const providerID = model?.providerID
+      const id = model?.id ?? model?.modelID
+      if (!providerID || !id) continue
+      if (cost.length > 0 && cost.every(zeroTier)) next.add(`${providerID}/${id}`)
+    }
+    freeModels = next
+  } catch (error) {
+    // No catalog: the `-free` suffix rule still applies.
+    debug(`free-model catalog unavailable: ${error?.message ?? error}`)
+  }
 }
 
 function parseModel(text) {
@@ -140,6 +189,7 @@ function modelID(ref) {
 function fallbackFor(source, ref) {
   const id = modelID(ref)
   if (!id) return null
+  if (isFreeModel(source, ref)) return null
   const hit = MODEL_MAP.get(`${source}/${id}`)
   if (hit) return { providerID: hit.providerID, id: hit.id }
   const rule = RULES.get(source)
@@ -233,7 +283,7 @@ async function ensureDegraded(ctx, source, sessionID, model) {
       entry = { degradedAt: Date.now(), resetAt: nextResetAt(source), agents: {}, sessions: {} }
       const agents = unwrap(await ctx.agent.list()) ?? []
       for (const agent of agents) {
-        if (agent?.model?.providerID === source) {
+        if (agent?.model?.providerID === source && !isFreeModel(source, agent.model)) {
           entry.agents[agent.id] = {
             id: modelID(agent.model),
             providerID: source,
@@ -246,7 +296,12 @@ async function ensureDegraded(ctx, source, sessionID, model) {
       log(`limit hit: ${source} degraded`)
     }
 
-    if (sessionID && model?.providerID === source && !entry.sessions[sessionID]) {
+    if (
+      sessionID &&
+      model?.providerID === source &&
+      !isFreeModel(source, model) &&
+      !entry.sessions[sessionID]
+    ) {
       track(entry.sessions, { id: sessionID, model }, source)
       await saveState(ctx, state)
     }
@@ -280,6 +335,7 @@ async function ensureDegraded(ctx, source, sessionID, model) {
 }
 
 async function registerTransforms(ctx) {
+  await loadFreeModels(ctx)
   if (registrations) {
     try {
       await registrations.agentRegistration.dispose()
@@ -368,9 +424,13 @@ async function restoreSource(ctx, source, state) {
  * that was switched away from it (a model can be used without any agent).
  */
 function probeModel(entry) {
-  const agent = Object.values(entry.agents ?? {})[0]
+  const agent = Object.values(entry.agents ?? {}).find(
+    (candidate) => !isFreeModel(candidate.providerID, candidate),
+  )
   if (agent) return { providerID: agent.providerID, id: agent.id, variant: agent.variant }
-  const session = Object.values(entry.sessions ?? {})[0]
+  const session = Object.values(entry.sessions ?? {}).find(
+    (candidate) => !isFreeModel(candidate.providerID, candidate),
+  )
   if (session) return { providerID: session.providerID, id: session.id, variant: session.variant }
   return undefined
 }
@@ -540,6 +600,7 @@ export default {
     log(`loaded (rules: ${[...RULES.keys()].join(",")})`)
     debug(`ctx keys: ${Object.keys(ctx).join(",")}`)
     debug(`ctx.session keys: ${Object.keys(ctx.session ?? {}).join(",")}`)
+    await loadFreeModels(ctx)
     await resetIfExpired(ctx)
     const state = await loadState(ctx)
     if (Object.keys(state.sources).length > 0) {
@@ -593,6 +654,12 @@ export default {
           `attempt=${event?.attempt} type=${event?.error?.type} message=${event?.error?.message}`,
       )
       if (!source || !RULES.has(source)) return
+      if (isFreeModel(source, model)) {
+        // A free model that hits its own cap must not take the paid plan down
+        // with it: the source's allowance is untouched.
+        debug(`limit hit ${source}/${model?.id}: free model, not degrading`)
+        return
+      }
       if (!isLimitError(source, event.error)) return
       try {
         if (!sustainedLimit(source, event.error)) {
