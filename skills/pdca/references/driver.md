@@ -65,7 +65,11 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
 - **PLAN** — `plan_reference_path` above; the task by exact reference; the facts as pointers.
 - **DO** — the frozen plan by exact reference, the cycle's `evidence_root`, and only the
   phase-specific deltas; the phase report exactly as its owner returned it, or an exact reference to
-  a complete artefact the executor can read. A digest, retelling or translation is not a source.
+  a complete artefact the executor can read. A digest, retelling or translation is not a source. An
+  overlay's helper lives in that overlay's `scripts/` (`pdca-dotnet` ships `validate_inner_loop.py` and
+  `pdca_evidence.py` there, never in the base's); the project's `.pdca/scripts/` starts empty and the
+  executor stages byte-identical copies — a missing copy is never a substitute-check, waiver or
+  `Notice:` ground.
 - **CHECK** — in **every** `pdca-check` dispatch (first CHECK, recheck, campaign step, collection
   lane/item, integration CHECK) the **complete contents** of `check.md` inline, with no path and no
   instruction to read it; if it cannot be loaded whole, return a blocker before dispatch. The rule and

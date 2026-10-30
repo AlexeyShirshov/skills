@@ -261,6 +261,15 @@ that choose that method. They are **optional**: a task whose criteria do not nee
 run, and their absence is not a failure. Neither executes a supplied command; both validate recorded
 JSON and print `FAIL:`/`ERROR:` with exit `2`/`1`.
 
+**Where they live.** Both helpers ship only in this overlay's own `scripts/` directory: `../pdca-dotnet/scripts/`
+relative to the base package, installed as `<skills-root>/pdca-dotnet/scripts/`. The base `../pdca/scripts/`
+carries `pdca_cost.py` and `plan_lint.py` only, so listing it says nothing about these two — an overlay
+helper is looked up in the overlay's `scripts/`, not in the base's. Their absence from a project's
+`.pdca/scripts/` is equally normal, because that directory is workspace, not installation: stage
+byte-identical copies from the overlay's `scripts/` before the first run, record the staging (source path
+and sha256), and run the staged copies from the project root. A missing workspace copy is staging work,
+never grounds for a substitute gate, a waiver, a deviation or a `Notice:`.
+
 `scripts/validate_inner_loop.py` accepts a `brief`, `report`, `project` (journal projection) or
 `manifest`. A brief has `unit` and a nested `scope`:
 
