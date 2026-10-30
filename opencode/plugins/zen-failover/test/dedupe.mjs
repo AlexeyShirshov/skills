@@ -22,7 +22,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const PLUGIN = process.env.ZEN_FAILOVER_TEST_PLUGIN ?? join(HERE, "..", "index.js")
 const MODE = process.argv[2] ?? "start"
 const PROBE_MS = Number(process.env.ZEN_FAILOVER_PROBE_MS ?? 600000)
-const PROBE_TIMEOUT = 5000
+const PROBE_TIMEOUT = 15000
 
 process.env.ZEN_FAILOVER_RULES = "mockgo=mockds/deepseek-flash"
 process.env.ZEN_FAILOVER_MAP = "mockgo/gemini-4-argon=mockds/gemini-4-argon"
@@ -78,6 +78,11 @@ const storage = {
 }
 
 const calls = []
+// A real probe is a network round-trip, so the verdict finishes a bit after the
+// tick that started it. The interval must be anchored at the request, not at
+// the answer: with the anchor at the answer the next tick looks fresh and the
+// cadence silently doubles.
+const PROBE_LATENCY = Math.min(Math.round(PROBE_MS * 0.2), 200)
 
 function makeCtx() {
   return {
@@ -88,6 +93,7 @@ function makeCtx() {
       },
       async generate() {
         calls.push(Date.now())
+        await sleep(PROBE_LATENCY)
         // The plan is still out: every probe is rejected.
         throw Object.assign(new Error("usage limit reached for gemini-4-argon"), { status: 429 })
       },
@@ -133,9 +139,22 @@ async function loadCopy(n) {
 const copies = MODE === "ticks" ? 3 : 2
 const plugins = await Promise.all(Array.from({ length: copies }, (_, i) => loadCopy(i)))
 const start = Date.now()
-const cleanups = await Promise.all(
-  plugins.map((plugin, i) => withTimeout(plugin.setup(makeCtx(i)), PROBE_TIMEOUT, "setup")),
-)
+const cleanups = []
+if (MODE === "start") {
+  // Every copy starts at the same moment: the startup probe must be shared.
+  cleanups.push(
+    ...(await Promise.all(
+      plugins.map((plugin, i) => withTimeout(plugin.setup(makeCtx(i)), PROBE_TIMEOUT, "setup")),
+    )),
+  )
+} else {
+  // Copies load at different moments, so their timers sit at different phases —
+  // the usual case in a live host.
+  for (const [i, plugin] of plugins.entries()) {
+    if (i > 0) await sleep(Math.round(PROBE_MS * 0.02) * i)
+    cleanups.push(await withTimeout(plugin.setup(makeCtx(i)), PROBE_TIMEOUT, "setup"))
+  }
+}
 
 if (MODE === "start") {
   if (calls.length !== 1) {
@@ -156,6 +175,13 @@ if (MODE === "start") {
         `(interval ${PROBE_MS}ms) — a burst is a duplicate probe, not a new interval`,
     )
   }
+  const stretched = gaps.filter((gap) => gap > PROBE_MS * 1.6)
+  if (stretched.length > 0) {
+    fail(
+      `probes ${JSON.stringify(stretched)}ms apart (interval ${PROBE_MS}ms) — ` +
+        `an interval was skipped, the cadence is not the configured one`,
+    )
+  }
   const budget = 1 + Math.ceil(elapsed / PROBE_MS) + 2
   if (calls.length > budget) {
     fail(`${calls.length} probes in ${elapsed}ms across ${copies} copies (budget ${budget})`)
@@ -163,6 +189,6 @@ if (MODE === "start") {
   if (calls.length < 2) fail("the loop stopped probing")
   console.log(
     `   ok: ${calls.length} probes in ${elapsed}ms across ${copies} copies, ` +
-      `closest gap ${Math.min(...gaps)}ms >= ${PROBE_MS / 2}ms`,
+      `gaps ${Math.min(...gaps)}..${Math.max(...gaps)}ms (interval ${PROBE_MS}ms)`,
   )
 }

@@ -77,6 +77,11 @@ const PROBE_PROMPT = "Reply with the single word OK."
 const STORAGE_KEY = "zen-failover"
 const STORAGE_VERSION = 2
 const PROBE_LOOP_KEY = Symbol.for("opencode.zen-failover.probe-loop")
+// How long a verdict is reused by the other copies. Strictly shorter than the
+// interval: with `PROBE_MS` a tick that lands a few milliseconds before
+// "interval elapsed" would reuse the verdict and the loop would silently probe
+// every second interval (observed: 10 min gaps with a 5 min setting).
+const PROBE_FRESH_MS = PROBE_MS * 0.9
 
 let registrations = null
 let applying = null
@@ -436,14 +441,19 @@ function degradedKey(state) {
 async function probeVerdicts(ctx, state) {
   const loop = probeLoop()
   const key = degradedKey(state)
-  if (loop.verdicts && loop.key === key && Date.now() - loop.at < PROBE_MS) {
-    return loop.verdicts
-  }
   if (loop.inFlight) {
     const verdicts = await loop.inFlight
     if (loop.key === key) return verdicts
+  } else if (loop.verdicts && loop.key === key && Date.now() - loop.at < PROBE_FRESH_MS) {
+    // A copy whose timer sits at another phase reuses this verdict instead of
+    // asking the plan a second time in the same interval.
+    return loop.verdicts
   }
   const sweep = (async () => {
+    // Anchor the interval at the moment the plan was asked, not at the moment
+    // its (possibly slow) answer arrived: otherwise the next tick looks
+    // "fresh" and the cadence doubles.
+    const startedAt = Date.now()
     const current = await loadState(ctx)
     const verdicts = {}
     for (const [source, entry] of Object.entries(current.sources)) {
@@ -451,7 +461,7 @@ async function probeVerdicts(ctx, state) {
       verdicts[source] = await probeSource(ctx, source, entry)
     }
     loop.key = degradedKey(current)
-    loop.at = Date.now()
+    loop.at = startedAt
     loop.verdicts = verdicts
     return verdicts
   })()
