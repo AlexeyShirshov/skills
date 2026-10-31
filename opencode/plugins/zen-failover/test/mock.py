@@ -50,11 +50,13 @@ class Handler(BaseHTTPRequestHandler):
         flip = os.environ.get("MOCK_FLIP")
         return bool(flip and os.path.exists(flip))
 
-    def _send(self, status, payload):
+    def _send(self, status, payload, headers=None):
         data = json.dumps(payload).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(data)
 
@@ -74,6 +76,18 @@ class Handler(BaseHTTPRequestHandler):
         port = self.server.server_address[1]
         record(port, self.path, body)
         free = str(body.get("model") or "").endswith("-free")
+        messages = [m for m in (body.get("messages") or []) if isinstance(m, dict)]
+
+        # Scenario 9: the free pool itself is capped. Any free model that sees a
+        # "freecap" prompt answers 429 and asks for a two-second reset, so the
+        # plugin records a cap and moves the session to the fallback.
+        if port == 18081 and free and any("freecap" in str(m.get("content") or "") for m in messages):
+            self._send(
+                429,
+                {"error": {"message": "Rate limit exceeded. Please try again later.", "type": "server_error"}},
+                {"Retry-After": "2"},
+            )
+            return
 
         if (port == 18081 and not free) or (port == 18083 and not self.flipped()):
             messages = [m for m in (body.get("messages") or []) if isinstance(m, dict)]

@@ -1,7 +1,7 @@
 {
   "name": "zen-failover",
-  "version": "0.2.2",
-  "description": "OpenCode V2 server plugin: when a subscription provider's usage limit is hit, move every agent, the default model and the active session to its fallback, probe the plan once every five minutes (one request per process) and come back as soon as it answers again. Free models (zero price or a `-free` id) are exempt.",
+  "version": "0.3.0",
+  "description": "OpenCode V2 server plugin: when a subscription provider's usage limit is hit, move every agent, the default model and the active session to its fallback, probe the plan once every five minutes (one request per process) and come back as soon as it answers again. Free models (zero price or a `-free` id) are exempt from source failover but get their own cap handling.",
   "type": "module",
   "exports": {
     ".": "./index.js"

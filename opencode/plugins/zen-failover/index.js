@@ -17,6 +17,14 @@
 // does not consume the paid allowance, so it keeps working while the plan is
 // exhausted.
 //
+// Their own cap is a separate state. A free pool can answer `429` with a long
+// `retry-after` (a daily quota: 17 h was observed); the runtime honours up to
+// 15 minutes per attempt, so waiting it out stalls a whole lane. Instead the
+// plugin records that model as capped until the reset, moves the affected
+// session and every agent bound to it onto the source's fallback, and retries
+// at once. The source itself stays healthy: nothing is marked degraded, and
+// when the cap expires the free binding comes back on its own.
+//
 // Sources listed in ZEN_FAILOVER_QUOTA_ONLY (default: openai) must name an
 // exhausted quota in the error text: a subscription answers a transient
 // per-minute 429 with the same status, and switching the whole server off the
@@ -45,6 +53,9 @@
 //   ZEN_FAILOVER_RESET_AT      ISO timestamp or epoch ms (tests; overrides all)
 //   ZEN_FAILOVER_MIN_HITS      limit errors before switching  (2)
 //   ZEN_FAILOVER_WINDOW_MS     window for those errors        (300000)
+//   ZEN_FAILOVER_FREE_CAP_MIN_MS  smallest retry-after treated as a free-model
+//                              cap rather than a burst hiccup    (60000)
+//   ZEN_FAILOVER_FREE_CAP_MAX_MS  longest recorded free-model cap (86400000)
 //   ZEN_FAILOVER_LOG           debug log path                (/tmp/opencode/zen-failover.log)
 //   ZEN_FAILOVER_DEBUG         "1" to log every retry event
 
@@ -79,9 +90,13 @@ const RATE_TEXT = /rate.?limit|limit reached|too many requests|budget|exceeded/i
 const PROBE_MS = Number(process.env.ZEN_FAILOVER_PROBE_MS ?? 5 * 60 * 1000)
 const PROBE_ON_START = process.env.ZEN_FAILOVER_PROBE_ON_START !== "0"
 const PROBE_START_WAIT_MS = Number(process.env.ZEN_FAILOVER_PROBE_START_WAIT_MS ?? 5000)
+// A free pool's own cap: the smallest `retry-after` that counts as a cap rather
+// than a burst hiccup, and the longest a cap may keep a model off the free pool.
+const FREE_CAP_MIN = Number(process.env.ZEN_FAILOVER_FREE_CAP_MIN_MS ?? 60 * 1000)
+const FREE_CAP_MAX = Number(process.env.ZEN_FAILOVER_FREE_CAP_MAX_MS ?? 24 * 60 * 60 * 1000)
 const PROBE_PROMPT = "Reply with the single word OK."
 const STORAGE_KEY = "zen-failover"
-const STORAGE_VERSION = 2
+const STORAGE_VERSION = 3
 const PROBE_LOOP_KEY = Symbol.for("opencode.zen-failover.probe-loop")
 // How long a verdict is reused by the other copies. Strictly shorter than the
 // interval: with `PROBE_MS` a tick that lands a few milliseconds before
@@ -160,6 +175,41 @@ function parseModel(text) {
   return { providerID: raw.slice(0, slash), id: raw.slice(slash + 1) }
 }
 
+/** `provider/model`, the key a free cap is stored under. */
+function freeKey(providerID, ref) {
+  const id = modelID(ref)
+  return providerID && id ? `${providerID}/${id}` : null
+}
+
+/**
+ * The fallback a free model moves to while its own pool is capped: the source
+ * rule's target. `opencode-go` already points at direct DeepSeek, so a capped
+ * free model leaves the subscription without touching its paid allowance.
+ */
+function freeFallbackFor(source, ref) {
+  const rule = RULES.get(source)
+  if (!rule) return null
+  const id = rule.fallback.id === "<id>" ? modelID(ref) : rule.fallback.id
+  if (!id) return null
+  return { providerID: rule.fallback.providerID, id }
+}
+
+/** The recorded cap for this free model, while it lasts. */
+function capFor(state, providerID, ref) {
+  const key = freeKey(providerID, ref)
+  if (!key) return null
+  const entry = state.free?.[key]
+  if (!entry || Date.now() >= entry.until) return null
+  return entry.fallback ?? null
+}
+
+/** A provider that asked for at least a minute: a cap, not a burst hiccup. */
+function capDuration(error) {
+  const wait = Number(error?.retryAfterMs)
+  if (!Number.isFinite(wait) || wait < FREE_CAP_MIN) return null
+  return Math.min(wait, FREE_CAP_MAX)
+}
+
 function parseRules(text) {
   const rules = new Map()
   for (const pair of String(text ?? "").split(";")) {
@@ -196,6 +246,18 @@ function fallbackFor(source, ref) {
   if (!rule) return null
   const target = rule.fallback.id === "<id>" ? id.replace(/-fast$/, "") : rule.fallback.id
   return { providerID: rule.fallback.providerID, id: target }
+}
+
+/**
+ * Where an agent or session bound to this model belongs right now: a free
+ * model only moves when its own cap says so, everything else only when its
+ * source is degraded.
+ */
+function targetFor(state, degraded, source, ref) {
+  if (!source) return null
+  if (isFreeModel(source, ref)) return capFor(state, source, ref)
+  if (!degraded.has(source)) return null
+  return fallbackFor(source, ref)
 }
 
 /**
@@ -253,14 +315,25 @@ function nextResetAt(source) {
 
 async function loadState(ctx) {
   const state = await ctx.storage.get(STORAGE_KEY)
-  if (!state || state.version !== STORAGE_VERSION || !state.sources) {
-    return { version: STORAGE_VERSION, sources: {} }
+  if (!state || !state.sources) {
+    return { version: STORAGE_VERSION, sources: {}, free: {} }
   }
+  if (state.version !== STORAGE_VERSION) {
+    // v2 knew only degraded sources; free-model caps are additive, so an
+    // existing degraded state keeps working across the upgrade.
+    if (state.version === 2) {
+      return { ...state, version: STORAGE_VERSION, free: state.free ?? {} }
+    }
+    return { version: STORAGE_VERSION, sources: {}, free: {} }
+  }
+  if (!state.free) state.free = {}
   return state
 }
 
 async function saveState(ctx, state) {
-  if (Object.keys(state.sources).length === 0) {
+  const empty =
+    Object.keys(state.sources).length === 0 && Object.keys(state.free ?? {}).length === 0
+  if (empty) {
     await ctx.storage.remove(STORAGE_KEY)
   } else {
     await ctx.storage.set(STORAGE_KEY, state)
@@ -334,6 +407,32 @@ async function ensureDegraded(ctx, source, sessionID, model) {
   }
 }
 
+/**
+ * Record that a free model's own pool refused it until the provider's reset,
+ * so agents and sessions bound to it move to the source's fallback. The source
+ * is not degraded: its paid allowance was never touched, and when the cap
+ * expires the free binding returns on its own.
+ */
+async function ensureFreeCapped(ctx, source, model, error) {
+  const duration = capDuration(error)
+  if (duration === null) return null
+  const fallback = freeFallbackFor(source, model)
+  const key = freeKey(source, model)
+  if (!fallback || !key) return null
+  const state = await loadState(ctx)
+  const until = Date.now() + duration
+  const existing = state.free[key]
+  if (existing && existing.until >= until && existing.fallback) return existing.fallback
+  state.free[key] = { until, cappedAt: Date.now(), fallback }
+  await saveState(ctx, state)
+  log(
+    `free model capped: ${key} until ${new Date(until).toISOString()} -> ` +
+      `${fallback.providerID}/${fallback.id}`,
+  )
+  await registerTransforms(ctx)
+  return fallback
+}
+
 async function registerTransforms(ctx) {
   await loadFreeModels(ctx)
   if (registrations) {
@@ -354,7 +453,10 @@ async function registerTransforms(ctx) {
   const degraded = new Set(
     Object.keys(state.sources).filter((source) => RULES.has(source)),
   )
-  if (degraded.size === 0) {
+  const capped = Object.entries(state.free ?? {}).filter(
+    ([, entry]) => entry.until > Date.now() && entry.fallback,
+  )
+  if (degraded.size === 0 && capped.length === 0) {
     stopProbes()
     await ctx.agent.reload()
     await ctx.model.reload()
@@ -364,8 +466,8 @@ async function registerTransforms(ctx) {
   const agentRegistration = await ctx.agent.transform((editor) => {
     for (const agent of editor.list()) {
       const source = agent?.model?.providerID
-      if (!source || !degraded.has(source)) continue
-      const target = fallbackFor(source, agent.model)
+      if (!source) continue
+      const target = targetFor(state, degraded, source, agent.model)
       if (!target) continue
       editor.update(agent.id, (draft) => {
         draft.model = target
@@ -374,15 +476,15 @@ async function registerTransforms(ctx) {
   })
   const modelRegistration = await ctx.model.transform((editor) => {
     const current = editor.default.get()
-    const source = current?.providerID
-    if (!source || !degraded.has(source)) return
-    const target = fallbackFor(source, current)
+    const target = targetFor(state, degraded, current?.providerID, current)
     if (target) editor.default.set(target.providerID, target.id)
   })
   registrations = { agentRegistration, modelRegistration }
   await ctx.agent.reload()
   await ctx.model.reload()
-  log(`transforms registered for ${[...degraded].join(",")}`)
+  const scope = [...degraded]
+  if (capped.length > 0) scope.push(`free caps: ${capped.map(([key]) => key).join(",")}`)
+  log(`transforms registered for ${scope.join("; ")}`)
   if (DEBUG) {
     try {
       const agents = unwrap(await ctx.agent.list()) ?? []
@@ -590,7 +692,16 @@ async function resetIfExpired(ctx) {
     await restoreSource(ctx, source, state)
     changed = true
   }
-  if (changed) await registerTransforms(ctx)
+  for (const [key, entry] of Object.entries(state.free ?? {})) {
+    if (Date.now() < entry.until) continue
+    delete state.free[key]
+    log(`free model cap lifted: ${key}`)
+    changed = true
+  }
+  if (changed) {
+    await saveState(ctx, state)
+    await registerTransforms(ctx)
+  }
   return changed
 }
 
@@ -655,9 +766,30 @@ export default {
       )
       if (!source || !RULES.has(source)) return
       if (isFreeModel(source, model)) {
-        // A free model that hits its own cap must not take the paid plan down
-        // with it: the source's allowance is untouched.
-        debug(`limit hit ${source}/${model?.id}: free model, not degrading`)
+        // A free model's own cap must not take the paid plan down with it:
+        // the source's allowance is untouched. Waiting out the provider's
+        // retry-after (the runtime honours up to 15 minutes per attempt) would
+        // stall the whole lane, so move just this session to the source's
+        // fallback and continue the turn immediately.
+        try {
+          const target = await ensureFreeCapped(ctx, source, model, event.error)
+          if (!target) {
+            debug(`limit hit ${source}/${model?.id}: free model, no cap signal; not degrading`)
+            return
+          }
+          try {
+            await ctx.session.switchModel({ sessionID: event.sessionID, model: target })
+            log(
+              `switchModel ${event.sessionID}: ${source}/${modelID(model)} -> ` +
+                `${target.providerID}/${target.id}`,
+            )
+          } catch (error) {
+            debug(`switchModel ${event.sessionID} failed: ${error?.message ?? error}`)
+          }
+          if (event.attempt <= 5) event.decision = { retry: true, delay: 0 }
+        } catch (error) {
+          log(`free cap failed: ${error?.stack ?? error}`)
+        }
         return
       }
       if (!isLimitError(source, event.error)) return

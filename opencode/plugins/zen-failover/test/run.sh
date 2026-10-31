@@ -39,6 +39,7 @@ run() {
       ZEN_FAILOVER_QUOTA_ONLY="mockai" \
       ZEN_FAILOVER_PROBE_MS="${ZEN_FAILOVER_PROBE_MS:-600000}" \
       ZEN_FAILOVER_PROBE_ON_START="${ZEN_FAILOVER_PROBE_ON_START:-0}" \
+      ZEN_FAILOVER_FREE_CAP_MIN_MS="${ZEN_FAILOVER_FREE_CAP_MIN_MS:-500}" \
       ZEN_FAILOVER_LOG="$TEST/plugin.log" \
       timeout 120 opencode run --standalone --auto --format json "$@" "$prompt" )
 }
@@ -96,6 +97,28 @@ if grep -q "switchModel .*beam-free" "$TEST/plugin.log"; then
   echo "FAIL: free model was switched by the transform"; exit 1
 fi
 echo "   ok: free model kept its binding while Go was degraded"
+
+echo "== 9. free model capped -> its own fallback, source untouched =="
+: > "$TEST/mock.jsonl"
+: > "$TEST/plugin.log"
+run "t9: freecap on the free model" --agent free-exec > "$TEST/t9.out"
+grep -q "free model capped" "$TEST/plugin.log" || { echo "FAIL: cap not recorded"; exit 1; }
+grep -q "switchModel .*mockds/deepseek-flash" "$TEST/plugin.log" || { echo "FAIL: session not moved to the fallback"; exit 1; }
+if grep -q "limit hit: mockgo degraded" "$TEST/plugin.log"; then
+  echo "FAIL: a free model's cap degraded the paid source"; exit 1
+fi
+[ "$(hits_model 18082 deepseek-flash)" -ge 1 ] || { echo "FAIL: fallback did not serve the turn"; exit 1; }
+grep -q "OK-FALLBACK" "$TEST/t9.out" || { echo "FAIL: capped turn did not finish on the fallback"; exit 1; }
+echo "   ok: cap recorded, session served by the fallback, source not degraded"
+
+sleep 3
+echo "== 9b. the cap lifts on its own =="
+: > "$TEST/mock.jsonl"
+run "t9b: after the cap expired" --agent free-exec > "$TEST/t9b.out"
+grep -q "free model cap lifted" "$TEST/plugin.log" || { echo "FAIL: cap not lifted"; exit 1; }
+[ "$(hits_model 18081 beam-free)" -ge 1 ] || { echo "FAIL: free binding did not come back"; exit 1; }
+grep -q "OK-FREE" "$TEST/t9b.out" || { echo "FAIL: free model did not answer after the cap"; exit 1; }
+echo "   ok: free binding restored once the provider's reset passed"
 
 echo "== 4. fresh ChatGPT-style limit =="
 rm -rf "$TEST/data" "$TEST/state" "$TEST/cache"

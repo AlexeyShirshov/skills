@@ -29,6 +29,15 @@ Per-model overrides: `opencode-go/gemini-4-argon` (and the older
 and a probe prefers a paid model. A free model does not consume the paid allowance, so it keeps
 working while the plan is exhausted.
 
+**But a free pool has its own cap.** When a free model answers `429` with a `retry-after` of a minute
+or more (a daily quota — 17 hours was observed on `opencode-go/beam-free`), waiting it out stalls the
+lane: the runtime honours up to 15 minutes per attempt. The plugin records the model as capped until
+the provider's reset, moves the affected session and every agent bound to it onto the source's
+fallback, and retries at once. Nothing is marked degraded — the source's allowance was never touched
+— and when the cap expires the free binding returns on its own. Sessions already moved keep running
+on the fallback until they end. Tune the threshold with `ZEN_FAILOVER_FREE_CAP_MIN_MS` (default
+60000) and the longest recorded cap with `ZEN_FAILOVER_FREE_CAP_MAX_MS` (default 24 h).
+
 ## What it switches
 
 1. **Every agent** whose model belongs to the degraded source, via a live agent
@@ -117,7 +126,7 @@ opencode/plugins/zen-failover/test/run.sh
 ```
 
 Two mock subscription providers (Go on 18081, ChatGPT on 18083) answer `429`;
-a mock fallback (18082) streams a reply. Eight scenarios:
+a mock fallback (18082) streams a reply. Ten scenarios:
 
 1. fresh Go limit → agents + session switched, retry answered by the fallback;
 2. new process with the persisted state → first request goes straight to the
@@ -125,11 +134,13 @@ a mock fallback (18082) streams a reply. Eight scenarios:
 3. continued session → stays on the fallback;
 4. free model (`beam-free`) on a degraded source → keeps its binding and is
    served by the subscription;
-5. fresh ChatGPT-style limit → switches to its own fallback, Go untouched;
-6. transient `429` on a quota-only source → retried, not switched;
-7. the plan answers again → the startup probe restores the original bindings,
+5. free model capped by its own pool → moved to the fallback, source untouched,
+   and the free binding comes back once the reset passes;
+6. fresh ChatGPT-style limit → switches to its own fallback, Go untouched;
+7. transient `429` on a quota-only source → retried, not switched;
+8. the plan answers again → the startup probe restores the original bindings,
    and the next turn reaches the subscription;
-8. probe deduplication across plugin copies.
+9. probe deduplication across plugin copies.
 
 The test never uses real providers or the real session database. Point it at a
 candidate build with `ZEN_FAILOVER_PLUGIN=/path/to/plugin`.
