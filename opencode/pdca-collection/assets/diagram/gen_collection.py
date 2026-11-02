@@ -7,8 +7,12 @@
 #   the state graph.  Mirrors the sibling pdca diagrams so they read alike.
 #   as the same family.
 # Renders two artefacts: light (collection-hand.*) and dark (collection-hand-dark.*).
+# The dark hand picture is also re-framed as two images for the article:
+# collection-contract-dark.svg (the hand diagram) and collection-state-dark.svg
+# (the state graph).
 import html
 import os
+import re
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -363,6 +367,12 @@ NOTE_Y = M4 + 28
 # six footnote lines (single-group/no-rollback, autocommit, merge barrier,
 # STOP/cleanup, lane definition, flat primary fallback) with a bottom margin.
 H = NOTE_Y + 16 * 5 + 40
+# The single hand picture is also published as two images: the hand diagram
+# (orchestrator + peers + corrective row + legend) and the state graph (title,
+# nodes, routes, footnotes).  Both are deterministic re-frames of the same dark
+# render -- they differ only in the opening viewBox, like pdca's contract/state
+# crops, so neither can drift from the hand layout.
+SPLIT_TOP = SG_TITLE_Y - 18
 
 # x/y are generator-owned absolute layout; `tier` is the visible model tier
 # (cheap/medium/strong); `composite` marks the workflow composition, not a fourth
@@ -430,12 +440,13 @@ ROUTES = {
                       "caption": []},
     # a missing mandatory report is re-gathered by the existing gather path;
     # this is a `blocked`/awaiting-reports state, NOT a code defect and never a
-    # REPAIR trigger (no edits).
-    ("C", "C"): {"points": [(GX["C"] + 113, R1_TOP), (GX["C"] + 113, R1_TOP - 20),
-                            (GX["C"] + 193, R1_TOP - 20), (GX["C"] + 193, R1_TOP + 28),
-                            (GX["C"] + 160, R1_TOP + 28)],
+    # REPAIR trigger (no edits).  The loop stays inside the CHECK column: routed
+    # above its own node instead of hugging the CHECK->ACT gap, where its return
+    # ran parallel to the PASS arrow and looked attached to ACT.
+    ("C", "C"): {"points": [(GX["C"] + 130, R1_TOP), (GX["C"] + 130, R1_TOP - 24),
+                            (GX["C"] + 90, R1_TOP - 24), (GX["C"] + 90, R1_TOP)],
                  "caption": _wrap_label(EDGE_LABELS[("C", "C", "re-gather")], 80),
-                 "label": (GX["C"] + 153, R1_TOP - 60)},
+                 "label": (GX["C"] + 110, R1_TOP - 60)},
     # conflict is discovered at MERGE; `ESCALATE` sits directly below it as a
     # tight vertical loop.
     ("MERGE", "ESCALATE"): {"points": [(_GMC - 15, R1_BOT), (_GMC - 15, R2_TOP)],
@@ -804,11 +815,22 @@ def render(P, title):
     ]
     ly = LEG_Y
     _titles_y = ly - 22
-    _legend_w = W - 2 * M
-    _tier_w = _legend_w * 0.58
-    _tier_iw = _tier_w / 3
-    _comp_x = M + _tier_w + 60
-    _div_x = M + _tier_w + 30
+    # The three tier slots are laid out from their actual content.  A fixed
+    # slice of the canvas is narrower than `badge + role list` for the longer
+    # labels, so the next badge used to run into the previous role list.  The
+    # per-character budgets match the generator's other text estimates.
+    _tier_gap = 24
+    _tier_ws = [
+        22 + (len(_model) * 7.4 + 16) + 10 + len(_roles) * 6
+        for _col, _t, _model, _roles in legend[:3]
+    ]
+    _tier_xs = []
+    _tier_x = M
+    for _tier_w in _tier_ws:
+        _tier_xs.append(_tier_x)
+        _tier_x += _tier_w + _tier_gap
+    _div_x = _tier_x - _tier_gap + 30
+    _comp_x = _div_x + 30
 
     def _legend_swatch(x, col, model, roles):
         out = [f'<rect x="{x}" y="{ly-12}" width="15" height="15" rx="4" fill="{col}"/>']
@@ -828,7 +850,7 @@ def render(P, title):
     s.append('<g data-legend="model-tiers">')
     s.append(f'<text x="{M}" y="{_titles_y}" class="lt">Ступени модели</text>')
     for _i, (_col, _t, _model, _roles) in enumerate(legend[:3]):
-        _x = M + _i * _tier_iw
+        _x = _tier_xs[_i]
         s.append(f'<text x="{_x+22}" y="{ly}" class="lt">{esc(_t)}</text>')
         s.extend(_legend_swatch(_x, _col, _model, _roles))
     s.append('</g>')
@@ -937,6 +959,15 @@ def htmlwrap(P, title, svg):
             '<div class="card">' + svg + '</div></html>')
 
 
+def crop(svg: str, top: int, height: int) -> str:
+    """Re-frame the full hand SVG as a vertical excerpt (diagram / state graph)."""
+    opening = re.match(r'<svg viewBox="0 0 \d+ \d+" width="\d+"', svg)
+    if not opening:
+        raise SystemExit("unexpected svg header")
+    head = '<svg viewBox="0 %d %d %d" width="%d"' % (top, W, height, W)
+    return head + svg[len(opening.group(0)):]
+
+
 VARIANTS = [
     ("light", "collection-hand", "pdca-collection — ручная раскладка"),
     ("dark", "collection-hand-dark", "pdca-collection — ручная раскладка (тёмная тема)"),
@@ -945,9 +976,11 @@ VARIANTS = [
 
 def main() -> None:
     """Render both themes next to this script.  Importing makes no file writes."""
+    rendered = {}
     for theme, stem, title in VARIANTS:
         P = THEMES[theme]
         svg = render(P, title)
+        rendered[theme] = svg
         svg_out = svg + "\n"
         with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as f:
             f.write(svg_out)
@@ -956,6 +989,16 @@ def main() -> None:
         with open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8") as f:
             f.write(htmlwrap(P, title, svg_out) + "\n")
         print("wrote %s.{svg,html}" % stem)
+    # Published separately as two images: the hand diagram and the state graph,
+    # both cut from the same dark render.
+    excerpts = (
+        ("collection-contract-dark", 0, SPLIT_TOP),
+        ("collection-state-dark", SPLIT_TOP, H - SPLIT_TOP),
+    )
+    for stem, top, height in excerpts:
+        with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as f:
+            f.write(crop(rendered["dark"], top, height) + "\n")
+        print("wrote %s.svg" % stem)
     print("W=%d" % W)
 
 
