@@ -188,7 +188,9 @@ a ready campaign that sends a DO to find out. The rejection also applies when ev
 measurement fails to distinguish the goal state from the current one.
 
 A numeric threshold must come from the task requirements or have an explicit rationale. Missing
-information must not be hidden behind an arbitrary value.
+information must not be hidden behind an arbitrary value. A **forecast of achievable volume is not a
+rationale**: the floor is the method's detection limit or a value the user set, and a step's numeric
+criterion restates that floor verbatim — never a share of the forecast or of the campaign target.
 
 A numeric threshold without a measured baseline is marked **provisional**. Revising it on
 measurement is a `supersede` record with reason and evidence, not a change of goal; a threshold
@@ -240,7 +242,11 @@ turn**; separate DECIDE → brief → STOP turns on unchanged content are a repe
   are met; a STOP claiming `done` needs a CHECK of the whole goal — combined with the increment's
   CHECK or a separate final one. After a local CHECK, issue the final-check brief **with a pre-set
   STOP condition**: a PASS on all mandatory criteria and original requirements permits the outcome,
-  otherwise the result comes back to you as another boundary. A negative candidate whose confirmed
+  otherwise the result comes back to you as another boundary. A positive increment is accepted
+  **regardless of its size**: the boundary never sends a small positive result back for repair,
+  re-measures it as a failure, or denies the acceptance and the commit the step earns; its size
+  decides the next step's scope and whether a reachability STOP is due, never the step's acceptance.
+  A negative candidate whose confirmed
   knowledge is accepted credits a **knowledge increment**, not the rejected candidate.
 - **Measurement first.** The campaign's current-state step is accepted as a knowledge increment — the
   baseline — and the next brief is the change that starts from it. When its CHECK already proves the

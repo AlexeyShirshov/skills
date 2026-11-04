@@ -16,7 +16,8 @@ from the agent prompt alone.
 ## What CHECK receives
 
 The original task, the acceptance criteria, the frozen actual result with its identity, and the
-available evidence and observations. It also receives the counters (`N`, `r`, `n/3`) and the
+available evidence and observations. It also receives the counters (`N`, `r`, `n/3`) — as recorded in
+the status, never as a restatement from a brief or an earlier turn — and the
 **defect history** (stable defect keys, observed revisions/attempts, applied fix count, last
 outcome), and — on a loop-back — the previous CHECK report and the finding it routed. CHECK takes
 none of them as established: it assesses the task and the criteria itself and verifies the result
@@ -36,6 +37,10 @@ them verbatim and do not accept the result against a different, weaker or enlarg
 coverage, contradiction or an unjudgeable criterion is a criteria defect for PLAN, not a reason to
 judge the result against a weaker reading. One failed candidate is not proof that a criterion is
 unachievable.
+
+A campaign step's numeric criterion **restates the recipe's floor**: a criterion that reads a forecast
+of achievable volume, a quota of work or a share of the campaign target is a criteria defect for
+PLAN, not a result defect, and it is never used to refuse an increment.
 
 A **defective user-supplied criterion is still preserved verbatim**: nobody repairs, supplements,
 widens or narrows the set, and the defect never becomes a new criteria set or a DO/CHECK loop. It
@@ -102,6 +107,17 @@ The verdict is `accepted` or `not accepted`, with the criteria matrix, the findi
 assessment (coverage, contradiction, judgeability), the verification limits — what was established
 and what remains unknown — the next authorized transition and its reason, and the confidence and
 gaps: what is verified and what remains an assumption.
+
+**A campaign step is never refused for being small.** With an attributed net delta at or above the
+campaign's floor or a decision-relevant knowledge increment, and every other mandatory requirement
+met, the verdict is `accepted` **whatever the size of the increment** — even when it is far below the
+plan's forecast or the campaign target. `not accepted` needs a ground that is not size: an unmet
+non-volume requirement (a red test, build, convention, an un-itemized regression or a double count),
+no attributed net delta (`≤ 0`) and no decision-relevant knowledge, an invalid or missing measurement,
+or a criteria defect routed to PLAN. "Below the forecast" and "not enough to reach the target" are not
+grounds: reachability is the campaign boundary's question, not a verdict on an increment, and the
+target is never a per-step criterion. The increment stays local — `accepted` here never implies the
+whole goal.
 
 - **→ DO** — an implementation defect, or evidence the chosen method needs is still missing. The
   report states the precise missing evidence and the proving action it requests; the driver has it

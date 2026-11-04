@@ -201,5 +201,39 @@ class MeasurementFirstTest(unittest.TestCase):
         self.assertNotIn("Baseline bootstrap —", read(SKILL))
 
 
+class PositiveIncrementTest(unittest.TestCase):
+    """A small credited increment is a result, never a defect.
+
+    The rule has to hold at all three decision points — the campaign contract that
+    defines credit, the CHECK reference that returns the verdict, and the step
+    boundary that opens the next step — and a forecast must never become a
+    threshold on the way.
+    """
+
+    CHECK = FAMILY / "pdca/references/check.md"
+    PLAN_REF = FAMILY / "pdca/references/plan.md"
+
+    def test_no_positive_increment_is_refused_for_its_size(self) -> None:
+        for path, phrase in (
+            (SKILL, "A positive increment is never refused for its size"),
+            (SKILL, "CHECK never refuses a positive increment"),
+            (self.CHECK, "A campaign step is never refused for being small"),
+            (self.PLAN_REF, "A positive increment is accepted"),
+        ):
+            with self.subTest(path=path.name, phrase=phrase):
+                self.assertIn(phrase, norm(read(path)))
+
+    def test_a_forecast_is_never_a_threshold(self) -> None:
+        plan = norm(read(self.PLAN_REF))
+        check = norm(read(self.CHECK))
+        self.assertIn("forecast of achievable volume is not a rationale", plan)
+        self.assertIn("restates the recipe's floor", check)
+
+    def test_the_rule_keeps_other_mandatory_requirements(self) -> None:
+        skill = norm(read(SKILL))
+        self.assertIn("with every other mandatory step requirement met", skill)
+        self.assertIn("never substitutes for the whole-goal CHECK", skill)
+
+
 if __name__ == "__main__":
     unittest.main()

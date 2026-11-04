@@ -70,6 +70,15 @@ campaign that improvises a metric.
   the whole project is never one step.
 - **Step** — a bounded unit with an observable result and a stop condition; its credit is a result
   change or knowledge that affects the next decision.
+- **Credit is attributed; noise is not.** One credited unit is a result change attributed by
+  coordinate against the pinned baseline, or decision-relevant knowledge. The gate metric's
+  run-to-run wobble on one frozen package is neither: it never adds credit and never subtracts it.
+  A verdict counts a **net** delta — attributed positive flips minus itemized negative ones.
+- **A positive increment is never refused for its size.** An increment's credit is the attributed
+  result change or the knowledge; its magnitude is not a criterion. A step whose attributed net delta
+  is at or above the recipe's floor is accepted — and, under an `auto` commit policy, committed —
+  however small it is against the campaign target. This never licenses designing minimal steps (step
+  scope is sized by the goal); it only forbids refusing a result because it is small.
 
 ## Campaign goal and measurement
 
@@ -120,6 +129,11 @@ user prescribed stays binding.
 - **A result is kept, not retried for luck.** One credited measurement per step; a replacement is
   allowed only for objective invalidity (environment, instrumentation), is archived, and is never
   chosen for a prettier number. A red measurement stays red.
+- **The measurement binds to the frozen identity.** Freeze the final package first — normalisation
+  included — then build and run exactly that frozen identity, and take **one** measurement on it. A
+  frozen set that differs from what was built or run, or a measurement taken before the last edit, is
+  invalid: it earns no credit, is archived, and is re-taken once on the final package as an evidence
+  re-gather — not a product defect, not a new attempt and not a failed step.
 - **Conservative accounting.** Foreign and protected changes are excluded from the credit; a forecast
   never enters the accepted column; denominator drift is explained separately.
 
@@ -164,6 +178,15 @@ solely per the base definitions, and the outgoing values and history are retaine
    campaign's opening step; no change-producing step starts until that measurement is accepted. A
    supplied comparable current value takes its place; a missing or invalid measurement blocks instead
    of improvising a number.
+8. **CHECK never refuses a positive increment.** An attributed net delta at or above the recipe's
+   floor or a decision-relevant knowledge increment, with every other mandatory step requirement met,
+   is `accepted` **whatever its size** — even when it is far below the plan's forecast or the campaign
+   target. `not accepted` on a step needs a ground that is not size: an unmet non-volume requirement
+   (a red test, build, convention, an un-itemized regression or a double count), no attributed net
+   delta (`≤ 0`) and no decision-relevant knowledge, an invalid or missing measurement, or a criteria
+   defect routed to PLAN. "Small" is not a defect, and the campaign target is never a per-step
+   criterion. This stays local: a small accepted increment proves nothing about the whole goal and
+   never substitutes for the whole-goal CHECK.
 
 ## Campaign status
 
@@ -331,8 +354,12 @@ approval — never a silent restatement of the criteria.
 `pdca-scout` (cheap, read-only) assembles a fresh gap map from the last accepted basis and a ranked
 list of goals — expected yield, reachability route, blockers, already closed families, deferred rows
 whose trigger has fired, and any ready candidates. Facts only: it does not rank for the planner's
-decision and writes no brief. The result is the next-step seed in the status. Discovery is not the
-step's PLAN and does not repeat what an existing candidate list already settles.
+decision and writes no brief. The result is the next-step seed in the status. The gap map also
+classifies the remainder **R/U** — reachable with its route, or unreachable with the reason per
+coordinate — and carries the upper bound `covered + UpperBound(R)`. When that bound is below the
+campaign target, the boundary has the material for a proven `unreachable` STOP instead of another
+batch; a static pool size alone is never a yield. Discovery is not the step's PLAN and does not
+repeat what an existing candidate list already settles.
 
 ### 2. Step brief
 
@@ -459,8 +486,9 @@ increments and PASS on every mechanical row do **not** prove the whole goal. `li
 scope the user explicitly revised through a new instruction, never a weakened goal; no mode may narrow
 the task itself, and plan approval is not a revision of the input. The original task and that
 instruction both stay recorded verbatim, and nothing on the original task is silently accepted as met.
-`unreachable` is proven with numbers (a required product change, an unavailable source), never declared
-from fatigue. Every non-`met` row is finalized **in ACT**, not on a separate terminal path. A step's
+`unreachable` is proven with numbers — on an R/U-classified remainder, `covered + UpperBound(R)`
+below `⌈target⌉`, or a required product change or an unavailable source — never declared from
+fatigue. Every non-`met` row is finalized **in ACT**, not on a separate terminal path. A step's
 `PLAN → ACT` terminal outcome stays a cycle close in ACT: a **proven infeasible original task** projects
 to `unreachable`; a goal shown unmeasurable after entry — the measurement cannot produce a comparable
 value — is `blocked` with that proof and is never silently re-methoded; otherwise `blocked`/`stopped`
@@ -516,6 +544,8 @@ The base self-check applies. On any of these — **stop, name the deviation, ret
 - I wrote a forecast or intermediate value into the accepted column, repeated a failed measurement for
   a nicer number, or moved the threshold, denominator or filter — and confused a provisional threshold
   with a baseline-backed one.
+- I refused a small positive increment, let a forecast, a quota or the campaign target decide a step's
+  acceptance, or treated a correctly measured `+1` attributed result as a failure.
 - I started a change-producing step before an accepted baseline, let a DO improvise the metric because
   PLAN returned none, or treated the current-state measurement as a dummy step and skipped its CHECK.
 - I started a step without the previous accepted basis, let "about the same" stand for it, or lost a
@@ -532,6 +562,8 @@ The base self-check applies. On any of these — **stop, name the deviation, ret
   the history, or repeated an accepted step after a controller loss.
 - I edited outside the allowed surface, committed or pushed outside the explicit commit policy, or
   narrowed the task or a criterion without a new explicit user instruction.
+- I re-opened a repeated defect key without a new measure, or turned it into a STOP of my own, where
+  the contract required expert escalation instead.
 
 ## References
 
