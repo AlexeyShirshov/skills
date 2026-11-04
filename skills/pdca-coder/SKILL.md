@@ -132,6 +132,16 @@ when it judges or requests a run.
   otherwise a fresh session reads the persisted evidence. Every loop-back dispatch still carries the
   complete inline CHECK reference; reuse never shortens it. This changes no independence or
   accounting rule.
+- **An oracle binds to the reason, not to the class.** A test that expects a failure asserts the
+  specific cause the code must produce — an error code, a message fragment or parameter, a state, a
+  returned status — never merely "an exception of type X" or "a non-zero exit"; a cancellation binds
+  to the token's identity or state. A guard that cannot distinguish the intended refusal from any
+  other failure proves nothing, and a green run on it is not evidence.
+- **A confirmed pattern defect is swept, not spot-fixed.** When CHECK confirms a defect that is a
+  pattern — the same weak assertion, the same unchecked branch, the same unsafe default — the fix
+  covers every occurrence in the candidate package and reports the sweep per site. Only the **fix
+  scope** is generalised, never the verdict; a second round for the same pattern is a defect of the
+  fix, and the base same-defect threshold applies.
 - **Routing and accounting are the base's.** An applicable failing check is a finding; the
   governing contract alone accounts findings and attempts.
 - **Finding form.** A finding carries the location, the problem, the required change, the check

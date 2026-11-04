@@ -190,6 +190,12 @@ read. CHECK chooses its own methods and commands — nothing here is a pre-DO ob
   one. `required` enforces initialization, not runtime null rejection for reference types.
 - **Security** — the coder's trigger and boundaries apply; the review is evidence, the decision
   CHECK's, and its absence `unverified`, never a pass.
+- **A refusal is asserted by its reason.** A test catching an exception proves the refusal only when it
+  binds to the specific cause: the message fragment, `ParamName`, a provider error number/code, or the
+  resulting state. `Assert.Throws<ArgumentException>` and `Throw<InvalidOperationException>()` alone are
+  not evidence, and a bare `ThrowAsync<Exception>()` never is; cancellation binds to the token's
+  identity or state, not to the exception type. Before a package is frozen, sweep every guard in it for
+  the pattern, not only the site CHECK named.
 - **Missing evidence stays `unverified`**, to be re-gathered under the base; it is not a product
   defect, not an implementation attempt, and not an infrastructure criterion. A genuine inability to
   proceed is DO → ACT per the base.
@@ -207,6 +213,11 @@ security boundaries, handoff) apply unchanged.
   prerequisite is recorded honestly rather than silently skipped. Expensive integration inside DO
   outside the authorised allowance is recorded in the executing phase as a policy deviation, never
   renamed away, and it neither freezes the verification choice nor licenses repeat runs.
+- **Freeze order and line endings.** Where the project pins CRLF or another normalisation, normalise
+  the final files **before** freezing: normalise → freeze (byte copy with sha256 orig = copy) → build
+  → one measurement on that same identity. Building or measuring before the last normalisation, or
+  freezing a set that differs from the built one, makes the measurement invalid: re-freeze and
+  re-measure once — an evidence re-gather, not a new product attempt.
 - **Timeouts and retries follow the governing policy.** A transport or resource timeout is failed-run
   evidence, not a new criterion or a local counter; repeated occurrences are classified by the base
   retry/escalation policy, and its limits and grounds are unchanged.
