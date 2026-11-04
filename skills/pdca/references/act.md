@@ -188,7 +188,10 @@ containing frame. The template above is unchanged.
   counts as accepted progress.
 - **Defect history** — one row per stable defect key (a criterion/failure identity, independent of `r`):
   observed revisions and attempts, applied fix count, evidence pointers, last recurrence and escalation
-  outcome. Outgoing attempts are never erased and an unaccepted attempt never becomes progress.
+  outcome. Outgoing attempts are never erased and an unaccepted attempt never becomes progress. A key
+  that recurs with **no new measure** is not a third fix: it goes to the mandatory escalation (base
+  §State machine and counters), and never to a STOP of its own — STOP is an ACT outcome, not a defect
+  decision.
 
 **Content — a brief handoff, not a report.** The skeleton fixes the shape; every obligation lands in
 its own section:

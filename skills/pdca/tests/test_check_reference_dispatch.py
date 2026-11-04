@@ -235,8 +235,10 @@ class CheckDedupTest(unittest.TestCase):
 
     # The trimmed section is ~2596 bytes; the cap leaves room for a wording
     # correction, not for a return of the ~2070 bytes of procedure moved out.
+    # Raised from 50 000 to 51 000 for two contract clauses (plan read-back,
+    # dispatch counters), not for procedure: PLAN and CHECK stay under their caps.
     MAX_SECTION_BYTES = 2700
-    MAX_BASE_BYTES = 50000
+    MAX_BASE_BYTES = 51000
 
     def setUp(self) -> None:
         self.text = read(BASE)

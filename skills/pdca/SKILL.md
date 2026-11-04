@@ -248,6 +248,13 @@ a separate todo or a second event log is never opened.
 separate from the per-revision attempt budget: the same defect returning after one attempted fix
 requires `pdca-escalate` **before** the next fix, even in a new revision.
 
+**Dispatch counters.** Any dispatch that names counters — CHECK, ESCALATE, a step brief, a boundary
+decision — carries `N`, `r` and `n/3` from the status read-back: `pdca-executor`'s report quoting the
+recorded values, or the driver's scoped read of the assigned status file at a step boundary. A value
+taken from a brief, an earlier turn or memory is never a source; a disagreement with the status is a
+state defect — reconcile it in the same turn and re-issue the dispatch, never continue on the
+divergent number.
+
 **Phase progress mirror.** (1) **Same turn:** on every event — transition, loop-back, replan, step
 boundary, escalation — the executor updates the status file before/with the first dispatch of the
 next step, never batched. (2) **Reconcile each turn:** compare the last status recorded by
@@ -282,8 +289,8 @@ translation or summarisation.
 **PLAN → DO** — only when that plan is complete, judgeable and covering the cycle scope. Every DO
 handoff carries the original task, criteria, constraints, prohibitions and scope **by exact
 reference**, the cycle's `evidence_root`
-(§Workspace and durable status) and no frozen verification procedure; the plan is on disk and, in
-normal mode, carries the **user's approval**. On DO start `pdca-executor` logs
+(§Workspace and durable status) and no frozen verification procedure; the plan is on disk and read
+back; normal mode adds the user's approval. On DO start `pdca-executor` logs
 `DO started`. Choosing, validating and running the verification is CHECK's work at CHECK time, not a
 pre-DO prerequisite; a method that proves unusable there is re-chosen, not a plan defect. No "ask the
 user for criteria" path: an indeterminate criterion blocks DO and routes **PLAN → ACT** instead.
@@ -447,7 +454,9 @@ and temporary scratch are not PDCA state and follow their own rules (§Evidence 
 - **Every write is by `pdca-executor`** — planner, check, escalate and the driver have no file
   permissions. The driver passes the **source reports** (PLAN's return, DO's result, CHECK's verdict)
   and the bookkeeping facts; it does not rewrite, summarise, translate or re-command them into the
-  record.
+  record. A **persisted plan is read back before DO**: the executor returns the recorded block, or its
+  hash with its line and byte counts, and the driver matches it to the planner's return; no match, no
+  DO. A read-back is never assumed from a report that the plan was written.
 - **Append-only; history is never silently deleted.** Progress, attempts and defect history
   accumulate; accepted conclusions may be superseded with a reason, but facts are not backfilled.
   There is no separate todo or sidebar mirror.
