@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.pdf
+*.pptx
+slides-export*
+!slides-export.pdf

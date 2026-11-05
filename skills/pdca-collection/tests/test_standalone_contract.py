@@ -1,0 +1,78 @@
+"""Collection contract regression tests: one skill file, inherited common rules."""
+from pathlib import Path
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+SKILL = ROOT / "SKILL.md"
+
+class CollectionContractTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.text = SKILL.read_text(encoding="utf-8")
+
+    def test_one_contract_under_50kb(self):
+        self.assertLess(len(SKILL.read_bytes()), 50000)
+        self.assertFalse((ROOT / "references").exists())
+
+    def test_base_contract_inherited(self):
+        self.assertIn("../pdca/SKILL.md", self.text)
+        self.assertIn("## Inheritance", self.text)
+        self.assertIn("§Common cycle contract", self.text)
+        self.assertIn("not another cycle or attempt counter", self.text)
+
+    def test_batch_model_and_inlined_sections(self):
+        for term in ("## Batch terminology", "### P — per-item PLANs",
+                     "### D — infrastructure", "### C — integration verification",
+                     "### A — completion", "## Lane execution and schedule revision",
+                     "## Collection status record", "### Campaign item status projection", "### The queue and the per-item continuation"):
+            with self.subTest(term=term): self.assertIn(term, self.text)
+
+    def test_campaign_mapping_is_local_not_campaign_semantics(self):
+        for phrase in ("Finalized with accepted", "Explicitly finalized without accepted",
+                       "Running or paused", "Before campaign bootstrap"):
+            self.assertIn(phrase, self.text)
+        self.assertIn("../pdca-incremental/SKILL.md", self.text)
+
+    def test_preflight_is_not_fallback(self):
+        self.assertIn("## Capability preflight", self.text)
+        self.assertLess(self.text.index("## Capability preflight"),
+                        self.text.index("## Collection (P / D / C / A)"))
+        self.assertNotIn("Capability preflight.",
+                         self.text.split("## Fallback", 1)[1].split("## Parameters", 1)[0])
+
+    def test_unique_git_invariants_still_present(self):
+        self.assertIn("Group and task branches are sibling Git refs", self.text)
+        self.assertIn("disables intermediate step commits, not that authorized outer commit", self.text)
+
+    def test_completion_and_preservation(self):
+        for term in ("**An `incomplete` group is never merged**",
+                     "A STOP or any", "cleanup and merging are forbidden",
+                     "final `incomplete`", "other groups continue"):
+            with self.subTest(term=term): self.assertIn(term, self.text)
+
+    def test_lane_liveness_is_observed_not_counted(self):
+        self.assertIn("### Lane liveness", self.text)
+        self.assertIn("HEAD movement", self.text)
+        self.assertIn("a commit **tally** is not liveness", self.text.replace("\n", " "))
+        self.assertIn("(§Lane liveness)", self.text)
+
+    def test_queue_is_validated_as_data(self):
+        for phrase in ("**The queue is data.**", "scripts/status_lint.py",
+                       "**Table shape.**", "not a written status"):
+            with self.subTest(phrase=phrase): self.assertIn(phrase, self.text)
+        self.assertLess(self.text.index("scripts/status_lint.py"),
+                        self.text.index("## Collection status record"))
+
+    def test_parallelism_caps_are_recorded_not_assumed(self):
+        # An unrecorded plan_cap used to mean "safe" 1 and silently serialized the run.
+        flat = " ".join(self.text.split())
+        for phrase in ("`plan_cap`", "`lane_cap`", "`cap_reason:`", "default **4**",
+                       "An unrecorded cap is 4, never 1"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, flat)
+
+    def test_no_deleted_reference_links(self):
+        self.assertNotIn("references/lane.md", self.text)
+        self.assertNotIn("references/status.md", self.text)
+
+if __name__ == "__main__": unittest.main()

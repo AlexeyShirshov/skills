@@ -1,0 +1,15 @@
+{
+  "task": "T903",
+  "plan_r": 1,
+  "host_budget": {"max_lanes": 2, "max_solution_builds": 0},
+  "commands": [
+    {
+      "id": "B",
+      "phase": "inner",
+      "kind": "build",
+      "argv": ["dotnet", "build", "nextorm.slnx", "-c", "Debug"],
+      "expected": "green",
+      "timeout_s": 600
+    }
+  ]
+}

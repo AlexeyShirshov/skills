@@ -1,0 +1,19 @@
+{
+  "name": "pdca-slides",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "slidev --open",
+    "build": "slidev build",
+    "export": "slidev export",
+    "export:pptx": "slidev export --format pptx",
+    "export:pptx-editable": "slidev export --format pptx-editable"
+  },
+  "dependencies": {
+    "@slidev/cli": "^53.0.0",
+    "@slidev/theme-default": "^0.25.0"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.64.1"
+  }
+}

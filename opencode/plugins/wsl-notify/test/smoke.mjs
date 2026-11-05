@@ -28,7 +28,17 @@ await writeFile(
 await chmod(fake, 0o755)
 
 let failures = 0
+// Criterion ids in assertion labels are what the plan asks CHECK to read, so the
+// per-criterion verdict is printed only after every assertion of that id has run.
+const criteria = new Map()
 function check(name, condition, extra = "") {
+  const criterion = /^(AC-\d+)/.exec(name)?.[1]
+  if (criterion) {
+    const stats = criteria.get(criterion) ?? { total: 0, failed: 0 }
+    stats.total += 1
+    if (!condition) stats.failed += 1
+    criteria.set(criterion, stats)
+  }
   if (condition) {
     console.log(`  ok   ${name}`)
   } else {
@@ -36,6 +46,22 @@ function check(name, condition, extra = "") {
     console.log(`  FAIL ${name}${extra ? ` — ${extra}` : ""}`)
   }
 }
+
+// The environment is process-wide, so every test restores what was there before
+// it started — including "it was not there at all".
+async function withEnv(name, value, fn) {
+  const previous = process.env[name]
+  if (value === undefined) delete process.env[name]
+  else process.env[name] = value
+  try {
+    return await fn()
+  } finally {
+    if (previous === undefined) delete process.env[name]
+    else process.env[name] = previous
+  }
+}
+
+const EXCLUDE_ENV = "WSL_NOTIFY_EXCLUDE_SESSION_TITLES"
 
 async function toasts() {
   const content = await readFile(log, "utf8").catch(() => "")
@@ -98,15 +124,18 @@ async function run(events, options = {}, gap = 10, sessionGetter = neverSettles)
   return toasts()
 }
 
-// 1.18.x drives the plugin through the `server()` hooks — no options channel at
-// all, so whatever `v1Limits()` defaults to is what the host gets.
-async function runV1(events, gap = 10) {
+// 1.18.x drives the plugin through the `server()` hooks. A tuple entry in the
+// config reaches the plugin as `server(input, options)`; a bare specifier or local
+// auto-discovery supplies none, so the module defaults and `WSL_NOTIFY_*` apply.
+// Options are forwarded only when the caller supplies them, so the existing
+// one- and two-argument calls keep the exact no-options invocation.
+async function runV1(events, gap = 10, options = undefined) {
   await writeFile(log, "")
   await writeFile(argvLog, "")
   resetState()
 
   const module = await import("../index.js")
-  const hooks = await module.default.server()
+  const hooks = options === undefined ? await module.default.server() : await module.default.server({}, options)
   for (const event of events) {
     await hooks.event({ event })
     await sleep(gap)
@@ -120,6 +149,13 @@ const sessionCreated = (sessionID, parentID) => ({
   id: `evt_created_${sessionID}`,
   type: "session.created",
   data: parentID ? { sessionID, parentID, title: `Title of ${sessionID}` } : { sessionID, title: `Title of ${sessionID}` },
+})
+// Same announcement with a title of the test's choosing — the filter matches the
+// real title, so the default `Title of …` is not enough to exercise it.
+const sessionTitled = (sessionID, title) => ({
+  id: `evt_created_${sessionID}`,
+  type: "session.created",
+  data: { sessionID, title },
 })
 const permissionAsked = (id, sessionID = SESSION) => ({
   id: `evt_${id}`,
@@ -461,6 +497,352 @@ console.log("1.18.x server() limits")
   check("a short turn is filtered on the V1 path too", raised.length === 0, `got ${raised.length}`)
 }
 
+console.log("AC-1 excluded titles: complete and error events")
+{
+  const sessionID = "ses_ac1"
+  const created = sessionTitled(sessionID, "Background research notes")
+  const events = [
+    ["session.execution.succeeded", { id: "ac1_succeeded", type: "session.execution.succeeded", data: { sessionID } }],
+    ["session.idle", { id: "ac1_idle", type: "session.idle", data: { sessionID } }],
+    [
+      "session.execution.failed",
+      { id: "ac1_failed", type: "session.execution.failed", data: { sessionID, error: { message: "boom" } } },
+    ],
+    ["session.error", { id: "ac1_error", type: "session.error", data: { sessionID, error: { message: "boom" } } }],
+  ]
+
+  for (const [name, event] of events) {
+    const raised = await run([created, event], { excludeSessionTitles: ["Background"] })
+    check(`AC-1 a matching title suppresses ${name}`, raised.length === 0, `got ${raised.length}`)
+  }
+  for (const [name, event] of events) {
+    const raised = await run([created, event], { excludeSessionTitles: ["Nope"] })
+    check(`AC-1 a non-matching title still notifies ${name}`, raised.length === 1, `got ${raised.length}`)
+  }
+
+  {
+    const raised = await run([created, events[0][1]], { excludeSessionTitles: ["Nope", "research"] })
+    check("AC-1 a later list element matches (OR)", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await run([created, events[0][1]], { excludeSessionTitles: ["round res"] })
+    check("AC-1 a substring inside a longer title matches", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    // Case is significant: "background" is not "Background".
+    const raised = await run([created, events[0][1]], { excludeSessionTitles: ["background"] })
+    check("AC-1 matching is case-sensitive", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    // A regex-looking entry is a literal string, both ways round: it matches the
+    // literal text and it does not match what the expression would.
+    const literal = sessionTitled("ses_ac1_literal", "Work.* in progress")
+    const raised = await run(
+      [literal, { id: "ac1_literal", type: "session.execution.succeeded", data: { sessionID: "ses_ac1_literal" } }],
+      { excludeSessionTitles: ["Work.*"] },
+    )
+    check("AC-1 regex-looking text matches literally", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const plain = sessionTitled("ses_ac1_plain", "Working on docs")
+    const raised = await run(
+      [plain, { id: "ac1_plain", type: "session.execution.succeeded", data: { sessionID: "ses_ac1_plain" } }],
+      { excludeSessionTitles: ["Work.*"] },
+    )
+    check("AC-1 regex-looking text does not overmatch", raised.length === 1, `got ${raised.length}`)
+  }
+}
+
+console.log("AC-2 title source, non-completion events, dedupe")
+{
+  // No cached title: the rendered fallback is "opencode", but it is not a title
+  // the filter may match — a session with an unknown title still notifies.
+  {
+    const raised = await run(
+      [{ id: "ac2_unknown", type: "session.execution.succeeded", data: { sessionID: "ses_ac2_unknown" } }],
+      { excludeSessionTitles: ["opencode"] },
+    )
+    check("AC-2 a missing title is not suppressed by the fallback", raised.length === 1, `got ${raised.length}`)
+    check("AC-2 the fallback title is still rendered", toastText(raised[0] ?? "").includes("opencode"))
+  }
+  {
+    // The session id contains the configured text; the title does not.
+    const created = sessionTitled("ses_Background_42", "Plain title")
+    const raised = await run(
+      [created, { id: "ac2_id", type: "session.execution.succeeded", data: { sessionID: "ses_Background_42" } }],
+      { excludeSessionTitles: ["Background"] },
+    )
+    check("AC-2 a match only in the session id does not count", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    // Only the error text contains the configured string.
+    const created = sessionTitled("ses_ac2_err", "Plain title")
+    const raised = await run(
+      [
+        created,
+        {
+          id: "ac2_err",
+          type: "session.execution.failed",
+          data: { sessionID: "ses_ac2_err", error: { message: "Background job failed" } },
+        },
+      ],
+      { excludeSessionTitles: ["Background"] },
+    )
+    check("AC-2 a match only in the error message does not count", raised.length === 1, `got ${raised.length}`)
+  }
+
+  {
+    const created = sessionTitled(SESSION, "Background research notes")
+    const nonCompletion = [
+      ["permission.asked", permissionAsked("per_ac2")],
+      [
+        "question.asked",
+        {
+          id: "ac2_question",
+          type: "question.asked",
+          properties: { sessionID: SESSION, questions: [{ header: "Pick", question: "Which?" }] },
+        },
+      ],
+      [
+        "form.created",
+        {
+          id: "ac2_form",
+          type: "form.created",
+          data: { form: { id: "frm_ac2", title: "Pick one", fields: [{ title: "Which?" }] } },
+        },
+      ],
+    ]
+    for (const [name, event] of nonCompletion) {
+      const raised = await run([created, event], { excludeSessionTitles: ["Background"] })
+      check(`AC-2 a matching title does not suppress ${name}`, raised.length === 1, `got ${raised.length}`)
+    }
+  }
+
+  {
+    // A skipped event never reaches dedupe: after the rename the same key toasts.
+    const created = sessionTitled(SESSION, "Background research notes")
+    const renamed = { id: "ac2_renamed", type: "session.updated", data: { sessionID: SESSION, title: "Visible notes" } }
+    const raised = await run(
+      [
+        created,
+        { id: "ac2_skip", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+        renamed,
+        { id: "ac2_after", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+      ],
+      { excludeSessionTitles: ["Background"] },
+    )
+    check("AC-2 a skipped event does not consume the dedupe key", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    // An ordinary duplicate is still deduped.
+    const created = sessionTitled(SESSION, "Visible notes")
+    const raised = await run([
+      created,
+      { id: "ac2_first", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+      { id: "ac2_second", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+    ])
+    check("AC-2 a sent duplicate is still deduped", raised.length === 1, `got ${raised.length}`)
+  }
+}
+
+console.log("AC-3 environment filter")
+{
+  const v2Events = (id = "ac3") => [
+    sessionTitled(SESSION, "Background research"),
+    { id, type: "session.execution.succeeded", data: { sessionID: SESSION } },
+  ]
+  const v1Events = (id = "ac3") => [
+    sessionTitled(SESSION, "Research, notes weekly"),
+    { id, type: "session.idle", data: { sessionID: SESSION } },
+  ]
+
+  {
+    const raised = await withEnv(EXCLUDE_ENV, JSON.stringify(["Background"]), () => run(v2Events()))
+    check("AC-3 env filters V2 completions", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, JSON.stringify(["Background"]), () =>
+      run([
+        sessionTitled(SESSION, "Background research"),
+        {
+          id: "ac3_error",
+          type: "session.execution.failed",
+          data: { sessionID: SESSION, error: { message: "boom" } },
+        },
+      ]),
+    )
+    check("AC-3 env filters V2 errors", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    // A comma inside the title is exactly why the env format is JSON.
+    const raised = await withEnv(EXCLUDE_ENV, JSON.stringify(["Research, notes"]), () => runV1(v1Events()))
+    check("AC-3 env filters V1, including a title with a comma", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, JSON.stringify(["Other"]), () => runV1(v1Events("ac3_v1_other")))
+    check("AC-3 a non-matching env list still notifies on V1", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    // The environment is read per event, not captured at startup: the first
+    // completion is filtered, the value changes, the later one is not.
+    function* changing() {
+      yield sessionTitled("ses_ac3_first", "Background one")
+      yield { id: "ac3_first", type: "session.execution.succeeded", data: { sessionID: "ses_ac3_first" } }
+      process.env[EXCLUDE_ENV] = JSON.stringify(["Other"])
+      yield sessionTitled("ses_ac3_second", "Background two")
+      yield { id: "ac3_second", type: "session.execution.succeeded", data: { sessionID: "ses_ac3_second" } }
+    }
+    const raised = await withEnv(EXCLUDE_ENV, JSON.stringify(["Background"]), () => run(changing()))
+    check("AC-3 an env change is observed on a later event", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, undefined, () => run(v2Events("ac3_unset")))
+    check("AC-3 an unset env leaves normal behaviour", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, "", () => runV1(v1Events("ac3_empty")))
+    check("AC-3 an empty env leaves normal behaviour", raised.length === 1, `got ${raised.length}`)
+  }
+}
+
+console.log("AC-4 option and environment precedence")
+{
+  const env = JSON.stringify(["Background"])
+  const v2 = (options) =>
+    run([sessionTitled(SESSION, "Background research"), { id: "ac4", type: "session.execution.succeeded", data: { sessionID: SESSION } }], options)
+  const v1 = (options) =>
+    runV1([sessionTitled(SESSION, "Background research"), { id: "ac4", type: "session.idle", data: { sessionID: SESSION } }], 10, options)
+
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v2({ excludeSessionTitles: ["Other"] }))
+    check("AC-4 a conflicting option wins over the env on V2", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v2({ excludeSessionTitles: ["Background"] }))
+    check("AC-4 a matching option still suppresses on V2", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v2({ excludeSessionTitles: [] }))
+    check("AC-4 an explicit empty option overrides the env", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v2({ excludeSessionTitles: undefined }))
+    check("AC-4 an undefined option falls back to the env", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v2({ excludeSessionTitles: null }))
+    check("AC-4 a null option falls back to the env", raised.length === 0, `got ${raised.length}`)
+  }
+  for (const invalid of ["x", 42, {}]) {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v2({ excludeSessionTitles: invalid }))
+    check(
+      `AC-4 an invalid option (${JSON.stringify(invalid)}) overrides the env and fails open`,
+      raised.length === 1,
+      `got ${raised.length}`,
+    )
+  }
+
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v1({ excludeSessionTitles: ["Other"] }))
+    check("AC-4 a conflicting option wins over the env on V1", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v1({ excludeSessionTitles: ["Background"] }))
+    check("AC-4 a matching V1 option suppresses", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v1({ excludeSessionTitles: [] }))
+    check("AC-4 an explicit empty V1 option overrides the env", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v1(undefined))
+    check("AC-4 undefined V1 options fall back to the env", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v1(null))
+    check("AC-4 null V1 options fall back to the env", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, env, () => v1({ excludeSessionTitles: "x" }))
+    check("AC-4 an invalid V1 option overrides the env and fails open", raised.length === 1, `got ${raised.length}`)
+  }
+}
+
+console.log("AC-5 invalid configuration fails open")
+{
+  const events = () => [
+    sessionTitled(SESSION, "Background research"),
+    { id: "ac5", type: "session.execution.succeeded", data: { sessionID: SESSION } },
+  ]
+  // A throw inside the handler is swallowed and produces no toast as well, so
+  // "one toast" is both the no-throw and the fail-open assertion.
+  for (const [label, value] of [
+    ["a string", "x"],
+    ["a number", 42],
+    ["an object", {}],
+    ["an empty string", ""],
+    ["an array holding only empty strings", ["", ""]],
+    ["an array of non-strings", [1, true, null, {}]],
+  ]) {
+    const raised = await withEnv(EXCLUDE_ENV, undefined, () => run(events(), { excludeSessionTitles: value }))
+    check(`AC-5 ${label} option does not throw and suppresses nothing`, raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    // Valid entries in a mixed array still take effect.
+    const raised = await withEnv(EXCLUDE_ENV, undefined, () =>
+      run(events(), { excludeSessionTitles: ["", 42, "Background", null] }),
+    )
+    check("AC-5 a mixed option array keeps its valid entries", raised.length === 0, `got ${raised.length}`)
+  }
+  for (const [label, value] of [
+    ["malformed JSON", "not json"],
+    ["a JSON object", '{"list":["Background"]}'],
+    ["a JSON string", '"Background"'],
+    ["a JSON number", "42"],
+    ["an empty-string array", '[""]'],
+    ["whitespace only", "   "],
+  ]) {
+    const raised = await withEnv(EXCLUDE_ENV, value, () => runV1(events("ac5_env")))
+    check(`AC-5 ${label} in the env does not throw and suppresses nothing`, raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, '["", 42, "Background", null]', () => runV1(events("ac5_mixed")))
+    check("AC-5 a mixed env array keeps its valid entries", raised.length === 0, `got ${raised.length}`)
+  }
+}
+
+console.log("AC-6 V1 forwarded options")
+{
+  const events = () => [
+    sessionTitled(SESSION, "Background research"),
+    { id: "ac6_idle", type: "session.idle", data: { sessionID: SESSION } },
+  ]
+
+  {
+    const raised = await withEnv(EXCLUDE_ENV, undefined, () => runV1(events(), 10, { excludeSessionTitles: ["Background"] }))
+    check("AC-6 tuple options reach the V1 filter and suppress", raised.length === 0, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, undefined, () => runV1(events()))
+    check("AC-6 server() with no arguments keeps prior behaviour", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    const raised = await withEnv(EXCLUDE_ENV, undefined, () => runV1(events(), 10, undefined))
+    check("AC-6 explicit undefined options keep prior behaviour", raised.length === 1, `got ${raised.length}`)
+  }
+  {
+    // The host's tuple call, made directly: it must be accepted.
+    const module = await import("../index.js")
+    let blew = false
+    try {
+      await module.default.server({}, { excludeSessionTitles: ["Background"] })
+    } catch {
+      blew = true
+    }
+    check("AC-6 server(input, options) accepts a tuple call", !blew)
+  }
+}
+
 console.log("invocation")
 {
   // The script must reach powershell as one `-Command` argument: `-EncodedCommand`
@@ -475,6 +857,11 @@ console.log("invocation")
 }
 
 await rm(dir, { recursive: true, force: true })
+
+for (const [criterion, stats] of criteria) {
+  if (stats.failed === 0) console.log(`PASS ${criterion} — ${stats.total} assertions`)
+  else console.log(`FAIL ${criterion} — ${stats.failed}/${stats.total} assertions failed`)
+}
 
 console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`)
 process.exit(failures === 0 ? 0 : 1)

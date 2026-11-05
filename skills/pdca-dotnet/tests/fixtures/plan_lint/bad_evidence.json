@@ -1,0 +1,17 @@
+{
+  "task": "T906",
+  "plan_r": 1,
+  "checkout": "/tmp/some-other-checkout",
+  "evidence_root": ".pdca/T906/rv1",
+  "commands": [
+    {
+      "id": "LINT",
+      "phase": "boundary",
+      "kind": "other",
+      "argv": ["python3", ".pdca/scripts/pdca_evidence.py", "lint", "--repo", "/tmp/some-other-checkout", "--manifest", "../../outside/manifest.json"],
+      "expected": "informational",
+      "log": "../../escape.log",
+      "timeout_s": 600
+    }
+  ]
+}

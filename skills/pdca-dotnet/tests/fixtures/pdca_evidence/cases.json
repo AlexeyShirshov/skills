@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "description": "Declarative negative-fixture recipes for scripts/pdca_evidence.py. Paths are relative to the generated publication directory; placeholders ($TREE, $BASE_TREE, $ZERO40, $EMPTY, $MALFORMED) are resolved at runtime by tests/pdca_evidence_harness.py. No absolute paths, no machine-specific data.",
+  "cases": [
+    {
+      "name": "stale-manifest-tree",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "tree",
+      "value": "$BASE_TREE",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "stale-manifest-tree-binding",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "tree_binding",
+      "value": "$ZERO40",
+      "expect_rc": 2,
+      "expect_field": "tree_binding"
+    },
+    {
+      "name": "stale-receipt-tree",
+      "op": "set_field",
+      "target": "generations/*/results/N1.json",
+      "path": "tree",
+      "value": "$BASE_TREE",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "stale-receipt-tree-binding",
+      "op": "set_field",
+      "target": "generations/*/results/N1.json",
+      "path": "tree_binding",
+      "value": "$ZERO40",
+      "expect_rc": 2,
+      "expect_field": "tree_binding"
+    },
+    {
+      "name": "degenerate-empty-tree",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "tree",
+      "value": "$EMPTY",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "degenerate-zero-tree",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "tree",
+      "value": "$ZERO40",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "malformed-tree",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "tree",
+      "value": "$MALFORMED",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "absent-tree-key",
+      "op": "delete_field",
+      "target": "manifest.json",
+      "path": "tree",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "missing-referenced-receipt",
+      "op": "delete_file",
+      "target": "generations/*/results/N2.json",
+      "expect_rc": 2,
+      "expect_field": "rows[1].result"
+    },
+    {
+      "name": "missing-evidence-file",
+      "op": "delete_file",
+      "target": "logs/ev1.log",
+      "expect_rc": 2,
+      "expect_field": "evidence[0].path"
+    },
+    {
+      "name": "unreferenced-receipt-stale-tree",
+      "op": "write_receipt",
+      "filename": "UNREF.json",
+      "content": {
+        "id": "UNREF",
+        "status": "open",
+        "requirements": [],
+        "predicate": "",
+        "tree": "$BASE_TREE",
+        "tree_binding": "$BASE_TREE",
+        "evidence": [],
+        "reason": "unreferenced"
+      },
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "legacy-non-40-hex-receipt",
+      "op": "write_receipt",
+      "filename": "LEGACY.json",
+      "content": {
+        "id": "LEGACY",
+        "status": "open",
+        "requirements": [],
+        "predicate": "",
+        "tree": "$MALFORMED",
+        "tree_binding": "$MALFORMED",
+        "evidence": [],
+        "reason": "legacy"
+      },
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "path-escape-result",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "rows.1.result",
+      "value": "../../../../etc/passwd",
+      "expect_rc": 2,
+      "expect_field": "rows[1].result"
+    },
+    {
+      "name": "duplicate-receipt-id",
+      "op": "write_receipt",
+      "filename": "DUP.json",
+      "content": {
+        "id": "N1",
+        "status": "met",
+        "requirements": ["R1"],
+        "predicate": "rc==0",
+        "tree": "$TREE",
+        "tree_binding": "$TREE",
+        "evidence": [
+          {
+            "kind": "log",
+            "path": "artifacts/pdca/TEST/rv1/logs/ev1.log",
+            "exit": 0
+          }
+        ]
+      },
+      "expect_rc": 2,
+      "expect_field": "id"
+    },
+    {
+      "name": "footprint-changed-after-freeze",
+      "op": "modify_footprint_file",
+      "target": "tool.py",
+      "content": "x = 3\n",
+      "expect_rc": 2,
+      "expect_field": "tree"
+    },
+    {
+      "name": "head-tree-equality-claim",
+      "op": "set_field",
+      "target": "manifest.json",
+      "path": "head_tree",
+      "value": "HEAD^{tree}",
+      "expect_rc": 2,
+      "expect_field": "head_tree"
+    },
+    {
+      "name": "required-row-missing-from-rows",
+      "op": "delete_field",
+      "target": "manifest.json",
+      "path": "rows.2",
+      "expect_rc": 2,
+      "expect_field": "required_rows"
+    },
+    {
+      "name": "row-not-declared-in-required-rows",
+      "op": "delete_field",
+      "target": "manifest.json",
+      "path": "required_rows.2",
+      "expect_rc": 2,
+      "expect_field": "rows"
+    }
+  ]
+}

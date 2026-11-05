@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""Generate the per-harness role agents from the canonical OpenCode role assets.
+
+One role body is authored once, in ``skills/<package>/assets/opencode-agents/<role>.md``.  That
+format is OpenCode's; Claude Code and Codex need the same body under a different envelope:
+
+* ``claude-agents/<role>.md`` — frontmatter ``name``, ``description``, ``tools`` (the permission
+  boundary Claude Code does have), then the canonical body unchanged.  No ``model``: the tier
+  binding belongs to the host file, and the installer adds it.
+* ``codex-agents/<role>.toml`` — ``name``, ``description``, ``developer_instructions`` (the
+  canonical body as a TOML literal string), and ``features.shell_tool = false`` for the roles that
+  must not run commands.  No ``model``: same reason.
+
+The mapping is fixed here, not chosen at install time — a translated copy must be reviewable and
+identical everywhere, and the installer only copies files and binds models.
+
+Every package that ships ``assets/opencode-agents`` gets the two generated sets for exactly the
+roles it carries, so a published package stays self-contained.
+
+Usage::
+
+    python3 skills/pdca/scripts/gen_host_agents.py            # check (default)
+    python3 skills/pdca/scripts/gen_host_agents.py --check    # check
+    python3 skills/pdca/scripts/gen_host_agents.py --fix      # (re)generate
+
+Exit codes: 0 = every generated file matches, 1 = missing/drifted/unexpected file, 2 = usage/IO or
+an input the generator cannot represent (for example a body containing a TOML literal delimiter).
+No timestamps and no absolute paths are printed, so the output is stable in CI.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+try:  # Python >= 3.11; the round-trip check simply degrades on older interpreters
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - depends on the interpreter
+    tomllib = None  # type: ignore[assignment]
+
+ROOT = Path(__file__).resolve().parents[3]
+
+CANONICAL_DIR = "opencode-agents"
+CLAUDE_DIR = "claude-agents"
+CODEX_DIR = "codex-agents"
+
+# Claude Code's only permission lever is the tool allowlist.  The split mirrors each role's
+# OpenCode policy as closely as the host allows; where it cannot (per-command shell scoping), the
+# generated set is deliberately narrow and the role gets its facts another way.
+CLAUDE_TOOLS = {
+    "pdca-scout": ("Read", "Grep", "Glob", "Bash"),
+    "pdca-planner": ("Read",),
+    "pdca-executor": ("Read", "Write", "Edit", "Bash", "Glob", "Grep"),
+    "pdca-check": ("Read", "Grep", "Glob"),
+    "pdca-escalate": ("Read", "Grep", "Glob", "Agent"),
+    "pdca-orchestrator": ("Read", "Agent", "Skill"),
+    "pdca-security-auditor": ("Read", "Grep", "Glob"),
+}
+
+# Codex has no per-agent edit switch and no permission map: the only capability lever in a custom
+# agent file is a feature toggle, so the roles that must not run commands turn the shell off and the
+# rest is an instruction-level rule carried by the body.
+CODEX_SHELL_OFF = frozenset(
+    {
+        "pdca-planner",
+        "pdca-check",
+        "pdca-escalate",
+        "pdca-orchestrator",
+        "pdca-security-auditor",
+    }
+)
+
+GENERATED_BY = "skills/pdca/scripts/gen_host_agents.py"
+
+
+class InputError(Exception):
+    """An input the generator cannot represent; exit 2, never a silent wrong file."""
+
+
+def split_frontmatter(text: str) -> tuple[str, str]:
+    """Return ``(frontmatter, payload)``; the payload is the body without its leading blank line."""
+    if not text.startswith("---\n"):
+        raise InputError("missing frontmatter")
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        raise InputError("unterminated frontmatter")
+    frontmatter = text[4:end]
+    return frontmatter, text[end + 5 :].lstrip("\n")
+
+
+def frontmatter_field(frontmatter: str, field: str) -> str:
+    for line in frontmatter.splitlines():
+        if line.startswith(field + ":"):
+            value = line[len(field) + 1 :].strip()
+            if value.startswith('"'):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError as error:
+                    raise InputError("unparseable %s: %s" % (field, error)) from error
+            return value.strip("'")
+    raise InputError("missing %s" % field)
+
+
+def read_role(path: Path) -> dict[str, str]:
+    frontmatter, payload = split_frontmatter(path.read_text(encoding="utf-8"))
+    return {
+        "name": frontmatter_field(frontmatter, "name"),
+        "description": frontmatter_field(frontmatter, "description"),
+        "payload": payload,
+    }
+
+
+def claude_document(role: dict[str, str], source: str) -> str:
+    tools = CLAUDE_TOOLS.get(role["name"])
+    if tools is None:
+        raise InputError("%s: no Claude Code tool mapping" % role["name"])
+    lines = [
+        "---",
+        "# Generated from %s by %s — do not edit this file." % (source, GENERATED_BY),
+        "name: %s" % role["name"],
+        "description: %s" % json.dumps(role["description"], ensure_ascii=False),
+        "tools: %s" % ", ".join(tools),
+        "---",
+        "",
+    ]
+    return "\n".join(lines) + "\n" + role["payload"]
+
+
+def codex_document(role: dict[str, str], source: str) -> str:
+    payload = role["payload"]
+    if "'''" in payload:
+        raise InputError(
+            "%s: the body contains a TOML literal delimiter ('''), which this generator cannot "
+            "represent" % role["name"]
+        )
+    if payload.startswith("'"):
+        raise InputError("%s: the body starts with a quote" % role["name"])
+    lines = [
+        "# Generated from %s by %s — do not edit this file." % (source, GENERATED_BY),
+        'name = "%s"' % role["name"],
+        'description = "%s"' % json.dumps(role["description"], ensure_ascii=False)[1:-1],
+    ]
+    if role["name"] in CODEX_SHELL_OFF:
+        lines.append("features.shell_tool = false")
+    lines += ["", "developer_instructions = '''", payload + "'''", ""]
+    document = "\n".join(lines)
+    if tomllib is not None:
+        parsed = tomllib.loads(document)
+        if parsed.get("developer_instructions") != payload:
+            raise InputError("%s: the TOML body does not round-trip" % role["name"])
+        if parsed.get("name") != role["name"]:
+            raise InputError("%s: the TOML name does not round-trip" % role["name"])
+    return document
+
+
+def expected_files(root: Path) -> tuple[dict[Path, str], list[Path]]:
+    """Return the expected generated files and the directories they live in."""
+    expected: dict[Path, str] = {}
+    directories: list[Path] = []
+    packages = sorted(root.glob("skills/pdca*/assets/" + CANONICAL_DIR))
+    if not packages:
+        raise InputError("no %s packages found" % CANONICAL_DIR)
+    for canonical in packages:
+        assets = canonical.parent
+        directories += [assets / CLAUDE_DIR, assets / CODEX_DIR]
+        for path in sorted(canonical.glob("*.md")):
+            role = read_role(path)
+            # Provenance is this package's own authored file: a package must record where its
+            # copy came from, and the shared roles are already byte-identical mirrors.
+            source = path.relative_to(root).as_posix()
+            expected[assets / CLAUDE_DIR / (role["name"] + ".md")] = claude_document(role, source)
+            expected[assets / CODEX_DIR / (role["name"] + ".toml")] = codex_document(role, source)
+    return expected, directories
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="check or generate the per-harness role agents")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--check", action="store_true", help="report drift (default)")
+    group.add_argument("--fix", action="store_true", help="write the generated files")
+    parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+
+    root = args.root.resolve()
+    try:
+        expected, directories = expected_files(root)
+    except InputError as error:
+        print("error: %s" % error, file=sys.stderr)
+        return 2
+    except OSError as error:
+        print("error: %s" % error, file=sys.stderr)
+        return 2
+
+    problems: list[str] = []
+    written = 0
+    for path, content in sorted(expected.items()):
+        rel = path.relative_to(root).as_posix()
+        if args.fix:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            current = path.read_text(encoding="utf-8") if path.is_file() else None
+            if current != content:
+                path.write_text(content, encoding="utf-8")
+                written += 1
+            continue
+        if not path.is_file():
+            problems.append("missing: %s" % rel)
+        elif path.read_text(encoding="utf-8") != content:
+            problems.append("drifted: %s" % rel)
+
+    # A stale file is drift too: it would ship a role the package no longer carries.
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.iterdir()):
+            if path.is_file() and path not in expected:
+                problems.append("unexpected: %s" % path.relative_to(root).as_posix())
+
+    if args.fix:
+        print("generated: %d file(s) written, %d expected" % (written, len(expected)))
+        if problems:
+            for problem in problems:
+                print(problem)
+            return 1
+        return 0
+
+    if problems:
+        for problem in problems:
+            print(problem)
+        return 1
+    print("ok: %d generated file(s) match their canonical role assets" % len(expected))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

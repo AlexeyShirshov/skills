@@ -1,1 +1,17 @@
 opencode/plugins/*/*.tgz
+
+# Python bytecode left behind by the skill test suites
+__pycache__/
+*.pyc
+
+# MSBuild output from the `plan_lint` fixture repos (left behind by dotnet test runs)
+skills/*/tests/fixtures/**/bin/
+skills/*/tests/fixtures/**/obj/
+
+# PDCA: `.pdca/status/**` is the durable on-disk record (not ignored) — it persists and is read back
+# by a fresh session, which does not make it Git-tracked: adding, staging or committing it needs an
+# explicit user/policy instruction. Evidence and staged helpers are local by-products of a run
+# (docs/install.md); a numeric `rv<k>` under a task/collection id is covered at any depth,
+# nested collection items included, without hiding a durable `.pdca/rv-tests/` root.
+.pdca/*/**/rv[0-9]*/
+.pdca/scripts/

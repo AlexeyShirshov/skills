@@ -1,0 +1,85 @@
+{
+  "task": "wsl-notify-session-filter",
+  "revision": 2,
+  "cycle": 1,
+  "mode": "normal",
+  "status_file": ".pdca/status/wsl-notify-session-filter-1.md",
+  "artefact_identity": {
+    "head": "2002da3f7690b0d11d224ebc3a4e5850ef3b22bd",
+    "files": {
+      "opencode/plugins/wsl-notify/index.js": "5a8fc89626e8ac301dd236a553e630c8595b7d4d7005b5dd4c393c1d844ea8f8",
+      "opencode/plugins/wsl-notify/test/smoke.mjs": "a2e883db719721180c5f82eb649190a1d563edd3e0c960c67d6e2083904fa6b3",
+      "opencode/plugins/wsl-notify/README.md": "438768babebcc1e58726dc6cad0dbe5fd2d2597403aada9248ef588dd42f33e0"
+    }
+  },
+  "frozen_at": "2026-10-19T09:33:48Z",
+  "required": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6", "AC-7", "AC-8"],
+  "rows": [
+    {
+      "id": "AC-1",
+      "status": "met",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "PASS AC-1 — 13 assertions; final line: all checks passed"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/test/smoke.mjs"}
+      ]
+    },
+    {
+      "id": "AC-2",
+      "status": "met",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "PASS AC-2 — 9 assertions; final line: all checks passed"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/test/smoke.mjs"}
+      ]
+    },
+    {
+      "id": "AC-3",
+      "status": "met",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "PASS AC-3 — 7 assertions; both adapters exercised; V1 case includes a title with a comma"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/test/smoke.mjs"}
+      ]
+    },
+    {
+      "id": "AC-4",
+      "status": "met",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "PASS AC-4 — 14 assertions; final line: all checks passed"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/test/smoke.mjs"}
+      ]
+    },
+    {
+      "id": "AC-5",
+      "status": "met",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "PASS AC-5 — 14 assertions; final line: all checks passed"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/test/smoke.mjs"}
+      ]
+    },
+    {
+      "id": "AC-6",
+      "status": "met",
+      "note": "Adapter-level verification only; no live-host run.",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "PASS AC-6 — 4 assertions; final line: all checks passed"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/test/smoke.mjs", "detail": "runV1 extended to forward options as its third argument; existing positional callers preserved"},
+        {"kind": "source", "path": "opencode/plugins/wsl-notify/index.js", "detail": "V1 server(input, options) forwards options to the filter per server instance"}
+      ]
+    },
+    {
+      "id": "AC-7",
+      "status": "met",
+      "evidence": [
+        {"kind": "source", "path": ".pdca/wsl-notify-session-filter/rv2/changes.diff", "detail": "README hunks: option added, V1 tuple form documented, falsified no-options claims replaced"},
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/stale-phrase-grep.log", "command": "grep -n -E \"no options channel|Options do not reach|This path has no options\" opencode/plugins/wsl-notify/index.js opencode/plugins/wsl-notify/test/smoke.mjs opencode/plugins/wsl-notify/README.md", "exit": 1, "value": "no matches — none found (grep exit 1 = no stale phrase)"}
+      ]
+    },
+    {
+      "id": "AC-8",
+      "status": "met",
+      "evidence": [
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/smoke.log", "command": "bash -o pipefail -c 'node opencode/plugins/wsl-notify/test/smoke.mjs 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/smoke.log'", "exit": 0, "value": "109 checks ok, 0 failures; final line: all checks passed"},
+        {"kind": "command", "path": ".pdca/wsl-notify-session-filter/rv2/diff-check.log", "command": "bash -o pipefail -c 'git diff --check -- opencode/plugins/wsl-notify/index.js opencode/plugins/wsl-notify/test/smoke.mjs opencode/plugins/wsl-notify/README.md 2>&1 | tee .pdca/wsl-notify-session-filter/rv2/diff-check.log'", "exit": 0, "value": "empty log (0 bytes) — no whitespace errors"}
+      ]
+    }
+  ]
+}
