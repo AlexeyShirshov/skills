@@ -4,18 +4,121 @@
 # block (BOOTSTRAP / DISCOVER / BRIEF / STEP / ACCEPT / DECIDE / STOP), a tier legend
 # and the campaign state graph at the bottom.  The defining edge is DECIDE -> DISCOVER:
 # the next step starts from the accepted baseline of the previous one.
-# Renders light (incremental-hand.*) and dark (incremental-hand-dark.*).
+# Renders light (incremental-hand.*) and dark (incremental-hand-dark.*) in Russian;
+# `--lang en` writes the same set with an `-en` suffix, exactly like `pdca`.
+import argparse
 import html
 import os
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# --- localization (ru by default; `--lang en` selects English) --------------
+LANG = "ru"
+
+# English label -> Russian. Only the labels the diagram draws; identifiers such
+# as phase ids (`PLAN`, `STEP`, `STOP`), role names, tier words and outcome ids
+# (`met`, `unreachable`, `blocked`) are emitted as-is.
+_TR_RU = {
+    # band, legend, titles
+    "Orchestrator · cheap — cycle-control / campaign-control":
+        "Оркестратор · cheap — cycle-control / campaign-control",
+    "Campaign graph": "Граф состояний кампании",
+    "cheap tier": "дешёвая ступень",
+    "medium tier": "средняя ступень",
+    "strong · pdca-escalate — not a campaign role: called inside STEP by triggers, "
+    "the campaign receives the result":
+        "strong · pdca-escalate — не роль кампании: вызывается внутри STEP по триггерам, "
+        "кампания получает результат",
+    # band inputs, per phase
+    'BOOTSTRAP ← "campaign start" · "new goal"':
+        'BOOTSTRAP ← «старт кампании» · «новая цель»',
+    'PLAN ← "baseline accepted" · "next seed"':
+        'PLAN ← «baseline принят» · «следующий seed»',
+    'STEP ← "brief approved" · "replan r+1"':
+        'STEP ← «бриф одобрен» · «реплан r+1»',
+    'ACCEPT ← "step closed"': 'ACCEPT ← «шаг закрыт»',
+    'DECIDE ← "measurement accepted"': 'DECIDE ← «измерение принято»',
+    'STOP ← "met" · "unreachable" · "blocked" · "stopped"':
+        'STOP ← «met» · «unreachable» · «blocked» · «stopped»',
+    # dispatch edge labels
+    "start": "старт",
+    "plan ready": "план готов",
+    "step closed": "шаг закрыт",
+    "measurement accepted": "измерение принято",
+    "decision": "решение",
+    "stop": "стоп",
+    # BOOTSTRAP cards
+    "Goal + recipe": "Цель + рецепт",
+    "pdca-planner · read-only · fixation": "pdca-planner · read-only · фиксация",
+    "pdca-executor · edit/bash · recipe": "pdca-executor · edit/bash · рецепт",
+    "Floor · target": "Порог · цель",
+    "pdca-planner · baseline + floor": "pdca-planner · baseline + порог",
+    "Status file": "Статус-файл",
+    "primary · status-only · one file": "primary · status-only · один файл",
+    # PLAN cards
+    "Discover · gap map": "Обнаружение · пробелы",
+    "pdca-scout · gap + deferred · read-only":
+        "pdca-scout · пробелы · read-only",
+    "Ranked seed": "Ранжированное семя",
+    "pdca-scout · facts, not a decision": "pdca-scout · факты, а не решение",
+    "Brief · six blocks": "Бриф · шесть блоков",
+    "Acceptance · targets": "Приёмка · цели",
+    "pdca-planner · floor · scope": "pdca-planner · порог · область",
+    # STEP cards
+    "pdca-planner · step plan · rev r": "pdca-planner · план шага · rev r",
+    "pdca-executor · edit/bash · facts": "pdca-executor · edit/bash · факты",
+    "pdca-check · read-only · evidence": "pdca-check · read-only · evidence",
+    "pdca-executor · status/docs": "pdca-executor · статус/docs",
+    "Step exit": "Выход шага",
+    "accept · revise · blocked → ACT": "принять · ревизия · blocked → ACT",
+    # ACCEPT cards
+    "Verdict": "Вердикт",
+    "pdca-check · read-only · by rows": "pdca-check · по строкам",
+    "Number": "Число",
+    "one run · red is archived": "один прогон · красный в архив",
+    "Step row": "Строка шага",
+    "one writer · status write": "один писатель · запись статуса",
+    # DECIDE cards
+    "Goal?": "Цель достигнута?",
+    "pdca-planner · predicate": "pdca-planner · предикат",
+    "Remainder": "Остаток",
+    "prove with numbers · blocker": "доказать числами · блокер",
+    "Next seed": "Следующий seed",
+    "pdca-planner · the next step": "pdca-planner · следующий шаг",
+    "Route": "Маршрут",
+    "next · revise · stop": "дальше · ревизия · стоп",
+    # STOP cards (outcome ids stay English)
+    "the only success": "единственный успех",
+    "the remainder proven by numbers": "остаток доказан числами",
+    "resume point in the status file": "точка возобновления в статусе",
+    # campaign state graph
+    "recipe": "рецепт",
+    "brief": "бриф",
+    "closed | blocked (DO → ACT)": "закрыт | blocked (DO → ACT)",
+    "accepted": "принято",
+    "next step · baseline = accepted": "следующий шаг · baseline = принятый",
+    "repair · parent N": "исправление · N",
+    "ACT-finalized · met · unreachable · blocked · stopped":
+        "финализировано ACT · met · unreachable · blocked · stopped",
+    "verify — optional integrated gate: target = gate, does not move the baseline":
+        "проверка — необязательный интеграционный гейт: цель = гейт, baseline не двигает",
+}
+
+
+def T(text):
+    """Translate a visible label for the active language; identity for `en`."""
+    if LANG == "ru" and text is not None:
+        if isinstance(text, (list, tuple)):
+            return type(text)(T(item) for item in text)
+        return _TR_RU.get(text, text)
+    return text
 
 M = 24
 GAP = 24
 
 # One column per campaign block; widths drive the shared canvas.
 COLN = ["B", "P", "S", "A", "R", "X"]
-WIDTH = {"B": 210, "P": 236, "S": 210, "A": 190, "R": 196, "X": 200}
+WIDTH = {"B": 210, "P": 268, "S": 210, "A": 190, "R": 220, "X": 200}
 COLX = {}
 _x = M
 for _c in COLN:
@@ -138,6 +241,7 @@ def _fit(text, maxpx, cw):
 
 def render(P):
     def box(x, y, w, h, title, sub, tier):
+        title, sub = T(title), T(sub)
         col = TIER_COLOR[tier]
         bw, bh = 50, 18
         bx, by = x + w - bw - 8, y + 7
@@ -160,6 +264,7 @@ def render(P):
         return "\n".join(out)
 
     def header(x, y, w, h, lbl, col, owner):
+        lbl, owner = T(lbl), T(owner)
         return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{COLOR[col]}"/>'
                 f'<text x="{x + w / 2}" y="{y + 17}" class="h" text-anchor="middle">{esc(lbl)}</text>'
                 f'<text x="{x + w / 2}" y="{y + 33}" class="ho" text-anchor="middle">{esc(owner)}</text>')
@@ -175,7 +280,7 @@ def render(P):
     def label(x, y, value, color=None, anchor="middle"):
         color = color or P["label"]
         return (f'<text x="{x}" y="{y}" class="g" fill="{color}" text-anchor="{anchor}">'
-                f'{esc(value)}</text>')
+                f'{esc(T(value))}</text>')
 
 
     s = []
@@ -203,13 +308,13 @@ def render(P):
     # ---- orchestrator band ----
     s.append(f'<rect x="{M}" y="{ORB_Y}" width="{W - 2 * M}" height="{ORB_H}" rx="10" class="band"/>')
     s.append(f'<text x="{M + 18}" y="{ORB_Y + 24}" class="bt">'
-             'Orchestrator · cheap — cycle-control / campaign-control</text>')
+             f'{esc(T("Orchestrator · cheap — cycle-control / campaign-control"))}</text>')
     split = (len(INPUTS) + 1) // 2
     for gi in range(2):
         gx = M + 18 if gi == 0 else M + 18 + (W - 2 * M) / 2
         for row, line in enumerate(INPUTS[:split] if gi == 0 else INPUTS[split:]):
             prefix = "\u2190 "
-            s.append(f'<text x="{gx}" y="{ORB_Y + 52 + row * 18}" class="ol">{prefix}{esc(line)}</text>')
+            s.append(f'<text x="{gx}" y="{ORB_Y + 52 + row * 18}" class="ol">{prefix}{esc(T(line))}</text>')
 
     def cx(c):
         return COLX[c] + WIDTH[c] / 2
@@ -250,7 +355,7 @@ def render(P):
     for i, (col, title, model, roles) in enumerate(legend):
         lx = M + i * iw
         s.append(f'<rect x="{lx}" y="{LEG_Y - 12}" width="15" height="15" rx="4" fill="{col}"/>')
-        s.append(f'<text x="{lx + 22}" y="{LEG_Y}" class="lt">{esc(title)}</text>')
+        s.append(f'<text x="{lx + 22}" y="{LEG_Y}" class="lt">{esc(T(title))}</text>')
         mw = len(model) * 7.4 + 16
         if P["tint"]:
             s.append(f'<rect x="{lx + 22}" y="{LEG_Y + 8}" width="{mw}" height="21" rx="7" '
@@ -261,11 +366,14 @@ def render(P):
             mtxt = "#ffffff"
         s.append(f'<text x="{lx + 22 + mw / 2}" y="{LEG_Y + 23}" class="lm" fill="{mtxt}" '
                  f'text-anchor="middle">{esc(model)}</text>')
-        s.append(f'<text x="{lx + 22 + mw + 10}" y="{LEG_Y + 23}" class="ls">{esc(roles)}</text>')
+        s.append(f'<text x="{lx + 22 + mw + 10}" y="{LEG_Y + 23}" class="ls">{esc(T(roles))}</text>')
         if i == len(legend) - 1:
+            strong_note = T(
+                "strong · pdca-escalate — not a campaign role: called inside STEP by triggers, "
+                "the campaign receives the result"
+            )
             s.append(f'<text x="{W / 2}" y="{LEG_Y + 44}" class="ls" text-anchor="middle">'
-                     'strong · pdca-escalate — not a campaign role: called inside STEP by triggers, '
-                     'the campaign receives the result</text>')
+                     f'{esc(strong_note)}</text>')
 
     # ---- campaign state graph (20 % narrower than the canvas content) ----
     NH, NW = 44, 120
@@ -274,7 +382,7 @@ def render(P):
     graph_x = M + (W - 2 * M - graph_w) / 2
     gap = (graph_w - NW) / (len(order) - 1)
     stx = {name: graph_x + i * gap for i, name in enumerate(order)}
-    s.append(f'<text x="{graph_x}" y="{SG_TITLE_Y}" class="lt">Campaign graph</text>')
+    s.append(f'<text x="{graph_x}" y="{SG_TITLE_Y}" class="lt">{esc(T("Campaign graph"))}</text>')
     stc = {k: (v or P["state_neutral"]) for k, v in STC.items()}
     for name in order:
         x = stx[name]
@@ -332,28 +440,13 @@ def render(P):
     return "\n".join(s)
 
 
-def htmlwrap(P, title, svg):
-    return ('<!doctype html><html lang="en"><meta charset="utf-8">'
+def htmlwrap(P, title, svg, lang):
+    return (f'<!doctype html><html lang="{lang}"><meta charset="utf-8">'
             f'<title>{esc(title)}</title>'
             f'<style>body{{margin:0;background:{P["bg"]};font-family:Segoe UI,system-ui,sans-serif}}'
             f'.card{{background:{P["card"]};border-radius:12px;margin:20px;padding:12px;'
             f'box-shadow:{P["shadow"]};overflow:auto}}</style>'
             '<div class="card">' + svg + '</div></html>')
-
-
-VARIANTS = [
-    ("light", "incremental-hand", "pdca-incremental — campaign in steps"),
-    ("dark", "incremental-hand-dark", "pdca-incremental — campaign in steps (dark theme)"),
-]
-
-rendered = {}
-for theme, stem, title in VARIANTS:
-    P = THEMES[theme]
-    svg = render(P)
-    rendered[theme] = svg
-    open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8").write(svg)
-    open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8").write(htmlwrap(P, title, svg))
-    print("wrote %s.{svg,html}" % stem)
 
 
 def crop(svg, y, height):
@@ -365,11 +458,50 @@ def crop(svg, y, height):
     return svg.replace(head, tail, 1)
 
 
-dark = rendered["dark"]
-open(os.path.join(OUT_DIR, "incremental-contract-dark.svg"), "w", encoding="utf-8").write(
-    crop(dark, 0, CUT_Y))
-open(os.path.join(OUT_DIR, "incremental-state-dark.svg"), "w", encoding="utf-8").write(
-    crop(dark, CUT_Y, H - CUT_Y))
-print("wrote incremental-{contract,state}-dark.svg")
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="Render the pdca-incremental campaign diagram (ru/en)."
+    )
+    ap.add_argument("--lang", choices=["ru", "en"], default="ru",
+                    help="label language (default: ru)")
+    args = ap.parse_args(argv)
+    global LANG
+    LANG = args.lang
+    suffix = "" if LANG == "ru" else "-en"
+    if LANG == "ru":
+        titles = (
+            "pdca-incremental — кампания шагами",
+            "pdca-incremental — кампания шагами (тёмная тема)",
+        )
+    else:
+        titles = (
+            "pdca-incremental — campaign in steps",
+            "pdca-incremental — campaign in steps (dark theme)",
+        )
+    variants = [
+        ("light", "incremental-hand" + suffix, titles[0]),
+        ("dark", "incremental-hand-dark" + suffix, titles[1]),
+    ]
+    rendered = {}
+    for theme, stem, title in variants:
+        P = THEMES[theme]
+        svg = render(P)
+        rendered[theme] = svg
+        open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8").write(svg)
+        open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8").write(
+            htmlwrap(P, title, svg, LANG)
+        )
+        print("wrote %s.{svg,html}" % stem)
 
-print("W=%d H=%d" % (W, H))
+    dark = rendered["dark"]
+    open(os.path.join(OUT_DIR, "incremental-contract-dark" + suffix + ".svg"),
+         "w", encoding="utf-8").write(crop(dark, 0, CUT_Y))
+    open(os.path.join(OUT_DIR, "incremental-state-dark" + suffix + ".svg"),
+         "w", encoding="utf-8").write(crop(dark, CUT_Y, H - CUT_Y))
+    print("wrote incremental-{contract,state}-dark%s.svg" % suffix)
+
+    print("W=%d H=%d" % (W, H))
+
+
+if __name__ == "__main__":
+    main()

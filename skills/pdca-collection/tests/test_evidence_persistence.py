@@ -15,7 +15,8 @@ import re
 import unittest
 from pathlib import Path
 
-SCENARIOS = Path(__file__).resolve().parents[1] / "tests/scenarios.md"
+SCENARIOS = Path(__file__).resolve().parents[1] / "tests/scenarios.feature"
+HISTORY = Path(__file__).resolve().parents[1] / "tests/scenarios-history.md"
 
 
 def norm(text: str) -> str:
@@ -24,7 +25,7 @@ def norm(text: str) -> str:
 
 class ScenarioEvidenceRootTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.flat = norm(SCENARIOS.read_text(encoding="utf-8"))
+        self.flat = norm(SCENARIOS.read_text(encoding="utf-8") + "\n" + HISTORY.read_text(encoding="utf-8"))
 
     def test_input_keeps_the_external_scratch_premise(self) -> None:
         # The scratch log is part of the scenario, not something to delete.

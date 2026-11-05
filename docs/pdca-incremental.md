@@ -16,6 +16,8 @@ measured by how busy the session felt.
 **credited steps**, each a full cycle of the base contract: plan, execute, verify independently,
 finish. The next step starts from the previous **accepted** state, not from a forecast.
 
+![Diagram of the pdca-incremental campaign: steps, measurement, acceptance and the state graph](../skills/pdca-incremental/assets/diagram/incremental-hand-dark-en.svg)
+
 ## 2. When to choose it
 
 Use the incremental form when:

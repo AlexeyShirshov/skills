@@ -17,6 +17,8 @@ and adds only the coordination: preparation, a barrier, dependency-aware groups,
 integration and one batch status record. The collection creates **no second cycle and no additional
 attempt counter**.
 
+![Diagram of the pdca-collection form: orchestrator, phases, corrective cycles and the state graph](../skills/pdca-collection/assets/diagram/collection-hand-dark-en.svg)
+
 ## 2. What a collection is, and what it is not
 
 A collection is:
