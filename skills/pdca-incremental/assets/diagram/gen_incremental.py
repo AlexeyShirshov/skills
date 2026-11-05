@@ -399,10 +399,21 @@ def render(P):
         ("step_acc", "STEP", "ACC", "closed | blocked (DO → ACT)"),
         ("acc_dec", "ACC", "DEC", "accepted"),
     ]
+    # Six nodes share the content width, so the gap between two of them is
+    # narrower than a long caption: `closed | blocked (DO → ACT)` is drawn at the
+    # row's centre in both languages and would cross the STEP and ACC borders.
+    # A caption that does not fit its arrow's gap is lifted just above the row,
+    # where only the dashed DEC -> PLAN curve runs; the fit is decided on the
+    # English source string so both languages place it on the same side.
+    LABEL_CW = 6.3
     for eid, a, b, lab in edges:
         x1, x2 = stx[a] + NW, stx[b]
         s.append(poly([(x1, _y), (x2, _y)], edge_id=eid))
-        s.append(label((x1 + x2) / 2, _y - 7, lab, P["label"]))
+        mid_x = (x1 + x2) / 2
+        if len(lab) * LABEL_CW + 12 > x2 - x1:
+            s.append(label(mid_x, R1_TOP - 11, lab, P["label"]))
+        else:
+            s.append(label(mid_x, _y - 7, lab, P["label"]))
     # the defining feedback edge: DECIDE -> DISCOVER, next step starts from the accepted number
     s.append(f'<path d="M{stx["DEC"] + NW / 2},{R1_TOP} C{stx["DEC"] + NW / 2},{R1_TOP - 46} '
              f'{stx["PLAN"] + NW / 2},{R1_TOP - 46} {stx["PLAN"] + NW / 2},{R1_TOP}" '
