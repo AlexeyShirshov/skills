@@ -214,7 +214,7 @@ No automatic rerun/remerge/recluster/reset/revert, no additional collection lane
 
 ### A — completion
 
-ACT finalizes. **Full completion** requires accepted integration CHECK plus every original goal's accepted whole-goal CHECK/ACT. PASS with `incomplete` is verified partial integration, not full success. Finalize `blocked`/`incomplete`/`STOP` honestly; never mark missing goals `done`. After reporting, remove only disposable worktrees/temporary branches of `done`/`merged` groups. The worktrees, branches, commits and patches of **incomplete groups must never be deleted**; preserve their refs and patch paths, and explicitly record in status when their worktree/refs are left in place. Keep status/evidence paths to preserved results. Push — **never**. If escalation yields no acceptable revised plan/STOP, preserve unresolved state, claim no success/cleanup, keep parent `unverified` and source item statuses unchanged. **A STOP or any non-`PASS` termination: cleanup and merging are forbidden.** Corrective success alone is not collection success.
+ACT finalizes. **Full completion** requires accepted integration CHECK plus every original goal's accepted whole-goal CHECK/ACT. PASS with `incomplete` is verified partial integration, not full success. ACT also closes the collection's own final `## Lessons learned` retrospective (§Collection status record) once, after the result is frozen, for whichever outcome was reached — accepted, partial, `blocked`/`incomplete`, `STOP`, early failure or refusal; a run that ended before any item still closes it there, and no CHECK or item work is invented. Finalize `blocked`/`incomplete`/`STOP` honestly; never mark missing goals `done`. After reporting, remove only disposable worktrees/temporary branches of `done`/`merged` groups. The worktrees, branches, commits and patches of **incomplete groups must never be deleted**; preserve their refs and patch paths, and explicitly record in status when their worktree/refs are left in place. Keep status/evidence paths to preserved results. Push — **never**. If escalation yields no acceptable revised plan/STOP, preserve unresolved state, claim no success/cleanup, keep parent `unverified` and source item statuses unchanged. **A STOP or any non-`PASS` termination: cleanup and merging are forbidden.** Corrective success alone is not collection success.
 
 A **plan-terminal resolution** satisfies barrier/schedule but is neither completion, credit nor execution failure; it prevents full completion. Summary separates **accepted goals** (`done`),
 **plan-terminal resolutions** (cause/evidence, `attempts=0`) and **execution failures** (`incomplete` after real failure).
@@ -395,11 +395,47 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   - the **next allowed step**;
 - distinct fields for completeness (all original goals accepted), integrated-tree CHECK verdict,
   incomplete items and preserved results.
-- a separate `## Lessons learned` section — `pending` at creation, finished in ACT: a short
-  evidence-grounded retrospective via the same configured `pdca-check` (`retrospective` mode) at
-  collection-level ACT closures, including a successful integrated-tree CHECK and a terminal `STOP`;
-  no per-item, per-group or per-phase extra retrospective is created unless an item cycle itself
-  reaches ACT, in which case it inherits the base skeleton. It is persisted only by `pdca-executor`.
+- a separate `## Lessons learned` section — `pending` at creation and finished in ACT as the one
+  final retrospective of **`pdca-collection`'s own invocation**, completed **once per actually
+  completed invocation** — never per revision, item or checkpoint for this section — after its substantive work reached
+  a result and for **every** actually finalized outcome: accepted integration, verified partial
+  integration, `blocked`/`incomplete`, terminal `STOP`, an early failure or a refusal. When the
+  collection itself actually closes `blocked`/`incomplete`/`STOP` (or any other finalized outcome
+  above), its retrospective **does** run; there is no parent-level pause status that would defer it.
+  A child campaign's `running` status or `disposition: paused` checkpoint proves only that that item
+  has not completed — it does not by itself complete the collection and is not a terminal parent
+  outcome. An intermediate approval wait, an item/group closure, a checkpoint, a child pause, a
+  session ending alone, a lane boundary, a child closure and a failed probe are **not** triggers by
+  themselves. A premature exit before a status
+  record exists still gets this one destination: `pdca-executor` creates the record in the authorized
+  `form: collection` shape and fills the section; with no permitted destination or role available the
+  driver reports an explicit **closure blocker** instead of skipping it. When an explicitly authorized
+  already completed `form: collection` record is re-entered, its completed lesson entries are kept and
+  the later invocation's own report is appended within the same `## Lessons learned`, tied to the
+  existing `## Progress log` closure reference — no new counter, log, section or phase and no
+  overwrite. It runs through the same configured `pdca-check` (`retrospective` mode, read-only) with
+  the base CHECK+ACT retrospective contract and mode from `../pdca/references/act.md` and
+  `../pdca/references/check.md` inlined **plus** the parent-only scope/output override below, which
+  takes precedence over the generic cycle-task retrospective inputs and the general what-worked
+  output; after freezing the originating result it adds no verdict,
+  CHECK, verification, attempt, counter or DO work and never reopens the accepted result; it is final
+  ACT bookkeeping, not a new PDCA phase or quality gate.
+- **Parent-only scope of that retrospective.** The dispatcher input is the collection's own
+  instructions, status record and own orchestration evidence — item decomposition, dependency
+  DAG/groups/lane allocation, routing and handoffs, integration and verification orchestration and
+  status bookkeeping, plus its own instructions as evidenced. It analyses only observed defects of
+  this skill's own operation and evidenced instruction problems, never task/domain results (a bad task
+  outcome is not automatically a skill defect), an item's own retrospective content, child lessons, or
+  a summary/aggregation of them. A recorded parent-child interaction may evidence a parent
+  routing/handoff error with attribution and uncertainty stated. Output: defects with evidence,
+  effect, proposed change and uncertainty/limits, 0–3 transferable lessons in the base retrospective's
+  shape, and `No skill-level defects found` only after actual analysis; it edits no skill, config or
+  `AGENTS.md` and creates no parallel file, log, role, phase or counter. The driver only routes the raw
+  report; `pdca-executor` persists it and completes the final ACT bookkeeping. If the dispatch is
+  absent or fails, the section stays `pending` with the explicit **closure blocker**, the original
+  result is preserved, and neither driver nor executor substitutes an analysis. No per-item,
+  per-group or per-phase extra retrospective is created; an item cycle that itself reaches ACT keeps
+  its own base skeleton.
 
 ### Campaign item status projection
 

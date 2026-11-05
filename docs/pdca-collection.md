@@ -284,9 +284,11 @@ cycle; no success cleanup while integration is unverified.
 
 ## 8. A — completion
 
-ACT finalizes the collection outcome. **Full collection completion** needs both an accepted common
-integration CHECK **and** completion of every original item goal by that item's own whole-goal
-CHECK/ACT. An integration PASS with `incomplete` items is a verified partial integration, **not** full
+ACT finalizes the collection outcome and closes the collection's own `## Lessons learned`
+retrospective once, after the result is frozen, whatever that outcome is — accepted, partial,
+`blocked`/`incomplete`, `STOP`, early failure or refusal. **Full collection completion** needs both an
+accepted common integration CHECK **and** completion of every original item goal by that item's own
+whole-goal CHECK/ACT. An integration PASS with `incomplete` items is a verified partial integration, **not** full
 collection success.
 
 A `blocked`/`incomplete`/`STOP` outcome is finalized honestly, without claiming `done` for missing goals
@@ -487,13 +489,40 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   cycle's status file; and the next allowed step;
 - collection completeness (all original item goals accepted), the integrated-tree verification (the
   independent CHECK verdict) and incomplete items with preserved results as **distinct fields**;
-- a separate `## Lessons learned` section — `pending` at creation and finished in ACT: a short
-  evidence-grounded retrospective through the same configured `pdca-check` (`retrospective` mode) at
-  collection-level ACT closures, both after a successful integrated-tree CHECK and at a terminal `STOP`.
-  It adds no verdict, counter, attempt or fabricated CHECK — a closure whose CHECK did not run still
-  records `CHECK: not run` — and no per-item, per-group or per-phase extra retrospective is created
-  unless an item cycle itself reaches ACT, where it inherits the base skeleton. `pdca-executor` persists
-  it (`references/act.md` §Retrospective).
+- a separate `## Lessons learned` section — `pending` at creation and finished in ACT as the one final
+  retrospective of **the collection's own invocation**, completed **once per actually completed
+  invocation** — never per revision, item or checkpoint for this section — after its substantive work reached a result
+  and for every actually finalized outcome: accepted integration, verified partial integration,
+  `blocked`/`incomplete`, terminal `STOP`, an early failure or a refusal. When the collection itself
+  actually closes `blocked`/`incomplete`/`STOP` (or any other finalized outcome above), its
+  retrospective **does** run; there is no parent-level pause status that would defer it. A child
+  campaign's running status or `disposition: paused` checkpoint proves only that that item has not
+  completed — it does not by itself complete the collection and is not a terminal parent outcome; a
+  checkpoint, a child pause, an approval wait, a session ending alone, an item/group closure and a
+  lane boundary are not triggers by themselves. A run that ends before a status record exists still gets its one
+  destination through `pdca-executor` in the authorized `form: collection` shape, or an explicit
+  **closure blocker** when no destination or role is permitted. When an explicitly authorized already
+  completed `form: collection` record is re-entered, its completed lesson entries are kept and the
+  later invocation's own report is appended within the same `## Lessons learned`, tied to the existing
+  `## Progress log` closure reference — no new counter, log, section or phase and no overwrite. It
+  reuses the configured
+  `pdca-check` (`retrospective` mode, read-only) with the base CHECK+ACT retrospective contract of
+  `references/act.md` and the retrospective mode of `references/check.md` inlined **plus** the
+  parent-only scope/output override below, which takes precedence over the generic cycle-task
+  retrospective inputs and the general what-worked output; it freezes the originating result first and
+  adds no verdict, counter, attempt or fabricated CHECK — a closure whose CHECK did not
+  run still records `CHECK: not run` — and it never reopens the accepted result. Its scope is the
+  collection's own operation only: decomposition, dependency groups and lanes, routing and handoffs,
+  integration and verification orchestration and status bookkeeping, plus its own instructions as
+  evidenced — never task results, child lessons
+  or a summary/aggregation of them; a bad task outcome alone is not a skill defect. Defects carry
+  evidence, effect, proposed change and uncertainty, and `No skill-level defects found` is valid only
+  after actual analysis; it edits no skill, config or `AGENTS.md` and creates no parallel file, log,
+  role, phase or counter. No per-item, per-group or per-phase
+  extra retrospective is created and an item cycle that reaches ACT keeps its own base skeleton. The
+  driver only routes the raw report and `pdca-executor` persists it; an absent or failed dispatch leaves
+  the section `pending` with an explicit **closure blocker** and a preserved result — no fallback
+  analysis.
 
 ## 11. Report and approval barrier
 

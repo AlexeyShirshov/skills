@@ -645,8 +645,9 @@ chosen for a prettier number.
 **Campaign status.** One file, `.pdca/status/<campaign>.md`, is the campaign's source of truth and
 contains the campaign record plus every step's cycle record. Its container has its own fixed sections
 — `## Campaign state`, `## Original task`, `## Preparation record`, `## Baseline record`,
-`## Checkpoint`, `## Step records`, `## Campaign outcome`, `## Progress log` — and the base cycle
-skeleton is nested and demoted inside each `### Step <id>`. There is exactly one shared event log.
+`## Checkpoint`, `## Step records`, `## Campaign outcome`, `## Lessons learned`, `## Progress log` —
+and the base cycle skeleton is nested and demoted inside each `### Step <id>`. There is exactly one
+shared event log.
 
 **Bootstrap.** Preparation and the current-state measurement are separate operations, and neither
 substitutes for the other. The **preparation record** — written on explicit dispatch — holds the goal

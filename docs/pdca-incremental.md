@@ -174,6 +174,7 @@ The container has one fixed section order of its own:
 ## Checkpoint            # the last step boundary and the resume point
 ## Step records          # one ### Step <id> per step, in order
 ## Campaign outcome      # empty while running; the finalized ACT outcome
+## Lessons learned       # pending at creation; the campaign's own final retrospective at closure
 ## Progress log          # last: the one shared event log of the whole file
 ```
 
@@ -190,6 +191,53 @@ the same configured `pdca-check` in `retrospective` mode (medium tier) analyses 
 creation and finished in ACT. It adds no verdict, counter, attempt or CHECK of its own: a step whose
 CHECK did not run records `CHECK: not run`, never an invented verdict, and the shared `## Progress log`
 stays the one chronology (`references/act.md` §Retrospective).
+
+The container's own `## Lessons learned` is a different section: the campaign skill's **final
+retrospective of its own invocation**, completed **once per actually completed invocation** — never
+per revision, per step or per checkpoint for this container-level section — after an actually finalized outcome (`met`, `limited`,
+`unreachable`, `blocked`, `stopped`) or an independently completed **preparation-only dispatch**
+(`preparation_handoff`/result returned and that dispatch ended). An early refusal or failure that ends
+the invocation before any step counts the same way, and no step, CHECK or execution is invented for
+that exit (`CHECK: not run`). A `blocked`/`stopped`/`unreachable` case with an allowed next target
+inside the unchanged goal and bounds is a **pause**, not a terminal outcome: invariant 5 keeps
+`Status: running` with `disposition: paused` in `## Checkpoint`. A checkpoint, a pause, an approval
+wait, a session ending alone, an intermediate boundary and an accepted or rejected step with its own
+retrospective are **not** triggers; a preparation phase that continues into execution, or a
+still-open invocation waiting for approval, has not completed and gets no premature retrospective; a
+resumed paused invocation remains the same open invocation and fills the same pending slot once.
+
+A genuinely completed preparation-only dispatch has no campaign runtime status. It records the
+retrospective as final metadata inside the immutable **preparation document revision**, under the
+already authorized `preparation_ref` path — never a new standalone path, a separate log, a baseline
+or a runtime status. `pdca-check` (`retrospective` mode) analyses the frozen preparation result and
+the dispatch's own-process evidence before the final `pdca-executor` write where possible; the
+executor then publishes an immutable revision including `## Lessons learned` and preserves the
+substantive preparation result. An already published revision is never mutated to add the
+retrospective: the existing new-revision mechanism is used on an explicit authorized executor
+dispatch, preserving the previous revision and result. If that dispatch or destination is not
+permitted, or the checker is unavailable, the record keeps an explicit **closure blocker** and the
+pending status metadata, with the preparation result preserved — no fallback analysis and no silent
+skip. The retrospective is not a preparation-readiness or execution-approval gate: a `ready` result
+stays frozen, and a failed retrospective only prevents complete final bookkeeping. Preparation-only
+output stays preparation metadata and is neither copied nor aggregated into a later campaign
+container's `## Lessons learned`.
+
+The container's section reuses the configured `pdca-check` `retrospective` mode with the retrospective
+contract of `references/act.md` and the retrospective mode of `references/check.md` inlined, freezes
+the originating result first and adds no verdict, CHECK, verification, attempt, counter, DO work or
+route. Its scope is the campaign skill's own operation only — preparation and bootstrap, step
+boundary/routing and handoffs, status bookkeeping, counters and recovery, and instruction problems as
+evidenced — not task results, a child iteration's mistakes, step lessons or an aggregation of them. It
+reports defects with evidence, effect, proposed change and uncertainty, plus 0–3 transferable
+lessons, `No skill-level defects found` only after actual analysis, and no skill/config/`AGENTS.md`
+edit. When an explicitly authorized already completed `form: incremental` record is re-entered, its
+completed lesson entries are kept and the later invocation's own report is appended within the same
+`## Lessons learned`, tied to the existing `## Progress log` closure reference — no new counter, log,
+section or phase and no overwrite. Preparation revisions are immutable per-dispatch records, so no
+separate append applies there. The driver only routes the raw report; an absent or failed dispatch
+keeps the section `pending` with an explicit **closure blocker**, preserves the originating outcome
+and permits no fallback analysis by the driver or the executor. It creates no new role, log, phase or
+counter.
 
 **Campaign state** is the container's first section. It records the campaign status, form and overlay,
 goal predicate and global acceptance, recipe, allowed surface, increment unit, floor and target,
@@ -236,7 +284,11 @@ allowed surface and protected/foreign areas; the **criteria** of the campaign's 
 definition of done (which whole-goal CHECK closes it) — not DO's implementation, commands or a plan of
 the whole volume; the first step (the current-state measurement, or the change when the plan's facts
 already establish the baseline); the effort accounting and commit policy with who granted it;
-`preparation_state` and `preparation_ref`.
+`preparation_state` and `preparation_ref`; and, for a genuinely completed preparation-only dispatch
+only, the final `## Lessons learned` metadata (the container-level retrospective described above)
+carried in the immutable revision published under the same authorized `preparation_ref` path as the
+preparation result — never a new standalone path, log, baseline or runtime status, and never an
+in-place edit of an already published revision.
 
 A change to any of it is a **new revision**, never an edit in place: the status references the revision
 it worked from, previous revisions stay, and it is never copied into the status. The goal is not
@@ -422,7 +474,10 @@ terminal outcome stays a cycle close in ACT: a **proven infeasible original task
 `unreachable`, otherwise `blocked`/`stopped` as the cause supports, with no new status value. Under
 `blocked`/`stopped` the chain does not pretend to be closed: the next session continues from the last
 accepted basis and the residual work recorded by ACT, and invariant 5 decides whether the campaign is
-paused or finally closed.
+paused or finally closed. Every **actually finalized** outcome in the table above — and an
+independently completed preparation-only dispatch or a pre-step exit that ended the invocation — also
+closes the campaign's own `## Lessons learned` once, after the result is frozen (§7); a pause or an
+approval wait does not.
 
 ## 12. Effort, safety and recovery
 

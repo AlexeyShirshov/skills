@@ -240,6 +240,53 @@ Feature: The pdca-collection batch under pressure
       # source: skills/pdca-collection/SKILL.md §Collection status record
       # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_collection_has_a_separate_lessons_section
 
+    @r3 @pinned
+    Scenario: r3 Any terminal outcome gets the parent retrospective
+      Given a collection whose substantive work has reached a result
+      When it closes as accepted integration, verified partial integration, incomplete, STOP, an early failure or a refusal
+      Then one retrospective of the collection's own invocation runs after the result is frozen
+      And a child campaign still running or paused, or an intermediate approval or session boundary alone, does not complete the collection and does not trigger it
+      And when the collection itself closes blocked, incomplete or STOP, its retrospective does run
+      And it covers decomposition, dependency groups and lanes, routing and handoffs, integration and verification orchestration and status bookkeeping
+      And an exit before a status record still reaches its one destination through pdca-executor or reports an explicit closure blocker
+      And re-entering an explicitly authorized completed collection record keeps its entries and appends the later report without overwrite
+      And it adds no verdict, CHECK, verification, attempt, counter or DO work
+      # source: skills/pdca-collection/SKILL.md §Collection status record
+      # source: skills/pdca/references/act.md §Retrospective (mandatory, ACT)
+      # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_every_terminal_outcome_closes_the_parent_retrospective
+      # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_reentry_appends_without_overwriting_completed_lessons
+
+    @r4 @pinned
+    Scenario: r4 A child lesson is mined into the parent report
+      Given a collection with item retrospectives and a recorded parent-child handoff
+      When the collection-level retrospective is dispatched
+      Then only the collection's own instructions, status and orchestration evidence are inputs
+      And task results, child lessons and child summaries are neither analysed nor aggregated
+      And a bad task outcome alone is not a skill defect
+      And a recorded handoff may evidence a parent routing error with attribution and uncertainty
+      # source: skills/pdca-collection/SKILL.md §Collection status record
+      # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_parent_only_scope_excludes_child_lessons
+
+    @r5 @pinned
+    Scenario: r5 An intermediate boundary wants its own parent retrospective
+      Given a collection with item and group closures, a pause, an approval wait and a lane boundary
+      When each intermediate boundary is passed
+      Then none of them triggers the collection-level retrospective
+      And an item cycle that itself reaches ACT keeps its own base retrospective
+      # source: skills/pdca-collection/SKILL.md §Collection status record
+      # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_intermediate_boundaries_do_not_duplicate_it
+      # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_independent_of_an_item_act
+
+    @r6 @pinned
+    Scenario: r6 The retrospective dispatch fails
+      Given a collection closure whose pdca-check retrospective dispatch is absent or failed
+      When ACT finalizes
+      Then the `Lessons learned` section stays pending with an explicit closure blocker
+      And the originating result is preserved unchanged
+      And neither the driver nor pdca-executor writes a fallback analysis
+      # source: skills/pdca-collection/SKILL.md §Collection status record
+      # test: skills/pdca-collection/tests/test_retrospective_lessons.py::CollectionRetrospectiveTest.test_failed_dispatch_fails_closed
+
   Rule: The queue is data and the status must lint
 
     @s1 @pinned
