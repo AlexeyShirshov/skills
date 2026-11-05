@@ -342,3 +342,52 @@ Feature: The pdca-incremental campaign under pressure
       # source: skills/pdca-incremental/SKILL.md §Campaign status
       # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_per_step_act_runs_the_base_retrospective
       # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_shared_event_log_remains_single
+
+  Rule: The campaign closes with its own retrospective
+
+    @R3 @pinned
+    Scenario: R3 Every terminal campaign outcome, including a preparation-only exit
+      Given a campaign invocation that has actually completed or is a genuinely completed preparation-only dispatch
+      When it ends met, limited, unreachable, blocked, stopped, or at a preparation-only dispatch that genuinely completes before execution
+      Then the top-level `Lessons learned` section is filled once after the result is frozen
+      And the section sits after `Campaign outcome` and before `Progress log`
+      And a non-final blocked, stopped or unreachable with an allowed next target stays paused and does not trigger it
+      And a completed preparation-only dispatch records `Lessons learned` inside its immutable preparation document revision under the authorized `preparation_ref`, not in a runtime status
+      And a preparation phase continuing into execution or a still-open approval wait gets no premature retrospective
+      And re-entering an explicitly authorized completed campaign record keeps its entries and appends the later report without overwrite
+      # source: skills/pdca-incremental/SKILL.md §Campaign status
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_container_carries_a_distinct_top_level_lessons_section
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_campaign_level_retrospective_covers_every_outcome
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_pause_and_open_invocation_are_not_completion
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_preparation_only_lessons_live_in_the_preparation_document
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_reentry_appends_without_overwriting_completed_lessons
+
+    @R4 @pinned
+    Scenario: R4 Step lessons are aggregated into the campaign report
+      Given a campaign with step retrospectives and recorded parent-child handoffs
+      When the campaign-level retrospective is dispatched
+      Then only the campaign skill's own instructions, status and orchestration evidence are inputs
+      And task results, child iteration mistakes and step lessons are neither analysed nor aggregated
+      And a recorded handoff may evidence a routing error with attribution and uncertainty
+      # source: skills/pdca-incremental/SKILL.md §Campaign status
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_parent_only_scope_excludes_child_lessons
+
+    @R5 @pinned
+    Scenario: R5 A checkpoint wants its own campaign retrospective
+      Given a campaign with intermediate checkpoints, pauses, approval waits and accepted or rejected steps
+      When each of them is recorded
+      Then none of them triggers the campaign-level retrospective
+      And each closed step keeps only its demoted `#### Lessons learned`
+      # source: skills/pdca-incremental/SKILL.md §Campaign status
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_pause_and_open_invocation_are_not_completion
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_container_carries_a_distinct_top_level_lessons_section
+
+    @R6 @pinned
+    Scenario: R6 The campaign retrospective dispatch fails
+      Given a campaign closure whose pdca-check retrospective dispatch is absent or failed
+      When the section would be filled
+      Then it stays pending with an explicit closure blocker
+      And the originating outcome is preserved unchanged
+      And neither the driver nor pdca-executor writes a fallback analysis
+      # source: skills/pdca-incremental/SKILL.md §Campaign status
+      # test: skills/pdca-incremental/tests/test_retrospective_lessons.py::IncrementalRetrospectiveTest.test_failed_dispatch_fails_closed
