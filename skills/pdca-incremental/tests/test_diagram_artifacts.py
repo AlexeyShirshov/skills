@@ -197,6 +197,62 @@ class DiagramArtifactsTest(unittest.TestCase):
                     # the campaign STOP is finalized in ACT, not a parallel terminal
                     self.assertIn(finalised[suffix], text)
 
+    def test_state_captions_never_cross_a_node(self) -> None:
+        """No edge caption may be drawn over a state node's border.
+
+        Six nodes share the graph width, so a caption wider than its arrow's gap
+        used to run into the neighbouring nodes (`closed | blocked (DO → ACT)`).
+        Captions are width-estimated here with a generous per-character bound:
+        a middle-anchored caption must clear every node rectangle.
+        """
+        cw = 7.5          # upper bound at the 10.5px caption font size
+        top, bottom = 8.5, 2.0  # approximate glyph box above/below the baseline
+        for suffix in SUFFIXES:
+            for name in (LIGHT + suffix + ".svg", DARK + suffix + ".svg"):
+                with self.subTest(name=name):
+                    root = ET.parse(DIAGRAM / name).getroot()
+                    nodes = [
+                        (float(r.get("x")), float(r.get("y")),
+                         float(r.get("width")), float(r.get("height")))
+                        for r in root.iter() if r.get("data-node-id")
+                    ]
+                    self.assertTrue(nodes, "no state nodes found in " + name)
+                    for text in root.iter():
+                        if not (text.tag.endswith("text") and text.get("class") == "g"):
+                            continue
+                        value = "".join(text.itertext())
+                        x, y = float(text.get("x")), float(text.get("y"))
+                        width = len(value) * cw
+                        anchor = text.get("text-anchor", "start")
+                        if anchor == "middle":
+                            left, right = x - width / 2, x + width / 2
+                        elif anchor == "end":
+                            left, right = x - width, x
+                        else:
+                            left, right = x, x + width
+                        for nx, ny, nw, nh in nodes:
+                            crosses = (right > nx + 1 and left < nx + nw - 1
+                                       and y - top < ny + nh - 1 and y + bottom > ny + 1)
+                            self.assertFalse(
+                                crosses,
+                                f"{name}: caption {value!r} at ({x:.0f},{y:.0f}) "
+                                f"crosses node at ({nx:.0f},{ny:.0f})",
+                            )
+
+    def test_the_long_step_caption_is_lifted_above_the_row(self) -> None:
+        """The STEP -> ACC caption is the only one that cannot fit its gap."""
+        for suffix in SUFFIXES:
+            for name in (LIGHT + suffix + ".svg", DARK + suffix + ".svg"):
+                with self.subTest(name=name):
+                    root = ET.parse(DIAGRAM / name).getroot()
+                    row_top = min(float(r.get("y")) for r in root.iter()
+                                  if r.get("data-node-id"))
+                    lifted = [t for t in root.iter()
+                              if t.tag.endswith("text") and t.get("class") == "g"
+                              and "blocked (DO → ACT)" in "".join(t.itertext())]
+                    self.assertEqual(1, len(lifted), name)
+                    self.assertLess(float(lifted[0].get("y")), row_top)
+
     def test_two_dark_crops_split_the_hand_diagram(self) -> None:
         def viewbox(name: str) -> tuple[float, float, float, float]:
             svg = read(DIAGRAM / name)
