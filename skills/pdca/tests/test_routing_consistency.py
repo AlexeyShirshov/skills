@@ -232,6 +232,29 @@ def load_jsonc(path: Path) -> dict:
     return json.loads(text)
 
 
+def pdca_disabled(cfg: dict) -> bool:
+    """True when a profile opts out of the whole PDCA family.
+
+    Such a profile denies both the `pdca*` skills (the contract cannot be loaded) and
+    the `pdca*` subagents (no family role can be launched), so no role ever inherits
+    the primary's model here.
+    """
+    rules = cfg.get("permissions")
+    if not isinstance(rules, list):
+        return False
+
+    def denies(action: str) -> bool:
+        return any(
+            isinstance(rule, dict)
+            and rule.get("action") == action
+            and rule.get("effect") == "deny"
+            and str(rule.get("resource", "")).startswith("pdca")
+            for rule in rules
+        )
+
+    return denies("skill") and denies("subagent")
+
+
 class RunnerAssetTest(unittest.TestCase):
     """One dispatcher, shipped identically in every package."""
 
@@ -443,12 +466,30 @@ class ProfileBindingTest(unittest.TestCase):
     RETIRED = ("planner", "check", "escalate", "security-auditor")
 
     def test_both_profiles_bind_every_role(self):
+        """A profile either binds every role or opts out of PDCA as a whole.
+
+        A bound role never inherits the primary's (expensive) model. A profile that
+        denies the `pdca*` skills **and** the `pdca*` subagents cannot run the family
+        at all, so the inheritance risk does not exist there and bindings are not
+        required. Half-states — some roles bound, some not, no explicit opt-out —
+        stay failures.
+        """
         for profile in ("deepseek.jsonc", "gp.jsonc"):
-            agents = load_jsonc(PROFILES / profile)["agent"]
+            cfg = load_jsonc(PROFILES / profile)
+            agents = cfg.get("agent") or {}
+            bound = [role for role in self.BOUND if (agents.get(role) or {}).get("model")]
+            if pdca_disabled(cfg):
+                with self.subTest(profile=profile):
+                    self.assertEqual(
+                        [], bound,
+                        "%s: PDCA is disabled in this profile, so no role may be bound"
+                        % profile)
+                continue
             for role in self.BOUND:
                 with self.subTest(profile=profile, role=role):
                     self.assertTrue((agents.get(role) or {}).get("model"),
-                                    "%s: %s has no model" % (profile, role))
+                                    "%s: %s has no model (and the profile does not disable PDCA)"
+                                    % (profile, role))
 
     def test_retired_bare_roles_have_no_binding_and_no_agent_file(self):
         for profile in ("deepseek.jsonc", "gp.jsonc"):
