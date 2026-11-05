@@ -257,6 +257,11 @@ Stop verdict: <empty while running; else outcome, cause, evidence, remaining unm
 fixed headings (`## Current state` … `## Progress log`) — demoted under that step's record as above;
 the base skeleton itself is never rewritten here.
 
+Per-step ACT, including a terminal `STOP`, runs the same configured `pdca-check` retrospective as the
+base contract (`retrospective` mode); the demoted `#### Lessons learned` is `pending` at step creation
+and finished in ACT. It is persisted in the same campaign file, creates no new role, log, phase or
+counter, and leaves the shared `## Progress log` as the single chronology.
+
 `limited` is never a widened or weakened `met`: it exists only under an explicit, new user instruction
 that revised the task or the criterion (§Stop), and it reports that revised scope while the remainder
 on the original task stays recorded. `Status: running` with `disposition: paused` in `## Checkpoint` is

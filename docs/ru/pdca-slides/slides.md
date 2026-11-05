@@ -537,7 +537,7 @@ zoom: 0.78
 
 - **Статус-файл цикла** — источник истины: живёт на диске, переживает компакцию и новую сессию, обновляется на каждом событии.
 - Один писатель — `pdca-executor`; драйвер передаёт отчёты **без изменений**.
-- Фиксированные разделы: `Current state`, `Original task`, `PLAN record`, `Approval record`, `DO result`, `CHECK record`, `ACT record`, `Revision history`, `Defect history`, `Changed files`, `Git state`, `Progress log`.
+- Фиксированные разделы: `Current state`, `Original task`, `PLAN record`, `Approval record`, `DO result`, `CHECK record`, `ACT record`, `Lessons learned`, `Revision history`, `Defect history`, `Changed files`, `Git state`, `Progress log`.
 - **Доказательства** — `.pdca/<task>/rv<k>/`: полный лог и артефакты пишутся туда до возврата DO; CHECK читает только `.pdca/**`, поэтому указатель без файла — не доказательство.
 - **Свежие доказательства:** метод выбирает CHECK, запускает исполнитель, наблюдает `pdca-scout`, судит CHECK.
 - **Отчёт ≠ результат.** «Должно работать» — сигнал повторного прогона.

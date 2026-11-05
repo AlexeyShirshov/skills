@@ -182,6 +182,13 @@ and the original task by reference to `## Original task` — that block is the o
 written verbatim. A step's reference preserves the task entire: no summary, no paraphrase, no body
 translation.
 
+Per-step ACT — after an accepted step and at a terminal `STOP` alike — runs the base retrospective:
+the same configured `pdca-check` in `retrospective` mode (medium tier) analyses the closed step, and
+`pdca-executor` records the result in that step's demoted `#### Lessons learned`, `pending` at step
+creation and finished in ACT. It adds no verdict, counter, attempt or CHECK of its own: a step whose
+CHECK did not run records `CHECK: not run`, never an invented verdict, and the shared `## Progress log`
+stays the one chronology (`references/act.md` §Retrospective).
+
 **Campaign state** is the container's first section. It records the campaign status, form and overlay,
 goal predicate and global acceptance, recipe, allowed surface, increment unit, floor and target,
 preparation ref, commit policy, constraints, effort accounting, baseline evidence, evidence root, the
