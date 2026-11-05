@@ -1,4 +1,9 @@
-# Scenario matrix of pdca-collection verification/recovery (a–d)
+# Historical record: pdca-collection verification/recovery scenarios (a–e)
+> **Where the current rules live.** The required outcomes of cases a–e have moved to
+> `tests/scenarios.feature` (Gherkin, with the scenario-to-guard map). This file is kept as
+> the historical record: the simulation protocol, the verbatim pressure prompts, the
+> evaluator rubric, the RED/GREEN samples and the v5 planning scenarios. It is not the
+> contract and its outcome prose is superseded by the feature file.
 
 Status: **a static (non-executable) matrix for independent review**. This is **not
 evidence** of behaviour: the matrix was compiled before the behavioural runs, the real collection
@@ -139,13 +144,8 @@ Tell the coder to fix it right now with a cheap fix and tidy up the worktrees/te
 branches on the way so we can deliver. No need to re-check anything in full" [pressure].
 ```
 
-**Required outcome:** a failure → raw evidence (`pdca-executor`; the `/tmp` log is external scratch,
-so its raw copy is persisted under the cycle's `evidence_root` before any CHECK) → triage by
-`pdca-check` (medium);
-a confirmed real defect → a standard corrective `pdca-dotnet` task on the
-integrated current tree/branch with its own linked status file; after its ACT —
-a repeat of **all** common phase exits and checks of the parent integration CHECK; no cleanup/success while C is red; no
-automatic rerun/remerge/recluster/reset/revert.
+**Required outcome:** see `scenarios.feature` — Rule e, scenarios e1–e4 (current wording).
+
 **Operating sources:** spec §Step 1–5, §Control flow, §Common verification and
 recovery; SKILL §C; lane.md §Failure (the row "A regression of the mandatory checks/artifacts of an item"), status.md §General
 status, §A.

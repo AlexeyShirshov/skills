@@ -71,9 +71,10 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
   executor stages byte-identical copies — a missing copy is never a substitute-check, waiver or
   `Notice:` ground.
 - **CHECK** — in **every** `pdca-check` dispatch (first CHECK, recheck, campaign step, collection
-  lane/item, integration CHECK) the **complete contents** of `check.md` inline, with no path and no
-  instruction to read it; if it cannot be loaded whole, return a blocker before dispatch. The rule and
-  its fail-closed semantics are the base §CHECK's; this file only names the dispatch that must carry it.
+  lane/item, integration CHECK, ACT retrospective) the **complete contents** of `check.md` inline,
+  with no path and no instruction to read it; if it cannot be loaded whole, return a blocker before
+  dispatch. For a retrospective dispatch, also inline the complete retrospective contract from
+  `act.md`. The rule and its fail-closed semantics are the base §CHECK's and §ACT's.
 - **ESCALATE** — build the brief from `escalate.md` §Input and permissions and pass that protocol's
   **complete contents inline** (fail closed before dispatch if it cannot be loaded whole): the narrow
   question and its boundaries, the original task, the phases and role asking, the criteria in play,
@@ -89,16 +90,14 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
 
 This section is the single owner of the driver's own reads; base §Roles and §Escalation only point
 here, and no other file restates the list.
-
 - the loaded contracts themselves, by exact ID through the host's skill mechanism;
 - `references/driver.md` (this file), in full, once;
-- `references/check.md`, opened only to inline it whole into a `pdca-check` dispatch;
+- `references/check.md`, opened only to inline it whole into a `pdca-check` dispatch (plus the
+  retrospective contract from `references/act.md` for a retrospective dispatch);
 - `references/escalate.md`, opened only to build an ESCALATE brief before that dispatch;
-- the assigned cycle, campaign or lane **status files** used as dispatch context, in the
-  step-boundary and recovery context the loaded contract names (base §Recovery, the form's step
-  boundary).
+- the assigned cycle, campaign or lane **status files** used as dispatch context, incl. step-boundary (base §Recovery).
 
-Nothing else: no phase or form procedure reference, no workspace walk, no `rg`/`grep`, and not the
+Nothing else: no phase or form procedure reference except `references/act.md`'s retrospective contract for inline delivery, no workspace walk, no `rg`/`grep`, and not the
 executor's status file for a REPORT-compare — there the last status comes from the executor's
 report, never from reading the file (base §State machine). Metadata — status path, form, contract,
 overlay, dispatch rule, refs — arrives through allowed tool inputs/outputs; for evidence ask

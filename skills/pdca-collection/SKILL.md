@@ -395,6 +395,11 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   - the **next allowed step**;
 - distinct fields for completeness (all original goals accepted), integrated-tree CHECK verdict,
   incomplete items and preserved results.
+- a separate `## Lessons learned` section — `pending` at creation, finished in ACT: a short
+  evidence-grounded retrospective via the same configured `pdca-check` (`retrospective` mode) at
+  collection-level ACT closures, including a successful integrated-tree CHECK and a terminal `STOP`;
+  no per-item, per-group or per-phase extra retrospective is created unless an item cycle itself
+  reaches ACT, in which case it inherits the base skeleton. It is persisted only by `pdca-executor`.
 
 ### Campaign item status projection
 

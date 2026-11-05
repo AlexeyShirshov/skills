@@ -352,9 +352,10 @@ against, not another set.
 
 **The CHECK contract travels inline.** `references/check.md` is the single source of the procedure:
 the driver reads it in full and passes its **complete contents inline** in **every** `pdca-check`
-dispatch — first CHECK, recheck, campaign step or collection item alike; CHECK cannot read the
-installed reference. A driver that cannot load it whole raises an explicit blocker before dispatch:
-no reduced contract, no verdict from the agent prompt alone.
+dispatch (first CHECK, recheck, campaign step, collection item, ACT retrospective); CHECK cannot
+read installed reference. A driver that cannot load it whole raises an explicit blocker before
+dispatch: no reduced contract, no verdict from the agent prompt alone. An ACT retrospective dispatch
+also inlines the retrospective contract from `references/act.md`.
 
 **CHECK has three independent exits:**
 
@@ -382,10 +383,10 @@ covers the same candidate and verifies every global requirement.
 
 #### ACT
 
-ACT closes the cycle; the driver and `pdca-executor` carry it out — no separate subagent role — and it
-records the outcome the originating phase determined, never its own verdict or approval. It changes
-no product, test or checked artifact. `pdca-executor` reads `references/act.md` on status-file
-creation and on **every** status write: the payloads, the closing order and the skeleton live there.
+ACT closes the cycle; the driver and `pdca-executor` carry it out — no separate subagent role
+(analysis reuses `pdca-check` in `retrospective` mode). It records the originating phase's outcome,
+never its own verdict or approval; changes no product, test or checked artifact. `pdca-executor` reads
+`references/act.md` on status-file creation and every status write.
 
 - **ACT → EXIT** — after an accepted CHECK, on the untouched accepted snapshot: closes the cycle's
   scope, or the whole task in Bounded Execution.
@@ -398,7 +399,8 @@ detour: the originating outcome is recorded per `references/act.md`, including t
 independent CHECK for an established result.
 
 Product work found during closure is not ACT's: it goes back to DO and a final CHECK. Every closure
-runs through ACT, never beside it.
+runs through ACT, never beside it; each runs a retrospective via `pdca-check` (`retrospective` mode),
+recorded in `## Lessons learned`.
 
 ### Evidence over assertion
 
@@ -461,9 +463,9 @@ and temporary scratch are not PDCA state and follow their own rules (§Evidence 
   accumulate; accepted conclusions may be superseded with a reason, but facts are not backfilled.
   There is no separate todo or sidebar mirror.
 - **Fixed headings:** `## Current state`, `## Original task`, `## PLAN record`, `## Approval record`,
-  `## DO result`, `## CHECK record`, `## ACT record`, `## Revision history`, `## Defect history`,
-  `## Changed files`, `## Git state`, `## Progress log` (last). The skeleton, field rules and closing
-  order are in `references/act.md`. The skeleton is the shape of a cycle record: a form-owned campaign
+  `## DO result`, `## CHECK record`, `## ACT record`, `## Lessons learned`, `## Revision history`,
+  `## Defect history`, `## Changed files`, `## Git state`, `## Progress log` (last). The skeleton,
+  field rules and closing order are in `references/act.md`. The skeleton is the shape of a cycle record: a form-owned campaign
   container may define its own outer sections, with the cycle record nested and demoted inside them,
   and those outer sections neither replace nor reorder the inner fixed headings. The body is written
   in the language of the user's dialogue; heading labels stay stable.
@@ -632,20 +634,17 @@ approval. Autonomous mode has no approval slots/gate except environment/user-req
 Phase detail is disclosed per role; a supporting file is never auto-loaded by being mentioned, and the
 routing below keeps the scopes apart.
 
-- `references/plan.md` — **`pdca-planner` only**: entry classification and the **sole** form/overlay
-  discriminators, plan fields, criteria, terminal outcomes, gap closure, numeric thresholds, plan
-  hygiene, the step boundary, the output contract, the evidence boundary and revision accounting. The
-  driver supplies its **exact absolute path** (from this base contract's directory) in the PLAN or
-  criteria-revision dispatch; the planner reads it itself and the driver never reads, inlines or
-  forwards the plan reference.
-- `references/check.md` — the CHECK contract, delivered **inline by the driver as the complete
-  contents** in every `pdca-check` dispatch (first CHECK, recheck, campaign step, collection item);
-  CHECK cannot read the installed file, and a driver that cannot load it in full raises an explicit
-  blocker before dispatch. It holds the method CHECK chooses, the evidence chain, criteria matrix,
-  mandatory-requirement veto, combined final check, verdict and routing.
-- `references/act.md` — read by `pdca-executor` on status-file **creation and every status write**,
-  not only at ACT: the canonical skeleton, fixed headings, field rules and closing order, so the
-  skeleton exists before the first ready plan record.
+- `references/plan.md` — **`pdca-planner` only**: entry classification, form/overlay discriminators,
+  plan fields, criteria, terminal outcomes, gap closure, thresholds, hygiene, step boundary,
+  output/evidence boundaries and revision accounting. Driver supplies its exact absolute path; planner
+  reads it; driver never reads, inlines or forwards it.
+- `references/check.md` — CHECK contract, delivered as the **complete contents** inline by the
+  driver in every `pdca-check` dispatch (first CHECK, recheck, campaign step, collection item, ACT
+  retrospective); CHECK cannot read the installed file, and a driver that cannot load it whole raises
+  an explicit blocker. Holds method, evidence chain, matrix, veto, final check, verdict and routing.
+- `references/act.md` — read by `pdca-executor` on status-file creation and every status write:
+  skeleton, headings, field rules, closing order. Driver reads only its retrospective section to
+  inline it for an ACT retrospective dispatch.
 - `references/escalate.md` — driver: read before expert dispatch (inside its §Read scope); pass its
   complete protocol with the input built from the inputs it requires.
 - `references/driver.md` — **driver**: the dispatcher mechanics that no phase or form contract owns —

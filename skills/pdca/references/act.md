@@ -12,17 +12,33 @@ ACT closes every cycle and is its only closing path. It records the outcome the 
 determined: it issues no new verdict, no expert waiver and no approval, and it never implements,
 tests or changes a product, test or checked artifact.
 
-1. **Durable lesson** — 0–2 transferable conclusions, only where the host already provides durable
-   memory writable within the current permissions: reusable beyond this workspace, no natural home in
-   the status file, no product effect, no new write permission. A no-op is normal; no repository or
-   host-config edit is required or implied by closing.
-2. **Status file — finalized by `pdca-executor`**, always: the driver passes the reports of the phases
+1. **Retrospective (mandatory)** — a short evidence-grounded retrospective via `pdca-check` in
+   `retrospective` mode, recorded by `pdca-executor` in `## Lessons learned`: what worked, what did
+   not, what to do differently next time, 0–3 transferable lessons, categories, evidence pointers,
+   limits and uncertainty, and the completion signal. `No new lessons` is valid after actual analysis
+   and still records the evidence reviewed, analysis coverage and limits. It is analysis of the closed
+   cycle, not a CHECK verdict: it never overrides the originating outcome, acceptance, security, the
+   no-4th rule or approvals, and it creates no new counter, attempt or verification. Use existing
+   reports/evidence only; no independent proving or research.
+
+   **Single-writer completion.** The driver routes the raw retrospective report to `pdca-executor` as
+   a source input; the executor persists it verbatim or by exact reference and only then marks ACT
+   completed. An absent or failed retrospective dispatch leaves the record open with an explicit
+   closure blocker, preserves the originating accepted/STOP outcome without a fake CHECK, and permits
+   no fallback analysis by the driver or the executor.
+2. **Durable lesson (optional, beyond status)** — 0–2 transferable conclusions promoted only where the
+   host already provides durable memory writable within the current permissions: reusable beyond this
+   workspace, no product effect, no new write permission. Distinct from the mandatory status
+   retrospective in `## Lessons learned`: promotion beyond the status file is optional and
+   permission-bound; a no-op is normal, and no repository or host-config edit is required or
+   implied by closing.
+3. **Status file — finalized by `pdca-executor`**, always: the driver passes the reports of the phases
    that actually ran (PLAN's returns, DO's results, CHECK's verdict) **as returned** — each complete
    original in its own language, or an exact reference to a complete persisted artefact the executor
    can read, never a digest or translation — and the executor records the outcome, the criteria
    outcome and the handoff — or, for a non-accepted outcome, the cause, evidence, residual
    `unmet`/`unverified` requirements, counters and defect history, with no `PASS` and no `done`.
-3. **Lifetime** — finalized and **kept**, never deleted: the record of a closed flow and the input to
+4. **Lifetime** — finalized and **kept**, never deleted: the record of a closed flow and the input to
    any later PLAN. Cycle `N` is finalized in ACT; a further cycle is a separate authorized PLAN under
    §State machine and counters, never an automatic reopening.
 
@@ -51,6 +67,35 @@ required approval, or CHECK attempts exhausted under the no-4th rule — and onl
 its own transitions, decides it; a consultation alone needs no new plan (`../SKILL.md` §Phase
 contracts → ACT).
 
+## Retrospective (mandatory, ACT)
+
+Every closure runs a short evidence-grounded retrospective through `pdca-check` in `retrospective`
+mode — successful `CHECK → ACT`, terminal `CHECK → ACT` (`STOP`), `PLAN → ACT` and `DO → ACT`.
+Intermediate `CHECK → DO` and `CHECK → PLAN` do not trigger it. The retrospective is analysis, not
+a new CHECK: it returns no verdict, no criteria matrix and no transition authority, and it never
+overrides the originating outcome, acceptance, security, the no-4th rule or approvals.
+
+**Inputs.** The original task and cycle scope; the phase reports that actually ran — PLAN return(s),
+DO result, CHECK report where CHECK ran, and any terminal/STOP payload — each as returned or by exact
+reference to a complete persisted artefact, with absent evidence marked absent; counters and defect
+history; status and evidence pointers. No CHECK is required for `PLAN → ACT` or `DO → ACT`; a missing
+CHECK stays `CHECK: not run`, never reconstructed. Preserve raw reports; mark absent evidence.
+
+**Contents.** What worked, what did not, what to do differently next time; 0–3 useful lessons is a
+reasonable editorial default; transferable actionable conclusions; categories; evidence pointers;
+limits and uncertainty. Distinguish observed fact from uncertain inference. `No new lessons` is valid
+after actual analysis. Partial evidence and limits are transparent, especially for `STOP`. No new
+verification, proving or research: use existing reports and evidence. Do not reopen accepted work,
+add DO work, auto-edit AGENTS/skills/config, create an audit gate or alter the frozen result.
+
+**Dispatch.** The driver reads the complete retrospective contract (this section, or all of
+`act.md`) and inlines it in the `pdca-check` dispatch together with the complete `check.md`; a
+driver that cannot load them whole raises an explicit blocker before dispatch. The same role and
+effective tier as normal CHECK (medium). The driver routes the raw report; only `pdca-executor`
+persists it into `## Lessons learned` and the completion signal, and ACT is not completed until that
+report is recorded.
+
+
 ## Status file
 
 Default path `.pdca/status/<task>-<N>.md`: `<task>` a kebab slug, `<N>` the task's cycle number
@@ -58,7 +103,9 @@ Default path `.pdca/status/<task>-<N>.md`: `<task>` a kebab slug, `<N>` the task
 event.
 
 **One fixed shape.** `pdca-executor` initializes a new file as exactly the skeleton below **at the
-first status write** and then fills only the section of the phase that actually ran. It never derives
+first status write** and then fills only the section(s) that the phase which actually ran owns — ACT
+fills `## ACT record` **and** `## Lessons learned` in the same write. A phase that did not run keeps
+its `pending`/`not reached`/`not applicable` value and reason. It never derives
 the shape from a neighbouring status file, never picks where a phase goes by imitation, and never
 invents an ordering: the headings stay stable, `## CHECK record` always precedes `## ACT record` and
 the log, and `## Progress log` is last. Task-specific data (code rows, .NET rows, collection
@@ -117,6 +164,14 @@ source reference. Recorded as returned; the driver does not rewrite it.
 `pending` — or only what the ending phase determined: outcome, completed work, remaining work
 (`unmet`/`unverified`), reasons, limitations and the handoff (next authorized action). No new
 verdict, and no `PASS` for a check that did not run.
+
+## Lessons learned
+
+`pending: retrospective not yet conducted` — or the retrospective recorded in ACT: what worked, what
+did not, what to do differently next time, lessons (0–3), categories, evidence pointers, limits and
+uncertainty, and the retrospective completion signal. `No new lessons` is valid after actual analysis.
+A missing source is recorded as missing; the retrospective never creates a verdict, criteria result,
+counter, attempt or new verification.
 
 ## Revision history
 
@@ -213,6 +268,10 @@ its own section:
 - **§ACT record** — the handoff: actual outcome and reasons, completed and unfinished work, remaining
   `unmet`/`unverified` requirements, known issues and constraints, the recovery step and the next
   authorized action — not a future implementation plan and not a mandate for a new session.
+- **§Lessons learned** — the record's retrospective slot: `pending: retrospective not yet conducted`
+  until the same-role `pdca-check` retrospective report is returned, then the completed handoff
+  persisted by `pdca-executor`; §Retrospective (mandatory, ACT) and §Closing order are the protocol, and
+  the slot adds no verdict, counter, attempt or verification of its own.
 - **§Revision history / §Defect history** — append-only, per the fields above.
 - **§Changed files** — the **pointers** (`file:line` evidence, approvals, open questions) and the
   task-owned artefacts, without retelling content. `none` is a legitimate value when the task produces

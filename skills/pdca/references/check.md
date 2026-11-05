@@ -147,3 +147,32 @@ weakened to obtain a PASS. A refuted finding stands on independently checked evi
 author's claim. A genuine user-requested scope change remains possible; it is the user's, and neither
 CHECK nor approval of the agent's plan may substitute or narrow a user-supplied requirement or
 criterion.
+
+## Retrospective mode (ACT)
+
+When the driver dispatches `pdca-check` for ACT, it runs in `retrospective` mode: a short
+evidence-grounded analysis of the closed cycle, **not** a CHECK of a candidate. It produces no
+verdict, no criteria matrix, no routing and no acceptance, and it never overrides the originating
+outcome, acceptance, security, the no-4th rule or approvals. It creates no new check counter or
+attempt and reuses the same role and effective tier (medium) as normal CHECK.
+
+**Invocation discriminator.** The dispatch is marked `mode: retrospective` (or an equivalent explicit
+marker) and carries the complete retrospective contract from `references/act.md` — this section or
+the whole file — inlined by the driver, together with the complete `check.md`. A driver that cannot
+load either whole raises an explicit blocker before dispatch.
+
+**Inputs.** The original task and cycle scope; the phase reports that actually ran — PLAN return(s),
+DO result, the CHECK report where CHECK ran, and any terminal/STOP payload — each complete or by
+exact reference, with absent evidence marked absent; counters and defect history; status, history and
+evidence pointers. No CHECK is required for `PLAN → ACT` or `DO → ACT`; a missing CHECK is recorded
+as `CHECK: not run`, never reconstructed. Preserve raw reports; mark absent evidence.
+
+**Analysis.** What worked, what did not, what to do differently next time; 0–3 useful lessons is a
+reasonable editorial default; transferable actionable conclusions; distinguish observed fact from
+uncertain inference. `No new lessons` is valid after actual analysis. Partial evidence and limits
+are transparent, especially for `STOP`. No new verification, proving or research; use existing
+reports and evidence. Do not reopen accepted work, add DO work, or alter the frozen result.
+
+**Output.** Lessons (0–3), categories, evidence pointers, limits and uncertainty, and a retrospective
+completion signal. Not `accepted`/`not accepted`, no criteria verdict, no transition authority.
+The driver routes; `pdca-executor` alone persists the result into `## Lessons learned`.

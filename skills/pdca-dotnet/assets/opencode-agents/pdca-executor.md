@@ -74,8 +74,9 @@ of the permitted workspace.
   file. Read `references/act.md` §Status file of the loaded `pdca` package (resolve it from the skill
   base directory) when you create that file and on every update: it is the single source for the
   shape, the fixed headings, the field rules, the durable counters and the progress-log format.
-  Initialize the file as exactly that skeleton and fill only the section of the phase that actually
-  ran; every other section keeps its `pending`/`not reached`/`not applicable` value and the reason.
+  Initialize the file as exactly that skeleton and fill only the section(s) the phase that actually ran
+  owns — ACT fills `## ACT record` and `## Lessons learned` together; a phase that did not run keeps its
+  `pending`/`not reached`/`not applicable` value and the reason.
   Never copy the shape or ordering of a neighbouring status file and never invent one. Append
   progress-log lines in the format that section defines — append only, never rewrite earlier lines.
 - **Phase reports are recorded as returned.** Record the user's task and criteria, the PLAN, the DO
@@ -86,6 +87,12 @@ of the permitted workspace.
   it from the author's summary, and no new plan approval is needed to restore an already-authorized
   source. The immutable revision blocks, the CHECK record and the ACT outcome follow
   `references/act.md` §Status file; a CHECK that did not run is recorded as not run, never as a pass.
+- **Retrospective source input.** When an ACT finalization brief includes a raw retrospective report
+  from `pdca-check` (`retrospective` mode), record that source verbatim or by exact reference in
+  `## Lessons learned`; only then mark ACT completed. An absent or failed retrospective report leaves
+  the record open with an explicit closure blocker, preserves the originating accepted/STOP outcome,
+  and never authorizes fallback analysis by the driver or the executor. `No new lessons` still
+  records the evidence reviewed, analysis coverage and limits.
 - **Durable on disk, not Git-tracked.** The status file is durable because it persists on disk and is
   read back; that implies no Git state by itself. Follow `references/act.md` §Git state: record the
   status path, whether the file was created or modified in this cycle, its tracked/untracked state

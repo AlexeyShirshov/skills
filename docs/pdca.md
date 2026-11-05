@@ -125,8 +125,14 @@ mandatory requirement.
 limitations, accepted snapshot and handoff, and it changes no product, test or checked artefact. An
 accepted CHECK leads to `EXIT` or the next authorized cycle; a `blocked`/`incomplete`/`STOP` outcome
 is finalized honestly, with no `PASS`, no `done` and no credit. STOP is an **ACT outcome**, not a
-separate phase or a path beside ACT. Work discovered during finalization goes back to DO and a fresh
-CHECK, or invalidates the accepted snapshot; it is never slipped into ACT.
+separate phase or a path beside ACT. Every closure runs a short evidence-grounded retrospective
+through the same configured `pdca-check` role in `retrospective` mode (medium tier), recorded by
+the cheap `pdca-executor` in a separate `## Lessons learned` section. It is analysis, not a new
+CHECK verdict: no criteria verdict, no transition authority, no new counter or attempt, no fabricated
+lesson, no auto-edit of AGENTS/skills/config, no product or docs write. A `STOP` or `PLAN`/`DO`
+terminal closure without CHECK keeps `CHECK: not run` and stays honest; `No new lessons` is valid
+after actual analysis. Work discovered during finalization goes back to DO and a fresh CHECK, or
+invalidates the accepted snapshot; it is never slipped into ACT.
 
 **Returns.** `CHECK → DO` is an implementation defect: the criteria are sound but the result fails
 them. `CHECK → PLAN` is a contract defect: the criteria are contradictory, unverifiable or do not
@@ -180,8 +186,8 @@ Everything the skill writes lives under one project-local root, `.pdca/`, in the
 The **status file** is the source of truth. Its default path in Bounded Execution is
 `.pdca/status/<task>-<N>.md`; an inheriting form may keep one file for several cycles. It has fixed
 headings — `## Current state`, `## Original task`, `## PLAN record`, `## Approval record`,
-`## DO result`, `## CHECK record`, `## ACT record`, `## Revision history`, `## Defect history`,
-`## Changed files`, `## Git state`, `## Progress log` — and only `pdca-executor` writes it. The task
+`## DO result`, `## CHECK record`, `## ACT record`, `## Lessons learned`, `## Revision history`,
+`## Defect history`, `## Changed files`, `## Git state`, `## Progress log` — and only `pdca-executor` writes it. The task
 and the planner's returned plan are recorded verbatim. History is append-only; a final status file is
 kept after ACT and is never deleted.
 

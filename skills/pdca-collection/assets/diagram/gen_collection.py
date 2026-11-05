@@ -32,8 +32,8 @@ GX = {_n: M + _i * _G_STEP for _i, _n in enumerate(_G_ORDER)}
 PEER_ROW = ["P", "DO", "MERGE", "C", "A"]
 CHILD_PARENT = {"REPAIR": "C", "E": "MERGE"}
 COLN = PEER_ROW  # the band and the straight dispatch/result buses cover this row
-WIDTH = {"P": 196, "DO": 424, "MERGE": 176, "C": 196,
-         "REPAIR": 196, "E": 216, "A": 232}
+WIDTH = {"P": 244, "DO": 424, "MERGE": 212, "C": 211,
+         "REPAIR": 210, "E": 216, "A": 244}
 # full canvas width comes from the lower state graph (`EXIT` right edge + margin)
 W = GX["EXIT"] + NW + M
 # spread the top row across the canvas
@@ -142,6 +142,158 @@ def main_events_for_column(col: str) -> list[tuple[str, str, str]]:
     return [(f, t, c) for (f, t, c) in STATE_EDGES if t == lower]
 
 
+# --- localization (ru by default; `--lang en` selects English) --------------
+LANG = "ru"
+
+# English label -> Russian. Only the labels the diagram draws; identifiers
+# (phase/node ids, `data-*` values, role names, tier words, status vocabulary
+# `done`/`incomplete`/`unverified`) are emitted as-is.
+_TR_RU = {
+    # edge labels: bus entries, arrows and lower captions share this one table
+    "START: task list": "START: список задач",
+    "PLAN: all plans ready · groups/order fixed":
+        "PLAN: все планы готовы · группы/порядок зафиксированы",
+    "all groups complete": "все группы завершены",
+    "one group: no MERGE": "одна группа: без MERGE",
+    "MERGE complete": "MERGE завершён",
+    "CHECK fail · real defect": "CHECK fail · реальный дефект",
+    "REPAIR completed": "REPAIR завершён",
+    "finalization": "финализация",
+    "ESCALATE: re-merge or incomplete skip":
+        "ESCALATE: повторный merge или пропуск incomplete",
+    "same defect after 1 fix": "тот же дефект после 1 фикса",
+    "STOP: no revised plan → ACT": "STOP: нет плана r+1 → ACT",
+    "incomplete/STOP · no cleanup": "incomplete/STOP · без очистки",
+    # headers
+    "DO · PREPARATION + LANES": "DO · ПОДГОТОВКА + ЛИНИИ",
+    "DO · PREPARATION": "DO · ПОДГОТОВКА",
+    "+ LANES": "+ ЛИНИИ",
+    "Merge conflict": "Конфликт merge",
+    "resolution": "и разрешение",
+    # PLAN cards
+    "Input": "Вход",
+    "task list · from the user": "список задач · от пользователя",
+    "Task's own PLAN": "Свой PLAN задачи",
+    "pdca-scout + pdca-planner · per task":
+        "pdca-scout + pdca-planner · на задачу",
+    "ALL-barrier": "ALL-барьер",
+    "all plans ready · before DAG": "все планы готовы · до DAG",
+    "DAG · groups": "DAG · группы",
+    "pdca-planner · after the barrier": "pdca-planner · после барьера",
+    "Status file": "Статус-файл",
+    "plan_state + groups/tasks": "plan_state + группы/задачи",
+    # DO cards
+    "Worktree + branches": "Worktree + ветви",
+    "pdca-executor · per group": "pdca-executor · на группу",
+    "Lane launch": "Запуск линий",
+    "in parallel · ≤ cap · host budget": "параллельно · ≤ cap · бюджет хоста",
+    "Lane · group": "Линия · группа",
+    "one subagent · orchestrates, does not decide":
+        "один субагент · оркестрирует, не решает",
+    "Task branch": "Ветвь задачи",
+    "from the previous tip · pdca-executor": "от предыдущего tip · pdca-executor",
+    "pdca cycle · continue from saved PLAN":
+        "цикл pdca · с сохранённого PLAN",
+    "hands cheap · decisions medium · escalation strong":
+        "руки cheap · решения medium · эскалация strong",
+    "Commit · if autocommit is allowed": "Коммит · если разрешён autocommit",
+    "otherwise patch · only task files": "иначе патч · только файлы задачи",
+    "next task": "следующая задача",
+    # MERGE cards and barrier
+    "pdca-executor · into the current branch":
+        "pdca-executor · в текущую ветвь",
+    "Per group": "По группам",
+    "sequentially · «#<n>»": "последовательно · «#<n>»",
+    "only with ≥2 groups": "только при ≥2 группах",
+    "barrier · ALL LANES TERMINAL": "барьер · ALL LANES TERMINAL",
+    "merge done only": "merge только done",
+    "incomplete · skip": "incomplete · пропуск",
+    # CHECK cards
+    "Task checks": "Проверки задачи",
+    "mandatory · by work type": "обязательные · по типу работы",
+    "Tests": "Тесты",
+    "functional · acceptance": "функциональные · приёмка",
+    "Performance": "Скорость",
+    "measurements": "измерения",
+    "if hot path": "если горячий путь",
+    "Review lenses": "Линзы ревью",
+    "risk · regression · conformance": "риск · регрессия · соответствие",
+    "Verdict": "Вердикт",
+    # corrective and escalation blocks
+    "Corrective": "Исправление",
+    "standard PDCA · orchestrator": "стандартный PDCA · оркестратор",
+    "on FAIL from pdca-check": "по FAIL от pdca-check",
+    "Scout": "Скаут",
+    "pdca-scout · facts · file:line": "pdca-scout · факты · file:line",
+    "merge fail · decides": "merge fail · решает",
+    # ACT cards
+    "Report": "Отчёт",
+    "groups · tasks · evidence": "группы · задачи · доказательства",
+    "Cleanup · done/merged": "Очистка done/merged",
+    "incomplete preserved": "incomplete сохраняется",
+    # per-task cycle variant
+    "cycle: .NET/C# → pdca-dotnet · other code → pdca-coder":
+        "цикл: .NET/C# → pdca-dotnet · другой код → pdca-coder",
+    "otherwise → pdca (default)": "иначе → pdca (по умолчанию)",
+    # band, legends, state graph
+    "Orchestrator · pdca-collection — inputs per phase":
+        "Оркестратор · pdca-collection — входы по фазам",
+    "cheap tier": "дешёвая ступень",
+    "medium tier": "средняя ступень",
+    "strong tier": "дорогая ступень",
+    "Model tiers": "Ступени модели",
+    "PDCA composition": "PDCA-композиция",
+    "composite: hands cheap · decisions medium · escalation strong":
+        "композиция: руки cheap · решения medium · эскалация strong",
+    "Collection state graph": "Граф состояний коллекции",
+    "decision → pdca-planner (plan)": "решение → pdca-planner (план)",
+    "or pdca-executor (implementation, STOP)":
+        "или pdca-executor (реализация, STOP)",
+    "ACT-finalized · no success cleanup":
+        "финализировано ACT · без успешной очистки",
+    # footnotes
+    "One group — degradation: no worktree and no branches are created, work in the current "
+    "branch, merge --no-ff is not needed; earlier commits remain, no auto-rollback · push — never":
+        "Одна группа — деградация: worktree и ветви не создаются, работа в текущей ветви, "
+        "merge --no-ff не нужен; прежние коммиты остаются, авто-rollback нет · push — никогда",
+    "Commit — only in an explicitly authorized collection autocommit mode; otherwise/if forbidden the patch "
+    "is preserved, there are no commits and no uncommitted branch chain (the exception is a project overlay, not global)":
+        "Коммит — только в явно разрешённом autocommit-режиме коллекции; иначе/если запрещено "
+        "сохраняется патч, коммитов нет и нет цепочки незакоммиченных ветвей (исключение — оверлей проекта, не глобально)",
+    "≥2: the barrier waits for terminality of ALL lanes (done | incomplete) — readiness, not success; "
+    "MERGE only successful (done) tips, incomplete is skipped; conflict → abort → pdca-escalate":
+        "≥2: барьер ждёт терминальности ВСЕХ линий (done | incomplete) — готовность, не успех; "
+        "MERGE только успешные (done) tip, incomplete пропускается; конфликт → abort → pdca-escalate",
+    "C: re-gather stays blocked (no report) — not a defect, no code edits; "
+    "STOP of the corrective PDCA ≠ EXIT: ACT finalises it as unverified, evidence preserved, "
+    "no success cleanup; ACT cleans only DONE/merged, incomplete results (branches/patch/pointers) are preserved":
+        "C: re-gather остаётся blocked (нет отчёта) — не дефект, правок нет; "
+        "STOP корректирующего PDCA ≠ EXIT: ACT финализирует его как unverified; "
+        "доказательства и результаты incomplete сохранены, очистки нет, ACT чистит DONE/merged",
+    "Lane (work stream) — one parallel flow of work per group: a separate subagent, its own worktree and branch, "
+    "tasks strictly one by one, a full pdca cycle per task; groups run in parallel (≤ cap), not tasks inside a lane.":
+        "Линия (рабочий поток) — один параллельный поток на группу: отдельный субагент, свой worktree и ветвь, "
+        "задачи строго по одной, полный цикл pdca на задачу; группы идут параллельно (≤ cap), а не задачи внутри линии.",
+    "Fallback: pdca-orchestrator unavailable (no agent / subagent_depth < 2 / delegation forbidden) → "
+    "primary leads the cycle itself · autonomous: Notice: + summary · normal: a message to the user":
+        "Fallback: pdca-orchestrator недоступен (нет агента / subagent_depth < 2 / делегирование запрещено) → "
+        "primary ведёт цикл сам · autonomous: Notice: + сводка · normal: сообщение пользователю",
+}
+
+
+def _localize(text, lang):
+    if lang == "ru" and text is not None:
+        if isinstance(text, (list, tuple)):
+            return type(text)(_localize(item, lang) for item in text)
+        return _TR_RU.get(text, text)
+    return text
+
+
+def T(text):
+    """Translate a visible label for the active language; identity for `en`."""
+    return _localize(text, LANG)
+
+
 # ---- bus label band: sized before any dependent coordinate ----------------
 BUS_LABEL_CW = 6.0
 BUS_LABEL_LINE_H = 12
@@ -167,20 +319,26 @@ def _wrap_label(text: str, maxpx: float, cw: float = BUS_LABEL_CW) -> list[str]:
     return lines or [""]
 
 
-def _bus_event_lines(col: str) -> list[list[str]]:
+def _bus_event_lines(col: str, lang: str) -> list[list[str]]:
     maxpx = max(40.0, WIDTH[col] / 2 - 24)
     return [
-        _wrap_label(EDGE_LABELS[triple], maxpx)
+        _wrap_label(_localize(EDGE_LABELS[triple], lang), maxpx)
         for triple in main_events_for_column(col)
     ]
 
 
-_BUS_EVENT_LINES = {c: _bus_event_lines(c) for c in COLN}
+# The dispatch label band is sized for BOTH languages, so the canvas geometry
+# stays identical in every language; each render picks its own wrapped lines.
+_BUS_EVENT_LINES = {
+    lang: {c: _bus_event_lines(c, lang) for c in COLN}
+    for lang in ("ru", "en")
+}
 _BUS_BAND_H = 0
-for _c in COLN:
-    _lines_total = sum(len(_ls) for _ls in _BUS_EVENT_LINES[_c])
-    _h = _lines_total * BUS_LABEL_LINE_H + max(0, len(_BUS_EVENT_LINES[_c]) - 1) * BUS_ENTRY_GAP
-    _BUS_BAND_H = max(_BUS_BAND_H, _h)
+for _lang in ("ru", "en"):
+    for _c in COLN:
+        _lines_total = sum(len(_ls) for _ls in _BUS_EVENT_LINES[_lang][_c])
+        _h = _lines_total * BUS_LABEL_LINE_H + max(0, len(_BUS_EVENT_LINES[_lang][_c]) - 1) * BUS_ENTRY_GAP
+        _BUS_BAND_H = max(_BUS_BAND_H, _h)
 
 ORB_B = ORB_Y + ORB_H
 SPINE_Y = ORB_B + BUS_PAD_TOP + _BUS_BAND_H + BUS_PAD_BOTTOM
@@ -294,15 +452,21 @@ for _phase_col in COLN:
                 f"missing human label for incoming triple {_phase_triple!r} "
                 f"of phase {_phase_col!r}"
             )
-INPUTS = [
-    "{} ← {}".format(
-        DISPLAY_PREFIX.get(_phase_col, _phase_col),
-        " · ".join(
-            f"«{EDGE_LABELS[_t]}»" for _t in main_events_for_column(_phase_col)
-        ),
-    )
-    for _phase_col in COLN
-]
+INPUTS = {
+    lang: [
+        "{} ← {}".format(
+            " ".join(_localize(E_BLOCK_NAME, lang))
+            if _phase_col == "E"
+            else _localize(DISPLAY_PREFIX.get(_phase_col, _phase_col), lang),
+            " · ".join(
+                f"«{_localize(EDGE_LABELS[_t], lang)}»"
+                for _t in main_events_for_column(_phase_col)
+            ),
+        )
+        for _phase_col in COLN
+    ]
+    for lang in ("ru", "en")
+}
 
 # ---- state-graph layout: single source of nodes and routes ----------------
 # Node ids keep the pre-existing ids minus the removed bespoke TRIAGE/BLOCKED
@@ -451,7 +615,8 @@ ROUTES = {
     # ran parallel to the PASS arrow and looked attached to ACT.
     ("C", "C"): {"points": [(GX["C"] + 130, R1_TOP), (GX["C"] + 130, R1_TOP - 24),
                             (GX["C"] + 90, R1_TOP - 24), (GX["C"] + 90, R1_TOP)],
-                 "caption": _wrap_label(EDGE_LABELS[("C", "C", "re-gather")], 80),
+                 "caption": EDGE_LABELS[("C", "C", "re-gather")],
+                 "caption_wrap": 80,
                  "label": (GX["C"] + 110, R1_TOP - 60)},
     # conflict is discovered at MERGE; `ESCALATE` sits directly below it as a
     # tight vertical loop.
@@ -471,9 +636,8 @@ ROUTES = {
                                         (GX["C"] + 40, R2_BOT + 36),
                                         (GX["MERGE"] + NW / 2, R2_BOT + 36),
                                         (GX["MERGE"] + NW / 2, R2_BOT)],
-                             "caption": _wrap_label(
-                                 EDGE_LABELS[("REPAIR", "ESCALATE", "same defect after 1 fix")],
-                                 92),
+                             "caption": EDGE_LABELS[("REPAIR", "ESCALATE", "same defect after 1 fix")],
+                             "caption_wrap": 92,
                              "label": ((GX["C"] + 40 + GX["MERGE"] + NW / 2) / 2, R2_BOT + 12)},
     # corrective revision exhausted -> ACT finalises the honest incomplete/STOP;
     # never a second terminal beside the success path.
@@ -532,6 +696,7 @@ def _fit(text, maxpx, cw):
 
 def render(P, title):
     def box(x, y, w, h, _title, sub, tier):
+        _title, sub = T(_title), T(sub)
         _composite = tier == "composite"
         col = COMPOSITE_COLOR if _composite else TIER_COLOR[tier]
         _label = COMPOSITE_BADGE if _composite else TIER_MODEL[tier]
@@ -560,6 +725,7 @@ def render(P, title):
         return "\n".join(out)
 
     def header(x, y, w, h, lbl, col):
+        lbl = T(lbl)
         out = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="{COLOR[col]}"/>']
         lines = lbl if isinstance(lbl, (list, tuple)) else [lbl]
         if len(lines) == 1:
@@ -581,7 +747,7 @@ def render(P, title):
 
     def label(x, y, text, color=None, anchor="middle"):
         color = color or P["label"]
-        return f'<text x="{x}" y="{y}" class="g" fill="{color}" text-anchor="{anchor}">{esc(text)}</text>'
+        return f'<text x="{x}" y="{y}" class="g" fill="{color}" text-anchor="{anchor}">{esc(T(text))}</text>'
 
     s = []
     s.append(f'<svg viewBox="0 0 {W} {H}" width="{W}" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">')
@@ -604,12 +770,13 @@ def render(P, title):
              '</style>')
 
     s.append(f'<rect x="{M}" y="{ORB_Y}" width="{W-M-M}" height="{ORB_H}" rx="10" class="band" data-band="orchestrator"/>')
-    s.append(f'<text x="{M+18}" y="{ORB_Y+24}" class="bt">Orchestrator · pdca-collection — inputs per phase</text>')
+    s.append(f'<text x="{M+18}" y="{ORB_Y+24}" class="bt">{esc(T("Orchestrator · pdca-collection — inputs per phase"))}</text>')
     _cw = W - 2 * M
     _col2 = M + 18 + _cw / 2
     # balance the phase inputs across the two band columns instead of a fixed 4+1
-    _rows = max(1, (len(INPUTS) + 1) // 2)
-    for _i, _t in enumerate(INPUTS):
+    _inputs = INPUTS[LANG]
+    _rows = max(1, (len(_inputs) + 1) // 2)
+    for _i, _t in enumerate(_inputs):
         _x = M + 18 if _i < _rows else _col2
         _y = ORB_Y + 52 + (_i % _rows) * 18
         s.append(f'<text x="{_x}" y="{_y}" class="ol">← {esc(_t)}</text>')
@@ -674,7 +841,7 @@ def render(P, title):
             _my = (cy_first + cy_last) / 2
             # inside a lane the loop-back is task-to-task: after the committed
             # task the next task branches from its tip.
-            s.append(f'<text x="{gx - 5}" y="{_my}" class="g" fill="{P["label"]}" text-anchor="middle" transform="rotate(-90 {gx - 5} {_my})">next task</text>')
+            s.append(f'<text x="{gx - 5}" y="{_my}" class="g" fill="{P["label"]}" text-anchor="middle" transform="rotate(-90 {gx - 5} {_my})">{esc(T("next task"))}</text>')
         else:
             for j, (t, sub, tier) in enumerate(blocks):
                 by = COL_Y + j * BOX_STEP
@@ -708,16 +875,16 @@ def render(P, title):
             # lives *inside* this marker group and is wrapped to the narrow column.
             s.append('<g data-condition="all-lanes-terminal">')
             s.append(_frame)
-            s.append(f'<text x="{cx(c)}" y="{bottom + 25}" class="g" fill="{P["label"]}" text-anchor="middle">{esc(CONDITIONAL[c])}</text>')
-            s.append(f'<text x="{cx(c)}" y="{bottom + 40}" class="g" fill="{P["label"]}" text-anchor="middle">barrier · ALL LANES TERMINAL</text>')
+            s.append(f'<text x="{cx(c)}" y="{bottom + 25}" class="g" fill="{P["label"]}" text-anchor="middle">{esc(T(CONDITIONAL[c]))}</text>')
+            s.append(f'<text x="{cx(c)}" y="{bottom + 40}" class="g" fill="{P["label"]}" text-anchor="middle">{esc(T("barrier · ALL LANES TERMINAL"))}</text>')
             s.append(f'<text x="{cx(c)}" y="{bottom + 55}" class="ls" fill="{P["sub"]}" text-anchor="middle">done | incomplete</text>')
-            s.append(f'<text x="{cx(c)}" y="{bottom + 70}" class="ls" fill="{P["sub"]}" text-anchor="middle">merge done only</text>')
-            s.append(f'<text x="{cx(c)}" y="{bottom + 85}" class="ls" fill="{P["sub"]}" text-anchor="middle">incomplete · skip</text>')
+            s.append(f'<text x="{cx(c)}" y="{bottom + 70}" class="ls" fill="{P["sub"]}" text-anchor="middle">{esc(T("merge done only"))}</text>')
+            s.append(f'<text x="{cx(c)}" y="{bottom + 85}" class="ls" fill="{P["sub"]}" text-anchor="middle">{esc(T("incomplete · skip"))}</text>')
             s.append('</g>')
         else:
             s.append(_frame)
             if c in CONDITIONAL:
-                _cond = CONDITIONAL[c]
+                _cond = T(CONDITIONAL[c])
                 _cond_lines = _cond if isinstance(_cond, (list, tuple)) else [_cond]
                 for _ci, _cline in enumerate(_cond_lines):
                     s.append(f'<text x="{cx(c)}" y="{bottom + 25 + _ci*15}" class="g" fill="{P["label"]}" text-anchor="middle">{esc(_cline)}</text>')
@@ -750,7 +917,7 @@ def render(P, title):
                 s.append(poly([(_ccx, y1), (_ccx, by)], P["bus"]))
         s.append(f'<rect x="{x-6}" y="{_cy-8}" width="{w+12}" height="{_bottom-_cy+16}" rx="12" fill="none" stroke="{COLOR[_child]}" stroke-opacity="{P["frame_op"]}" stroke-width="{P["frame_w"]}" data-frame="{_child}"/>')
         if _child in CONDITIONAL:
-            _cond = CONDITIONAL[_child]
+            _cond = T(CONDITIONAL[_child])
             _cond_lines = _cond if isinstance(_cond, (list, tuple)) else [_cond]
             for _ci, _cline in enumerate(_cond_lines):
                 s.append(f'<text x="{_ccx}" y="{_bottom + 25 + _ci*15}" class="g" fill="{P["label"]}" text-anchor="middle">{esc(_cline)}</text>')
@@ -799,7 +966,7 @@ def render(P, title):
         s.append(f'<g data-bus="dispatch" data-origin="orchestrator" '
                  f'data-target="{c}" data-kind="dispatch">')
         s.append(poly([(xc - 16, ORB_B), (xc - 16, SPINE_Y)]))
-        _event_lines = _BUS_EVENT_LINES[c]
+        _event_lines = _BUS_EVENT_LINES[LANG][c]
         _total = (
             sum(len(_ls) for _ls in _event_lines) * BUS_LABEL_LINE_H
             + max(0, len(_event_lines) - 1) * BUS_ENTRY_GAP
@@ -863,10 +1030,10 @@ def render(P, title):
 
     # model tiers: the host model steps cheap / medium / strong
     s.append('<g data-legend="model-tiers">')
-    s.append(f'<text x="{M}" y="{_titles_y}" class="lt">Model tiers</text>')
+    s.append(f'<text x="{M}" y="{_titles_y}" class="lt">{esc(T("Model tiers"))}</text>')
     for _i, (_col, _t, _model, _roles) in enumerate(legend[:3]):
         _x = _tier_xs[_i]
-        s.append(f'<text x="{_x+22}" y="{ly}" class="lt">{esc(_t)}</text>')
+        s.append(f'<text x="{_x+22}" y="{ly}" class="lt">{esc(T(_t))}</text>')
         s.extend(_legend_swatch(_x, _col, _model, _roles))
     s.append('</g>')
 
@@ -876,15 +1043,15 @@ def render(P, title):
     # composition is a different axis, not a fourth model tier: a dashed
     # outline chip (never a tier badge/swatch) plus the composition wording.
     s.append('<g data-legend="composition">')
-    s.append(f'<text x="{_comp_x}" y="{_titles_y}" class="lt">PDCA composition</text>')
+    s.append(f'<text x="{_comp_x}" y="{_titles_y}" class="lt">{esc(T("PDCA composition"))}</text>')
     s.append(f'<rect x="{_comp_x}" y="{ly-12}" width="15" height="15" rx="4" '
              f'fill="none" stroke="{COMPOSITE_COLOR}" stroke-dasharray="3 2"/>')
     s.append(f'<text x="{_comp_x+22}" y="{ly+3}" class="ls" fill="{P["label"]}">'
-             'composite: hands cheap · decisions medium · escalation strong</text>')
+             f'{esc(T("composite: hands cheap · decisions medium · escalation strong"))}</text>')
     s.append('</g>')
 
     # ---- state graph (below the legend): nodes and routes from the model ----
-    s.append(f'<text x="{M}" y="{SG_TITLE_Y}" class="lt">Collection state graph</text>')
+    s.append(f'<text x="{M}" y="{SG_TITLE_Y}" class="lt">{esc(T("Collection state graph"))}</text>')
     neutral = P["state_neutral"]
     for _k, _n in STATE_NODES.items():
         _c = STATE_COLOR[_k] or neutral
@@ -895,10 +1062,10 @@ def render(P, title):
         s.append(f'<rect x="{_n["x"]}" y="{_n["y"]}" width="{NW}" height="{NH}" rx="10" fill="{_c}" fill-opacity="0.08" stroke="{_c}" stroke-width="1.6"{_da}/>')
         if _n.get("owner"):
             # visible owner label on the actual node (e.g. `pdca-check · medium`)
-            s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+17}" class="st" fill="{_c}" text-anchor="middle">{esc(_n["label"])}</text>')
-            s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+33}" class="ls" fill="{_c}" text-anchor="middle">{esc(_n["owner"])}</text>')
+            s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+17}" class="st" fill="{_c}" text-anchor="middle">{esc(T(_n["label"]))}</text>')
+            s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+33}" class="ls" fill="{_c}" text-anchor="middle">{esc(T(_n["owner"]))}</text>')
         else:
-            _lines = _n["label"] if isinstance(_n["label"], (list, tuple)) else [_n["label"]]
+            _lines = T(_n["label"]) if isinstance(_n["label"], (list, tuple)) else [T(_n["label"])]
             if len(_lines) == 1:
                 s.append(f'<text x="{_n["x"]+NW/2}" y="{_n["y"]+NH/2+5}" class="st" fill="{_c}" text-anchor="middle">{esc(_lines[0])}</text>')
             else:
@@ -915,7 +1082,7 @@ def render(P, title):
             _aanchor = _n.get("annotation_anchor", "middle")
             s.append(f'<g data-annotation="{_k}">')
             for _ai, _aline in enumerate(_ann):
-                s.append(f'<text x="{_ax}" y="{_n["y"]+NH+16 + _ai*13}" class="nt" text-anchor="{_aanchor}">{esc(_aline)}</text>')
+                s.append(f'<text x="{_ax}" y="{_n["y"]+NH+16 + _ai*13}" class="nt" text-anchor="{_aanchor}">{esc(T(_aline))}</text>')
             s.append('</g>')
     for _a, _b, _cond in STATE_EDGES:
         _route = ROUTES[(_a, _b)]
@@ -930,8 +1097,12 @@ def render(P, title):
             # visible leader tie-in: caption -> its own route (no shared row)
             s.append(poly(_route["label_line"], P["label"], marker=None))
         _caption = _route.get("caption", EDGE_LABELS.get((_a, _b, _cond), _cond))
-        if isinstance(_caption, str):
-            _caption = [_caption]
+        if "caption_wrap" in _route:
+            _caption = _wrap_label(T(_caption), _route["caption_wrap"])
+        else:
+            _caption = T(_caption)
+            if isinstance(_caption, str):
+                _caption = [_caption]
         if "label" in _route:
             _lx, _ly = _route["label"]
             _anchor = _route.get("anchor", "middle")
@@ -961,13 +1132,13 @@ def render(P, title):
         "primary leads the cycle itself · autonomous: Notice: + summary · normal: a message to the user",
     ]
     for _i, _ntext in enumerate(_notes):
-        s.append(f'<text x="{M}" y="{NOTE_Y + _i * 16}" class="nt">{esc(_ntext)}</text>')
+        s.append(f'<text x="{M}" y="{NOTE_Y + _i * 16}" class="nt">{esc(T(_ntext))}</text>')
     s.append('</svg>')
     return "\n".join(s)
 
 
-def htmlwrap(P, title, svg):
-    return ('<!doctype html><html lang="en"><meta charset="utf-8">'
+def htmlwrap(P, title, svg, lang):
+    return (f'<!doctype html><html lang="{lang}"><meta charset="utf-8">'
             f'<title>{esc(title)}</title>'
             f'<style>body{{margin:0;background:{P["bg"]};font-family:Segoe UI,system-ui,sans-serif}}'
             f'.card{{background:{P["card"]};border-radius:12px;margin:20px;padding:12px;box-shadow:{P["shadow"]};overflow:auto}}</style>'
@@ -984,31 +1155,48 @@ def crop(svg: str, top: int, height: int) -> str:
 
 
 VARIANTS = [
-    ("light", "collection-hand", "pdca-collection — hand layout"),
-    ("dark", "collection-hand-dark", "pdca-collection — hand layout (dark theme)"),
+    ("light", "collection-hand", "pdca-collection — ручная раскладка"),
+    ("dark", "collection-hand-dark", "pdca-collection — ручная раскладка (тёмная тема)"),
 ]
 
+EN_TITLES = (
+    "pdca-collection — hand layout",
+    "pdca-collection — hand layout (dark theme)",
+)
 
-def main() -> None:
+
+def main(argv=None) -> None:
     """Render both themes next to this script.  Importing makes no file writes."""
+    import argparse
+
+    ap = argparse.ArgumentParser(
+        description="Render the pdca-collection diagram (ru/en)."
+    )
+    ap.add_argument("--lang", choices=["ru", "en"], default="ru",
+                    help="label language (default: ru)")
+    args = ap.parse_args(argv)
+    global LANG
+    LANG = args.lang
+    suffix = "" if LANG == "ru" else "-en"
     rendered = {}
-    for theme, stem, title in VARIANTS:
+    for (theme, stem, ru_title), en_title in zip(VARIANTS, EN_TITLES):
+        title = ru_title if LANG == "ru" else en_title
         P = THEMES[theme]
         svg = render(P, title)
         rendered[theme] = svg
         svg_out = svg + "\n"
-        with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as f:
+        with open(os.path.join(OUT_DIR, stem + suffix + ".svg"), "w", encoding="utf-8") as f:
             f.write(svg_out)
         # embed the exact `.svg` text (including its final newline) so the
         # assets are whitespace-clean and the HTML still embeds the SVG verbatim
-        with open(os.path.join(OUT_DIR, stem + ".html"), "w", encoding="utf-8") as f:
-            f.write(htmlwrap(P, title, svg_out) + "\n")
-        print("wrote %s.{svg,html}" % stem)
+        with open(os.path.join(OUT_DIR, stem + suffix + ".html"), "w", encoding="utf-8") as f:
+            f.write(htmlwrap(P, title, svg_out, LANG) + "\n")
+        print("wrote %s.{svg,html}" % (stem + suffix))
     # Published separately as two images: the hand diagram and the state graph,
     # both cut from the same dark render.
     excerpts = (
-        ("collection-contract-dark", 0, SPLIT_TOP),
-        ("collection-state-dark", SPLIT_TOP, H - SPLIT_TOP),
+        ("collection-contract-dark" + suffix, 0, SPLIT_TOP),
+        ("collection-state-dark" + suffix, SPLIT_TOP, H - SPLIT_TOP),
     )
     for stem, top, height in excerpts:
         with open(os.path.join(OUT_DIR, stem + ".svg"), "w", encoding="utf-8") as f:

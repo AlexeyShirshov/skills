@@ -17,6 +17,8 @@ and adds only the coordination: preparation, a barrier, dependency-aware groups,
 integration and one batch status record. The collection creates **no second cycle and no additional
 attempt counter**.
 
+![Diagram of the pdca-collection form: orchestrator, phases, corrective cycles and the state graph](../skills/pdca-collection/assets/diagram/collection-hand-dark-en.svg)
+
 ## 2. What a collection is, and what it is not
 
 A collection is:
@@ -484,7 +486,14 @@ File: `.pdca/status/collection-<slug>.md`. It contains:
   each — preserved across closures and restarts of the corrective cycle; a link to the corrective
   cycle's status file; and the next allowed step;
 - collection completeness (all original item goals accepted), the integrated-tree verification (the
-  independent CHECK verdict) and incomplete items with preserved results as **distinct fields**.
+  independent CHECK verdict) and incomplete items with preserved results as **distinct fields**;
+- a separate `## Lessons learned` section — `pending` at creation and finished in ACT: a short
+  evidence-grounded retrospective through the same configured `pdca-check` (`retrospective` mode) at
+  collection-level ACT closures, both after a successful integrated-tree CHECK and at a terminal `STOP`.
+  It adds no verdict, counter, attempt or fabricated CHECK — a closure whose CHECK did not run still
+  records `CHECK: not run` — and no per-item, per-group or per-phase extra retrospective is created
+  unless an item cycle itself reaches ACT, where it inherits the base skeleton. `pdca-executor` persists
+  it (`references/act.md` §Retrospective).
 
 ## 11. Report and approval barrier
 

@@ -197,7 +197,13 @@ it is not a product defect and not a new attempt.
 
 **ACT.** ACT records what the ending phase determined: acceptance, an honest `blocked`/`incomplete`/
 `STOP`, or a PLAN-terminal outcome. It changes no product, test or checked artefact. Without ACT the
-cycle cannot close; without an accepted CHECK there is no accepted ACT.
+cycle cannot close; without an accepted CHECK there is no accepted ACT. Every closure runs a short
+evidence-grounded retrospective through the same configured `pdca-check` role in `retrospective`
+mode (medium tier), persisted by the cheap `pdca-executor` in a separate `## Lessons learned`
+section. It is analysis, not a new CHECK verdict: no criteria verdict, no transition authority, no
+new counter or attempt, no fabricated lesson, no auto-edit of AGENTS/skills/config and no product or
+docs write. A closure without CHECK keeps `CHECK: not run`; `No new lessons` is valid after actual
+analysis.
 
 **EXIT.** The result is accepted, the status file is finalized and kept, and the next authorized cycle
 may begin as `N+1`. In Bounded Execution, EXIT closes the task only when the CHECK covered the whole
@@ -396,8 +402,8 @@ The cycle has exactly **one progress mirror**: the status file.
   `.pdca/status/<task>-<N>.md`; an inheriting form may keep one file for several cycles.
 - It has one fixed skeleton, defined by `references/act.md`: `## Current state`, `## Original task`,
   `## PLAN record`, `## Approval record`, `## DO result`, `## CHECK record`, `## ACT record`,
-  `## Revision history`, `## Defect history`, `## Changed files`, `## Git state` and, last,
-  `## Progress log`.
+  `## Lessons learned`, `## Revision history`, `## Defect history`, `## Changed files`, `## Git state` and,
+  last, `## Progress log`.
 - `pdca-executor` is its only writer, in the same turn as the event. The driver passes the source
   reports unchanged; it does not rewrite, summarize or translate them.
 - `## Original task` holds the task verbatim; `## PLAN record` holds the planner's complete returned

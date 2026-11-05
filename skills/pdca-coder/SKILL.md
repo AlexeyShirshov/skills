@@ -369,7 +369,9 @@ integrated candidate; leave the task branches in place so the work remains recov
   in a new status path.
 - **Bookkeeping.** Reuse the base touched-file ledger in all dispatches; no custom handoff.
 - **No invented ACT work.** Do not force an `AGENTS.md`/registry edit or fabricate a project lesson
-  to close a cycle. Docs are finished in DO/CHECK, not ACT.
+  to close a cycle. Docs are finished in DO/CHECK, not ACT. This does not prohibit the base's
+  mandatory evidence-grounded status retrospective in `## Lessons learned`, and it requires no
+  product or docs write.
 - **Outcomes stay the base's.** An unfinished DO result goes DO→ACT; ACT records the phase-determined
   outcome using the governing contract.
 - **Commits.** Do not commit or push as part of the cycle. The exception is an explicit user

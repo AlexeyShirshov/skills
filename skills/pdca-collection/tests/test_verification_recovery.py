@@ -54,14 +54,14 @@ SKIP_HOST = "host config not available — set OPENCODE_CONFIG_REPO=/path/to/ope
 GEN = SKILL_DIR / "assets/diagram/gen_collection.py"
 
 THEME_STEMS = {
-    "light": "collection-hand",
-    "dark": "collection-hand-dark",
+    "light": "collection-hand-en",
+    "dark": "collection-hand-dark-en",
 }
 FILES = [
-    "collection-hand.svg",
-    "collection-hand.html",
-    "collection-hand-dark.svg",
-    "collection-hand-dark.html",
+    "collection-hand-en.svg",
+    "collection-hand-en.html",
+    "collection-hand-dark-en.svg",
+    "collection-hand-dark-en.html",
 ]
 
 EXPECTED_NODE_IDS = {
@@ -88,7 +88,8 @@ KNOWN_TIERS = {"cheap", "medium", "strong"}
 IN_SCOPE_TEXT_FILES = [
     SKILL_DIR / "assets/diagram/gen_collection.py",
     SKILL_DIR / "tests/test_verification_recovery.py",
-    SKILL_DIR / "tests/scenarios.md",
+    SKILL_DIR / "tests/scenarios.feature",
+    SKILL_DIR / "tests/scenarios-history.md",
     SKILL_DIR / "tests/git-model-sim.sh",
     SKILL_DIR / "SKILL.md",
     (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None,
@@ -96,6 +97,14 @@ IN_SCOPE_TEXT_FILES = [
     SKILL_DIR / "assets/diagram/collection-hand.html",
     SKILL_DIR / "assets/diagram/collection-hand-dark.svg",
     SKILL_DIR / "assets/diagram/collection-hand-dark.html",
+    SKILL_DIR / "assets/diagram/collection-hand-en.svg",
+    SKILL_DIR / "assets/diagram/collection-hand-en.html",
+    SKILL_DIR / "assets/diagram/collection-hand-dark-en.svg",
+    SKILL_DIR / "assets/diagram/collection-hand-dark-en.html",
+    SKILL_DIR / "assets/diagram/collection-contract-dark.svg",
+    SKILL_DIR / "assets/diagram/collection-state-dark.svg",
+    SKILL_DIR / "assets/diagram/collection-contract-dark-en.svg",
+    SKILL_DIR / "assets/diagram/collection-state-dark-en.svg",
 ]
 
 # Step 5 mutation: remove the REPAIR->C full-verification edge from a *copied*
@@ -133,7 +142,7 @@ def render_assets(generator_source: str | None = None) -> dict[str, str]:
         gen = tmp_path / "gen_collection.py"
         gen.write_text(source, encoding="utf-8")
         proc = subprocess.run(
-            [sys.executable, str(gen)],
+            [sys.executable, str(gen), "--lang", "en"],
             cwd=str(tmp_path),
             capture_output=True,
             text=True,
@@ -962,6 +971,97 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
         self.assertEqual([], problems)
 
 
+class RussianDiagramTest(unittest.TestCase):
+    """The Russian render is the default artifact; English is the ``-en`` copy.
+
+    The language switch must change visible text only: node ids, edge triples,
+    column anchors and the canvas geometry stay identical between the two files.
+    """
+
+    RU_FILES = (
+        "collection-hand.svg",
+        "collection-hand.html",
+        "collection-hand-dark.svg",
+        "collection-hand-dark.html",
+        "collection-contract-dark.svg",
+        "collection-state-dark.svg",
+    )
+    RU_LABELS = (
+        "Оркестратор · pdca-collection — входы по фазам",
+        "все группы завершены",
+        "одна группа: без MERGE",
+        "CHECK fail · реальный дефект",
+        "Исправление",
+        "стандартный PDCA · оркестратор",
+        "DO · ПОДГОТОВКА + ЛИНИИ",
+        "Очистка done/merged",
+        "следующая задача",
+        "иначе → pdca (по умолчанию)",
+        "решение → pdca-planner (план)",
+        "Ступени модели",
+        "PDCA-композиция",
+        "Граф состояний коллекции",
+        "финализировано ACT · без успешной очистки",
+    )
+
+    def read(self, name: str) -> str:
+        return (SKILL_DIR / "assets/diagram" / name).read_text(encoding="utf-8")
+
+    def test_all_russian_files_exist(self):
+        for name in self.RU_FILES:
+            with self.subTest(name=name):
+                self.assertTrue((SKILL_DIR / "assets/diagram" / name).is_file())
+
+    def test_russian_labels_are_rendered(self):
+        for name in ("collection-hand.svg", "collection-hand-dark.svg"):
+            with self.subTest(name=name):
+                svg = self.read(name)
+                for label in self.RU_LABELS:
+                    self.assertIn(label, svg)
+
+    def test_the_english_copy_carries_no_cyrillic(self):
+        for name in ("collection-hand-en.svg", "collection-hand-dark-en.svg"):
+            with self.subTest(name=name):
+                self.assertNotRegex(self.read(name), r"[А-Яа-я]")
+
+    def test_the_russian_copy_carries_no_english_prose(self):
+        # A missing translation falls back to the English source string; these
+        # probes catch the most visible ones instead of letting them slip through.
+        for name in ("collection-hand.svg", "collection-hand-dark.svg"):
+            with self.subTest(name=name):
+                svg = self.read(name)
+                for probe in (
+                    "Collection state graph", "Model tiers", "PDCA composition",
+                    "Corrective", "the only success", "one group: no MERGE",
+                    "all plans ready", "Cleanup · done/merged",
+                ):
+                    self.assertNotIn(probe, svg, f"untranslated {probe!r}")
+
+    def test_html_declares_its_language(self):
+        for name, lang in (
+            ("collection-hand.html", "ru"),
+            ("collection-hand-dark.html", "ru"),
+            ("collection-hand-en.html", "en"),
+            ("collection-hand-dark-en.html", "en"),
+        ):
+            with self.subTest(name=name):
+                self.assertIn(f'<html lang="{lang}">', self.read(name))
+
+    def test_structure_and_geometry_match_the_english_copy(self):
+        ru = parse_svg(self.read("collection-hand-dark.svg"))
+        en = parse_svg(self.read("collection-hand-dark-en.svg"))
+        self.assertEqual(sorted(node_map(ru)), sorted(node_map(en)))
+        self.assertEqual(edge_triples(ru), edge_triples(en))
+        self.assertEqual(viewbox(ru), viewbox(en))
+        columns = {
+            g.get("data-column") for g in _groups(ru) if g.get("data-column")
+        }
+        self.assertEqual(
+            columns,
+            {g.get("data-column") for g in _groups(en) if g.get("data-column")},
+        )
+
+
 # ---------------------------------------------------------------------------
 # 2026-10-02 merge-retry follow-up (PHASE1 focused contract tests).
 #
@@ -987,7 +1087,6 @@ LANE_REF_PATH = SKILL_DIR / "SKILL.md"
 # Canonical shipped runner asset (in-repo) and the deployed copy in the host repo.
 ASSET_PATH = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
 LANE_PATH = (CONFIG / "agents/pdca-orchestrator.md") if CONFIG else None
-SCENARIOS_PATH = SKILL_DIR / "tests/scenarios.md"
 SKIP_HOST_NOT_MIGRATED = (
     "the live host config is not migrated to the restructured PDCA family; "
     "the shipped asset is asserted instead"
