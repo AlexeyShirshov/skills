@@ -82,7 +82,7 @@ cp -r skills/pdca* ~/.config/opencode/skills/
 пак.
 
 Хелперы из `scripts/` установленного скилла — **источник** рантайм-копий (`pdca` и `pdca-coder`
-поставляют `pdca_cost.py` и `plan_lint.py`; `pdca-dotnet` дополнительно `validate_inner_loop.py` и
+поставляют `pdca_cost.py`; `pdca-dotnet` дополнительно `validate_inner_loop.py` и
 `pdca_evidence.py` — только в своём `pdca-dotnet/scripts/`, в базовом `pdca/scripts/` их нет, так что
 листинг базового каталога ничего не доказывает об их отсутствии). Перед первым запуском хелпера
 `pdca-executor` кладёт их в `.pdca/scripts/` проекта байт-в-байт копиями, и каждая команда идёт от

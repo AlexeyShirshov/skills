@@ -35,7 +35,7 @@ Usage::
     python3 .pdca/scripts/status_lint.py --json <status-file>
 
 Exit codes: ``0`` ok, ``2`` violation, ``1`` usage/operational error — the same
-convention as the base ``plan_lint.py`` and ``pdca_evidence.py``.
+convention as ``pdca_evidence.py``.
 
 The lint reads text only: it never writes, never repairs a row and never decides
 a status.  A violation means the write is rejected and the writer repairs the

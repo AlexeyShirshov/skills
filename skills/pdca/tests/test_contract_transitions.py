@@ -133,11 +133,6 @@ class PlanDoesNotChooseActionsTest(unittest.TestCase):
         self.assertIn("Do not freeze a command, selector, test strategy or manifest row", plan)
         self.assertIn("DO's own implementation actions and commands are your choice", executor)
 
-    def test_plan_lint_is_documented_as_a_verification_lint(self) -> None:
-        script = norm(read(BASE / "scripts/plan_lint.py"))
-        self.assertIn("Static contract lint for a PDCA plan's frozen verification commands", script)
-        self.assertIn("It never prescribes, freezes or forbids the implementation", script)
-
 
 class InheritanceTest(unittest.TestCase):
     """The forms inherit the base common contract; the copied contracts are gone."""

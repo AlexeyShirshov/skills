@@ -252,8 +252,8 @@ their absence is not a failure. They never execute a supplied command; they vali
   frozen synthetic tree, with a scoped manifest and `rv<k>` history.
 
 Both files exist only in this skill's own `scripts/` (`skills/pdca-dotnet/scripts/`, installed as
-`<skills-root>/pdca-dotnet/scripts/`). The base package's `scripts/` carries `pdca_cost.py` and
-`plan_lint.py` only, so checking it says nothing about these two helpers. A project's `.pdca/scripts/`
+`<skills-root>/pdca-dotnet/scripts/`). The base package's `scripts/` carries `pdca_cost.py` only,
+so checking it says nothing about these two helpers. A project's `.pdca/scripts/`
 is workspace, not installation: absence there is the normal pre-staging state, and the executor fills it
 with byte-identical copies (recording the source path and sha256) before the first run. A missing copy
 there is not a reason for a substitute gate, a waiver or a deviation record.

@@ -1,7 +1,7 @@
 """Helper locations: an overlay's helpers live in that overlay's `scripts/`, not the base's.
 
 Regression guard for a real confusion (nextorm rc5 entry): a preflight listed the **base**
-`skills/pdca/scripts/` (which ships only `pdca_cost.py` + `plan_lint.py`), did not find the
+`skills/pdca/scripts/` (which ships only `pdca_cost.py`), did not find the
 two .NET helpers, and concluded "the installed skill has no validators" — while
 `skills/pdca-dotnet/scripts/` shipped both. The contract must say, in the base skill, the
 overlay skill and the install docs, that
@@ -23,7 +23,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 
 DOTNET_HELPERS = ("validate_inner_loop.py", "pdca_evidence.py")
-BASE_HELPERS = ("pdca_cost.py", "plan_lint.py")
+BASE_HELPERS = ("pdca_cost.py",)
 
 
 def read(rel: str) -> str:
@@ -53,7 +53,7 @@ class SkillDisambiguationTest(unittest.TestCase):
         for token in (
             "`../pdca-dotnet/scripts/`",
             "`<skills-root>/pdca-dotnet/scripts/`",
-            "`../pdca/scripts/` carries `pdca_cost.py` and `plan_lint.py` only",
+            "`../pdca/scripts/` carries `pdca_cost.py` only",
             "`.pdca/scripts/`",
             "byte-identical copies",
             "never grounds for a substitute gate",
