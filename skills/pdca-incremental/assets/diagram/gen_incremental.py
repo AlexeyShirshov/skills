@@ -19,6 +19,9 @@ LANG = "ru"
 # as phase ids (`PLAN`, `STEP`, `STOP`), role names, tier words and outcome ids
 # (`met`, `unreachable`, `blocked`) are emitted as-is.
 _TR_RU = {
+    "pdca-executor · one status file": "pdca-executor · один статус-файл",
+    "if needed: step + CHECK": "при необходимости: шаг + CHECK",
+    "STEP · cycle": "STEP · цикл",
     # band, legend, titles
     "Orchestrator · cheap — cycle-control / campaign-control":
         "Оркестратор · cheap — cycle-control / campaign-control",
@@ -128,7 +131,7 @@ W = _x - GAP + M
 
 COLOR = {"B": "#0e7490", "P": "#2563eb", "S": "#7c3aed",
          "A": "#d97706", "R": "#059669", "X": "#b91c1c"}
-NAME = {"B": "B · BOOTSTRAP", "P": "P · PLAN", "S": "S · STEP N",
+NAME = {"B": "B · BOOTSTRAP", "P": "P · PLAN", "S": "S · STEP",
         "A": "A · ACCEPT", "R": "R · DECIDE", "X": "X · STOP"}
 OWNER = {"B": "pdca-planner + pdca-executor · medium/cheap", "P": "pdca-scout + pdca-planner · cheap/medium",
          "S": "orchestrator · cheap", "A": "pdca-check · medium",
@@ -139,9 +142,9 @@ TIER_MODEL = {"cheap": "cheap", "medium": "medium", "strong": "strong"}
 BLOCKS = {
     "B": [
         ("Goal + recipe", "pdca-planner · read-only · fixation", "medium"),
-        ("Baseline", "pdca-executor · edit/bash · recipe", "cheap"),
+        ("Baseline", "if needed: step + CHECK", "cheap"),
         ("Floor · target", "pdca-planner · baseline + floor", "medium"),
-        ("Status file", "primary · status-only · one file", "cheap"),
+        ("Status file", "pdca-executor · one status file", "cheap"),
     ],
     "P": [
         ("Discover · gap map", "pdca-scout · gap + deferred · read-only", "cheap"),
