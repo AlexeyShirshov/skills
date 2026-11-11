@@ -988,7 +988,7 @@ class RussianDiagramTest(unittest.TestCase):
     )
     RU_LABELS = (
         "Оркестратор · pdca-collection — входы по фазам",
-        "все группы завершены",
+        "все lanes завершены",
         "одна группа: без MERGE",
         "CHECK fail · реальный дефект",
         "Исправление",
@@ -2527,7 +2527,7 @@ def _data_step_values(root: ET.Element) -> set[str]:
     }
 
 
-_P_TO_DO_READY = re.compile(r"all\s+plans|plans\s+ready", re.I)
+_P_TO_DO_READY = re.compile(r"all\s+prepared/resolved", re.I)
 
 
 class CollectionPlanBarrierDiagramTest(unittest.TestCase):

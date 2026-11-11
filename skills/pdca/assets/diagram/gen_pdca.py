@@ -46,7 +46,7 @@ COLOR = {"P": "#2563eb", "D": "#7c3aed",
 NAME = {"P": "P · PLAN", "D": "D · DO",
         "C": "C · CHECK", "E": "E · ESCALATE", "A": "A · ACT"}
 # Small non-phase subtitle shown under an otherwise standard header.
-SUBTITLE = {"E": "переход, не фаза"}
+SUBTITLE = {"E": "консультация, не фаза"}
 TIER_COLOR = {"weak": "#0d9488", "medium": "#4f46e5", "strong": "#ea580c"}
 TIER_MODEL = {"weak": "cheap", "medium": "medium", "strong": "strong"}
 
@@ -99,8 +99,8 @@ BLOCKS = {
 
 # orchestrator strip: the per-phase inputs (as in the sibling diagrams)
 INPUTS = [
-    "PLAN ← «старт» · «реплан от CHECK» · «r+1 от ESCALATE» · «цикл N+1 от ACT»",
-    "DO ← «апрув от PLAN» · «дефект от CHECK» · «r не исчерпан от ESCALATE»",
+    "PLAN ← «старт» · «реплан от CHECK» · «цикл N+1 от ACT»",
+    "DO ← «апрув от PLAN» · «дефект от CHECK»",
     "CHECK ← «units done от DO»",
     "ESCALATE ← «неоднозначность» · «повтор» · «счётчик исчерпан» · «trade-off» · «риск приёмки» · «низкая уверенность PLAN/DO»",
     "ACT ← «все criteria met от CHECK» · «DO не может завершить» · «PLAN-терминал» · «STOP-финализация»",
@@ -157,6 +157,14 @@ LANG = "ru"
 # is emitted as-is. Lookup keys are the exact strings in the data above and in
 # the render sites below.
 _TR_EN = {
+    "консультация": "consultation",
+    "дефект контракта → CHECK → PLAN": "contract defect → CHECK → PLAN",
+    "консультация, не фаза": "consultation, not a phase",
+    "PLAN ← «старт» · «реплан от CHECK» · «цикл N+1 от ACT»": "PLAN ← “start” · “replan from CHECK” · “cycle N+1 from ACT”",
+    "DO ← «апрув от PLAN» · «дефект от CHECK»": "DO ← “approval from PLAN” · “defect from CHECK”",
+    "консультация · без перехода": "consultation · no transition",
+    "решение остаётся за фазой": "decision stays with the phase",
+    "нижний ряд — консультация; STOP — исход ACT": "bottom row — consultation; STOP is an ACT outcome",
     # subtitles / titles
     "переход, не фаза": "a transition, not a phase",
     "Универсальный контракт цикла": "The universal cycle contract",
@@ -541,27 +549,19 @@ def render(P):
     s.append(label(682, R1_TOP - 108, "дефект · n+1 (n/3)", P["label"]))
     s.append(curve(f"M798,{R1_TOP} C798,{R1_TOP-136} 334,{R1_TOP-136} 334,{R1_TOP}",
                    P["arrow"], "check_plan_replan"))
-    s.append(label(566, R1_TOP - 140, "неверный контракт → CHECK → PLAN · r+1", P["label"]))
+    s.append(label(566, R1_TOP - 140, "дефект контракта → CHECK → PLAN", P["label"]))
     # PLAN terminal: criteria cannot be determined, the original task is proven
     # infeasible, or the supplied facts already establish the requested result.
     s.append(curve(f"M334,{R1_TOP} C334,{R1_TOP-190} 1040,{R1_TOP-190} 1040,{R1_TOP}",
                    P["arrow"], "plan_act_terminal"))
     s.append(label(682, R1_TOP - 168, "критерии · невозможность · уже установлено → ACT", P["label"]))
 
-    # escalation row
-    s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "решение", P["escalate"], "ESCALATE"))
+    # Consultation is outside the state machine: it neither routes nor decides.
+    s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "консультация", P["escalate"], "CONSULTATION"))
     s.append(stnode(1184, R2_TOP, NW, NH, "STOP", "исход ACT", P["stop"], "STOP"))
     r1b = R1_TOP + NH
-    y2 = R2_TOP + NH / 2
-    s.append(curve(f"M798,{r1b} C798,{r1b+80} 566,{R2_TOP-80} 566,{R2_TOP}",
-                   P["escalate"], "check_escalate"))
-    s.append(label(700, (r1b + R2_TOP) / 2, "повтор · 3-й провал", P["label"]))
-    s.append(poly([(516, R2_TOP), (516, r1b)], P["escalate"], edge_id="escalate_do"))
-    s.append(label(504, (R2_TOP + r1b) / 2, "r не исчерпан → DO", P["label"], "end"))
-    s.append(poly([(488, y2), (334, y2), (334, r1b)], P["escalate"], edge_id="escalate_plan"))
-    s.append(label(411, y2 - 10, "исчерпан r → PLAN r+1", P["label"]))
-    s.append(poly([(644, y2), (980, y2), (980, r1b)], P["escalate"], edge_id="escalate_act"))
-    s.append(label(812, y2 - 10, "нет плана r+1 → ACT", P["label"]))
+    s.append(label(566, R2_TOP - 20, "консультация · без перехода", P["label"]))
+    s.append(label(566, R2_TOP + NH + 20, "решение остаётся за фазой", P["label"]))
     # STOP is finalized by ACT, not a path beside it
     s.append(curve(f"M1060,{r1b} C1060,{r1b+60} 1262,{R2_TOP-60} 1262,{R2_TOP}",
                    P["stop"], "act_stop"))
@@ -572,7 +572,7 @@ def render(P):
     s.append(label(24, FIN, "сплошная стрелка — переход", P["sub"], "start"))
     s.append(label(320, FIN, "дуга — loop-back до ACT", P["sub"], "start"))
     s.append(label(600, FIN, "пунктир — следующий цикл", P["sub"], "start"))
-    s.append(label(860, FIN, "нижний ряд — эскалация; STOP — исход ACT", P["sub"], "start"))
+    s.append(label(860, FIN, "нижний ряд — консультация; STOP — исход ACT", P["sub"], "start"))
 
     s.append('</svg>')
     return "\n".join(s)

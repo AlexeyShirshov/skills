@@ -107,8 +107,8 @@ STATE_EDGES = [
 # truth and are never rewritten here.
 EDGE_LABELS = {
     ("START", "P", "start"): "START: task list",
-    ("P", "DO", "groups"): "PLAN: all plans ready · groups/order fixed",
-    ("DO", "MERGE", "≥2 · all-lanes-terminal"): "all groups complete",
+    ("P", "DO", "groups"): "PLAN: all prepared/resolved · groups fixed",
+    ("DO", "MERGE", "≥2 · all-lanes-terminal"): "all lanes terminal",
     ("DO", "C", "one group · no merge"): "one group: no MERGE",
     ("MERGE", "C", "integration complete"): "MERGE complete",
     ("C", "REPAIR", "FAIL"): "CHECK fail · real defect",
@@ -149,6 +149,12 @@ LANG = "ru"
 # (phase/node ids, `data-*` values, role names, tier words, status vocabulary
 # `done`/`incomplete`/`unverified`) are emitted as-is.
 _TR_RU = {
+    "PLAN: all prepared/resolved · groups fixed": "PLAN: все подготовлены/разрешены · группы готовы",
+    "all lanes terminal": "все lanes завершены",
+    "prepared or resolved · before DAG": "подготовлены или разрешены · до DAG",
+    "if ≥2 groups · pdca-executor": "при ≥2 группах · pdca-executor",
+    "≥2 groups: authorization required": "≥2 группы: нужно разрешение",
+    "PASS only · incomplete preserved": "только PASS · incomplete сохранён",
     # edge labels: bus entries, arrows and lower captions share this one table
     "START: task list": "START: список задач",
     "PLAN: all plans ready · groups/order fixed":
@@ -370,12 +376,12 @@ BLOCKS = {
         # then clustering (DAG/groups); the three planning sub-steps are the
         # semantic `data-step` anchors below.
         ("Task's own PLAN", "pdca-scout + pdca-planner · per task", "medium"),
-        ("ALL-barrier", "all plans ready · before DAG", "weak"),
+        ("ALL-barrier", "prepared or resolved · before DAG", "weak"),
         ("DAG · groups", "pdca-planner · after the barrier", "medium"),
         ("Status file", "plan_state + groups/tasks", "weak"),
     ],
     "DO": [
-        ("Worktree + branches", "pdca-executor · per group", "weak"),
+        ("Worktree + branches", "if ≥2 groups · pdca-executor", "weak"),
         ("Lane launch", "in parallel · ≤ cap · host budget", "weak"),
         ("Lane · group", "one subagent · orchestrates, does not decide", "weak"),
         ("Task branch", "from the previous tip · pdca-executor", "weak"),
@@ -384,7 +390,7 @@ BLOCKS = {
         # collection mode (otherwise the next task cannot branch from a committed
         # tip) and the card never grants that permission by itself; without it the
         # results are preserved as a patch.
-        ("Commit · if autocommit is allowed", "otherwise patch · only task files", "weak"),
+        ("Commit · if autocommit is allowed", "≥2 groups: authorization required", "weak"),
     ],
     "MERGE": [
         ("merge --no-ff", "pdca-executor · into the current branch", "weak"),
@@ -416,7 +422,7 @@ BLOCKS = {
         ("Report", "groups · tasks · evidence", "weak"),
         # ACT cleanup is limited to disposable DONE/merged outputs; incomplete
         # results (branches/patch/pointers) are preserved.
-        ("Cleanup · done/merged", "incomplete preserved", "weak"),
+        ("Cleanup · done/merged", "PASS only · incomplete preserved", "weak"),
         ("Status file", "Done / Verified / Incomplete", "weak"),
     ],
 }
@@ -992,7 +998,7 @@ def render(P, title):
 
     legend = [
         ("#0d9488", "cheap tier", "cheap", "pdca-orchestrator · pdca-scout · pdca-executor"),
-        ("#4f46e5", "medium tier", "medium", "pdca-planner · pdca-check · pdca-security-auditor"),
+        ("#4f46e5", "medium tier", "medium", "pdca-planner · pdca-check"),
         ("#ea580c", "strong tier", "strong", "pdca-escalate"),
     ]
     ly = LEG_Y

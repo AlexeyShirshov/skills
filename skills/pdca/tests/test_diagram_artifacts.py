@@ -225,16 +225,16 @@ class DiagramArtifactsTest(unittest.TestCase):
                 self.assertTrue(contains(rects["STOP"], *end),
                                 "act_stop must end in STOP")
 
-    def test_escalation_without_a_plan_routes_through_act(self):
+    def test_escalation_is_consultation_not_a_transition(self):
         for stem in (LIGHT_STEM, DARK_STEM):
             with self.subTest(stem=stem):
                 root = ET.parse(DIAGRAM / (stem + ".svg")).getroot()
-                rects = node_rects(root)
-                start, end = edge_endpoints(root, "escalate_act")
-                self.assertTrue(contains(rects["ESCALATE"], *start),
-                                "escalate_act must start in ESCALATE")
-                self.assertTrue(contains(rects["ACT"], *end),
-                                "escalate_act must end in ACT")
+                self.assertIn("CONSULTATION", node_rects(root))
+                for edge in ("check_escalate", "escalate_do", "escalate_plan", "escalate_act"):
+                    self.assertIsNone(edge_endpoints(root, edge))
+                text = read(DIAGRAM / (stem + ".svg"))
+                self.assertIn("решение остаётся за фазой", text)
+                self.assertNotIn("r+1 от ESCALATE", text)
 
     def test_svgs_are_wellformed_xml(self):
         for name in (LIGHT_STEM + ".svg", DARK_STEM + ".svg"):

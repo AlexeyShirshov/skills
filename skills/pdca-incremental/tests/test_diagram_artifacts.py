@@ -49,7 +49,7 @@ DARK_TITLE = "pdca-incremental — campaign in steps (dark theme)"
 RU_LIGHT_TITLE = "pdca-incremental — кампания шагами"
 RU_DARK_TITLE = "pdca-incremental — кампания шагами (тёмная тема)"
 LABELS = (
-    "BOOTSTRAP", "PLAN", "STEP N", "ACCEPT", "DECIDE", "STOP",
+    "BOOTSTRAP", "PLAN", "S · STEP", "ACCEPT", "DECIDE", "STOP",
     "Discover · gap map", "Brief · six blocks", "Ranked seed",
     "P · PLAN", "D · DO", "C · CHECK", "A · ACT",
     # the step exit is the base step boundary, not a step-kind table
@@ -61,7 +61,7 @@ LABELS = (
     "met · unreachable · blocked · stopped",
     "Orchestrator · cheap — cycle-control / campaign-control",
     "pdca-planner · read-only", "pdca-executor · edit/bash",
-    "pdca-scout · facts, not a decision", "pdca-check · read-only · evidence", "primary · status-only",
+    "pdca-scout · facts, not a decision", "pdca-check · read-only · evidence", "pdca-executor · one status file",
     "cheap tier", "medium tier", "pdca-check · medium",
     "strong · pdca-escalate — not a campaign role",
 )
