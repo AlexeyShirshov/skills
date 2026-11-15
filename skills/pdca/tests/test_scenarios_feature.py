@@ -36,6 +36,9 @@ EXPECTED_IDS = (
     *(f"J{i}" for i in range(1, 3)),
     *(f"R{i}" for i in range(1, 7)),
     *(f"S{i}" for i in range(1, 6)),
+    *(f"T{i}" for i in range(1, 3)),
+    *(f"U{i}" for i in range(1, 7)),
+    "U10",
 )
 
 STEP = re.compile(r"^(Given|When|Then|And|But)\s")

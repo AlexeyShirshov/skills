@@ -15,13 +15,14 @@ from the agent prompt alone.
 
 ## What CHECK receives
 
-The original task, the acceptance criteria, the frozen actual result with its identity, and the
-available evidence and observations. It also receives the counters (`N`, `r`, `n/3`) — as recorded in
-the status, never as a restatement from a brief or an earlier turn — and the
-**defect history** (stable defect keys, observed revisions/attempts, applied fix count, last
-outcome), and — on a loop-back — the previous CHECK report and the finding it routed. CHECK takes
-none of them as established: it assesses the task and the criteria itself and verifies the result
-against them. The author's own restatement is not evidence.
+The original task, the acceptance criteria by exact reference to their source (the original task for
+user-supplied criteria; the saved plan for PLAN-derived criteria), the frozen actual result with its
+identity, and the available evidence and observations. Later handoffs use exact references and stable
+criterion IDs, not a second paraphrased criteria set. It also receives counters `N`, `r`, `n/3` from
+the status, never restated from a brief or earlier turn; the **defect history** (stable defect keys,
+observed revisions/attempts, applied fix count, last outcome); and, on a loop-back, the previous CHECK
+report and the finding it routed. CHECK takes none of these as established: it assesses the task and
+criteria itself, verifies the result against them, and treats the author's restatement as no evidence.
 
 CHECK is read-only and judges; it runs no proving action and delegates nothing. Its scoped access
 stays inside the permissions it already has, on the task inputs and the cycle's evidence artifacts.
@@ -30,22 +31,42 @@ An observation or run its chosen method needs is requested through the driver, w
 
 ## Evidence packaging
 
-Before choosing verification methods, CHECK verifies that the candidate identity, the claimed
-criterion IDs, run identities and all referenced artifacts are present and internally consistent.
-Missing or inconsistent packaging is not an implementation defect and not a counted attempt: CHECK
-returns the exact missing items and requests assembly only; DO assembles them for the same
-candidate without rerunning unrelated product checks. One such round per revision; if packaging is
-still incomplete after it, mark the affected criteria `unverified` and return a verdict on the
-artifacts that exist.
+CHECK confirms the frozen candidate identity and criterion IDs, then chooses a verification method
+for each criterion before judging evidence completeness. Completeness is the evidence those actual
+criteria need under the chosen methods, bound to the candidate — not a pre-method audit of every
+manifest link or referenced artifact. CHECK reads originals it can already reach within its existing
+scoped permissions directly, even when no manifest link points to them; this does not widen its read
+scope.
+
+A broken or missing link to an optional artifact unused by every chosen method is diagnostic only: it
+does not delay the verdict or justify a packaging-only DO round. When a chosen method genuinely needs
+evidence that is absent or inconsistent, CHECK names the affected criteria, exact missing items and
+proving action, consolidating the needed evidence into one re-gather request across those criteria.
+This is the existing evidence re-gather, not a product defect or counted attempt, and is subject to
+the single per-criterion-per-revision allowance below — it increments neither revision nor attempt
+counters and creates no extra packaging round. If required evidence remains missing after that
+allowance, mark the affected criteria `unverified` and return a verdict on the evidence that exists;
+an unverified mandatory criterion blocks acceptance.
 
 ## Candidate identity
 
-DO's candidate carries one stable identity derived from the changed state (commit, patch or content
-digest), not chosen by the author, plus an evidence pack bound to it: the claimed criterion IDs and
-durable pointers to every run, log and artifact. The identity must survive CHECK dispatch; use
-durable copies where a transient pointer cannot. Changing the candidate state invalidates the
-identity and needs a new CHECK. Correcting only evidence or packaging keeps the identity and does
-not consume an attempt.
+DO identifies the frozen result and binds each evidence item to the inputs and conditions it actually
+covers: relevant product/source, tests, build settings and outputs, runtime configuration, and
+meaningful environment. A commit or `HEAD` is a useful locator, not an all-purpose identity test.
+Status, logs, manifests, evidence packaging and commit-only changes are bookkeeping unless they change
+one of those inputs, are themselves part of the requested result/criterion, or the task explicitly
+requires an exact revision. A `HEAD` mismatch alone neither invalidates the result nor requires retest
+or STOP; establish relevant-input equivalence from available evidence, and use the existing bounded
+evidence-gather path for a targeted clarification when it is unclear. No universal hash, manifest or
+audit gate is required.
+
+Reuse each run or artifact whose relevant inputs and conditions remain equivalent; a changed input
+invalidates only the evidence that depends on it, not the whole pack. Do not repeat unrelated checks.
+An explicit exact-revision requirement remains binding: evidence must cover that revision. A changed
+product result still needs CHECK; a report-only change is not a product change unless the report itself
+is the requested result/criterion. Keep the result identity and the evidence it supplies distinct, with
+durable pointers for any evidence CHECK needs. Correcting only evidence or packaging keeps the product
+result identity and does not consume an attempt.
 
 ## Assess the criteria
 
@@ -57,9 +78,18 @@ coverage, contradiction or an unjudgeable criterion is a criteria defect for PLA
 judge the result against a weaker reading. One failed candidate is not proof that a criterion is
 unachievable.
 
-Criteria are the single source of truth: refer to them by their stable IDs and never restate,
-rename, renumber or widen them. A changed criterion identity or coverage is a contract defect for
-PLAN, not a wording correction at CHECK.
+Criteria are the single source of truth: compare the handoff with their exact source (the original task
+for user-supplied criteria, the saved canonical plan for PLAN-derived criteria) and refer to criteria
+by their stable IDs, without creating a second wording. If the incoming dispatch has a typo, alias or
+other transport distortion while the source is intact, the driver restores the exact source before
+CHECK judges; a report's paraphrase is not a new criterion. This is not a PLAN revision or counter
+change. A substantive defect in the saved contract
+(meaning, coverage, contradiction or judgeability) follows the existing CHECK → PLAN rules. User-supplied
+criteria remain verbatim and change only on explicit user instruction.
+
+A pre-existing observation outside the explicit cycle scope is diagnostic; it does not expand a scoped
+criterion. An original-task/global mandatory criterion still binds every cycle and is not waived by a
+narrow local scope.
 
 A campaign step's numeric criterion **restates the recipe's floor**: a criterion that reads a forecast
 of achievable volume, a quota of work or a share of the campaign target is a criteria defect for
@@ -142,9 +172,10 @@ grounds: reachability is the campaign boundary's question, not a verdict on an i
 target is never a per-step criterion. The increment stays local — `accepted` here never implies the
 whole goal.
 
-- **→ DO** — an implementation defect, or evidence the chosen method needs is still missing. The
-  report states the precise missing evidence and the proving action it requests; the driver has it
-  assembled and run, and CHECK delegates nothing directly.
+- **→ DO** — an implementation defect, or required evidence is missing while that criterion's single
+  re-gather allowance remains. The report states the precise missing evidence and proving action; the
+  driver has it assembled and run, and CHECK delegates nothing directly. Once the allowance is spent,
+  use §Recoverable CHECK blocker after a spent allowance rather than requesting another gather.
 - **→ PLAN** — a real criteria defect: criteria wrong or incomplete against the original
   requirements, contradictory, unjudgeable, or actually unachievable. A failed implementation or a
   failed verification method is not such a defect.
@@ -154,11 +185,33 @@ whole goal.
   false PASS.
 
 Counter effects and their recording stay in the base contract's §State machine and counters.
-Re-gathering missing evidence is not a product defect and is not a counted attempt; it never extends
-the no-4th rule. A criterion gets **one** such round per revision: when its evidence is still missing
-after that round, record it `unverified` and return a verdict on the artefacts that exist — the same
-criterion is not sent out for a second round in the same revision, and a repeated request is itself
-the signal to route to PLAN, to escalation, or to the containing form's boundary decision.
+Re-gathering missing evidence is not a product defect or counted attempt; it never extends the no-4th
+rule. A criterion gets **one** such round per revision. If evidence remains missing, mark it
+`unverified` and return `not accepted`, naming the exact evidence, chosen method, and the first
+re-gather's actual diagnostic. Missing evidence is not itself proof that the product failed.
+
+### Recoverable CHECK blocker after a spent allowance
+
+If the preserved diagnostic establishes a resource, capability or transport failure that prevents
+producing or accessing required evidence within CHECK's existing permissions — without establishing a
+failed product result or a criteria defect — report the precise resource blocker. The driver routes
+recording of it to `pdca-executor`, the sole status writer, and keeps this same CHECK active under base
+§Recovery with `N`, `r`, `n/3` and defect history unchanged. This is not a fourth exit or a
+`CHECK → PLAN`/`DO`/`ACT` transition; no containing-form boundary is inferred as a fallback. Return
+control under existing blocker handling: do not issue a second gather, poll, wait indefinitely, or
+change counters.
+
+Resume this pending CHECK only after a host notification or an authorized `pdca-executor`/`pdca-scout`
+report, through existing input channels, establishes changed availability. The driver gains no read or
+poll rights and does not probe for the change. CHECK may then inspect existing evidence within its
+current permissions; this is not a re-gather and changes no counters. If availability has not changed,
+do not redispatch CHECK. If the diagnostic or evidence shows a completed proving run that failed, judge
+that result normally, never as a resource blocker. A criteria defect still follows CHECK → PLAN, and a
+third failed substantive CHECK still requires the base's mandatory expert review before a fourth
+attempt. Missing or unverified evidence alone is neither a substantive failure nor an ESCALATE ground.
+Only a distinct, sufficiently informed low-confidence feasibility judgment that meets existing
+escalation grounds may be referred through the driver; the expert's advice returns to CHECK and does
+not select a transition.
 
 ## Honest limits
 

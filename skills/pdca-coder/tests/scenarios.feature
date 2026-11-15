@@ -251,3 +251,38 @@ Feature: The pdca-coder overlay under pressure
       When its result is accepted
       Then the original task and the user-supplied criteria remain verbatim
       # source: skills/pdca-coder/SKILL.md §Code-specific plan deltas
+
+  Rule: Semantic probes and reliable run artifacts
+
+    @U7 @uncovered @simulated
+    Scenario: U7 Ordinary behavior passes before a semantic probe fails
+      Given an incident-derived simulation, not a real NextORM run
+      And ordinary use of a feature passes while the claimed operation has a higher-risk output contract
+      When DO chooses the smallest probe that exercises that actual operation before the broad suite
+      Then the probe's failing semantic result is recorded honestly
+      And ordinary passing tests or a green count do not establish the claimed output contract
+      And any regression fix continues through the affected-project inner loop and the planned integration boundary
+      # source: skills/pdca-coder/SKILL.md §Semantic probes
+      # source: skills/pdca-coder/SKILL.md §Build and test command forms
+
+    @U8 @uncovered @simulated
+    Scenario: U8 A zero-selection run is followed by the intended test selection
+      Given an incident-derived simulation, not a real NextORM run
+      And an expensive test command expects twelve focused cases but exits zero after selecting none
+      When cheap discovery identifies the corrected selector and a new run selects the intended cases
+      Then the first run remains immutable evidence of a wrong selection, not a pass
+      And the second run has its own run ID, log and selected-case record
+      And only the completed intended selection can support the test claim
+      # source: skills/pdca-coder/SKILL.md §Code evidence requirements
+      # source: skills/pdca-coder/SKILL.md §Build and test command forms
+
+    @U9 @uncovered @simulated
+    Scenario: U9 A shared artifact collision is followed by an isolated run
+      Given an incident-derived simulation, not a real NextORM run
+      And two disjoint worktree units contend for one heavyweight shared database artifact
+      When the first run remains live and the second attempt encounters the known resource owner
+      Then the live handle is retained and no unknown or unrelated process is killed
+      And after recording the collision, the affected workload uses an isolated artifact in a new run
+      And independent edits and read-only gathers may continue with distinct run evidence
+      # source: skills/pdca-coder/SKILL.md §Test run safety (every phase — DO and CHECK)
+      # source: skills/pdca-coder/SKILL.md §Code evidence requirements

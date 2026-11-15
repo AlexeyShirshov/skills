@@ -29,9 +29,12 @@ here; the driver routes them and `pdca-executor` records them.
   task makes them relevant. If the user supplied criteria, reproduce them **verbatim** as the
   acceptance set and add none; only when the user supplied none do you define them from the
   unchanged task;
-- **Criterion IDs are immutable for a revision.** PLAN assigns them once; DO and CHECK refer to
-  them by ID and never restate, renumber, rename or replace them. A change in criterion identity,
-  coverage or wording is a contract revision (`r`), not an implementation detail.
+- **Criteria keep one verbatim source.** User-supplied criteria remain sourced from the original task;
+  otherwise the returned, persisted plan is the canonical source for PLAN-derived criteria. PLAN
+  assigns stable IDs; later handoffs refer to that source and those IDs rather than creating a second
+  wording. Correcting a transport typo or alias against an intact source is not a PLAN revision. A
+  substantive defect in the saved result/criteria contract follows the existing CHECK → PLAN and
+  revision rules. User-supplied criteria change only on explicit user instruction.
 - risks and stop conditions;
 - **known resource and access constraints affecting whether the requested result is achievable** —
   what the available means and access actually allow, not a choice of tools, implementation or
@@ -76,13 +79,19 @@ conditions under which they apply.
 
 ### Key assumptions and early probes
 
-- Verify read-only the existence and shape of the contracts, data flow and measurement basis the
-  plan depends on before returning it; a plan resting on an unchecked assumption is not ready.
-- A risky semantic assumption is not left as an assumption: convert it into a bounded early probe
-  authorized through the driver, or into an explicit stop condition.
-- Criteria are the single source of truth: DO and CHECK refer to them by stable ID and never
-  restate, rename, renumber or widen them; any change is a contract revision, not an
-  implementation detail.
+Use available facts to check only premises whose refutation could change the PLAN decision or make
+the requested result infeasible. PLAN does not research or run commands: request missing facts through
+the driver as a scoped, read-only `pdca-scout` gather, consolidated where practical. Do not repeat an
+established gather unless its inputs changed or its evidence is no longer usable. A fact lookup is not
+an executable semantic probe; where a decision-critical behavior needs a probe, authorize the smallest
+bounded probe through the driver and have its assigned role execute and observe it under existing
+permissions. This is not a new phase or a requirement to prove every assumption. Record other material
+uncertainty as an assumption or risk.
+
+A refuted decision-critical premise means the draft is not ready: revise the feasible choice within the
+approved scope, or use an existing terminal PLAN outcome when its conditions are proven. Do not begin
+DO from the refuted choice or invent an unapproved API/design. Existing scope, permission, user-criteria
+and phase-transition rules remain unchanged.
 
 ## Terminal PLAN outcomes
 
@@ -210,6 +219,10 @@ measurement is a `supersede` record with reason and evidence, not a change of go
 backed by a baseline or set by the user changes only as a change of goal. A metric or floor is a
 specialisation for measurable goals, not a universal gate.
 
+Keep the **observed baseline**, the **threshold and its provenance**, and any **forecast** distinct: a
+measured value is not silently substituted for the criterion, and a forecast never supplies its
+threshold.
+
 ## Plan hygiene (checked before you return)
 
 - **No verification procedure.** PLAN states the result contract, the criteria and, for a measurable
@@ -224,8 +237,10 @@ specialisation for measurable goals, not a universal gate.
   and write the acceptance contract after it. In the incremental form the first step resolves the
   leading unknown and later work stays conditional, not a full speculative backlog; one increment
   may finish the goal. Do not change to incremental merely to excuse a larger plan.
-- **Re-anchor.** Name the snapshot the plan is anchored to. On DO entry cosmetic drift is a
-  `Notice`; semantic drift is a genuine revision.
+- **Re-anchor.** Name the snapshot the plan is anchored to. Bookkeeping or cosmetic drift on DO entry
+  is a `Notice`; only a substantive change to the result/criteria contract is a PLAN revision.
+  Product-input drift affects the evidence for the changed inputs, not the plan revision by itself
+  (`check.md` §Candidate identity).
 - **Evidence location.** One binding: the checkout the checks run in. A secondary checkout is the
   binding root and the evidence is mirrored there at the identical relative path.
 

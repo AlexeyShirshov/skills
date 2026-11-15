@@ -282,6 +282,125 @@ Feature: The base pdca cycle under pressure
       # test: skills/pdca/tests/test_evidence_root_dispatch.py::DriverDispatchTest.test_one_rule_covers_initial_follow_up_and_regather
       # test: skills/pdca/tests/test_evidence_root_dispatch.py::BaseContractTest.test_check_to_do_regather_lands_in_the_root
 
+  Rule: CHECK packages only evidence required by chosen methods
+
+    @T1 @uncovered
+    Scenario: T1 An unused optional artifact has a broken link
+      Given a completed candidate whose mandatory evidence is already reachable within CHECK's existing permissions
+      And an optional artifact unused by every criterion has a missing manifest link
+      When CHECK chooses methods for the actual criteria and independently verifies the candidate
+      Then it reads the reachable originals directly without requiring manifest links
+      And the unused broken link is diagnostic only and triggers no packaging-only DO round
+      And it may accept when every mandatory criterion is met, with no counter change
+      # source: skills/pdca/references/check.md §Evidence packaging
+      # source: skills/pdca/references/check.md §Candidate identity
+
+    @T2 @uncovered
+    Scenario: T2 Evidence required by a chosen method is genuinely missing
+      Given one or more criteria whose chosen methods require evidence unavailable within CHECK's existing permissions
+      When CHECK identifies the exact missing evidence after choosing those methods
+      Then it consolidates the needed evidence into one re-gather request across the affected criteria
+      And the existing one-round-per-criterion-per-revision allowance applies without changing attempt or revision counters
+      And any mandatory criterion still missing evidence is unverified and blocks acceptance
+      # source: skills/pdca/references/check.md §Evidence packaging
+      # source: skills/pdca/references/check.md §Verdict and routing
+      # source: skills/pdca/references/check.md §Honest limits
+
+  Rule: Incident-derived simulated multi-turn process chains
+
+    @U1 @uncovered @simulated
+    Scenario: U1 Bookkeeping movement followed by a runtime input change
+      Given an incident-derived simulation, not a real NextORM run
+      And a user criterion requires a test receipt for exact revision H, while a behavior criterion was tested with runtime config R0
+      And H advances to H2 through a status/log/manifest-only commit with no result-input change
+      When a later authorized edit changes runtime config R0 to R1 before the final CHECK
+      Then the exact-revision criterion remains tied to H and is not silently changed
+      And evidence for unaffected inputs may be reused while only R0-dependent evidence is invalidated
+      And the final CHECK assesses the changed result with only the affected proving action repeated
+      # source: skills/pdca/references/check.md §Candidate identity
+      # source: skills/pdca/references/check.md §Evidence packaging
+
+    @U2 @uncovered @simulated
+    Scenario: U2 A transport typo is corrected before a real criteria defect
+      Given an incident-derived simulation, not a real NextORM run
+      And the saved plan has derived criteria, an observed baseline of 231, a method threshold of 230, and a forecast of 450
+      And a handoff aliases one stable ID, substitutes the baseline for the threshold, and relabels a verification row as a criterion
+      When the driver compares the handoff with the intact saved plan and restores its exact text and IDs
+      Then the transport correction creates no PLAN call, revision or counter change
+      And CHECK then finds that the saved plan itself omits an original mandatory requirement
+      And CHECK routes that substantive contract defect through the existing CHECK to PLAN transition
+      # source: skills/pdca/references/driver.md §Dispatch transport
+      # source: skills/pdca/references/plan.md §Revision accounting
+      # source: skills/pdca/references/check.md §Assess the criteria
+
+    @U3 @uncovered @simulated
+    Scenario: U3 A missing premise is gathered, refuted, then resolved by supplied facts
+      Given an incident-derived simulation, not a real NextORM run
+      And a draft plan depends on a decision-critical component contract that is not yet established
+      When the driver returns one scoped read-only gather and scout facts refute the assumed contract
+      Then the draft is not ready for DO and no product design is invented
+      And the user supplies facts confirming an already-approved in-scope alternative
+      And PLAN revises its feasible choice within the same scope using those facts
+      # source: skills/pdca/references/plan.md §Key assumptions and early probes
+      # source: skills/pdca/references/plan.md §Terminal PLAN outcomes
+
+    @U4 @uncovered @simulated
+    Scenario: U4 A scoped baseline observation coexists with a global requirement
+      Given an incident-derived simulation, not a real NextORM run
+      And the measurement records baseline 231, threshold 230 from the method floor, and forecast 450 as separate values
+      And a pre-existing convention issue is in an unchanged file outside the explicit cycle footprint
+      And the original task separately retains a global mandatory compatibility criterion
+      When CHECK assesses the scoped result and the global criterion
+      Then the unrelated out-of-scope convention issue is diagnostic and does not expand the scoped criterion
+      And the global compatibility requirement remains binding and is not waived by the local scope
+      # source: skills/pdca/references/plan.md §Numeric thresholds and calibration
+      # source: skills/pdca/references/check.md §Assess the criteria
+
+    @U5 @uncovered @simulated
+    Scenario: U5 An optional broken link and required missing evidence take different paths
+      Given an incident-derived simulation, not a real NextORM run
+      And a referenced optional artifact is absent but is unused by every chosen method
+      And the sound mandatory criterion needs a run record that CHECK cannot access within its existing permissions
+      And at N=1, r=1, n=2/3 its one allowed re-gather has already been used and reports "required run record is still unavailable"
+      And there is no evidence that a proving run completed and failed
+      When CHECK assesses the evidence after that re-gather
+      Then the optional link alone causes no packaging round or product rerun
+      And the required criterion is unverified and the verdict is not accepted, with the exact missing record, chosen method, preserved diagnostic, and resource blocker
+      And the driver keeps this CHECK active under Recovery with N, r, n/3, and defect history unchanged
+      And there is no second gather, manufactured PLAN/DO/ACT route, polling, indefinite wait, or automatic escalation
+      # source: skills/pdca/references/check.md §Evidence packaging
+      # source: skills/pdca/references/check.md §Honest limits
+      # source: skills/pdca/references/check.md §Recoverable CHECK blocker after a spent allowance
+      # source: skills/pdca/SKILL.md §Phase contracts
+      # source: skills/pdca/SKILL.md §Recovery
+
+    @U10 @uncovered @simulated
+    Scenario: U10 A resource-blocked CHECK resumes only after evidence availability changes
+      Given the U5 recoverable CHECK blocker is recorded at N=1, r=1, n=2/3
+      And the required run record remains unavailable and its initial diagnostic is preserved
+      When the driver recovers while the evidence availability is unchanged
+      Then the same CHECK remains pending without another gather, poll, wait, or dispatch
+      And the counters, defect history, and not-accepted verdict remain unchanged
+      When the driver observes that the existing run record has become reachable within CHECK's current permissions
+      And the driver resumes the same pending CHECK through Recovery
+      Then CHECK inspects the existing record without another gather or counter change
+      And a completed failing run is judged as actual result evidence, never hidden as a resource blocker
+      And the base's mandatory escalation-before-fourth rule still applies if the substantive failure threshold is reached
+      # source: skills/pdca/references/check.md §Recoverable CHECK blocker after a spent allowance
+      # source: skills/pdca/SKILL.md §Recovery
+      # source: skills/pdca/SKILL.md §State machine and counters
+
+    @U6 @uncovered @simulated
+    Scenario: U6 A planner dispatch times out, is confirmed failed, then fails again
+      Given an incident-derived simulation, not a real NextORM run
+      And a planner call times out while its host handle is still live or unknown
+      When the handle later confirms failure and the transient transport cause is resolved
+      Then the driver makes at most one unchanged retry with the original brief and counters
+      And a second confirmed failure becomes a resource or transport blocker under Recovery
+      And no duplicate live call, fallback planner decision, counter change or history reset occurs
+      # source: skills/pdca/references/driver.md §Dispatch transport
+      # source: skills/pdca/SKILL.md §Recovery
+
   Rule: Acceptance covers the whole goal
 
     @J1 @pinned

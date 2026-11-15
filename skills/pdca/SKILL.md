@@ -14,32 +14,28 @@ performs the status-file writes.
 
 ## Entry: one PLAN decides the form
 
-The driver delegates the user's unchanged task to `pdca-planner`. The planner classifies the task and
-its execution form, selects any applicable specialized skill, preserves the task and user-supplied
-criteria, and defines acceptance criteria only where the user supplied none; it chooses neither
-execution actions nor verification methods. Missing facts are requested through the driver, who calls
-`pdca-scout` and returns them to the same pending PLAN.
+The driver delegates the user's unchanged task to `pdca-planner`, who classifies its form, selects any
+specialized skill, preserves the task and supplied criteria, and defines criteria only when none were
+provided. The planner chooses neither execution actions nor verification methods. Missing facts go
+through the driver to `pdca-scout` and return to the same pending PLAN.
 
-That entry PLAN settles, together (or after one bounded choice probe): the **form of execution**
-(§Forms); the specialized skill for Bounded Execution, if applicable; the **acceptance criteria** —
-criteria only, since how each criterion is verified is CHECK's decision (§CHECK). The plan's fields
-are listed in `references/plan.md` (§Plan fields); §PLAN states the caller contract. **Choosing the
-form and the overlay is PLAN-owned**: the discriminators are in `references/plan.md` §Entry and first
-step, decided there and not re-classified here. A form the user named explicitly is a **constraint**
-the driver passes to the planner in the dispatch — a form the entry does not re-decide. The driver
-then selects the contract (§Forms) and, for Bounded Execution, loads the selected specialized skill.
+That entry PLAN settles, together (or after one bounded choice probe): the **form** (§Forms), any
+specialized skill for Bounded Execution, and **acceptance criteria** — criteria only, since CHECK
+chooses verification (§CHECK). Fields are in `references/plan.md` (§Plan fields); §PLAN states the
+caller contract. `references/plan.md` §Entry and first step owns form/overlay discriminators; a
+user-named form is a dispatch constraint, not re-decided. The driver selects the contract (§Forms)
+and, for Bounded Execution, loads the selected specialized skill.
 
-For **Bounded Execution** the planner selects a specialized skill when needed: none for non-coding
-tasks, `pdca-coder` for general programming (including Go or Rust), `pdca-dotnet` for .NET; loading
-it does not change the form. A host's auto-selection flags keep an overlay out of its own skill
-picker; they never forbid the base PLAN from selecting one, and a description that mentions explicit
-invocation is not a routing constraint.
+For **Bounded Execution**, the planner selects no skill for non-coding work, `pdca-coder` for general
+programming (including Go or Rust), or `pdca-dotnet` for .NET; loading it never changes the form.
+Host auto-selection flags keep an overlay out of its own picker; they never forbid the base PLAN from
+selecting one, and a description that mentions explicit invocation is not a routing constraint.
 
 ### Forms
 
-Routing only: the planner decides the form (§Entry) and this table names its machine form id and the
-contract that runs it. The **discriminators live only in `references/plan.md`** §Entry and first step,
-which the planner reads; this table neither classifies nor restates them.
+Routing only: the planner decides the form (§Entry); this table maps it to its machine form id and
+execution contract. Discriminators live only in `references/plan.md` §Entry and first step; this table
+does not classify or restate them.
 
 | Form | Machine form | Execution contract |
 |---|---|---|
@@ -47,14 +43,15 @@ which the planner reads; this table neither classifies nor restates them.
 | **Incremental Execution** | `incremental` | `pdca-incremental`, the campaign layer on §Common cycle contract |
 | **Collection** | `collection` | `pdca-collection`, the batch layer on §Common cycle contract |
 
-The planner defines criteria, never an implementation plan or steps: the executor determines those
-during DO. Feasibility need not be proven during PLAN; a **bounded probe** may clarify missing
-critical facts, feasibility, form or criteria, and refine those decisions. A probe is not a separate
-PDCA cycle, and one pre-DO run answering that question is not implementation of a changed task.
+The planner defines criteria, never an implementation plan or steps; the executor determines those
+during DO.
+Feasibility need not be proven during PLAN: one **bounded probe** may resolve missing critical facts,
+feasibility, form or criteria and refine those decisions. It is not a separate cycle or implementation
+of a changed task.
 
-**Auxiliary code does not change the nature of the goal.** A prototype, checker, script or utility
-used to investigate or verify a non-coding goal does not make it a coding task; findings may still
-affect execution decisions.
+**Auxiliary code does not change the nature of the goal.** A prototype, checker, script or utility for
+investigating or verifying a non-coding goal does not make it coding work, though findings may affect
+execution decisions.
 
 **The requested result is the object the user's words ask for** — a value, a file, a behaviour or an
 answer — and PLAN names it before writing any criterion; the plan delivers that same object, and
@@ -71,15 +68,13 @@ independent CHECK ran.
 
 ### Where each form continues
 
-Bounded Execution continues in §Bounded Execution. Incremental Execution continues in
-`pdca-incremental`, which **inherits §Common cycle contract** and adds only the campaign layer.
-Collection continues in `pdca-collection`, which **inherits the same common rules** for item cycles,
-its final integration CHECK, corrective cycles and shared role/safety requirements, and adds only
-collection coordination (preparation barrier, dependencies, groups, lanes, integration, batch
-status). Its batch status and integration gate create no other cycle or attempt counter and never
-substitute for an item's whole-goal CHECK. A direct load of either form skill loads the base common
-rules and skips entry classification when the user named that form explicitly. **Routing ends here**:
-no later section re-classifies the task or selects another form.
+Bounded Execution continues below. `pdca-incremental` inherits §Common cycle contract plus the
+campaign layer; `pdca-collection` inherits its item-cycle, final integration CHECK, corrective-cycle
+and shared role/safety rules, adding only coordination (preparation barrier, dependencies, groups,
+lanes, integration, batch status). Batch status and the integration gate add no cycle/attempt counter
+and never replace an item's whole-goal CHECK. Directly loading either form skill loads base common
+rules and skips entry classification when the user named that form. **Routing ends here**; later
+sections never re-classify the task or select another form.
 
 ## Common cycle contract
 
@@ -91,48 +86,45 @@ counters or evidence as a competing local version; a conflict on a shared rule i
 
 ### The user's task and its criteria
 
-**The user's task is the authoritative, immutable input.** Every phase and handoff carries it exactly
-as the user supplied it: no phase reformulates, corrects, narrows, widens or substitutes it — not to
-make it achievable, not to make it easier to verify, and not even when the substitute looks
-equivalent. If the user supplied acceptance criteria, they are the acceptance set **verbatim**: no
-phase adds, corrects, weakens, replaces or supplements them, and no result is accepted against a
-different set. Only when the user supplied no criteria does PLAN define them — from the unchanged
-task. Decomposition, implementation approach, a verification method and evidence gathering are not new
-acceptance requirements and never replace the task.
+**The user's task is the authoritative, immutable input.** Every phase/handoff carries it exactly as
+supplied: never reformulated, corrected, narrowed, widened or substituted, even to ease
+delivery/verification or if seemingly equivalent. User-supplied criteria are the **verbatim**
+acceptance set: none added, corrected, weakened, replaced or supplemented; acceptance cannot use
+another set. PLAN derives criteria from the unchanged task only if none were supplied. Decomposition,
+implementation, verification and evidence gathering add no acceptance requirement and never replace
+the task.
 
-A **new explicit user instruction** may change the input; approving the agent's plan does not
-authorize substituting, narrowing or rewriting the task or its criteria. Separate **mandatory safety
-and permission gates** are not acceptance criteria: this rule neither creates nor waives them.
+Only a **new explicit user instruction** may change input; plan approval never authorizes substituting,
+narrowing or rewriting task/criteria. **Mandatory safety and permission gates** are separate from
+acceptance criteria and are neither created nor waived here.
 
 ### Original task, cycle scope and acceptance
 
-- **Original task and global acceptance** — the task as supplied plus the full set of its mandatory
-  requirements: user-supplied criteria verbatim, or, where none were supplied, the criteria PLAN
-  derived from that task. They stay unchanged for the whole task, across cycles, revisions and steps;
-  no cycle-level result accepts, waives or narrows them.
-- **Cycle scope and per-cycle criteria** — the verifiable result one cycle is responsible for: **the
-  whole task in Bounded Execution**, **one step's verifiable result inside the same original task in
-  Incremental Execution**. PLAN defines that result's criteria — not its implementation, commands or
-  DO decomposition — and CHECK judges them against the original task and the explicit cycle scope,
-  including whether the set covers it.
-- **A local acceptance is not a global one.** Every dispatch carries the same original task and
-  global requirements plus the current cycle's scope, criteria and constraints. A step never becomes
-  a new arbitrary user task, and no local scope waives a global requirement.
-- **Acceptance words.** `accepted` for a cycle means its own scope is met; "task complete" / `done`
-  is reserved for an accepted **whole-goal** CHECK covering all original mandatory requirements
-  (§CHECK) — the whole task in Bounded Execution, the campaign's final check in Incremental
-  Execution. A local PASS never proves the whole goal.
+- **Original task and global acceptance** — the supplied task and all mandatory requirements, with
+  user criteria verbatim or PLAN-derived criteria if none. They stay unchanged across cycles,
+  revisions and steps; no cycle accepts, waives or narrows them.
+- **Cycle scope and per-cycle criteria** — the verifiable result owned by a cycle: **whole task in
+  Bounded Execution**, or **one step within the same original task in Incremental Execution**. PLAN
+  defines criteria, not implementation, commands or DO decomposition; CHECK judges against the
+  original task and explicit scope, including coverage.
+- **A local acceptance is not a global one.** Dispatches carry the same task/global requirements plus
+  current scope, criteria and constraints. A step is not a new arbitrary user task; local scope waives
+  no global requirement.
+- **Acceptance words.** `accepted` means the cycle's scope is met. "Task complete" / `done` requires an
+  accepted **whole-goal** CHECK covering all original mandatory requirements (§CHECK): the whole task
+  in Bounded Execution or the campaign's final check in Incremental Execution. A local PASS never
+  proves the whole goal.
 
 ### Roles and host requirements
 
-A **role** is responsibilities, permissions and a required model tier, performed by a configured
-subagent or — for DRIVER — the primary agent. Roles are duties, not extra phases; the skill creates
-no agents and assigns no models.
+A **role** comprises responsibilities, permissions and required model tier; a configured subagent or
+primary (DRIVER) performs it. Roles are duties, not phases; the skill creates no agents or model
+assignments.
 
 **Model tiers** — **cheap** (orchestration, fact gathering, routine execution), **medium**
-(classification, planning decisions, verification), **strong** (difficult or high-risk decisions
-needing expert review). The role declares its tier with a `# tier:` label; the **host profile's
-`agent` block** binds the model, and the effective tier is that binding, not a name.
+(classification, planning, verification), **strong** (difficult/high-risk expert decisions). A role's
+`# tier:` label declares its tier; the **host profile's `agent` block** binds the model, so effective
+tier is the binding, not the name.
 
 **The driver.** In **normal mode** the primary agent is the driver and runs the cycle or step itself;
 it does **not** dispatch `pdca-orchestrator` for that cycle or step. In **autonomous mode** the
@@ -152,40 +144,37 @@ never widened.
 | DRIVER | cheap-tier primary or `pdca-orchestrator` | coordinate delegation, handoffs and state without deciding or judging | delegate to authorized subagents; the orchestrator has no edits, writes or shell; its own read scope has one owner, `references/driver.md` §Read scope (§References) | cheap |
 
 ACT is finalized through the driver and executor responsibilities; it has no separate subagent role.
-Definitions ship in `assets/opencode-agents/` with the `# tier:` labels shown; model bindings belong
-only in the host profile. **Setup (once):** the role files must exist in the host's agent directory,
-with dispatch of the listed subagents (including `pdca-orchestrator`) and nested delegation for a
-delegated driver allowed.
+Role definitions ship in `assets/opencode-agents/` with these `# tier:` labels; only the host profile
+binds models. **Setup (once):** install the role files in the host agent directory and allow dispatch
+of listed subagents (including `pdca-orchestrator`) plus nested delegation for a delegated driver.
 
-**Preflight — roles before work.** Before the first dispatch, establish that every role the task
-needs resolves as an agent. The check is a lookup, not work: never a probe task, a dummy step or a
-probe edit. If a role is missing, **stop before any work**, then **read**
+**Preflight — roles before work.** Before the first dispatch, confirm every needed role resolves as an
+agent; lookup only, never a probe task, dummy step or probe edit. If one is missing, **stop before any
+work**, then **read**
 `assets/install-agents-prompt.md` — the path is relative to this `SKILL.md` — and hand the user its
-fenced prompt **verbatim**, with only its `Context` block filled in. Do not paraphrase it, do not
-summarise it, and never reconstruct it from memory: the role files live in `assets/opencode-agents/`
-(`claude-agents/` and `codex-agents/` for those hosts), there is no `assets/agents/` directory, and a
-path you did not read is not a path. Never replace the prompt with your own copy instructions. The
-prompt copies those files from this installed skill, binds their models by tier where this host keeps
-bindings (a profile map or the agent file itself), and verifies the result on the host's own agent
-list. Do not substitute another agent, do not weaken the contract, and do not install agents silently
-inside a cycle; a role that is still missing afterwards is a **resource blocker**. If the prompt file
-cannot be read, say so and name the exact path instead of improvising an installer.
+fenced prompt **verbatim**, filling only its `Context` block. Do not paraphrase or summarise; never
+reconstruct it from memory. Role files are in `assets/opencode-agents/` (`claude-agents/` and
+`codex-agents/` for those hosts); there is no `assets/agents/` directory. The prompt copies those
+files from this installed skill, binds their models by tier where this host keeps bindings (a profile
+map or the agent file itself), and verifies the host's own agent list. Never replace the prompt with
+your own copy instructions, substitute an agent or weaken the contract; do not install agents silently
+inside a cycle. A role
+still missing is a **resource blocker**. If the prompt cannot be read, say so and name the exact path
+instead of improvising an installer.
 
-**The driver routes, it does not discover.** Metadata — status path, form, contract, overlay,
-dispatch rule, refs and evidence pointers — arrives through the inputs/outputs of the allowed tools;
-the driver never walks the workspace for it and never runs `rg`/`grep`. Its own read scope — the
-driver reference, the two references it delivers, and the assigned status files — has a single owner,
-`references/driver.md` §Read scope; everything else comes from a role's report or pointer.
+**The driver routes, it does not discover.** Allowed tool I/O supplies metadata (status path, form,
+contract, overlay, dispatch rule, refs, evidence pointers); the driver never walks the workspace or
+runs `rg`/`grep`. `references/driver.md` §Read scope alone owns its reads (driver reference, delivered
+references, assigned status files); all else comes from role reports or pointers.
 
-**Decided stays decided.** The driver does not resurrect a requirement that a plan or an escalation
-already classified as non-binding, and does not turn a denied operation into a missing capability or
-a new audit/hash requirement; reopening needs new evidence and a planner revision.
+**Decided stays decided.** The driver does not revive a plan/escalation's non-binding requirement or
+treat a denied operation as missing capability or new audit/hash requirement; reopening needs new
+evidence and a planner revision.
 
-A required-but-unavailable role is a **resource blocker** (normal: report to the user; autonomous:
-`Notice:` plus a recorded summary), never a silent run without it, and a denied host fallback is
-**never** bypassed. If `pdca-orchestrator` is unavailable (absent, delegation forbidden or too
-shallow) in autonomous mode, fall back to the flat cheap primary with `Notice:` and the durable
-reason; in normal mode, report to the user.
+A required unavailable role is a **resource blocker**, never a silent run or a bypass of a denied host
+fallback (normal: report to user; autonomous: `Notice:` plus recorded summary). If autonomous
+`pdca-orchestrator` is absent, forbidden or too shallow, use the flat cheap primary with `Notice:` and
+durable reason; in normal mode, report to the user.
 
 ### Control modes
 
@@ -260,9 +249,8 @@ the same turn and the status file wins — that drift is **State Rot**.
 
 ### Phase contracts
 
-The cycle runs **PLAN → DO → CHECK → ACT**; the machine and its exits are in §State machine and
-counters. Each phase below states what it does, what it produces and its exits; transitions are named
-by phases and no separate gate numbering is used.
+The state machine and exits are in §State machine and counters. Each phase below names its work,
+outputs and exits; transitions use phase names, not separate gate numbers.
 
 #### PLAN
 
@@ -272,25 +260,22 @@ constraints, bounds, risks and stop conditions — inside the unchanged original
 It prescribes neither implementation actions or a step-by-step DO (the executor chooses the
 implementation) nor verification methods, evidence sources or commands (that is CHECK's choice).
 
-The planner reads `references/plan.md` itself — its **exact absolute path** comes from the directory
-of **this base contract** (`pdca/SKILL.md`), never from the loaded form contract — and the dispatch
-carries that `plan_reference_path`, the **unchanged original task** (verbatim at entry, then by
-exact reference — §Reference), its global requirements, the cycle's
-scope/criteria/constraints and the available facts. **`references/plan.md` is
-`pdca-planner` only**: beyond that read it widens no permission, runs no code, edits/delegates
-nothing, and the driver neither reads, inlines nor forwards it; the plan reference is
-never part of a DO, CHECK or `pdca-escalate` dispatch. The plan it returns is shared **data** for the
-other phases, not their instructions: it is forwarded and recorded **unchanged** — no rewrite,
-translation or summarisation.
+`references/plan.md` is `pdca-planner` only: its **exact absolute path** comes from this base
+contract's directory (`pdca/SKILL.md`), never from the loaded form contract. The dispatch carries
+`plan_reference_path`, the **unchanged original task** (verbatim at entry, then exact reference —
+§Reference), global requirements, cycle scope/criteria/constraints and available facts. Beyond that
+read it widens no permission, runs no code, edits/delegates nothing; the driver neither reads, inlines
+nor forwards it. The plan reference is never part of a DO, CHECK or `pdca-escalate` dispatch. The
+returned plan is shared **data**, forwarded and recorded **unchanged** — no rewrite, translation or
+summary.
 
-**PLAN → DO** — only when that plan is complete, judgeable and covering the cycle scope. Every DO
-handoff carries the original task, criteria, constraints, prohibitions and scope **by exact
-reference**, the cycle's `evidence_root`
-(§Workspace and durable status) and no frozen verification procedure; the plan is on disk and read
-back; normal mode adds the user's approval. On DO start `pdca-executor` logs
-`DO started`. Choosing, validating and running the verification is CHECK's work at CHECK time, not a
-pre-DO prerequisite; a method that proves unusable there is re-chosen, not a plan defect. No "ask the
-user for criteria" path: an indeterminate criterion blocks DO and routes **PLAN → ACT** instead.
+**PLAN → DO** — only when that plan is complete, judgeable and covers the cycle scope. Each handoff
+carries the original task, criteria, constraints, prohibitions and scope **by exact reference**, the
+cycle's `evidence_root` (§Workspace and durable status), and no frozen verification procedure; the plan
+is persisted and read back; normal mode adds the user's approval. `pdca-executor` logs `DO started`.
+Choosing, validating and running the verification is CHECK's work at CHECK time, not a pre-DO
+prerequisite; an unusable method is re-chosen, not a plan defect. No asking the user for criteria: an indeterminate
+criterion blocks DO and routes **PLAN → ACT**.
 
 **PLAN → ACT** — four terminal outcomes, each with its payload in `references/plan.md`:
 `acceptance criteria cannot be determined`, `goal cannot be measured under the available means`,
@@ -300,14 +285,13 @@ finalizes without `PASS` or `done`.
 
 #### DO
 
-`pdca-executor` does the work. DO receives the same original task as PLAN, with the criteria,
-constraints and scope established during PLAN. It does not reinterpret, narrow or substitute that
-task or those criteria; an easier or different deliverable is not a candidate. Within the frozen
-criteria it chooses the implementation and gathers the facts it needs; it adds no criteria, scope or
-checker. Verification method is not handed to it: DO may run its own checks and report artefacts and
-evidence with pointers — candidate evidence for CHECK, never the independent verification. Make the
-minimal sufficient change in the surrounding conventions. DO reports changed / completed / evidence /
-blockers / unfinished, with the exit status, key numbers and log path of every run.
+`pdca-executor` does the work. DO receives PLAN's same original task, criteria, constraints and scope;
+it never reinterprets, narrows or substitutes them, and an easier/different deliverable is no candidate.
+Within frozen criteria DO chooses implementation and needed fact-gathering, adding no criteria, scope
+or checker. Verification method stays with CHECK: DO may run checks and return artefacts/evidence
+pointers as candidate evidence, never independent verification. Make the minimal sufficient change
+under surrounding conventions. Report changed/completed/evidence/blockers/unfinished and each run's
+exit status, key numbers and log path.
 
 
 **Execution units.** The work may be split into units. A unit has an ID, the expected result, its
@@ -354,7 +338,7 @@ read installed reference. A driver that cannot load it whole raises an explicit 
 dispatch: no reduced contract, no verdict from the agent prompt alone. An ACT retrospective dispatch
 also inlines the retrospective contract from `references/act.md`.
 
-**CHECK has three independent exits:**
+**Resource-blocked CHECK pauses under §Recovery; no new exit:**
 
 - **CHECK → DO** — an implementation defect: the criteria are sound but the result does not meet
   them, or evidence the chosen method needs is missing. A missing report is re-gathered into the
@@ -401,35 +385,31 @@ recorded in `## Lessons learned`.
 
 ### Evidence over assertion
 
-**The cycle closes only on fresh evidence, never an assertion** — including subagent reports. **The
-driver does not inspect evidence itself**; it constructs the chain and routes requests, and never
-picks the method:
+**The cycle closes only on fresh evidence, never an assertion** — including subagent reports. The
+driver assembles the chain and routes requests; it neither inspects evidence nor picks the method:
 
-- **Method — `pdca-check`:** before any verdict, CHECK decides per criterion what evidence would be
-  sufficient and how to obtain it; it never treats a PLAN-side procedure as binding.
-- **Run — `pdca-executor`:** have the proving action run or produced; return the exit status, key
-  numbers and the log **path under the cycle's `evidence_root`** (§Workspace and durable status), not
-  the log. A test written for CHECK runs against the **frozen** result: it may execute it but never
-  modifies the checked frozen version to obtain a pass (side effects outside the checked source stay
-  isolated).
+- **Method — `pdca-check`:** before any verdict, choose per criterion sufficient evidence and how to
+  obtain it; a PLAN-side procedure is not binding.
+- **Run — `pdca-executor`:** run or produce the proving action; return exit status, key numbers and log
+  **path under the cycle's `evidence_root`** (§Workspace and durable status), not the log. A CHECK test
+  runs against the **frozen** result; it may execute but never modify the checked frozen version to
+  obtain a pass, and side effects outside the checked source stay isolated.
 - **Observe — `pdca-scout`, when the method needs an outside observer:** observe the **actual frozen
-  result** and the evidence the criterion names, not the author's restatement; distinguish observed,
-  assumed and unverified, bind observations to the frozen identity, and state cross-part consistency
-  and limits. Pointers only.
-- **Judge — `pdca-check`:** decide whether those assembled facts prove the criterion. Where its
-  scoped read cannot reach the result, the requested observation must close the gap; missing evidence
-  stays `unverified` → re-gather, and permissions are not widened.
+  result** and criterion-named evidence, not the author's restatement; distinguish observed, assumed
+  and unverified, bind to frozen identity, and state cross-part consistency and limits. Pointers only.
+- **Judge — `pdca-check`:** decide whether the assembled facts prove the criterion. If its scoped read
+  cannot reach the result, the requested observation must close the gap; missing evidence stays
+  `unverified` → re-gather, and permissions are not widened.
 
-**A report ≠ a result.** Verification establishes only what its method examined; matching result
-identities do not establish content correctness; slide-marker words ("should work", "probably",
-"looks correct", "it's obvious", "passed last time") order the run. Phase transitions pass on facts,
-not claims.
+**A report ≠ a result.** A method establishes only what it examines; matching result identities do
+not establish content correctness. Slide-marker words — "should work", "probably", "looks correct",
+"it's obvious", "passed last time" — order the run; transitions pass on facts, not claims.
 
 ### Workspace and durable status
 
-The cycle's **persistent PDCA state and evidence** live under **one** project-local root, `.pdca/`,
-in the project root (`git rev-parse --show-toplevel`); the name and layout are fixed. Product edits
-and temporary scratch are not PDCA state and follow their own rules (§Evidence root below).
+The cycle's **persistent PDCA state and evidence** live under one fixed project-root `.pdca/`
+(`git rev-parse --show-toplevel`). Product edits and temporary scratch are not PDCA state; see
+§Evidence root below.
 
 ```text
 .pdca/
@@ -511,16 +491,16 @@ and temporary scratch are not PDCA state and follow their own rules (§Evidence 
 
 ### Effort and time policy
 
-**No autonomous cutoff.** No planner metric — wall-clock, tokens, cost, compute, revisions, steps,
-measurements — ends a task; estimates and elapsed time are accounting only. End on acceptance;
-otherwise stop only for a verified irreducible blocker, a security/permission boundary or explicit
-user cancellation. Failed candidates and incomplete evidence go to the step boundary, not STOP.
+**No autonomous cutoff.** No planner metric (wall-clock, tokens, cost, compute, revisions, steps,
+measurements) ends a task; estimates and elapsed time are accounting only. End on acceptance; otherwise
+stop only for a verified irreducible blocker, security/permission boundary or explicit user cancellation.
+Failed candidates and incomplete evidence go to the step boundary, not STOP.
 
-**Normal mode.** The driver presents the estimate and asks separately whether to stop; plan approval
-is not that opt-in, silence means no cap. A recorded opt-in persists unchanged across resume/replan
-(not renewed) until the user changes or revokes it; only autonomous mode drops it. Timeouts, host
-capacity and deadlines remain; a process timeout is failed-command evidence, not STOP. Attempt budget
-and same-defect threshold follow §State machine and counters, not a work quota.
+**Normal mode.** The driver presents the estimate and separately asks whether to stop; plan approval
+is not opt-in, and silence means no cap. A recorded opt-in persists unchanged across resume/replan
+(not renewed) until changed/revoked by the user; only autonomous mode drops it. Timeouts, host capacity
+and deadlines remain; process timeout is failed-command evidence, not STOP. Attempt budget and
+same-defect threshold follow §State machine and counters, not a work quota.
 
 ### Recovery
 
@@ -571,46 +551,38 @@ Always in force in both modes; autonomous mode does not suspend them.
 
 ### Red flags (self-check)
 
-Signals that **I, the driver,** have fallen off the contract. On any one — **stop, name the
-deviation, restore the relevant phase contract**, not "finish and fix later". They constrain the
-driver only; the roles' scoped read/write/execute rights are not narrowed here.
+Signals that **I, the driver,** have fallen off the contract. On any one, **stop, name the deviation,
+restore the relevant phase contract** — not "finish and fix later". These constrain only the driver;
+roles' scoped read/write/execute rights are not narrowed.
 
-- I edit files (incl. the status file), run commands, or load artefacts/logs into my context instead
-  of routing `pdca-executor`/`pdca-scout` and taking a pointer.
-- I decide the form/skill, the plan or the verdict myself instead of `pdca-planner`/`pdca-check`; I
-  classify before the planner's PLAN, run a second PLAN on the same content, or accept a plan whose
-  mandatory field is silently missing.
-- Role independence is broken: PLAN or I prescribe DO's implementation or CHECK's verification
-  method; CHECK applies PLAN criteria blindly instead of checking them against the original
-  requirements.
-- I start DO without the user's approval (normal mode), ask for approval before the plan is written
-  to the status file, or record PASS/`done` in ACT without an accepted CHECK.
-- I skip CHECK for a completed result, close the cycle without ACT, let DO return to PLAN or issue a
-  verdict, implement in ACT, or report a false acceptance — a cycle closed as success on an executor
-  self-report without an independent CHECK verdict. An honest PLAN → ACT, DO → ACT or
-  CHECK-exhaustion → ACT STOP is not this flag — recording inability/incomplete needs no
-  verification; but a STOP with `done` and no whole-goal CHECK is a false close.
-- I went beyond the original task's requirements, acceptance criteria or constraints — the files and
-  actions in the PLAN's rendering are not the fence, DO chooses the implementation — or I ran units
-  in parallel with overlapping ownership.
-- I reformulated, corrected, narrowed or substituted the user's task, or added/corrected/weakened/
-  replaced user-supplied criteria (or accepted against another set). Plan approval is not a licence
-  for that substitution; only a new explicit user instruction changes the input.
-- I sent a task whose requested result was proven impossible or already established into DO, delivered
-  a different object than the user's words ask for, settled a task-defining ambiguity by assumption
-  instead of asking, demanded feasibility proof for every PLAN, or treated one failed candidate as
-  proof about the whole task.
-- An event happened but the status file was not updated; I deleted a finalized status file instead of
-  keeping it, or the cycle cannot be recovered from it (§Workspace and durable status, §Recovery).
-- I rewrote, summarised or translated the planner's returned plan instead of recording it unchanged,
-  read the planner-only reference myself, staged/committed/pushed as a side effect of a status write,
-  or called an untracked status file tracked.
-- I made a next attempt where §State machine and counters already required expert consultation,
-  faked a reset, or duplicated the counter numerically; I let expert reasoning replace a phase
-  decision — CHECK's acceptance, PLAN's criteria, DO's implementation — or used it to skip CHECK or
-  the PLAN → ACT / DO → ACT paths.
-- In autonomous mode I overrode a required approval or widened a permission, printed the
-  plan-approval request, introduced a user plan gate, or stopped at a "clean checkpoint"/wait state.
+- I edit (including status), run commands or load artefacts/logs into context instead of routing
+  `pdca-executor`/`pdca-scout` and taking a pointer.
+- I choose form/skill, plan or verdict instead of `pdca-planner`/`pdca-check`; classify before PLAN,
+  repeat PLAN on unchanged content, or accept a plan missing a mandatory field.
+- Role independence fails: PLAN or I prescribe DO's implementation or CHECK's verification method,
+  or CHECK applies criteria without testing them against original requirements.
+- I start DO without normal-mode approval, seek approval before the plan is written to status, or
+  record PASS/`done` in ACT without an accepted CHECK.
+- I skip CHECK for a completed result, close without ACT, let DO return to PLAN or issue a verdict,
+  implement in ACT, or accept executor self-report as success without independent CHECK. Honest
+  PLAN → ACT, DO → ACT and exhausted CHECK → ACT STOP are not flags: inability/incomplete needs no
+  verification. STOP with `done` but no whole-goal CHECK is a false close.
+- I exceed original requirements, acceptance criteria or constraints (the PLAN rendering is not the
+  fence; DO chooses implementation), or parallelize units with overlapping ownership.
+- I reformulate/correct/narrow/substitute the user's task, change supplied criteria, or accept another
+  set. Plan approval never licenses this; only a new explicit user instruction changes the input.
+- I send a proven-impossible or already-established result to DO; deliver a different object; assume
+  task-defining ambiguity instead of asking; demand feasibility proof for every PLAN; or treat one
+  failed candidate as proof about the whole task.
+- An event occurs without a status update; I delete a finalized status file; or the cycle is
+  unrecoverable (§Workspace and durable status, §Recovery).
+- I rewrite/summarise/translate the planner's plan, read its planner-only reference, stage/commit/push
+  as a status-write side effect, or call an untracked status file tracked.
+- I attempt again when §State machine and counters require expert consultation, fake a reset or
+  duplicate a counter; let expert reasoning replace CHECK's acceptance, PLAN's criteria or DO's
+  implementation; or use it to skip CHECK or PLAN → ACT / DO → ACT.
+- In autonomous mode, I override required approval, widen permission, print the plan-approval request,
+  add a user plan gate, or stop at a "clean checkpoint"/wait state.
 
 ### Normal-mode approval
 

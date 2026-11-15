@@ -49,15 +49,19 @@ and docs commands from its manifests, CI workflow, `.editorconfig`/analyzer conf
 and project files, task runner or README; a command or threshold the user prescribed is a
 requirement. There is no global canonical .NET command set or exit-code table to invent here.
 
-- **Build the affected project(s) and their dependencies, sequentially and within the host's
-  resources.** A whole-solution or root build belongs outside the inner loop, and only when the
-  actual scope or capacity justifies it and the phase allows it — scope and capacity, not plan
-  preference. The coder's inner-loop rule is unchanged.
-- **`--no-build` needs a fresh artifact.** After a compiled edit, the affected project and its
-  dependencies are rebuilt, or an artifact is reused only when it is known to match the actual source
-  including uncommitted changes; `HEAD` alone is not that identity. A docs-only change claims no
-  build receipt and needs none. Record the actual state identity and log, not a mandatory hash,
-  manifest or a `committed == tested` gate.
+- **Build in dependency order.** Build each affected project after its required dependencies.
+  Treat projects as parallel candidates only after their dependency relation is known; build
+  independent affected projects concurrently only when outputs are isolated and known shared-host/
+  resource headroom is sufficient. Never overlap builds that write shared output paths. If output
+  isolation or headroom is unknown, serialize only that project group, not all work globally. A
+  whole-solution or root build remains outside the inner loop and only when scope/capacity justify it
+  and the phase allows it. The coder's affected-project inner-loop rule is unchanged.
+- **`--no-build` needs a matching artifact.** After a compiled input changes, rebuild the affected
+  project and its dependencies, or reuse an artifact only when the compiled inputs and build
+  configuration it consumed are known equivalent. `HEAD` alone neither establishes nor defeats that
+  equivalence; follow the base CHECK identity rule and record the available identity, not a mandatory
+  hash, manifest or `committed == tested` gate. A docs-only change claims no build receipt and needs
+  none.
 - **Selectors must match the configured runner.** Use the fully qualified name where that runner
   needs it; `dotnet test <project> --no-build --filter <selector>` is one form, a project runner with
   its own `-class`/`-method` selection is another. A selector matching zero cases proves nothing:
@@ -218,11 +222,17 @@ security boundaries, handoff) apply unchanged.
   → one measurement on that same identity. Building or measuring before the last normalisation, or
   freezing a set that differs from the built one, makes the measurement invalid: re-freeze and
   re-measure once — an evidence re-gather, not a new product attempt.
-- **Timeouts and retries follow the governing policy.** A transport or resource timeout is failed-run
-  evidence, not a new criterion or a local counter; repeated occurrences are classified by the base
-  retry/escalation policy, and its limits and grounds are unchanged.
-- **Test host safety (DO and CHECK).** Serialize heavyweight suites — never two in parallel or
-  beside the editor/agent stack — and cap the test host, e.g. `DOTNET_GCHeapHardLimit=0x80000000
+- **Timeouts follow the owning policy.** The base DRIVER (or normal-mode primary) uses
+  `../pdca/references/driver.md` §Dispatch transport → §Interrupted dispatches for role calls; the base
+  requires it to load that reference in full from the `pdca` load's base directory
+  (`../pdca/SKILL.md` §References). Command/test
+  timeouts remain run evidence under the coder's run record. A timeout creates no criterion or product
+  attempt; diagnose recurring infrastructure failures under base Recovery, not as product defects
+  without causal evidence.
+- **Test host safety (DO and CHECK).** Apply `../pdca-coder/SKILL.md` §Test run safety (every phase —
+  DO and CHECK) in full, including its host-capacity, shared-scarce-resource and measurement-interference
+  rules; do not narrow them to database/benchmark resources or impose a global serialized gate. Cap the
+  test host, e.g. `DOTNET_GCHeapHardLimit=0x80000000
   DOTNET_gcServer=0` (2 GiB, raised only when justified) inside a wall-clock `timeout 600 …`. Stream
   the log (`2>&1 | tee <log>`, keeping `rc=${PIPESTATUS[0]}`), never `| tail`. Exit **137** or
   "Out of memory" signals a possible resource failure: stop and review the failure and the cap before
@@ -255,9 +265,9 @@ security boundaries, handoff) apply unchanged.
 - **Artifacts and cleanup.** If CHECK's chosen method needs the full bodies of artifacts, a staged
   copy may be used — persisted under the cycle's `evidence_root` with the original left in place —
   with source identity and staged-vs-source fidelity verified by CHECK; no reviewer pack is
-  mandatory each task. The source identity includes the uncommitted working state when present, so
-  evidence is bound to the actual candidate rather than to `HEAD` alone, and a staged copy is
-  validated against the original. A drift after the snapshot makes CHECK reconsider the
+  mandatory each task. Bind evidence to the relevant candidate inputs, including meaningful
+  uncommitted changes; `HEAD` alone neither proves nor disproves equivalence. A staged copy is
+  validated against the original. A drift after the snapshot makes CHECK reconsider only the
   impacted conclusion per the base, not a new counter. A missing body or a staged-vs-source mismatch
   is `unverified` or an evidence blocker, never an automatic product fail or pass. Cleanup is not a
   phase gate and nothing is deleted automatically: preserve proof and recovery per the base, limit

@@ -180,15 +180,21 @@ nullability specifics belong to the .NET overlay.
 
 ### Code evidence requirements
 
-- **Every run returns** its exit status, the key numbers (passed/failed/skipped, warnings, coverage
-  when measured) and the log path — never the log in the message. A run that did not start is not
-  reported as a run.
+- **Every started run has its own record** — a unique run ID and evidence directory/log for its
+  worktree, unit, attempt and run. Report its phase, exact arguments, exit status when complete, key
+  numbers (passed/failed/skipped, warnings, coverage when measured), and expected/selected cases where
+  test or benchmark selection applies (`N/A` for builds, lint and other non-selection runs). Report
+  completion and the full-log path — never the log in the message. Preserve completed evidence
+  immutably; a retry gets a new record. A run that did not start is not reported as a run, and an
+  unfinished run has no invented exit status or selected count.
 - **Diff facts come from the change, not the author's restatement** — changed files,
   `git diff --stat` and `file:line`; when the chosen method needs an outside observation,
   `pdca-scout` reports it.
-- **A report is not a result.** "Should pass", "looks green", "passed last time" order the run; only
-  an actual execution counts, and a run whose selector matches zero targets is a failed run whatever
-  its exit status (a vacuous run proves nothing).
+- **A report is not a result.** "Should pass", "looks green", "passed last time" order the run. A
+  test run needs a completed result report and the expected cases actually selected; exit 0 alone is
+  insufficient when the result is absent or selection is zero/wrong. A failed or canceled run is never a pass; an
+  infrastructure failure is not a product defect without causal evidence. Record both the expected
+  and reported selection.
 - **A regression fix is red↔green.** When the task is a bug fix, the executor authors an executable
   test that fails without the fix and passes with it, and returns both exit codes. "Passed once"
   proves nothing; independent interpretation of what that evidence means is CHECK's.
@@ -209,6 +215,9 @@ nullability specifics belong to the .NET overlay.
 - **Output is harness-safe.** The argv/selector must reach the tool intact (quoted arguments, an
   argument array rather than a shell-reassembled string) and select the intended scope; a selector
   that resolves to nothing or to the wrong scope is a failed command, not evidence.
+- **Run identity and reuse.** Reuse completed passing evidence when its relevant inputs and conditions
+  remain equivalent; repeat only checks affected by changed inputs, a changed method or a material
+  confidence gap, under the base CHECK identity rule.
 
 ### Build and test command forms
 
@@ -227,13 +236,18 @@ legal in the phase, fit the host, and declare its expected outcome. Forms:
   needs a scope amendment validated before the run, with the reason recorded. Integration inside DO
   outside that allowance is a recorded policy deviation, never renamed away.
 - **Never the whole solution in the inner loop**; the affected project runs alone.
+- Before an expensive test run, use the cheapest available discovery/selection check to confirm its
+  intended scope; a costly full-suite preflight is not required. If the host returns a live run handle,
+  preserve and resume that handle and consume host completion; do not duplicate a run that is live or
+  of unknown status, and do not poll.
 - **Logs are streamed, not buffered**: `… 2>&1 | tee <log>`, keeping `rc=${PIPESTATUS[0]}`; `| tail`
   buffers to EOF and looks hung.
 - **Every started run is recorded** — including failed, interrupted, retried and over-budget runs —
   with its phase, exact arguments and exit code. A run that did not start is not an execution, an
   unfinished one carries no invented exit status or selected count, and a later retry never erases
-  the earlier failure. Recording a policy deviation does not authorise the run. DO's implementation
-  commands are its own; acceptance evidence is CHECK's.
+  the earlier failure. Use the unique run record above; classify an infrastructure failure from its
+  evidence and do not call it a product defect without a causal link. Recording a policy deviation
+  does not authorise the run. DO's implementation commands are its own; acceptance evidence is CHECK's.
 
 ### Test run safety (every phase — DO and CHECK)
 
@@ -241,11 +255,16 @@ Put these in the `pdca-executor` / `pdca-check` brief; a violating report is not
 
 - **Cap the test host** so a runaway recursion/allocation fails fast instead of OOM-killing the
   machine: the toolchain's memory limit and a wall-clock `timeout 600 …` (raise only when justified).
-  Exit **137** / "Out of memory" means the test is unbounded: stop, record the test name and command,
-  and do not re-run without the cap. It is evidence about the run, not by itself proof that the
-  original task is infeasible.
-- **Serialize heavyweight suites:** never two heavy test suites in parallel, and never beside the
-  editor/agent stack (agents, editors, language servers); the affected project runs alone.
+  Exit **137** / "Out of memory" is a possible resource failure, not proof that a test is unbounded.
+  Preserve the failed run; inspect its cap, known resource owner and host headroom before deciding
+  whether an authorized retry is safe. Never erase the failure or infer a product conclusion without
+  causal evidence.
+- **Scope shared scarce resources.** CPU, memory and I/O capacity on the same constrained host are
+  shared scarce resources too, alongside databases, services and integration resources; concurrent
+  workloads can also interfere with measurement validity. Coordinate or limit concurrency only where
+  work competes for that shared capacity or interferes with the measurement. Independent work may
+  continue; this is not a global serialization gate. If a resource-lock wait times out, diagnose its
+  known owner when available; do not kill an unknown or unrelated process.
 - **Stream the log, never `| tail`**, and return the log path with the exit code.
 
 ### Security boundaries
@@ -285,6 +304,15 @@ demand for the current step, using the repository's declared names. An inlined s
 keeps its measurable artifacts — counts, `file:line`, rule IDs — rather than only its topic list.
 
 ## Code-specific do/act deltas
+
+### Semantic probes
+
+When the highest-risk behavior has unresolved semantic uncertainty that could affect acceptance, DO's
+test strategy starts with the smallest discriminating probe of that behavior before broad
+implementation or an expensive full suite. A passing adjacent path, test name or green count does not
+establish the claim. This is an implementation-strategy choice, not a separate phase or role and not a
+test owed by every task; record a failing probe honestly and keep the affected-project inner loop and
+planned integration boundary.
 
 ### Parallel DO streams
 

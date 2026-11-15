@@ -2,13 +2,11 @@
 
 The driver (`pdca-orchestrator`, or the normal-mode primary) reads this file in full right after it
 loads the contract (`../SKILL.md` §References). Every context loads the **base `pdca` entry contract
-first, by exact ID**, and resolves this file, `references/check.md` and `references/escalate.md`
-against the **base directory its load result returns**; a form contract never supplies that
-directory, so it is loaded in addition, never instead. It records **only the mechanics no phase or
-form contract owns** — adopting a fresh decision, composing a dispatch, the driver's own read scope
-and telling a routed decision from a taken one. Every policy rule stays with its owner below; when
-this file and a contract disagree, the contract wins, and a missing rule is a blocker, never a
-reconstruction from memory.
+first, by exact ID**, and resolves this file, `references/check.md` and `references/escalate.md` against
+the **base directory its load result returns**; a form contract never supplies that directory, so it
+is loaded in addition, never instead. It records **only mechanics no phase or form contract owns**:
+adopting a fresh decision, composing a dispatch and its read scope. Each policy stays with its owner;
+the contract wins conflicts, and a missing rule blocks rather than invites reconstruction.
 
 | Rule | Owner |
 |---|---|
@@ -42,11 +40,10 @@ A fresh dispatch carries `contract: pdca`, `form: UNDECIDED` and no persisted pl
 5. A plan missing a mandatory field — the justified method/volume reason, or a bespoke checker's
    insufficiency reason and bound — is **incomplete**: return it to the same planner as a
    clarification of the same pending PLAN. That is not a replan and never makes the form your choice.
-6. A decided **collection** is routed back to its existing owner, which loads `pdca-collection` and
-   runs the batch; do not become the batch owner, spawn a second orchestrator or widen the task
-   allowlist. A decided **campaign** is adopted as `campaign-control` and reuses the entry choice for
-   the first step; preparation and baseline follow the loaded `pdca-incremental` contract and invent nothing
-   at preparation.
+6. A decided **collection** returns to its existing owner, which loads `pdca-collection` and runs
+   the batch; do not become its owner, spawn a second orchestrator or widen the allowlist. A decided
+   **campaign** is adopted as `campaign-control`, reuses the entry choice for its first step, and
+   follows `pdca-incremental` for preparation/baseline without inventing at preparation.
 7. `plan_handoff`, `preparation_handoff` and resume are never re-planned: a named plan ref in the
    existing brief or status is enough.
 
@@ -86,10 +83,16 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
 - **Status work** — `pdca-executor` reads `act.md` itself; the driver passes the source reports
   unrewritten and never renders status content.
 
+### Interrupted dispatches
+
+Preserve exact brief, counters, handle/checkpoint and output; reuse completed results or resume the session. Never duplicate a live/unknown planner/executor call; follow host completion without polling.
+If status remains unknown at host timeout, retain the handle and record a Recovery resource blocker (not confirmed failure); continue independent authorized work.
+Do not poll, wait indefinitely or retry until failure is confirmed. Transport changes no counters/history.
+After confirmed failure and transient-cause resolution, retry unchanged once; another failure is a Recovery blocker, not a primary PLAN decision.
+
 ## Read scope
 
-This section is the single owner of the driver's own reads; base §Roles and §Escalation only point
-here, and no other file restates the list.
+This section is the single owner of the driver's own reads; base §Roles and §Escalation only point here, and no other file restates the list.
 - the loaded contracts themselves, by exact ID through the host's skill mechanism;
 - `references/driver.md` (this file), in full, once;
 - `references/check.md`, opened only to inline it whole into a `pdca-check` dispatch (plus the
@@ -97,11 +100,9 @@ here, and no other file restates the list.
 - `references/escalate.md`, opened only to build an ESCALATE brief before that dispatch;
 - the assigned cycle, campaign or lane **status files** used as dispatch context, incl. step-boundary (base §Recovery).
 
-Nothing else: no phase or form procedure reference except `references/act.md`'s retrospective contract for inline delivery, no workspace walk, no `rg`/`grep`, and not the
-executor's status file for a REPORT-compare — there the last status comes from the executor's
-report, never from reading the file (base §State machine). Metadata — status path, form, contract,
-overlay, dispatch rule, refs — arrives through allowed tool inputs/outputs; for evidence ask
-`pdca-executor` or `pdca-scout` for its report instead.
+Nothing else: no phase or form procedure reference except `references/act.md`'s retrospective contract for inline delivery, no workspace walk, no `rg`/`grep`,
+and not the executor's status file for a REPORT-compare — there the last status comes from the executor's report, never from reading the file (base §State machine).
+Metadata — status path, form, contract, overlay, dispatch rule and refs — arrives through allowed tool inputs/outputs; for evidence ask `pdca-executor` or `pdca-scout` for its report instead.
 
 ## Routed, not taken
 
