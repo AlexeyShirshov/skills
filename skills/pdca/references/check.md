@@ -57,6 +57,10 @@ coverage, contradiction or an unjudgeable criterion is a criteria defect for PLA
 judge the result against a weaker reading. One failed candidate is not proof that a criterion is
 unachievable.
 
+Criteria are the single source of truth: refer to them by their stable IDs and never restate,
+rename, renumber or widen them. A changed criterion identity or coverage is a contract defect for
+PLAN, not a wording correction at CHECK.
+
 A campaign step's numeric criterion **restates the recipe's floor**: a criterion that reads a forecast
 of achievable volume, a quota of work or a share of the campaign target is a criteria defect for
 PLAN, not a result defect, and it is never used to refuse an increment.

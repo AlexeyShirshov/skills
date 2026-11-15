@@ -74,6 +74,16 @@ conditions under which they apply.
 - A measurable goal whose value no available method computes is its own rejection — `goal cannot be
   measured under the available means` — never a campaign that measures by improvisation.
 
+### Key assumptions and early probes
+
+- Verify read-only the existence and shape of the contracts, data flow and measurement basis the
+  plan depends on before returning it; a plan resting on an unchecked assumption is not ready.
+- A risky semantic assumption is not left as an assumption: convert it into a bounded early probe
+  authorized through the driver, or into an explicit stop condition.
+- Criteria are the single source of truth: DO and CHECK refer to them by stable ID and never
+  restate, rename, renumber or widen them; any change is a contract revision, not an
+  implementation detail.
+
 ## Terminal PLAN outcomes
 
 Four outcomes replace a ready plan and go directly to ACT, with no DO and no CHECK:
