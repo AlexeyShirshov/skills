@@ -309,6 +309,7 @@ evidence with pointers — candidate evidence for CHECK, never the independent v
 minimal sufficient change in the surrounding conventions. DO reports changed / completed / evidence /
 blockers / unfinished, with the exit status, key numbers and log path of every run.
 
+
 **Execution units.** The work may be split into units. A unit has an ID, the expected result, its
 criteria with evidence, dependencies, an owner, and a status in
 `pending | running | blocked | done | superseded`. Parallel DO only for **independent units with
@@ -344,8 +345,7 @@ residual `unmet`/`unverified` requirements, with no `PASS`, no `done` and no cre
 
 `pdca-check` is an independent judge — not the author, not the planner's executor. It receives the
 **original task**, its global requirements, cycle scope and criteria, and the frozen result with its
-evidence, taking none as established; user-supplied criteria are the acceptance set CHECK judges
-against, not another set.
+evidence, taking none as established; user-supplied criteria are the acceptance set CHECK judges.
 
 **The CHECK contract travels inline.** `references/check.md` is the single source of the procedure:
 the driver reads it in full and passes its **complete contents inline** in **every** `pdca-check`

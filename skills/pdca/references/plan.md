@@ -29,6 +29,9 @@ here; the driver routes them and `pdca-executor` records them.
   task makes them relevant. If the user supplied criteria, reproduce them **verbatim** as the
   acceptance set and add none; only when the user supplied none do you define them from the
   unchanged task;
+- **Criterion IDs are immutable for a revision.** PLAN assigns them once; DO and CHECK refer to
+  them by ID and never restate, renumber, rename or replace them. A change in criterion identity,
+  coverage or wording is a contract revision (`r`), not an implementation detail.
 - risks and stop conditions;
 - **known resource and access constraints affecting whether the requested result is achievable** —
   what the available means and access actually allow, not a choice of tools, implementation or
