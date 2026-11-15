@@ -263,3 +263,77 @@ Feature: The pdca-dotnet overlay under pressure
       When its result is accepted
       Then the original task and the user-supplied criteria remain verbatim
       # source: skills/pdca-dotnet/SKILL.md §.NET plan deltas
+
+  Rule: Local coverage evidence stays comparable and reusable
+
+    @U10 @uncovered @simulated
+    Scenario: U10 An unchanged coverage baseline crosses attempts and sessions
+      Given a simulated coverage baseline whose source, tests, tooling, configuration, scope, provider, environment, exclusions and denominator remain unchanged
+      And a later candidate has different production source and additional branches
+      When an attempt, plan revision and executor session change without changing the stored baseline
+      Then the baseline and candidate reports remain bound to their respective source identities
+      And comparability is decided by the metric and measurement basis rather than source equality
+      And `r`, `n` or a session change alone does not request a new baseline
+      # source: skills/pdca-dotnet/SKILL.md §Coverage comparison and report reuse
+
+    @U11 @uncovered @simulated
+    Scenario: U11 Shared production code changes after partitioned coverage runs
+      Given simulated unit and integration coverage artifacts from separate test projects that both reference one production library
+      And a later candidate changes that shared production library
+      When CHECK reads the preserved earlier runs
+      Then evidence depending on the changed production input is invalidated in both partitions
+      And a project boundary alone does not establish test independence
+      When a later edit changes only an isolated unit test with dependency independence established
+      Then unaffected integration evidence may be retained while the unit evidence is refreshed
+      # source: skills/pdca-coder/SKILL.md §Coverage evidence lifecycle
+      # source: skills/pdca/references/check.md §Candidate identity
+
+    @U12 @uncovered @simulated
+    Scenario: U12 A scoped branch delta passes while the complete gate does not
+      Given simulated changed-file branch reporting with a high selected denominator result
+      And the project separately requires a whole-solution threshold and a dedicated integration gate
+      When the scoped delta report is presented at the final measurement boundary
+      Then it reports its selected denominator and baseline/candidate comparability
+      And it does not replace either complete required gate or change either threshold
+      And the report filter describes the denominator rather than a reduction in collection duration
+      # source: skills/pdca-dotnet/SKILL.md §Coverage comparison and report reuse
+
+    @U13 @uncovered @simulated
+    Scenario: U13 Partial and complete raw reports are joined before summary generation
+      Given a simulated unchanged candidate with completed unit raw coverage and a separate integration scope still pending
+      When the integration raw report completes and the relevant report set becomes complete
+      Then ReportGenerator creates the overall summary from the complete raw set once
+      And the overall and integration report scopes remain distinct
+      When CHECK continues on the same candidate with the same raw reports and filters
+      Then the existing summary and logs remain reusable for independent judgment
+      And no collection or ReportGenerator run is caused only by CHECK continuation
+      # source: skills/pdca-dotnet/SKILL.md §Coverage comparison and report reuse
+      # source: skills/pdca/references/check.md §Candidate identity
+
+    @U14 @uncovered @simulated
+    Scenario: U14 A report-generation error is corrected without recollecting valid raw coverage
+      Given a simulated complete immutable raw coverage set and a summary-generation failure caused by an invalid report-tool setting
+      When the report setting is corrected without changing candidate or collection inputs
+      Then the failed report attempt remains recorded
+      And the summary is regenerated from the retained raw reports without recollecting coverage
+      # source: skills/pdca-dotnet/SKILL.md §Coverage comparison and report reuse
+
+    @U15 @uncovered @simulated
+    Scenario: U15 A failed collect and a completed assertion failure are reported separately
+      Given a simulated collect process that exits before producing complete coverage data with a diagnostic pointing to a configuration failure
+      And a separate test run that completes and reports an assertion failure
+      When the executor records both runs and the configuration cause is corrected
+      Then the incomplete collect remains failed evidence and is not a cached success
+      And only still-needed evidence affected by the corrected configuration is eligible for a justified retry
+      And the completed assertion remains result evidence rather than being classified as infrastructure
+      # source: skills/pdca-coder/SKILL.md §Test run safety (every phase — DO and CHECK)
+      # source: skills/pdca-dotnet/SKILL.md §Coverage comparison and report reuse
+
+    @U16 @uncovered @simulated
+    Scenario: U16 A matching test build is reused for collection and CHECK
+      Given a simulated affected project whose product and test compiled inputs and effective build settings match a recorded build
+      When the authorized boundary launches coverage collection against that candidate
+      Then `--no-build` may use the verified matching artifact
+      And launching collection or CHECK alone does not cause another compilation
+      And a later compiled-input change invalidates the affected artifact and may require a rebuild
+      # source: skills/pdca-dotnet/SKILL.md §.NET toolchain and commands

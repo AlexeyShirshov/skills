@@ -219,6 +219,28 @@ nullability specifics belong to the .NET overlay.
   remain equivalent; repeat only checks affected by changed inputs, a changed method or a material
   confidence gap, under the base CHECK identity rule.
 
+### Coverage evidence lifecycle
+
+For local code work, the ordinary DO inner loop is the minimum affected tests without coverage
+collection. Run the complete instrumented scope that an applicable mandatory criterion or mandatory
+project policy actually requires — unit, integration or solution — once on a coherent candidate at the
+authorized stream / DO→CHECK boundary. An early targeted instrumented probe is appropriate when
+coverage or a branch is the task, or instrumentation is the smallest way to resolve a real uncertainty.
+Focused live integration tests retain only the existing integration-only / authorized-scope
+exceptions. Coverage campaigns, global metrics and user-prescribed methods keep their prescribed
+scope and method.
+
+Reuse completed coverage artifacts and full logs while their relevant product/tests, build and
+coverage settings, runtime, provider, tool and environment conditions remain equivalent. Invalidate
+only evidence that depends on a changed input; retain a partition only when its input independence is
+established, since a project split alone does not prove independence from shared production code. CHECK
+independently judges adequate existing evidence and need not rerun it.
+Do not repeat an adequate run solely for a microedit, role/session change, checkpoint, `r`/`n` change
+or CHECK continuation; a relevant input change or a justified validity gap can require the affected
+evidence again. Existing run IDs, commands and pointers provide provenance; no universal manifest or
+hash is required. Failed, incomplete or zero-selection runs are never reusable successes. These
+identity-based rules create no run-count cap and do not change paired benchmark requirements.
+
 ### Build and test command forms
 
 A command that produces acceptance evidence must select what it claims, survive the harness, be
@@ -259,6 +281,13 @@ Put these in the `pdca-executor` / `pdca-check` brief; a violating report is not
   Preserve the failed run; inspect its cap, known resource owner and host headroom before deciding
   whether an authorized retry is safe. Never erase the failure or infer a product conclusion without
   causal evidence.
+- **Infrastructure retries require causal support.** Classify a collect or test failure as
+  infrastructure only when its diagnostic supports that cause; retain the failure and its full log.
+  Retry infrastructure-failed evidence only after its relevant resource/configuration is shown
+  changed or recovered, and only while that evidence is still needed; do not repeat it merely until
+  it turns green. A product fix or corrected selector follows the ordinary defect/fix path and can
+  justify a new affected test run; a completed assertion failure remains result evidence, not
+  infrastructure. Existing finite resource and retry policy governs, with no new retry count here.
 - **Scope shared scarce resources.** CPU, memory and I/O capacity on the same constrained host are
   shared scarce resources too, alongside databases, services and integration resources; concurrent
   workloads can also interfere with measurement validity. Coordinate or limit concurrency only where

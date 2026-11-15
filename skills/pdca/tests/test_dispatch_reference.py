@@ -20,6 +20,8 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 BASE = SKILL_DIR / "SKILL.md"
 ORCHESTRATOR = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
+CODER_OVERLAY = SKILL_DIR.parent / "pdca-coder/SKILL.md"
+DOTNET_OVERLAY = SKILL_DIR.parent / "pdca-dotnet/SKILL.md"
 
 
 def norm(text: str) -> str:
@@ -145,7 +147,8 @@ class TransportBoundaryTest(unittest.TestCase):
         scope = section(self.driver_raw, "## Read scope", "## Routed, not taken")
         for item in (
             "references/driver.md", "references/check.md", "references/escalate.md",
-            "status files", "step-boundary", "recovery",
+            "status files", "step-boundary", "recovery", "plan-selected overlays",
+            "loaded contents", "installation-path file",
         ):
             with self.subTest(item=item):
                 self.assertIn(item, scope)
@@ -153,6 +156,56 @@ class TransportBoundaryTest(unittest.TestCase):
         self.assertIn("from the executor's report", scope)
         self.assertIn("never from reading the file", scope)
         self.assertNotIn("assigned status files and the one reference it must inline", self.base)
+
+    def test_candidate_dispatch_transports_only_selected_overlay_sections_by_phase(self) -> None:
+        do = section(self.driver_raw, "- **DO**", "- **CHECK**")
+        check = section(self.driver_raw, "- **CHECK**", "- **ACT retrospective CHECK**")
+        retrospective = section(
+            self.driver_raw, "- **ACT retrospective CHECK**", "- **ESCALATE**"
+        )
+        transport = section(
+            self.driver_raw, "- **Selected-overlay section delivery**", "### Interrupted dispatches"
+        )
+
+        # DO gets an exact readable source or inline text; candidate CHECK gets the actual text,
+        # while PLAN remains the sole overlay selector and ACT retrospective gets no proving recipe.
+        self.assertIn("selected-overlay section rule below", do)
+        self.assertIn("exact skill-id + file/heading reference", transport)
+        self.assertIn("do can read", transport)
+        self.assertIn("applicable section verbatim or as an exact", transport)
+        self.assertIn("verbatim inline", check)
+        self.assertIn("no path or instruction", check)
+        self.assertIn("does not grant file access", check)
+        self.assertIn("plan owns the selected overlay set", transport)
+        self.assertIn("already loaded skill contents", transport)
+        self.assertIn("never discover, select or load another overlay", transport)
+        self.assertIn("do not deliver whole overlays or unrelated skills by default", transport)
+        self.assertIn("code evidence requirements", transport)
+        self.assertIn("omit selected-overlay proving/run sections", retrospective)
+        self.assertNotIn("coverage evidence lifecycle", retrospective)
+
+        # The delivery map points at real, phase-relevant source sections rather than naming
+        # overlays as optional context. .NET's selected overlay inherits the coder requirements.
+        pairs = (
+            (CODER_OVERLAY, "### Coverage evidence lifecycle", "§coverage evidence lifecycle"),
+            (CODER_OVERLAY, "### Build and test command forms", "§build and test command forms"),
+            (CODER_OVERLAY, "### Test run safety (every phase — DO and CHECK)", "§test run safety"),
+            (DOTNET_OVERLAY, "## .NET toolchain and commands", "§.net toolchain and commands"),
+            (DOTNET_OVERLAY, "### Coverage comparison and report reuse", "§coverage comparison and report reuse"),
+            (
+                DOTNET_OVERLAY,
+                "**Tests are judged on the applicable complete scope.**",
+                "tests are judged on the applicable complete scope",
+            ),
+            (DOTNET_OVERLAY, "**Freeze order and line endings.**", "freeze order and line endings"),
+            (DOTNET_OVERLAY, "**Integration lane.**", "integration lane"),
+            (DOTNET_OVERLAY, "**Test host safety (DO and CHECK).**", "test host safety"),
+        )
+        for path, source_marker, transport_marker in pairs:
+            with self.subTest(source=source_marker):
+                self.assertIn(transport_marker, transport)
+                self.assertIn(norm(source_marker), norm(read(path)))
+        self.assertIn("inherits pdca-coder", norm(read(DOTNET_OVERLAY)))
 
 
 if __name__ == "__main__":

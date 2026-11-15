@@ -385,8 +385,9 @@ recorded in `## Lessons learned`.
 
 ### Evidence over assertion
 
-**The cycle closes only on fresh evidence, never an assertion** — including subagent reports. The
-driver assembles the chain and routes requests; it neither inspects evidence nor picks the method:
+**The cycle closes only on evidence applicable to the frozen result under CHECK's candidate-identity
+rule, never an assertion** — including subagent reports. The driver assembles the chain and routes
+requests; it neither inspects evidence nor picks the method:
 
 - **Method — `pdca-check`:** before any verdict, choose per criterion sufficient evidence and how to
   obtain it; a PLAN-side procedure is not binding.

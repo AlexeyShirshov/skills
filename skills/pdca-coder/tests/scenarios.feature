@@ -286,3 +286,35 @@ Feature: The pdca-coder overlay under pressure
       And independent edits and read-only gathers may continue with distinct run evidence
       # source: skills/pdca-coder/SKILL.md §Test run safety (every phase — DO and CHECK)
       # source: skills/pdca-coder/SKILL.md §Code evidence requirements
+
+    @U10 @uncovered @simulated
+    Scenario: U10 A local behavior and documentation task has no coverage criterion
+      Given a simulated library change whose acceptance names behavior and required prose docs but no coverage metric or policy
+      And DO changes one implementation file and an independent docs stream
+      When the affected unit tests pass and CHECK resumes on the unchanged candidate
+      Then the ordinary inner loop contains no coverage collection
+      And reusable evidence is judged by relevant input equivalence, not by the role or session that produced it
+      And the docs-only part claims no build receipt
+      # source: skills/pdca-coder/SKILL.md §Coverage evidence lifecycle
+      # source: skills/pdca-coder/SKILL.md §Build and test command forms
+
+    @U11 @uncovered @simulated
+    Scenario: U11 A mandatory complete coverage run follows a coherent candidate
+      Given a simulated project policy that requires complete instrumented unit and integration coverage at its configured threshold
+      And DO makes several microedits before the candidate and its tests are complete
+      When the authorized stream boundary produces the complete coverage run and CHECK continues on that unchanged candidate
+      Then the complete required scope is measured at the boundary, not during each microedit or role transition
+      And the same adequate evidence is reusable through CHECK without a run caused only by a checkpoint or counter change
+      And a later relevant input change can require affected evidence again
+      # source: skills/pdca-coder/SKILL.md §Coverage evidence lifecycle
+      # source: skills/pdca-coder/SKILL.md §Code evidence requirements
+
+    @U12 @uncovered @simulated
+    Scenario: U12 A targeted instrumented branch probe resolves early uncertainty
+      Given a simulated change whose criterion names a newly added conditional branch
+      And a smallest targeted instrumented unit probe can distinguish whether the branch is exercised
+      When DO runs that probe before the coherent candidate boundary
+      Then the early probe is allowed because branch coverage is task-relevant
+      And it remains scoped probe evidence rather than a substitute for any separately required complete gate
+      # source: skills/pdca-coder/SKILL.md §Coverage evidence lifecycle
+      # source: skills/pdca-coder/SKILL.md §Semantic probes

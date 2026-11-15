@@ -52,7 +52,8 @@ an unverified mandatory criterion blocks acceptance.
 
 DO identifies the frozen result and binds each evidence item to the inputs and conditions it actually
 covers: relevant product/source, tests, build settings and outputs, runtime configuration, and
-meaningful environment. A commit or `HEAD` is a useful locator, not an all-purpose identity test.
+meaningful environment. Here, current evidence means applicable to the current result, not necessarily
+newly executed. A commit or `HEAD` is a useful locator, not an all-purpose identity test.
 Status, logs, manifests, evidence packaging and commit-only changes are bookkeeping unless they change
 one of those inputs, are themselves part of the requested result/criterion, or the task explicitly
 requires an exact revision. A `HEAD` mismatch alone neither invalidates the result nor requires retest

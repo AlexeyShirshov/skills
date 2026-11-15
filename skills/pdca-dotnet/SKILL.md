@@ -57,11 +57,12 @@ requirement. There is no global canonical .NET command set or exit-code table to
   whole-solution or root build remains outside the inner loop and only when scope/capacity justify it
   and the phase allows it. The coder's affected-project inner-loop rule is unchanged.
 - **`--no-build` needs a matching artifact.** After a compiled input changes, rebuild the affected
-  project and its dependencies, or reuse an artifact only when the compiled inputs and build
-  configuration it consumed are known equivalent. `HEAD` alone neither establishes nor defeats that
-  equivalence; follow the base CHECK identity rule and record the available identity, not a mandatory
-  hash, manifest or `committed == tested` gate. A docs-only change claims no build receipt and needs
-  none.
+  project and its dependencies, or reuse an artifact only when the product and test compiled inputs
+  and effective build configuration it consumed are known equivalent. `HEAD` alone neither
+  establishes nor defeats that equivalence; follow the base CHECK identity rule and record the
+  available identity, not a mandatory hash, manifest or `committed == tested` gate. Once a matching
+  build is verified, use it with `--no-build`; launching collection or CHECK is not by itself a reason
+  to recompile. A docs-only change claims no build receipt and needs none.
 - **Selectors must match the configured runner.** Use the fully qualified name where that runner
   needs it; `dotnet test <project> --no-build --filter <selector>` is one form, a project runner with
   its own `-class`/`-method` selection is another. A selector matching zero cases proves nothing:
@@ -203,6 +204,34 @@ read. CHECK chooses its own methods and commands — nothing here is a pre-DO ob
 - **Missing evidence stays `unverified`**, to be re-gathered under the base; it is not a product
   defect, not an implementation attempt, and not an infrastructure criterion. A genuine inability to
   proceed is DO → ACT per the base.
+
+### Coverage comparison and report reuse
+
+- **Baseline comparability.** Reuse a captured baseline across candidates, attempts, revisions and
+  sessions while the baseline inputs remain unchanged and its comparison basis remains comparable:
+  baseline source/tests, build and coverage configuration, instrumentation tool/version, test scope
+  and provider, measurement-relevant environment, exclusions and denominator. `r`, `n` or a new
+  session alone does not invalidate it. Baseline and candidate source are expected to differ: bind
+  each report to its own source and compare only under a comparable metric/specification. Added
+  production branches belong in the candidate denominator; do not force stable-ID attribution across
+  changed branches without a valid mapping. Missing, unreliable or incomparable data justifies only
+  the narrow gather needed to restore comparability; no invented hash/metadata gate. Benchmark
+  baselines remain governed by their paired measurement conditions.
+- **Candidate reports.** Generate a coverage summary once for each complete relevant raw-report set,
+  candidate and filter/report configuration; reuse it while those inputs remain equivalent, rather
+  than running ReportGenerator after every partial collect. Keep separate report scopes (for example,
+  overall and integration); merge/union only when branch data is preserved and configurations are
+  comparable, and never treat a filtered report as the full required gate. Filtering changes the
+  reported denominator, not collection duration. Retain raw reports immutably. If report generation
+  failed and its tool/configuration is corrected, regenerate from unchanged valid raw reports without
+  recollecting them.
+- **Branch delta is diagnostic scope.** Where project policy requires branch delta, use changed
+  files/types for local diagnosis and attribution, and report the selected denominator plus
+  baseline/candidate comparability. This does not reduce the required scope, threshold, whole-solution
+  gate or dedicated integration gate. At the appropriate boundary, ensure the final gate has valid
+  complete-scope evidence; reuse an already adequate complete report when its identity is equivalent
+  instead of collecting again. A coverage campaign or explicitly global metric keeps its prescribed
+  method and scope.
 
 ## .NET do/act deltas
 
