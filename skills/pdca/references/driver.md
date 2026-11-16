@@ -6,7 +6,9 @@ first, by exact ID**, and resolves this file, `references/check.md` and `referen
 the **base directory its load result returns**; a form contract never supplies that directory, so it
 is loaded in addition, never instead. It records **only mechanics no phase or form contract owns**:
 adopting a fresh decision, composing a dispatch and its read scope. Each policy stays with its owner;
-the contract wins conflicts, and a missing rule blocks rather than invites reconstruction.
+the contract wins conflicts, and a missing rule blocks rather than invites reconstruction. After
+each PLAN selects a form/overlay, base §Preflight — required skill contracts owns the exact-ID
+dependency closure and must pass before dependent preparation, DO or work dispatch.
 
 | Rule | Owner |
 |---|---|
@@ -65,7 +67,7 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
 - **ACT retrospective CHECK** — inline complete `check.md` and the `act.md` retrospective contract; omit selected-overlay proving/run sections.
 - **ESCALATE** — build the brief from `escalate.md` §Input and permissions and pass that protocol's **complete contents inline** (fail closed before dispatch if it cannot be loaded whole): the narrow question and its boundaries, original task, phases and role asking, criteria in play, result, evidence reused, not re-gathered, what was already tried and why it failed, attempts, constraints, pre-gathered scout pack, and live cycle `N`, revision `r`, attempt `n/3` and defect history (each key, observed attempts and applied fixes). The counter procedure is the base §State machine and counters, already loaded by the driver; nothing here re-thresholds it and the expert has no discretion to waive it.
 - **Status work** — `pdca-executor` reads `act.md` itself; the driver passes source reports unrewritten and never renders status content.
-- **Selected-overlay section delivery** (candidate DO/CHECK only) — PLAN owns the selected overlay set. Use only relevant sections from the already loaded skill contents; never discover, select or load another overlay or open an installation-path file. DO gets each applicable section verbatim or as an exact skill-ID + file/heading reference DO can read. CHECK gets applicable sections verbatim inline, with no path/open instruction. Select by criterion, evidence and actual run, not overlay presence. Do not deliver whole overlays or unrelated skills by default; if a section is unavailable, block rather than summarize, widen permissions or substitute.
+- **Selected-overlay section delivery** (candidate DO/CHECK only) — PLAN owns the selected overlay set. First pass the base §Preflight — required skill contracts for its exact-ID closure; then use only relevant sections from those already loaded skill contents. Never discover, select or load another overlay or open an installation-path file. DO gets each applicable section verbatim or as an exact skill-ID + file/heading reference DO can read. CHECK gets applicable sections verbatim inline, with no path/open instruction. Select by criterion, evidence and actual run, not overlay presence. Do not deliver whole overlays or unrelated skills by default; if a section is unavailable, block rather than summarize, widen permissions or substitute.
   Section map (locations only; applicability remains phase/criterion-specific):
   | Selected overlay | Applicable evidence/run sections |
   |---|---|
@@ -86,6 +88,7 @@ This section is the single owner of the driver's own reads; base §Roles and §E
 - `references/driver.md` (this file), in full, once;
 - `references/check.md`, opened only to inline it whole into a `pdca-check` dispatch (plus the retrospective contract from `references/act.md` for a retrospective dispatch);
 - `references/escalate.md`, opened only to build an ESCALATE brief before that dispatch;
+- the exact recovery prompt `assets/install-agents-prompt.md` or `assets/install-skills-prompt.md`, relative to the loaded base skill, only when its corresponding preflight fires;
 - the assigned cycle, campaign or lane **status files** used as dispatch context, incl. step-boundary (base §Recovery).
 
 Nothing else: no phase or form procedure reference except `references/act.md`'s retrospective contract for inline delivery, no workspace walk, no `rg`/`grep`,

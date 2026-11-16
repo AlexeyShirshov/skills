@@ -49,9 +49,14 @@ missing field instead of inferring one.
   return an explicit blocker instead of reconstructing it. Never derive that directory from the form
   contract's path, a workspace guess or discovery.
 
-Load a contract through the host's skill mechanism by exact ID. If the host cannot load it, delegate
-the skill-loading fallback to an **authorized role** (`pdca-scout`), which reads the installed
-`SKILL.md` and returns it; that is not a read-wildcard and not workspace discovery.
+For selected skill contracts, follow base §Preflight — required skill contracts. Load a contract
+through the host's skill mechanism by exact ID; only a successful exact-ID host load of the full
+contract satisfies it. If a load fails, stop before dependent work and report the exact
+ID, required-by, and actual loader response. Follow the base prompt recovery for missing/unreadable
+IDs; a denied load is a permission blocker, not proof of absence, and must not be reinstalled or
+bypassed. Do not route a failed load to `pdca-scout`, read the unavailable contract from an installed
+`SKILL.md` path, or reconstruct it. `pdca-scout` remains available for authorized task-fact and
+evidence observations; those observations never satisfy contract preflight.
 
 ## The three execution contexts
 

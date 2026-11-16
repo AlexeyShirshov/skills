@@ -31,6 +31,13 @@ likewise inherits the base common rules for its item cycles and CHECK, while add
 batch coordination. A campaign that is a collection item still runs this campaign contract
 for its steps, with the collection coordinating the batch.
 
+Before applying work on direct invocation, explicitly load base `pdca` by exact skill ID and follow
+its §Preflight — required skill contracts. Inheritance alone does not prove the base is loaded. If
+`pdca` cannot be loaded, its preflight owner is unavailable: stop and report the exact ID and host
+loader's failure; do not wait for that rule, reconstruct it or start work. Each step's PLAN-selected
+overlay closure is loaded before that step's dependent preparation or work; a missing dependency
+preserves the selected pending step for resume, without entry reclassification.
+
 **Overlay.** When a step's work is code, the overlay its PLAN declares (`../pdca-coder/SKILL.md`, or
 `../pdca-dotnet/SKILL.md` inheriting it) applies **for that step only**: domain facts, tools and
 required evidence — not a form, not a second cycle or state machine, and never a cancellation of the

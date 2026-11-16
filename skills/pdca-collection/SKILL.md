@@ -14,7 +14,15 @@ A **Collection** batches independent user goals, each a complete PDCA invocation
 
 ## Inheritance
 
-`../pdca/SKILL.md` (§Common cycle contract) governs item, integration CHECK and corrective cycles; load alongside this file. Direct invocation skips form reclassification. A `campaign` also loads `../pdca-incremental/SKILL.md`. Resolve planner `plan_reference_path` from base `pdca`.
+`../pdca/SKILL.md` (§Common cycle contract) governs item, integration CHECK and corrective cycles;
+load alongside this file. Direct invocation skips form reclassification. A `campaign` also loads
+`../pdca-incremental/SKILL.md`. Resolve planner `plan_reference_path` from base `pdca`.
+
+Before applying work, load base `pdca` by exact skill ID and follow its §Preflight — required skill
+contracts. If the base cannot load, its preflight owner is unavailable: stop and report the exact ID
+and host loader's failure; do not wait for that rule, reconstruct it or start work. The campaign
+dependency is conditional on the selected item form, and each step's overlay is checked for that
+step only.
 
 Collection adds batch coordination, **not another cycle or attempt counter**.
 
@@ -68,6 +76,8 @@ Collection schedules/integrates; one designated item driver owns the cycle or wh
 Before lane allocation, and before campaign start in a lane, verify observable host capabilities: mandatory roles/contracts, permitted delegation (including `escalate → scout`), and when applicable the installed `pdca-orchestrator` against canonical asset/permissions. No trial work or assumed numeric host settings.
 
 A missing mandatory role stops the run, recording accepted work; a missing contract fails closed without substitution. Optional runner/delegation unavailability follows §Fallback if permitted. Late-discovered failures pause before the dependent action; gates remain unchanged.
+
+For skill contracts, base §Preflight — required skill contracts owns the exact-ID closure and load timing. Here, `contracts` means only the currently selected collection closure; add `pdca-incremental` after an item is selected as a campaign, never as a pre-PLAN all-forms gate. For each item or campaign step, load its newly selected form/overlay dependencies after PLAN and before dependent preparation or work. This does not replace the independent role preflight.
 
 ## Collection (P / D / C / A)
 

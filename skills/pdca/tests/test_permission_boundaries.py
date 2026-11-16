@@ -27,6 +27,9 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_DIR / "scripts/pdca_cost.py"
 RUNNER_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-orchestrator.md"
+RUNNER_ASSETS = tuple(sorted(
+    SKILL_DIR.parent.glob("pdca*/assets/opencode-agents/pdca-orchestrator.md")
+))
 SCOUT_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-scout.md"
 
 # The scout's git literals: a wildcard before ` -- ` can swallow write flags
@@ -202,17 +205,40 @@ class RunnerAssetBoundaryTest(unittest.TestCase):
                 self.assertNotEqual("allow", perm.get(action),
                                     "runner must not grant itself `%s`" % action)
 
-    def test_skill_loading_fallback_belongs_to_an_authorized_role(self):
-        paragraphs = [
-            p for p in re.split(r"\n\s*\n", read(RUNNER_ASSET))
-            if any(k in p.lower() for k in ("fallback", "cannot load", "skill-loading"))
-        ]
-        self.assertTrue(paragraphs, "runner must describe the skill-loading fallback")
-        for paragraph in paragraphs:
-            with self.subTest(paragraph=" ".join(paragraph.split())[:60]):
-                low = paragraph.lower()
-                self.assertTrue("authorized role" in low or "pdca-scout" in low,
-                                "fallback must be assigned to an authorized role")
+    def test_contract_load_failure_follows_base_preflight_in_every_runner_copy(self):
+        expected_skills = {
+            "pdca", "pdca-coder", "pdca-dotnet", "pdca-incremental", "pdca-collection",
+        }
+        self.assertEqual(
+            expected_skills,
+            {path.parents[2].name for path in RUNNER_ASSETS},
+            "update the contract-load boundary in every tracked runner copy",
+        )
+        self.assertEqual(5, len(RUNNER_ASSETS))
+
+        for path in RUNNER_ASSETS:
+            with self.subTest(runner=path):
+                text = read(path)
+                self.assertIn("Load `pdca` by exact ID", text)
+                policy = " ".join(next(
+                    p for p in re.split(r"\n\s*\n", text)
+                    if "For selected skill contracts, follow base" in p
+                ).split())
+                self.assertIn("§Preflight — required skill contracts", policy)
+                self.assertIn("successful exact-ID host load of the full contract", policy)
+                self.assertIn("stop before dependent work", policy)
+                self.assertIn("exact ID, required-by, and actual loader response", policy)
+                self.assertIn("missing/unreadable IDs", policy)
+                self.assertIn("denied load is a permission blocker, not proof of absence", policy)
+                self.assertIn("must not be reinstalled or bypassed", policy)
+                self.assertIn("Do not route a failed load to `pdca-scout`", policy)
+                self.assertIn("read the unavailable contract from an installed `SKILL.md` path", policy)
+                self.assertIn("or reconstruct it", policy)
+                self.assertIn("pdca-scout` remains available for authorized", policy)
+                self.assertIn("task-fact and evidence observations", policy)
+                self.assertIn("observations never satisfy contract preflight", policy)
+                self.assertNotIn("delegate the skill-loading fallback", text)
+                self.assertNotIn("reads the installed `SKILL.md` and returns it", text)
 
 
 @unittest.skipUnless(HOST_AVAILABLE, SKIP_HOST)

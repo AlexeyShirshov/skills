@@ -23,6 +23,12 @@ load the contract already in force — `../pdca/SKILL.md` for a bounded cycle,
 form; the overlay layers on the coder overlay where it applies. If no form is in force, the base
 entry decides it; this overlay does not.
 
+Before applying work on direct invocation, explicitly load `pdca-coder` by exact skill ID;
+`pdca-dotnet`'s inheritance of it does not prove its contract is loaded. Load base `pdca` by exact
+skill ID too, then follow its §Preflight — required skill contracts for the current form and overlay
+closure. If `pdca` cannot be loaded, its preflight owner is unavailable: stop and report the exact
+ID and host loader's failure; do not wait for that rule, reconstruct it or start work.
+
 **Apply .NET discipline inside the unchanged task.** The original task, its global requirements and
 acceptance stay as supplied, with user criteria verbatim, and the current cycle or step keeps its own
 scope; the .NET specifics below apply within them, and a local result is not the whole goal. This

@@ -162,6 +162,45 @@ inside a cycle. A role
 still missing is a **resource blocker**. If the prompt cannot be read, say so and name the exact path
 instead of improvising an installer.
 
+#### Preflight — required skill contracts
+
+This rule owns skill dependencies; role preflight remains separate. Load base `pdca` by exact ID
+before entry PLAN. Do not preflight future forms or overlays
+before PLAN. After each PLAN selects a form and any overlay — entry, collection-item, or campaign-step
+PLAN — the driver derives the union of the transitive closures for only those selected contracts,
+only from the returned decision; it never guesses or changes that selection:
+
+| Contract | Direct required parent |
+|---|---|
+| `pdca` | none |
+| `pdca-coder` | `pdca` |
+| `pdca-dotnet` | `pdca-coder` |
+| `pdca-incremental` | `pdca` |
+| `pdca-collection` | `pdca` |
+
+The selected contracts are required too; `pdca` is always in the closure. A collection requires
+`pdca-incremental` only when its selected item is a campaign. Each step's overlay is selected and
+checked for that step only; never assume one overlay for every step. Never choose a simpler form or
+overlay to avoid a missing dependency.
+
+A contract is loaded only when the host's legitimate skill loader returns its full content into the
+active context under that exact skill ID. The host loader is not assumed to enforce this gate; the
+driver must confirm it. An advertised-skill list, picker entry, CLI lock, source checkout, registry
+membership or matching commit hash is not a load result; a hidden auto-selection flag does not make a
+successful exact-ID load unavailable. Reuse an unchanged dependency already loaded. Immediately after
+selection, load each new required ID by exact ID and confirm its contents before dependent preparation,
+DO or work. Recheck only for a new dependency or failed load, not for every unit or CHECK.
+
+For a missing, unreadable or otherwise unavailable contract, stop before dependent work and report the
+exact ID, what selected contract requires it, and the actual loader failure. For missing/unreadable
+IDs, read only `assets/install-skills-prompt.md` and hand its fenced prompt to the user verbatim,
+filling only `Context`; do not auto-install or reconstruct it. If the prompt cannot be read, report its
+exact path. A denied load is a **permission blocker**, not proof of absence: do not retry through
+another loader, inspect installation paths, bypass or widen permissions, or offer installation as a
+workaround. Do not omit the dependency or recreate its rules from memory. Preserve the PLAN's selected
+form/overlay and pending state; after resolution, resume that selection without reclassification or
+counter reset.
+
 **The driver routes, it does not discover.** Allowed tool I/O supplies metadata (status path, form,
 contract, overlay, dispatch rule, refs, evidence pointers); the driver never walks the workspace or
 runs `rg`/`grep`. `references/driver.md` §Read scope alone owns its reads (driver reference, delivered

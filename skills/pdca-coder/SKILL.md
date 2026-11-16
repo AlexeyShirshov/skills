@@ -23,6 +23,12 @@ contract already in force — `../pdca/SKILL.md` for a bounded cycle,
 `../pdca-collection/SKILL.md` with its local common contract for a collection — and preserve that
 form. If no form is in force, the base entry decides it; this overlay does not.
 
+Before applying work on direct invocation, load base `pdca` by exact skill ID and follow its
+§Preflight — required skill contracts for the current form and overlay closure. Inheritance is a
+dependency declaration, not proof that the contract is loaded. If `pdca` cannot be loaded, its
+preflight owner is unavailable: stop and report the exact ID and host loader's failure; do not wait
+for that rule, reconstruct the base contract or start work.
+
 **Apply code discipline inside the unchanged task.** The original task, its global requirements and
 acceptance stay as supplied, with user criteria verbatim, and the current cycle or step keeps its own
 scope; the code-specific discipline below applies within them, and a local result is not the whole
