@@ -24,7 +24,7 @@ SKILL = Path(__file__).resolve().parents[1]
 FEATURE = SKILL / "tests/scenarios.feature"
 
 EXPECTED_IDS = (
-    *(f"A{i}" for i in range(1, 4)),
+    *(f"A{i}" for i in range(1, 6)),
     *(f"B{i}" for i in range(1, 5)),
     *(f"C{i}" for i in range(1, 4)),
     *(f"D{i}" for i in range(1, 3)),

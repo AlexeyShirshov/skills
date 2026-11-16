@@ -491,10 +491,12 @@ configuration. It adds only code-specific facts.
 `pdca-dotnet` inherits `pdca-coder` and adds .NET/C# specifics. It is still an overlay: no form, no
 state machine, no counter, no gate of its own.
 
-- **Roslyn-first for C# symbols.** Definitions, references, call sites, implementations, overloads,
-  members, renames and impact are resolved with the `roslyn` tool, never with text search. `rg` is for
-  non-symbol text — string literals, comments, prose, configs — and its result is never called a
-  resolved symbol. In Code Mode the call runs inside `execute`.
+- **C# symbol work is task- and policy-scoped.** Use an available, permitted, project- or
+  host-supported semantic method when exact identity, reference completeness or rename impact matters;
+  Roslyn is one option, not a universal requirement or sole resolver. Higher-priority policy and
+  permissions take precedence; do not bypass denials. Where allowed, text inspection yields candidate
+  occurrences, not resolved bindings or complete references. This creates no tool requirement for
+  unrelated .NET work.
 - **Toolchain facts.** Build the affected projects and their dependencies sequentially; a
   whole-solution build belongs outside the inner loop. `--no-build` needs an artifact that matches
   the actual source including uncommitted changes. Selectors must match the configured runner; zero
@@ -851,7 +853,7 @@ names a section.
 | Escalation grounds and limits | `skills/pdca/SKILL.md §Escalation — expert review (pdca-escalate)` |
 | Bounded Execution covers the whole task | `skills/pdca/SKILL.md §Bounded Execution` |
 | The coding overlay | `skills/pdca-coder/SKILL.md §Toolchain and lenses`; §Code-specific check deltas; §Code-specific do/act deltas |
-| Roslyn-first and .NET specifics | `skills/pdca-dotnet/SKILL.md §Roslyn-first for C# symbols`; §.NET check deltas; §.NET do/act deltas |
+| C# semantic-tool guidance and .NET specifics | `skills/pdca-dotnet/SKILL.md §Semantic tooling for C# symbols`; §.NET check deltas; §.NET do/act deltas |
 | Collection coordination | `skills/pdca-collection/SKILL.md §Collection (P / D / C / A)`; §Collection status record |
 | Incremental campaign | `skills/pdca-incremental/SKILL.md §Campaign cycle`; §Step boundary; §Stop |
 

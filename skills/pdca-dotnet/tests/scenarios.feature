@@ -17,7 +17,7 @@
 #   overlays    skills/pdca-dotnet/SKILL.md inherits skills/pdca-coder/SKILL.md
 #               and adds only .NET/C# facts: no form, state machine, counter or
 #               gate of its own
-#   symbols     C# symbols are resolved with the `roslyn` tool, never text search
+#   symbols     choose permitted methods by task and policy; text matches are candidates, not resolved bindings
 #
 # Note: the mechanical gates (`validate_inner_loop.py`, `pdca_evidence.py`) are
 # exercised directly by `test_inner_loop_gate.py` and `test_pdca_evidence.py`,
@@ -27,32 +27,47 @@ Feature: The pdca-dotnet overlay under pressure
   The overlay must add .NET-specific facts to the programming overlay without
   inventing a cycle, a counter, a gate or a metric.
 
-  Rule: Roslyn is the resolver for C# symbols
+  Rule: C# symbol evidence follows the task and governing policy
 
     @A1 @uncovered
     Scenario: A1 A C# member must be renamed
-      Given a request to find all call sites of a member and rename it
-      When the rename is performed
-      Then roslyn answers refs and callers for the symbol
-      And roslyn applies the rename
-      And a textual substitution is not a resolved rename
-      # source: skills/pdca-dotnet/SKILL.md §.NET toolchain and commands
+      Given a request to identify and rename one exact C# member
+      When an available and permitted semantic method is used
+      Then symbol identity and reference evidence inform the rename
+      And text-only matches are not called resolved bindings or complete references
+      # source: skills/pdca-dotnet/SKILL.md §Semantic tooling for C# symbols
 
     @A2 @uncovered
-    Scenario: A2 The roslyn catalog entry is missing
-      Given a host where the roslyn tool is absent from the catalog
-      When a symbol question is asked
-      Then search is run for the roslyn entry first
-      And a missing catalog entry is not grounds for rg on a symbol
-      # source: skills/pdca-dotnet/SKILL.md §.NET toolchain and commands
+    Scenario: A2 Roslyn is absent but another semantic method is available
+      Given a C# reference task and an available permitted project-supported semantic method
+      When Roslyn is absent from the host tool inventory
+      Then tool choice follows the task and higher-priority policy
+      And Roslyn absence alone does not block unrelated .NET work
+      # source: skills/pdca-dotnet/SKILL.md §Semantic tooling for C# symbols
 
     @A3 @uncovered
-    Scenario: A3 A symbol is inferred from text search
-      Given a symbol answer produced by rg over .cs files
-      When the answer is presented
-      Then it is not a resolved symbol
-      And it is labelled as text search, not as an answer
-      # source: skills/pdca-dotnet/SKILL.md §.NET toolchain and commands
+    Scenario: A3 Text inspection finds possible occurrences
+      Given text inspection is permitted and produces possible symbol occurrences
+      When the occurrences are presented
+      Then they are labelled as candidates with their uncertainty
+      And they do not establish resolved bindings or complete references
+      # source: skills/pdca-dotnet/SKILL.md §Semantic tooling for C# symbols
+
+    @A4 @uncovered
+    Scenario: A4 Host policy requires Roslyn but Roslyn is unavailable or denied
+      Given a higher-priority host policy allows only Roslyn for this symbol criterion
+      When Roslyn is absent or its use is denied
+      Then the host restriction is honored without a workaround
+      And only the unmet criterion is reported as unverified under the base contract
+      # source: skills/pdca-dotnet/SKILL.md §Semantic tooling for C# symbols
+
+    @A5 @uncovered
+    Scenario: A5 An ordinary .NET task has no symbol criterion
+      Given a .NET build and test task with no symbol question or mandatory tool policy
+      When Roslyn is absent
+      Then the .NET task follows the existing project and base-contract requirements
+      And no Roslyn dependency or catalog search is added
+      # source: skills/pdca-dotnet/SKILL.md §Semantic tooling for C# symbols
 
   Rule: A run proves the source it actually tested
 

@@ -1,6 +1,6 @@
 ---
 name: pdca-dotnet
-description: ".NET/C# domain overlay for the PDCA family — adds only .NET/C# specifics to the form and overlay the base already selected: the dotnet toolchain, Roslyn-first C# symbol work, and .NET test and documentation facts. The base PLAN selects it whenever the task's code component is .NET/C#, and it inherits `pdca-coder`, so plain `pdca-coder` is never the right choice for .NET work. Hidden from the host's own auto-selection (`metadata.opencode/autoinvoke: false`): that keeps it out of the skill picker, it does not forbid PLAN from choosing it."
+description: ".NET/C# domain overlay for the PDCA family — adds only .NET/C# specifics to the form and overlay the base already selected: the dotnet toolchain, task- and policy-aware C# symbol guidance, and .NET test and documentation facts. The base PLAN selects it whenever the task's code component is .NET/C#, and it inherits `pdca-coder`, so plain `pdca-coder` is never the right choice for .NET work. Hidden from the host's own auto-selection (`metadata.opencode/autoinvoke: false`): that keeps it out of the skill picker, it does not forbid PLAN from choosing it."
 metadata:
   opencode/autoinvoke: false
 disable-model-invocation: true
@@ -39,9 +39,11 @@ requirement.
 
 - **.NET work** — C#, F#, or VB on .NET: implementation, refactoring, tests, solution/project/build
   configuration, packages, public-API surface, and the docs tied to code.
-- **C# symbol work is Roslyn-first** — definitions, references, call sites, implementations,
-  overloads, members, renames and impact are resolved with the `roslyn` tool, never with text search
-  (§Roslyn-first for C# symbols).
+- **C# symbol work follows the task and governing policy.** When a criterion needs exact symbol
+  identity, references or rename impact, use an available, permitted, project- or host-supported
+  semantic method. Roslyn is one possible method, not a dependency or the sole resolver imposed by
+  this overlay. Higher-priority host/project policies and permissions take precedence; never bypass a
+  denial. This guidance does not make a language tool a prerequisite for unrelated .NET work.
 - **Applied to the relevant component or step.** A mixed repository applies it to the .NET component
   or step only; other stacks stay under the coder overlay alone. Specialised knowledge loads only for
   the current step.
@@ -81,28 +83,26 @@ requirement. There is no global canonical .NET command set or exit-code table to
   baseline; `dotnet test --collect:"XPlat Code Coverage"` is one form. The project threshold is the
   lower bound; with none configured, record the measured baseline rather than inventing a number.
 
-### Roslyn-first for C# symbols
+### Semantic tooling for C# symbols
 
-- The `roslyn` tool answers **C# symbol questions only**; F#/VB symbol questions are not covered by
-  it and use their own tooling. Actions: `structure`/`types` for discovery;
-  `members`/`refs`/`callers`/`implementations` for the answer; `rename` for changes.
-- It is the only C# symbol resolver: a symbol inferred from text search is not a resolved symbol.
-  `rg`/`grep`/`glob`/`sed` are for non-symbol text.
-- In Code Mode the call goes **inside `execute`**:
-  `const r = await tools.roslyn({ action: "refs", target: "Ns.Type.Member" }); return r`. Batch
-  several queries in one `execute` with `Promise.all`; the daemon keeps the solution loaded.
-- Name a solution outside the session directory explicitly: `solution: "/abs/path/App.slnx"`. If the
-  catalog does not show the tool, run `search({ query: "roslyn" })` first — a missing catalog entry
-  is not grounds for text search.
-- Apply a rename with `roslyn rename` (dry run, then `apply`) and re-check with the same tool; never
-  by textual substitution.
-- Text search remains valid for non-symbol text — string literals, comments, prose docs, configs,
-  non-`.cs` files — and is reported as such; a symbol-bearing meaning is never inferred from such
-  text. When the tool cannot load a solution or there is no `.cs`, a labelled text-search fallback is
-  allowed, but its result is never called a resolved symbol.
-- **Source-side gather resolves; CHECK interprets.** Resolution happens on the candidate snapshot the
-  run actually produced. CHECK reads that evidence and needs neither an inaccessible solution nor a
-  widened tool grant.
+- **Choose by task and policy.** When exact symbol identity, reference completeness or rename impact
+  matters, use an available, permitted, project- or host-supported semantic method where it can
+  establish that fact. Roslyn is one possible method, not an overlay dependency or the sole resolver
+  allowed by this skill. This C# guidance does not create a tooling requirement for F#/VB or
+  non-symbol .NET work.
+- **Honor tool policy.** Higher-priority host/project requirements and permissions govern tool choice.
+  A permission denial is a policy constraint, not an availability signal; do not bypass it or treat it
+  as an automatic install request. An absent tool does not block unrelated .NET work or require a
+  substitute.
+- **Bound text evidence.** Where policy allows, text inspection can find candidate occurrences.
+  Text matches alone do not establish resolved bindings, complete references or rename impact; label
+  them as candidates and state uncertainty.
+- **Keep the criterion precise.** If an acceptance criterion requires a symbol fact and no permitted,
+  available method establishes it, report that criterion as unverified under the base contract. The
+  missing method does not block unrelated criteria or all .NET work.
+- **Bind evidence to the candidate.** When a tool-based gather is used, it applies to the candidate
+  snapshot the run actually produced. CHECK interprets that evidence and need not rerun the gather or
+  have access to the same tool.
 
 ### .NET specialists (gather-only)
 

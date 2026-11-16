@@ -176,10 +176,40 @@ class SourceParityTest(unittest.TestCase):
             "whole-solution",
             "validate_inner_loop.py",
             "pdca_evidence.py",
-            "Roslyn-first",
         ):
             with self.subTest(token=token):
                 self.assertIn(token, skill)
+
+        # Keep the optional-tool policy in the source contract and both localized
+        # guides, without coupling parity to every sentence of the explanation.
+        policy_docs = (
+            (
+                "source skill",
+                skill,
+                "### Semantic tooling for C# symbols",
+                "Roslyn is one possible method",
+                "Higher-priority host/project policies and permissions take precedence",
+            ),
+            (
+                "English guide",
+                (REPO / "docs/pdca-dotnet.md").read_text(encoding="utf-8"),
+                "### 3.1. Semantic tooling for C# symbols",
+                "Roslyn is one possible method, not a requirement",
+                "Higher-priority host/project policies and permissions take precedence",
+            ),
+            (
+                "Russian guide",
+                (REPO / "docs/ru/pdca-dotnet.md").read_text(encoding="utf-8"),
+                "### 3.1. Семантические инструменты для C#-символов",
+                "Roslyn — один из возможных инструментов, а не требование",
+                "Приоритет имеют политики и разрешения хоста/проекта",
+            ),
+        )
+        for label, document, *anchors in policy_docs:
+            normalized = " ".join(document.split())
+            with self.subTest(policy_document=label):
+                for anchor in anchors:
+                    self.assertIn(anchor, normalized)
 
 
 class GeneratorFixtureTest(unittest.TestCase):
