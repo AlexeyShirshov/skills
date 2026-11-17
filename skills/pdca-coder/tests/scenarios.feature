@@ -252,6 +252,65 @@ Feature: The pdca-coder overlay under pressure
       Then the original task and the user-supplied criteria remain verbatim
       # source: skills/pdca-coder/SKILL.md §Code-specific plan deltas
 
+  Rule: Existing unit and integration tests keep the user's compatibility boundary
+
+    @X1 @pinned
+    Scenario: X1 No mode choice defaults to a task-wide backward-compatible baseline
+      Given the user has not explicitly selected non-backward-compatible mode
+      And the task runs in normal or autonomous control mode
+      When the task is retried, replanned or continued in another step
+      Then backward-compatible mode and the tests present at task start remain in force
+      And autonomy or general plan approval grants no test-change permission
+      # source: skills/pdca-coder/SKILL.md §Existing-test compatibility
+      # test: skills/pdca-coder/tests/test_existing_test_compatibility.py::ExistingTestCompatibilityContractTest.test_default_mode_is_backward_compatible_and_baseline_persists
+
+    @X2 @pinned
+    Scenario: X2 Indirect edits cannot change baseline tests in backward-compatible mode
+      Given existing unit and integration tests in the task-start baseline
+      When DO considers changing checks, fixtures, helpers, snapshots or configuration
+      Then any change that alters an existing test is protected
+      And adding a new test is allowed, including in the same file, if baseline tests stay unchanged
+      # source: skills/pdca-coder/SKILL.md §Existing-test compatibility
+      # test: skills/pdca-coder/tests/test_existing_test_compatibility.py::ExistingTestCompatibilityContractTest.test_authorization_is_bounded_and_new_tests_are_allowed
+
+    @X3 @pinned
+    Scenario: X3 Explicit permissions authorize only their agreed test changes
+      Given a user consents to a named existing-test change or explicitly selects non-backward-compatible mode
+      When PLAN records the authorization basis
+      Then compatible-mode consent remains limited to the named tests and agreed change scope
+      And explicit non-backward-compatible mode permits changes within task scope without relaxing quality criteria
+      # source: skills/pdca-coder/SKILL.md §Existing-test compatibility
+      # test: skills/pdca-coder/tests/test_existing_test_compatibility.py::ExistingTestCompatibilityContractTest.test_authorization_is_bounded_and_new_tests_are_allowed
+
+    @X4 @pinned
+    Scenario: X4 An unapproved existing-test change blocks DO and follows base ACT
+      Given the task cannot be completed in backward-compatible mode without an unapproved test change
+      When DO reaches that boundary
+      Then it stops before making the change and returns cannot finish through DO to ACT
+      And the report names the cause, evidence, affected tests and needed user decision
+      And autonomy or escalation cannot waive the boundary
+      # source: skills/pdca-coder/SKILL.md §Existing-test compatibility
+      # test: skills/pdca-coder/tests/test_existing_test_compatibility.py::ExistingTestCompatibilityContractTest.test_unapproved_existing_test_change_stops_do
+
+    @X5 @pinned
+    Scenario: X5 PLAN passes the mode baseline and permission through DO to CHECK
+      Given PLAN records the user's mode, task-start baseline and explicit permissions
+      When DO returns the frozen candidate and evidence to CHECK
+      Then CHECK receives those same inputs and independently checks existing-test changes against them
+      And a missing baseline or authorization cannot establish permission or a pass
+      # source: skills/pdca-coder/SKILL.md §Existing-test compatibility
+      # test: skills/pdca-coder/tests/test_existing_test_compatibility.py::ExistingTestCompatibilityContractTest.test_mode_baseline_and_permission_travel_and_check_verifies
+
+    @X6 @pinned
+    Scenario: X6 Compatibility decisions are recorded in the existing status file
+      Given either compatibility mode and its authorization basis
+      When the base status record is written
+      Then it references the baseline and records the mode and its authorization basis
+      And non-backward-compatible mode names each changed test, its change and its reason
+      And no status schema, section or file is added
+      # source: skills/pdca-coder/SKILL.md §Existing-test compatibility
+      # test: skills/pdca-coder/tests/test_existing_test_compatibility.py::ExistingTestCompatibilityContractTest.test_status_uses_base_record_and_lists_required_details
+
   Rule: Semantic probes and reliable run artifacts
 
     @U7 @uncovered @simulated

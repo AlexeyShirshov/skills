@@ -80,6 +80,10 @@ For code work under the base common cycle, PLAN defines the cycle's observable c
 forms below; every other plan field, the original task, the cycle/step scope and criteria ownership
 stay as the governing contract sets them.
 
+Use §Existing-test compatibility to carry the user's compatibility choice, task-start test baseline
+and any explicit permission through PLAN, DO and CHECK; PLAN records the user's choice and does not
+select a mode.
+
 - **Correctness** — the requested behaviour including its error path and exit status, empty /
   single / many input, malformed or missing input, and a negative condition where the task makes one
   relevant.
@@ -95,6 +99,40 @@ Criteria state required outcomes; implementation and developer verification belo
 independent verification to CHECK, as the governing contract assigns. DO may propose a worktree
 split, performed only within the cycle's authorised workspace operations.
 
+## Existing-test compatibility
+
+**Default and baseline.** Compatibility mode is independent of normal/autonomous control mode. Unless
+the user explicitly selects `non-backward-compatible`, use `backward-compatible`; an absent or unclear
+choice, autonomy, and general plan approval do not authorize changes to existing tests. The baseline
+is the unit and integration tests present when the user task starts. Preserve that same baseline
+through retries, replans and step cycles of the same task.
+
+**Authorization.** In `backward-compatible` mode, preserve every baseline test and its checks: do not
+change, delete, skip, disable or weaken them, directly or indirectly through fixtures, shared helpers,
+snapshots or configuration when that changes an existing test. Adding tests is allowed, including in
+an existing file, while leaving its baseline tests unchanged. Explicit user consent authorizes only
+the named tests and agreed change scope; it does not switch modes or permit further changes. Only the
+user's explicit `non-backward-compatible` choice selects that mode and authorizes existing-test
+changes within the task scope; it does not relax acceptance or quality criteria.
+
+**Handoffs and CHECK.** PLAN records the mode, a reference to the task-start baseline, and the source
+and exact scope of any explicit permission, then passes them unchanged to DO. DO preserves them and
+passes them with the frozen candidate and evidence to CHECK. CHECK independently compares the
+candidate with the baseline and verifies each existing-test change against the selected mode and
+explicit permission; a missing baseline or authorization is not proof of permission or a pass.
+
+**STOP.** If the requested result cannot be achieved in `backward-compatible` mode without an
+existing-test change outside explicit consent, stop DO before making that change. Return `cannot
+finish` through the base DO→ACT route with the cause, evidence, affected tests and exact user decision
+needed; ACT records STOP under its contract. No autonomous workaround or escalation can waive this
+boundary.
+
+**Status.** In the existing base status record, reference the baseline and record the mode and its
+authorization basis; in `backward-compatible` mode also record any explicit user consent and its
+scope. In `non-backward-compatible` mode, name each changed existing test, the nature of its change
+and the reason. Preserve these records across retries, replans and step cycles of the same task. Use
+the base status shape: no new schema, section or status file.
+
 ## Code-specific check deltas
 
 CHECK keeps the base procedure, its per-criterion method choice, verdict, routing and accounting;
@@ -108,6 +146,9 @@ when it judges or requests a run.
   criteria, docs against the implementation where required, a security gather when triggered, numbers
   when a criterion is quantitative. A lens with nothing applicable is recorded as not applicable with
   its reason; an "all streams green" tally is not required, and an inapplicable lens never blocks.
+- **Existing-test integrity.** Apply §Existing-test compatibility: CHECK independently verifies the
+  candidate against the task-start baseline and checks every direct or indirect existing-test change
+  against the selected mode and explicit permission.
 - **Coverage of the criteria's own variants.** An execution variant the change actually exposes —
   input kind, `null`/default/uninitialized, value vs reference form, constructor/mapping, projection
   vs whole object, provider/backend, on/off flag — is verified as part of the existing criteria, not
@@ -367,17 +408,17 @@ only red→green requirement is the regression test of a fix.
   them; when required, they match the public behaviour the change actually produced.
   Generated/API docs follow the finished code and reflect its actual signatures and behaviour, never
   an intended one.
-- **Tests.** The developer test strategy is DO's: it closes the executable variants that matter to the
-  actual criteria — empty / single / many, malformed or missing, negative, plus the axes the change
-  really exposes: input kind, `null`/default/uninitialized, value vs reference form,
-  constructor/mapping, projection vs whole object, provider/backend, on/off flag — as a test, a guard
-  or a deferral with a trigger, and it never binds CHECK's independent choice. A test name states the
-  asserted behaviour; integration is used where a unit cannot observe it, E2E only when the task or
-  project demands it. A test that would survive a deliberately wrong implementation, that asserts a
-  mock instead of behaviour, covers only the happy path, checks the implementation instead of
-  behaviour, or exists "for the future" without a criterion is not evidence. A logic-free DTO or
-  proxy may go untested with an explicit reason and trigger; that is a coverage choice, never a
-  waiver of a mandatory criterion.
+- **Tests.** Before editing tests, apply §Existing-test compatibility. The developer test strategy is
+  DO's: it closes the executable variants that matter to the actual criteria — empty / single / many,
+  malformed or missing, negative, plus the axes the change really exposes: input kind,
+  `null`/default/uninitialized, value vs reference form, constructor/mapping, projection vs whole
+  object, provider/backend, on/off flag — as a test, a guard or a deferral with a trigger, and it never
+  binds CHECK's independent choice. A test name states the asserted behaviour; integration is used
+  where a unit cannot observe it, E2E only when the task or project demands it. A test that would
+  survive a deliberately wrong implementation, that asserts a mock instead of behaviour, covers only
+  the happy path, checks the implementation instead of behaviour, or exists "for the future" without
+  a criterion is not evidence. A logic-free DTO or proxy may go untested with an explicit reason and
+  trigger; that is a coverage choice, never a waiver of a mandatory criterion.
 - **Fixes.** A fix starts from a reproducible failure: reproduce it, read the error in full, trace the
   value or state to its source, test one hypothesis, then add the failing regression test and the
   minimal fix. A fix verifies the original symptom and the regression criterion, not "should work".
@@ -427,6 +468,8 @@ integrated candidate; leave the task branches in place so the work remains recov
   additional top-level section, log or per-unit status file.
 - **Record rules follow `act.md`.** Original task, phase reports, dialogue language, sole writer,
   fixed template and Git state are as the base `act.md` states; no restated schema.
+- **Existing-test policy.** Apply §Existing-test compatibility when recording its mode, baseline,
+  authorization and any existing-test changes, using only the base status record.
 - **Unit and stream metadata.** Keep the code-specific unit fields — state, criteria covered,
   footprint/owner, evidence pointers — under `## DO result`, the base section that owns them, never
   in a new status path.
