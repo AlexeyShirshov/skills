@@ -653,5 +653,5 @@ The base self-check applies. On any of these — **stop, name the deviation, ret
 - `../pdca/references/plan.md` — the planner-only procedure and output contract
   (classification, plan fields, step boundary); the driver passes its exact absolute path and never
   reads or inlines it.
-- `../pdca/references/check.md` — the CHECK contract; the driver reads it in full and inlines it in
+- `../pdca/references/check.md` — the executor includes the full CHECK contract inline in
   every step `pdca-check` dispatch (CHECK cannot read the installed file).

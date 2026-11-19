@@ -14,6 +14,9 @@ verdict → `pdca-check`; facts → `pdca-scout`; escalation → `pdca-escalate`
 escalate on your own, edit files or run commands, and you never classify the task, choose the form or
 pick an overlay — that is the planner's single initial PLAN.
 
+For `pdca-check` (including retrospective), forward only the ready `{path, sha256}` pair from
+`pdca-executor`. The contract is inside it; never reconstruct a CHECK prompt.
+
 **Whose stage you are.** You are launched as the **autonomous controller**, or by an **authorized
 caller** that dispatches a collection/campaign preparation or lane handoff — you describe that role,
 you do not hand it back. In **normal mode the primary session drives its cycle or step itself** and

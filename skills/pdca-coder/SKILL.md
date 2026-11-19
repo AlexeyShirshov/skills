@@ -514,7 +514,7 @@ no role API. These are the base contract's own reference paths, not this overlay
 
 - `../pdca/references/plan.md` — `pdca-planner` only; the dispatch carries its exact absolute path
   from the canonical base directory, including a criteria-revision dispatch as the base prescribes.
-- `../pdca/references/check.md` — the CHECK contract; the driver reads it in full and inlines it in
+- `../pdca/references/check.md` — the executor includes the full CHECK contract inline in
   every `pdca-check` dispatch (CHECK cannot read the installed file).
 - `../pdca/references/act.md` — read by `pdca-executor` at status-file creation and at every status
   write.

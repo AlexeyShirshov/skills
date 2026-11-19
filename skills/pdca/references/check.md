@@ -6,10 +6,10 @@ file holds what CHECK receives, how it verifies, and what its verdict carries.
 
 ## How this reference reaches you
 
-The driver reads this file in full and passes its **complete contents inline** in every
-`pdca-check` dispatch — the first CHECK, a recheck after DO, a campaign step and a collection item
-alike. `pdca-check` has no permission to read the installed reference, so this text in the dispatch
-is its contract: it receives no path and no instruction to open one. If the complete text is absent,
+The executor packages this file's **complete contents inline** in every
+`pdca-check` dispatch file — the first CHECK, a recheck after DO, a campaign step and a collection item
+alike. Read the `.pdca/**` handoff named by the driver through its end marker (continue partial reads).
+CHECK has no permission to read the installed reference. If the complete text is absent,
 truncated or visibly incomplete, CHECK returns an explicit blocker and no verdict; it does not judge
 from the agent prompt alone.
 
@@ -251,7 +251,7 @@ attempt and reuses the same role and effective tier (medium) as normal CHECK.
 
 **Invocation discriminator.** The dispatch is marked `mode: retrospective` (or an equivalent explicit
 marker) and carries the complete retrospective contract from `references/act.md` — this section or
-the whole file — inlined by the driver, together with the complete `check.md`. A driver that cannot
+the whole file — inlined in the ready handoff, together with the complete `check.md`. A driver that cannot
 load either whole raises an explicit blocker before dispatch.
 
 **Inputs.** The original task and cycle scope; the phase reports that actually ran — PLAN return(s),

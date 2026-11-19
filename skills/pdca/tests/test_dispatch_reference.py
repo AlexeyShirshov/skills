@@ -146,7 +146,7 @@ class TransportBoundaryTest(unittest.TestCase):
         self.assertIn("built from the inputs that protocol requires", escalation)
         scope = section(self.driver_raw, "## Read scope", "## Routed, not taken")
         for item in (
-            "references/driver.md", "references/check.md", "references/escalate.md",
+            "references/driver.md", "no driver read is needed", "references/escalate.md",
             "status files", "step-boundary", "recovery", "plan-selected overlays",
             "loaded contents", "installation-path file",
         ):
@@ -174,8 +174,8 @@ class TransportBoundaryTest(unittest.TestCase):
         self.assertIn("do can read", transport)
         self.assertIn("applicable section verbatim or as an exact", transport)
         self.assertIn("verbatim inline", check)
-        self.assertIn("no path or instruction", check)
-        self.assertIn("does not grant file access", check)
+        self.assertIn("forward only the executor's ready", check)
+        self.assertIn("does not grant file access", transport)
         self.assertIn("plan owns the selected overlay set", transport)
         self.assertIn("already loaded skill contents", transport)
         self.assertIn("never discover, select or load another overlay", transport)

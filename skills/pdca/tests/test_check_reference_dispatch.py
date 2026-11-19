@@ -2,8 +2,7 @@
 
 The canonical reference lives once in ``pdca/references/check.md``.  `pdca-check`
 keeps its ``.pdca/**``-only scoped read, so it cannot open the installed reference:
-the driver (normal primary or `pdca-orchestrator`) must read the file in full and
-inline its complete text in every CHECK dispatch, and fail closed if it cannot.
+the executor packages its complete text and the driver forwards the ready path.
 A missing contract is a blocker, never a verdict judged from the agent prompt.
 
 These are static contract guards in the style of the family's routing tests.
@@ -177,7 +176,7 @@ class CheckerAssetTest(unittest.TestCase):
         for token in (
             "check contract",
             "complete contents",
-            "inlined by the driver",
+            "handoff named in the dispatch",
             "no permission to read the installed reference",
         ):
             with self.subTest(token=token):

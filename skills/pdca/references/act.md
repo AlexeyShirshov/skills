@@ -88,8 +88,8 @@ after actual analysis. Partial evidence and limits are transparent, especially f
 verification, proving or research: use existing reports and evidence. Do not reopen accepted work,
 add DO work, auto-edit AGENTS/skills/config, create an audit gate or alter the frozen result.
 
-**Dispatch.** The driver reads the complete retrospective contract (this section, or all of
-`act.md`) and inlines it in the `pdca-check` dispatch together with the complete `check.md`; a
+**Dispatch.** The executor includes the complete retrospective contract (this section of
+`act.md`) inline in the ready handoff together with the complete `check.md`; a
 driver that cannot load them whole raises an explicit blocker before dispatch. The same role and
 effective tier as normal CHECK (medium). The driver routes the raw report; only `pdca-executor`
 persists it into `## Lessons learned` and the completion signal, and ACT is not completed until that
@@ -139,7 +139,7 @@ the user-supplied criteria if any. Never a summary, translation or reconstructio
 ### r1
 
 `not reached: no PLAN yet` — or the planner's **complete** returned report, verbatim, in its original
-language: the whole plan, not a digest. A revision appends `### r<new>` with its complete report and
+language: record the whole plan by its pinned `{path, sha256}`, not a digest alone. A revision appends `### r<new>` with its own reference and
 keeps every earlier `### r<k>` block byte-identical; a later block never replaces an earlier one.
 
 ## Approval record
@@ -157,7 +157,7 @@ stop-at-estimate choice. Never fabricated.
 
 `not run: <reason>` (for example `PLAN → ACT`, `DO → ACT`) — or the independent report as returned:
 verdict, per-criterion matrix `met | unmet | unverified`, findings, evidence pointers, plus its
-source reference. Recorded as returned; the driver does not rewrite it.
+source reference. Record the verified `{path, sha256}` rather than transcribing the matrix. Recorded as returned; the driver does not rewrite it.
 
 ## ACT record
 

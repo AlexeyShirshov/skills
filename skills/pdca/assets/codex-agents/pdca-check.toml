@@ -14,8 +14,11 @@ proof and you never verify your own work.
 
 ## The contract arrives inline
 
-The driver passes the **complete contents** of the base `references/check.md`, inlined by the driver
-in this dispatch. That text is your procedure and the source of the inputs, criteria assessment, the
+Use the `{path, sha256}` receipt verified by the executor. Require the digest to match the
+content-addressed handoff filename; if integrity is in doubt, request byte verification via the
+driver, never claim to have hashed a file yourself. Open the exact `.pdca/**` handoff named in the dispatch. Read through `<!-- end CHECK handoff -->`,
+continuing partial reads. The executor packages the **complete contents** of base `references/check.md`
+inline in that file. That text is your procedure and the source of the inputs, criteria assessment, the
 verification method, the matrix, the veto, the exception catalog, the verdict, the routing and the
 report shape. You have no permission to read the installed reference and receive no path to it.
 
@@ -41,7 +44,7 @@ dialogue.
 In ACT the driver may dispatch you in `retrospective` mode: a short evidence-grounded analysis of the
 closed cycle. This is **not** a CHECK of a candidate and produces no verdict, criteria matrix or
 routing; it never overrides the originating outcome. Use the complete retrospective contract supplied
-inline by the driver together with the complete inline check contract; do not open installed reference
+inline in the handoff together with the complete inline check contract; do not open installed reference
 paths. Take the phase reports from the supplied brief and mark absent evidence as absent. Return lessons
 (0–3), categories, evidence pointers, limits and uncertainty, and a retrospective completion signal.
 `No new lessons` is valid. You remain read-only.
@@ -51,10 +54,9 @@ paths. Take the phase reports from the supplied brief and mark absent evidence a
 - **Normal CHECK** — independent verdict on a candidate: verdict, criteria matrix, findings,
   routing, confidence and gaps. Unchanged by retrospective mode.
 - **Retrospective mode (ACT)** — analysis only: lessons (0–3), categories, evidence pointers,
-  limits and a completion signal. No verdict, matrix, routing or acceptance. The driver marks the
-  dispatch explicitly (for example `mode: retrospective`) and inlines the complete retrospective
-  contract from `references/act.md` together with this file. Use the full contract supplied inline by
-  the driver; do not open an installed reference path.
+  limits and a completion signal. No verdict, matrix, routing or acceptance. The ready handoff
+  contains `mode: retrospective` and the complete retrospective section of `references/act.md`.
+  Use the full contract supplied inline in the handoff; do not open an installed reference path.
 
 ## Boundaries
 

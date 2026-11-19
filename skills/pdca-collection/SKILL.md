@@ -525,7 +525,7 @@ Load the **base `../pdca/SKILL.md` and this `SKILL.md` as separate reads on entr
 - `../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md` — the overlays applied to the relevant work.
 - `../pdca/references/plan.md` — base planner-only phase detail; the driver supplies
   its exact absolute path, never loads or forwards it.
-- `../pdca/references/check.md` — the base verdict/evidence contract; the driver reads it in full
-  and inlines it in every item and integration `pdca-check` dispatch (CHECK cannot read it).
+- `../pdca/references/check.md` — the executor includes the full verdict/evidence contract inline
+  in every item and integration `pdca-check` handoff (CHECK cannot read the installed file).
 - `../pdca/references/act.md` — loaded by `pdca-executor` for cycle records
   and status updates; batch projections remain in §Collection status record.

@@ -311,7 +311,7 @@ summary.
 **PLAN → DO** — only when that plan is complete, judgeable and covers the cycle scope. Each handoff
 carries the original task, criteria, constraints, prohibitions and scope **by exact reference**, the
 cycle's `evidence_root` (§Workspace and durable status), and no frozen verification procedure; the plan
-is persisted and read back; normal mode adds the user's approval. `pdca-executor` logs `DO started`.
+is pinned by path and SHA-256; normal mode adds the user's approval. `pdca-executor` logs `DO started`.
 Choosing, validating and running the verification is CHECK's work at CHECK time, not a pre-DO
 prerequisite; an unusable method is re-chosen, not a plan defect. No asking the user for criteria: an indeterminate
 criterion blocks DO and routes **PLAN → ACT**.
@@ -371,10 +371,10 @@ residual `unmet`/`unverified` requirements, with no `PASS`, no `done` and no cre
 evidence, taking none as established; user-supplied criteria are the acceptance set CHECK judges.
 
 **The CHECK contract travels inline.** `references/check.md` is the single source of the procedure:
-the driver reads it in full and passes its **complete contents inline** in **every** `pdca-check`
+the executor packages its **complete contents inline** in a ready handoff for **every** `pdca-check`
 dispatch (first CHECK, recheck, campaign step, collection item, ACT retrospective); CHECK cannot
-read installed reference. A driver that cannot load it whole raises an explicit blocker before
-dispatch: no reduced contract, no verdict from the agent prompt alone. An ACT retrospective dispatch
+read installed reference. Driver forwards `{path, sha256}`. Missing: explicit blocker;
+no reduced contract, no verdict from the agent prompt alone. ACT retrospective
 also inlines the retrospective contract from `references/act.md`.
 
 **Resource-blocked CHECK pauses under §Recovery; no new exit:**
@@ -471,11 +471,10 @@ The cycle's **persistent PDCA state and evidence** live under one fixed project-
   relocates an original. Package only proof of the result, not copies of product changes, per
   `references/check.md` §Evidence packaging.
 - **Every write is by `pdca-executor`** — planner, check, escalate and the driver have no file
-  permissions. The driver passes the **source reports** (PLAN's return, DO's result, CHECK's verdict)
-  and the bookkeeping facts; it does not rewrite, summarise, translate or re-command them into the
-  record. A **persisted plan is read back before DO**: the executor returns the recorded block, or its
-  hash with its line and byte counts, and the driver matches it to the planner's return; no match, no
-  DO. A read-back is never assumed from a report that the plan was written.
+  write permissions for the record. Pin **source reports** once: the executor captures PLAN, DO,
+  CHECK and retrospective originals under `evidence_root` and records `{path, sha256}` in status.
+  Route that verified pair unchanged. A mismatch blocks consumption; no model retypes the report
+  or compares a second copy. PLAN pinning and status recording are one action before DO.
 - **Append-only; history is never silently deleted.** Progress, attempts and defect history
   accumulate; accepted conclusions may be superseded with a reason, but facts are not backfilled.
   There is no separate todo or sidebar mirror.
@@ -644,13 +643,12 @@ A supporting file is never auto-loaded by being mentioned; the routing below kee
 
 - `references/plan.md` — **`pdca-planner` only**: the planner reads it at its exact absolute path,
   supplied by the driver; the driver never reads, inlines or forwards it.
-- `references/check.md` — CHECK contract, delivered **inline** as the **complete contents** by the
-  driver in every `pdca-check` dispatch (first CHECK, recheck, campaign step, collection item, ACT
-  retrospective); CHECK cannot read the installed file, and a driver that cannot load it whole raises
+- `references/check.md` — complete CHECK contract **inline in the executor's handoff**; the driver
+  routes its path for candidate, recheck, campaign step, collection item and ACT retrospective.
+  CHECK cannot read the installed file; an incomplete handoff raises
   an explicit blocker.
 - `references/act.md` — read by `pdca-executor` on status-file creation and every status write:
-  skeleton, headings, field rules, closing order. Driver reads only its retrospective section for
-  inline ACT retrospective delivery.
+  skeleton, headings, field rules, closing order. The executor packages its retrospective section.
 - `references/escalate.md` — driver: read before expert dispatch (inside its §Read scope); pass its
   complete protocol with the input built from the inputs it requires.
 - `references/driver.md` — **driver**: read in full by a delegated driver (`pdca-orchestrator`) right

@@ -236,13 +236,13 @@ class DriverContractTest(unittest.TestCase):
         body = norm(self.text)
         self.assertIn("complete contents", body)
         self.assertIn("check.md", body)
-        self.assertIn("retrospective contract from references/act.md", body)
+        self.assertIn("same {path, sha256} transport", body)
         self.assertIn("act retrospective", body)
 
     def test_driver_read_scope_has_narrow_act_exception(self) -> None:
         body = norm(self.text)
         self.assertIn(
-            "no phase or form procedure reference except references/act.md's retrospective contract for inline delivery",
+            "retrospective contracts are packaged by the executor; no driver read is needed",
             body,
         )
 
@@ -268,7 +268,7 @@ class RoleScopeTest(unittest.TestCase):
     def test_check_names_retrospective_mode_and_inline_contract(self) -> None:
         body = norm(read(CHECK_ASSET))
         self.assertIn("retrospective mode", body)
-        self.assertIn("use the full contract supplied inline by the driver", body)
+        self.assertIn("use the full contract supplied inline in the handoff", body)
         self.assertIn("do not open an installed reference path", body)
         self.assertIn("normal check", body)
 

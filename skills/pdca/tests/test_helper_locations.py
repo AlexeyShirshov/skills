@@ -53,7 +53,7 @@ class SkillDisambiguationTest(unittest.TestCase):
         for token in (
             "`../pdca-dotnet/scripts/`",
             "`<skills-root>/pdca-dotnet/scripts/`",
-            "`../pdca/scripts/` carries `pdca_cost.py` only",
+            "`../pdca/scripts/` carries base helpers",
             "`.pdca/scripts/`",
             "byte-identical copies",
             "never grounds for a substitute gate",

@@ -170,7 +170,7 @@ class ContractTransportTest(unittest.TestCase):
 
     def test_check_receives_the_complete_contract_inline_and_cannot_read_it(self) -> None:
         checker = read(ASSETS / "pdca-check.md")
-        self.assertIn("inlined by the driver", checker)
+        self.assertIn("The executor packages", checker)
         self.assertIn("no permission to read the installed reference", checker)
         # Its scoped read stays .pdca/** — no reference-directory grant was added.
         self.assertNotIn("references/check.md\": allow", checker)
@@ -236,7 +236,7 @@ class TransportPermissionTest(unittest.TestCase):
         self.assertEqual({".pdca/**"}, read_grants(checker))
         body = norm(read(checker))
         self.assertIn("complete contents", body)
-        self.assertIn("inlined by the driver", body)
+        self.assertIn("The executor packages", body)
         self.assertIn("no permission to read the installed reference", body)
         # The driver declares the same transport: whole contract, no path.
         self.assertIn(

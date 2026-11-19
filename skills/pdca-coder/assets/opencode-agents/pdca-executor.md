@@ -132,6 +132,22 @@ of the permitted workspace.
   not copies or diffs of changed files, per the base CHECK reference. A brief
   that names no `evidence_root` falls back to the
   contract default `.pdca/<task>/rv<k>/`, reported as such — never an ad-hoc directory elsewhere.
+- **Ready CHECK handoff.** Before returning a candidate, including a recheck or integration,
+  write a compact brief under `evidence_root`: exact status/task/plan sections, criterion IDs,
+  candidate identity, result/log pointers, current counters and defect history by status reference,
+  previous finding if any, form-specific scope and overrides. For ACT use the recorded phase reports
+  and retrospective scope instead. From the workspace root run the loaded base's
+  `scripts/check_handoff.py` with Python: `candidate <brief>` or `retrospective <brief>`.
+  For candidate CHECK repeat `--section 'pdca-coder:Exact heading'` for applicable sections
+  from the PLAN-selected overlay set. Return the printed `{path, sha256}` unchanged.
+- **Pin source reports at the existing status write.** From the workspace root invoke the loaded
+  base's `scripts/report_ref.py` with Python: `opencode <evidence_root> <source-session> [--message <id>]`
+  for the exact dispatched OpenCode turn (omit message only for its completed, still-current turn);
+  `file <evidence_root> <original-under-.pdca>` for an original file. Other hosts use a permitted
+  adapter for the exact returned message or an original file, never an agent's reconstruction.
+  If the original is inaccessible, report a transport blocker. Store and forward the verified
+  `{path, sha256}` instead of copying the body into status. For an existing pair use
+  `verify <path> <sha256>` before consumption. No separate call solely for textual read-back.
 - **No verdict, no PASS, no STOP.** DO returns either a completed candidate with evidence (the
   verdict belongs to `pdca-check`) or a `blocked`/`incomplete` report for **ACT**, which finalizes
   the outcome. DO runs no CHECK on an unfinished candidate. There is no domain checklist in this

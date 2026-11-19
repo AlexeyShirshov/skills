@@ -63,8 +63,8 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
 
 - **PLAN** — `plan_reference_path` above; the task by exact reference; the facts as pointers.
 - **DO** — frozen plan by exact reference, the cycle's `evidence_root`, phase-specific deltas, and the phase report exactly as returned or an exact reference to its complete readable artefact. A digest, retelling or translation is not a source. An overlay's helper lives in that overlay's `scripts/` (`pdca-dotnet` ships `validate_inner_loop.py` and `pdca_evidence.py` there, never in the base's); the project's `.pdca/scripts/` starts empty and the executor stages byte-identical copies — a missing copy is never a substitute-check, waiver or `Notice:` ground. For code work, apply the selected-overlay section rule below.
-- **CHECK** — in every `pdca-check` dispatch (first check, recheck, campaign step, collection lane/item, integration check), inline the **complete contents** of `check.md` with **no path and no instruction to read it**. Candidate CHECK also gets applicable PLAN-selected overlay sections **verbatim inline**, with no path or instruction to open an installed file. If it cannot be loaded whole, return a blocker before dispatch. This delivery does not grant file access or choose a method. Pass the candidate identity and evidence pointers, not changed files.
-- **ACT retrospective CHECK** — inline complete `check.md` and the `act.md` retrospective contract; omit selected-overlay proving/run sections.
+- **CHECK** — in every `pdca-check` dispatch (first check, recheck, campaign step, collection lane/item, integration check), forward only the executor's ready `.pdca/**` handoff path. The file contains the **complete contents** of `check.md` and applicable PLAN-selected overlay sections **verbatim inline**; for installed files give CHECK no path and no instruction to read it. If it cannot be loaded whole, return a blocker before dispatch.
+- **ACT retrospective CHECK** — use the same `{path, sha256}` transport, with complete `check.md` and the `act.md` retrospective contract; omit selected-overlay proving/run sections.
 - **ESCALATE** — build the brief from `escalate.md` §Input and permissions and pass that protocol's **complete contents inline** (fail closed before dispatch if it cannot be loaded whole): the narrow question and its boundaries, original task, phases and role asking, criteria in play, result, evidence reused, not re-gathered, what was already tried and why it failed, attempts, constraints, pre-gathered scout pack, and live cycle `N`, revision `r`, attempt `n/3` and defect history (each key, observed attempts and applied fixes). The counter procedure is the base §State machine and counters, already loaded by the driver; nothing here re-thresholds it and the expert has no discretion to waive it.
 - **Status work** — `pdca-executor` reads `act.md` itself; the driver passes source reports unrewritten and never renders status content.
 - **Selected-overlay section delivery** (candidate DO/CHECK only) — PLAN owns the selected overlay set. First pass the base §Preflight — required skill contracts for its exact-ID closure; then use only relevant sections from those already loaded skill contents. Never discover, select or load another overlay or open an installation-path file. DO gets each applicable section verbatim or as an exact skill-ID + file/heading reference DO can read. CHECK gets applicable sections verbatim inline, with no path/open instruction. Select by criterion, evidence and actual run, not overlay presence. Do not deliver whole overlays or unrelated skills by default; if a section is unavailable, block rather than summarize, widen permissions or substitute.
@@ -73,6 +73,13 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
   |---|---|
   | `pdca-coder` | `SKILL.md` §Code evidence requirements (relevant rules); §Coverage evidence lifecycle; §Build and test command forms; §Test run safety (every phase — DO and CHECK), only when relevant. |
   | `pdca-dotnet` (inherits coder) | Relevant coder sections, plus `SKILL.md` §.NET toolchain and commands; §Coverage comparison and report reuse; §.NET check deltas → Tests are judged on the applicable complete scope; §.NET do/act deltas → Freeze order and line endings, Integration lane or Test host safety (DO and CHECK), only when relevant. |
+
+**Prepare once, route by path.** Inline CHECK content belongs inside the handoff file, not in the tool prompt.
+The executor prepares it at the existing producer boundary. Route its printed `{path, sha256}` unchanged, without
+opening it or assembling fields. Reuse it for a transport retry; changed inputs need a fresh file.
+Missing packet: request packaging, not another product attempt. This does not grant file access.
+
+**Report transport.** For a read-only role's completed report pass its exact host session/message handle to the executor in the existing status write, before resuming that session. For an existing pinned report pass the pair. The executor captures and verifies the original bytes, then returns the pair and the routing outcome. Use the pair for status, approvals and later dispatches; do not request a separate plan read-back. For the CHECK dispatch above, “handoff path” always includes its SHA-256.
 
 ### Interrupted dispatches
 
@@ -86,12 +93,12 @@ After confirmed failure and transient-cause resolution, retry unchanged once; an
 This section is the single owner of the driver's own reads; base §Roles and §Escalation only point here, and no other file restates the list.
 - loaded base/form/PLAN-selected overlays by exact ID through the host skill mechanism; use their loaded contents only, never open an installation-path file;
 - `references/driver.md` (this file), in full, once;
-- `references/check.md`, opened only to inline it whole into a `pdca-check` dispatch (plus the retrospective contract from `references/act.md` for a retrospective dispatch);
+- CHECK and retrospective contracts are packaged by the executor; no driver read is needed;
 - `references/escalate.md`, opened only to build an ESCALATE brief before that dispatch;
 - the exact recovery prompt `assets/install-agents-prompt.md` or `assets/install-skills-prompt.md`, relative to the loaded base skill, only when its corresponding preflight fires;
 - the assigned cycle, campaign or lane **status files** used as dispatch context, incl. step-boundary (base §Recovery).
 
-Nothing else: no phase or form procedure reference except `references/act.md`'s retrospective contract for inline delivery, no workspace walk, no `rg`/`grep`,
+Nothing else: no other phase or form procedure reference, no workspace walk, no `rg`/`grep`,
 and not the executor's status file for a REPORT-compare — there the last status comes from the executor's report, never from reading the file (base §State machine).
 Metadata — status path, form, contract, overlay, dispatch rule and refs — arrives through allowed tool inputs/outputs; for evidence ask `pdca-executor` or `pdca-scout` for its report instead.
 

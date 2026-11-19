@@ -299,7 +299,7 @@ JSON and print `FAIL:`/`ERROR:` with exit `2`/`1`.
 
 **Where they live.** Both helpers ship only in this overlay's own `scripts/` directory: `../pdca-dotnet/scripts/`
 relative to the base package, installed as `<skills-root>/pdca-dotnet/scripts/`. The base `../pdca/scripts/`
-carries `pdca_cost.py` only, so listing it says nothing about these two — an overlay
+carries base helpers, so listing it says nothing about these two — an overlay
 helper is looked up in the overlay's `scripts/`, not in the base's. Their absence from a project's
 `.pdca/scripts/` is equally normal, because that directory is workspace, not installation: stage
 byte-identical copies from the overlay's `scripts/` before the first run, record the staging (source path
@@ -354,6 +354,6 @@ no role API and no local reference set. Load:
 - the base phase references by role: `../pdca/references/plan.md` for `pdca-planner` only, whose
   exact absolute path the driver takes from the canonical base directory and routes without reading
   or inlining it, never from this overlay; `../pdca/references/check.md`, the CHECK contract the
-  driver reads in full and inlines in every `pdca-check` dispatch (CHECK cannot read the installed
+  executor includes in full inline in every `pdca-check` handoff (CHECK cannot read the installed
   file); and `../pdca/references/act.md` read by `pdca-executor` at status-file creation and every
   status write.
