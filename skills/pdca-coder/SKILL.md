@@ -117,9 +117,10 @@ changes within the task scope; it does not relax acceptance or quality criteria.
 
 **Handoffs and CHECK.** PLAN records the mode, a reference to the task-start baseline, and the source
 and exact scope of any explicit permission, then passes them unchanged to DO. DO preserves them and
-passes them with the frozen candidate and evidence to CHECK. CHECK independently compares the
-candidate with the baseline and verifies each existing-test change against the selected mode and
-explicit permission; a missing baseline or authorization is not proof of permission or a pass.
+passes them with the candidate identity and evidence to CHECK. CHECK evaluates a baseline comparison
+produced in place by DO or observed by `pdca-scout`, not the test files or a copied diff. The comparison
+must cover each existing-test change against the selected mode and explicit permission; a missing
+baseline or authorization is not proof of permission or a pass.
 
 **STOP.** If the requested result cannot be achieved in `backward-compatible` mode without an
 existing-test change outside explicit consent, stop DO before making that change. Return `cannot
@@ -140,12 +141,10 @@ this section adds what a code check examines and how code evidence is read. The 
 rules below hold wherever code evidence is produced or judged — DO follows them when it runs, CHECK
 when it judges or requests a run.
 
-- **Applicable work, no fixed tally.** Examine the actual change and the criteria, not a checklist
-  of streams: an audit of the diff (build/lint clean under the project's own policy,
-  suppressions/slop, smells, public surface when the task touches it), the tests against the cycle's
-  criteria, docs against the implementation where required, a security gather when triggered, numbers
-  when a criterion is quantitative. A lens with nothing applicable is recorded as not applicable with
-  its reason; an "all streams green" tally is not required, and an inapplicable lens never blocks.
+- **Applicable work, no fixed tally.** Judge behavior on tests or direct program/API runs against the
+  cycle's criteria. For other requirements, use evidence such as build and lint results, API
+  compatibility reports, documentation observations, a security gather when triggered, or
+  measurements for quantitative criteria. An inapplicable check never blocks acceptance.
 - **Existing-test integrity.** Apply §Existing-test compatibility: CHECK independently verifies the
   candidate against the task-start baseline and checks every direct or indirect existing-test change
   against the selected mode and explicit permission.

@@ -104,13 +104,13 @@ of the permitted workspace.
   an **actual scope replacement** marks the original `superseded` and requires an explicit
   mapping; replacements are active and carry all original acceptance criteria and residual work.
 - **Evidence, not assertion.** For every run return the exit status, the key numbers and the path
-  to the full log; never paste the log itself. **Persist what CHECK will read under the cycle's
+  to the full log; never paste the log itself. **Persist evidence under the cycle's
   `evidence_root`** (`.pdca/<task>/rv<k>/`, attempts under `attempts/`): a full log, manifest or
   per-row artifact that exists only in scratch outside `.pdca/` (`/tmp`, `TMPDIR`) is not evidence —
-  CHECK's scoped read reaches `.pdca/**` only, and the run is then re-gathered. Scratch outside
+  CHECK cannot read scratch, and the run is then re-gathered. Scratch outside
   `.pdca/` is allowed beside the persisted copy, not instead of it; the product files themselves
-  stay where the task puts them (never moved into `.pdca/`), but a snapshot, staged copy or diff that
-  CHECK must read is evidence and goes under `evidence_root`, bound to the source identity. A brief
+  stay where the task puts them. Run checks against the original candidate; persist the evidence,
+  not copies or diffs of changed files, per the base CHECK reference. A brief
   that names no `evidence_root` falls back to the
   contract default `.pdca/<task>/rv<k>/`, reported as such — never an ad-hoc directory elsewhere.
 - **No verdict, no PASS, no STOP.** DO returns either a completed candidate with evidence (the

@@ -139,7 +139,7 @@ never widened.
 | FACT-FINDING & OBSERVATION | `pdca-scout` | facts for PLAN/CHECK; independent observation when CHECK's method needs an outsider | read-only discovery and its fixed literal read-only commands (shell `workdir`, one command per call, `--` before pathspecs, no wrappers or `git -C`); writes only its pinned `observation-pack.md`; no delegation | cheap |
 | PLAN | `pdca-planner` | classify form and overlay, preserve task and supplied criteria, define criteria only where none were supplied, choose the measurement method for a measurable goal, decide revisions and PLAN-terminal outcomes | default-deny; reads only the named plan reference and the brief; no delegation, execution or writes — `pdca-executor` persists the plan | medium |
 | DO | `pdca-executor` | execute, apply fixes, run the checks CHECK asks for, gather evidence, record cycle state | `edit`/`bash`/`read` within the host and cycle constraints | cheap |
-| CHECK | `pdca-check` | choose the method and sufficiency per criterion, judge independently against the original task and user-supplied criteria, route findings | default-deny; scoped read of `.pdca/**`; task inputs and the complete CHECK reference arrive inline in the brief; no delegation or writes — its runs and writes go through the driver to `pdca-executor` | medium |
+| CHECK | `pdca-check` | choose the method and sufficiency per criterion, judge independently against the original task and user-supplied criteria, route findings | default-deny; scoped read of `.pdca/**` only; no delegation or writes — its runs and writes go through the driver to `pdca-executor` | medium |
 | ESCALATE | `pdca-escalate` | reasoned expert judgment on a disputed substantive decision; decides nothing that phase owns | read-only inspection, restricted non-mutating commands, facts via `pdca-scout`; no edits, no approval | strong |
 | DRIVER | cheap-tier primary or `pdca-orchestrator` | coordinate delegation, handoffs and state without deciding or judging | delegate to authorized subagents; the orchestrator has no edits, writes or shell; its own read scope has one owner, `references/driver.md` §Read scope (§References) | cheap |
 
@@ -463,13 +463,13 @@ The cycle's **persistent PDCA state and evidence** live under one fixed project-
   file for several cycles.
 - **Evidence root.** The driver passes an explicit `evidence_root` in every DO dispatch — the initial
   one, a follow-up and a CHECK-directed re-gather alike — with the contract default
-  `.pdca/<task>/rv<k>/` and attempts under `attempts/`. Everything a phase hands to CHECK is
+  `.pdca/<task>/rv<k>/` and attempts under `attempts/`. Evidence artefacts handed to CHECK are
   **persisted** there: full logs, manifests, per-row artifacts. Temporary scratch files may live
   outside `.pdca/` (a `TMPDIR`), but they are never the only source: the full log or artefact behind
-  a result is written under `evidence_root` before DO returns, because CHECK's scoped read reaches
-  `.pdca/**` only. The product files themselves stay wherever the task puts them — evidence never
-  relocates an original — but what CHECK must read of them (a snapshot, staged copy or diff) is a
-  separate artefact under `evidence_root`, bound to the source identity.
+  a result is written under `evidence_root` before DO returns, so CHECK can read the proof within its
+  evidence scope. The product files themselves stay wherever the task puts them — evidence never
+  relocates an original. Package only proof of the result, not copies of product changes, per
+  `references/check.md` §Evidence packaging.
 - **Every write is by `pdca-executor`** — planner, check, escalate and the driver have no file
   permissions. The driver passes the **source reports** (PLAN's return, DO's result, CHECK's verdict)
   and the bookkeeping facts; it does not rewrite, summarise, translate or re-command them into the
@@ -507,8 +507,8 @@ The cycle's **persistent PDCA state and evidence** live under one fixed project-
   only because the complete original stays readable at the referenced identity: a summary, digest,
   translation or paraphrase is still forbidden, and a reference the role cannot reach is not a
   handoff. Every role reads `.pdca/**` references within its existing permissions; CHECK
-  additionally receives the complete base CHECK contract **inline** and reads the staged candidate
-  itself — that contract is never replaced by a pointer.
+  additionally receives the complete base CHECK contract **inline** — that contract is never
+  replaced by a pointer.
 - **Contents:** the goal/criteria and cycle scope, verification methods and evidence, form and
   overlay, counters and defect history, decisions/approvals/blockers/next step, and — for a campaign —
   increments, knowledge and effort accounting; a PLAN-terminal outcome records the missing information

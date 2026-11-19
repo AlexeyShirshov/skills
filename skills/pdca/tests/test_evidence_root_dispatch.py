@@ -16,8 +16,8 @@ places, and these static guards keep all three honest:
 Mirror parity is not retested here: `sync_role_assets.py --check` is the
 authoritative guard (asserted in ``test_role_assets.py``).
 
-A **product file** itself is never relocated into `.pdca/`; the snapshot, staged
-copy or diff that CHECK reads is the evidence and lives under the root.
+A **product file** itself is never relocated into `.pdca/`; separate artefacts
+live under the root only when the chosen method needs them.
 
 Run:
     python3 -m unittest discover -s skills/pdca/tests -p 'test_*.py' -v
@@ -34,6 +34,7 @@ REPO = Path(__file__).resolve().parents[3]
 BASE = SKILL_DIR / "SKILL.md"
 EXECUTOR = SKILL_DIR / "assets/opencode-agents/pdca-executor.md"
 CHECK_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-check.md"
+CHECK_REF = SKILL_DIR / "references/check.md"
 DRIVER_REF = SKILL_DIR / "references/driver.md"
 
 
@@ -70,6 +71,32 @@ def bullet(text: str, marker: str) -> str:
     return norm(marker + (rest[:end.start()] if end else rest))
 
 
+class EvidenceOnlyAcceptanceTest(unittest.TestCase):
+
+    def test_behavior_is_accepted_on_execution_not_source(self) -> None:
+        rule = paragraph(read(CHECK_REF), "check is acceptance")
+        self.assertIn("not a general code review", rule)
+        self.assertIn("tests or direct execution", rule)
+        self.assertIn("source text and a successful build alone do not prove behavior", rule)
+        plan = norm(read(SKILL_DIR / "references/plan.md"))
+        self.assertIn("observable outcomes under relevant conditions", plan)
+
+    def test_product_files_are_not_copied_or_required(self) -> None:
+        rule = section(read(CHECK_REF), "## Evidence packaging", "## Candidate identity")
+        self.assertIn("do not copy or stage changed product files or diffs", rule)
+        self.assertIn("check neither requests changed files", rule)
+        self.assertIn("do not request file copies or direct product access", norm(read(CHECK_ASSET)))
+        integration = norm(read(SKILL_DIR.parent / "pdca-collection/SKILL.md"))
+        self.assertIn("do not stage file copies or diffs for check", integration)
+        self.assertNotIn("snapshot/", integration)
+
+    def test_large_generated_outputs_use_machine_evidence(self) -> None:
+        rule = paragraph(read(CHECK_REF), "do not inline a file inventory")
+        self.assertIn("machine check that runs against the candidate in place", rule)
+        self.assertIn("files expected and examined", rule)
+        self.assertIn("sampling is not proof of full coverage", rule)
+
+
 class BaseContractTest(unittest.TestCase):
     """The evidence-root rule has one home: the base workspace section."""
 
@@ -104,13 +131,12 @@ class BaseContractTest(unittest.TestCase):
     def test_the_persistence_reason_is_checks_scoped_read(self) -> None:
         # Without this clause the rule looks arbitrary and gets "simplified" away.
         raw = re.sub(r"\s+", " ", raw_section(self.text, *self.window))
-        self.assertIn("CHECK's scoped read reaches `.pdca/**` only", raw)
+        self.assertIn("so CHECK can read the proof within its evidence scope", raw)
 
-    def test_originals_stay_put_but_a_check_snapshot_is_evidence(self) -> None:
+    def test_originals_stay_put_and_only_proof_is_packaged(self) -> None:
         self.assertIn("the product files themselves stay wherever the task puts them", self.workspace)
         self.assertIn("evidence never relocates an original", self.workspace)
-        self.assertIn("a snapshot, staged copy or diff", self.workspace)
-        self.assertIn("separate artefact under evidence_root", self.workspace)
+        self.assertIn("package only proof of the result, not copies of product changes", self.workspace)
 
     def test_plan_to_do_handoff_carries_the_root(self) -> None:
         text = paragraph(self.text, "plan → do")
@@ -146,7 +172,7 @@ class ExecutorAssetTest(unittest.TestCase):
 
     def test_full_logs_are_persisted_and_scratch_is_only_scratch(self) -> None:
         for token in (
-            "persist what check will read under the cycle's evidence_root",
+            "persist evidence under the cycle's evidence_root",
             "exists only in scratch outside .pdca/",
             "is not evidence",
             "the run is then re-gathered",
@@ -161,13 +187,13 @@ class ExecutorAssetTest(unittest.TestCase):
         )
         self.assertNotIn("do not write outside .pdca/", self.low)
 
-    def test_originals_stay_put_but_a_snapshot_is_persisted(self) -> None:
+    def test_originals_stay_put_and_targeted_evidence_is_persisted(self) -> None:
         self.assertIn(
-            "the product files themselves stay where the task puts them (never moved into .pdca/)",
+            "the product files themselves stay where the task puts them",
             self.rule,
         )
-        self.assertIn("a snapshot, staged copy or diff that check must read is evidence", self.rule)
-        self.assertIn("goes under evidence_root, bound to the source identity", self.rule)
+        self.assertIn("run checks against the original candidate", self.rule)
+        self.assertIn("not copies or diffs of changed files", self.rule)
 
     def test_missing_root_falls_back_to_the_contract_default(self) -> None:
         self.assertIn("falls back to the contract default", self.rule)
@@ -228,8 +254,7 @@ class DriverDispatchTest(unittest.TestCase):
 
     def test_a_pointer_check_cannot_read_is_not_a_handoff(self) -> None:
         self.assertIn("a reference the role cannot reach is not a handoff", self.workspace)
-        # `norm` strips the asterisks of `.pdca/**`.
-        self.assertIn("check's scoped read reaches .pdca/ only", self.workspace)
+        self.assertIn("package only proof of the result", self.workspace)
 
 
 class SingleSourceTest(unittest.TestCase):

@@ -16,27 +16,43 @@ from the agent prompt alone.
 ## What CHECK receives
 
 The original task, the acceptance criteria by exact reference to their source (the original task for
-user-supplied criteria; the saved plan for PLAN-derived criteria), the frozen actual result with its
-identity, and the available evidence and observations. Later handoffs use exact references and stable
+user-supplied criteria; the saved plan for PLAN-derived criteria), the frozen candidate's identity,
+and the available evidence and observations. Later handoffs use exact references and stable
 criterion IDs, not a second paraphrased criteria set. It also receives counters `N`, `r`, `n/3` from
 the status, never restated from a brief or earlier turn; the **defect history** (stable defect keys,
 observed revisions/attempts, applied fix count, last outcome); and, on a loop-back, the previous CHECK
 report and the finding it routed. CHECK takes none of these as established: it assesses the task and
 criteria itself, verifies the result against them, and treats the author's restatement as no evidence.
 
-CHECK is read-only and judges; it runs no proving action and delegates nothing. Its scoped access
-stays inside the permissions it already has, on the task inputs and the cycle's evidence artifacts.
+CHECK is read-only and judges; it runs no proving action and delegates nothing. Its file reads
+are limited to `.pdca/**` for task records and evidence.
 An observation or run its chosen method needs is requested through the driver, which has
 `pdca-executor` produce it or `pdca-scout` observe it.
+
+CHECK is acceptance against the recorded criteria, not a general code review. For a formal
+criterion, judge the evidence that demonstrates it (for example, the build exit status or a
+validator's coverage and findings). Verify software behavior with tests or direct execution of the
+program or API through `pdca-executor`; source text and a successful build alone do not prove
+behavior. Implementation choices are not acceptance requirements unless the user made them
+requirements. If the requested result itself is not behavior (for example, documentation),
+`pdca-scout` can make a targeted observation in place and report the criterion-specific finding.
 
 ## Evidence packaging
 
 CHECK confirms the frozen candidate identity and criterion IDs, then chooses a verification method
 for each criterion before judging evidence completeness. Completeness is the evidence those actual
 criteria need under the chosen methods, bound to the candidate — not a pre-method audit of every
-manifest link or referenced artifact. CHECK reads originals it can already reach within its existing
-scoped permissions directly, even when no manifest link points to them; this does not widen its read
-scope.
+manifest link or referenced artifact. Keep the candidate in its checkout. Do not copy or stage
+changed product files or diffs under `.pdca/`, or send them inline. CHECK neither requests changed
+files nor treats their absence as missing evidence. Persist run logs, measurements, and targeted
+observations bound to the candidate instead.
+
+Do not inline a file inventory into the CHECK brief. For large outputs, select a criterion-specific
+machine check that runs against the candidate in place.
+Have DO return concise, candidate-bound results: the method, coverage (files expected and examined),
+exit status, failure counts, a bounded set of actionable examples, and a pointer to the full report.
+Read specific report sections only where needed to judge the criterion. Sampling is not proof of
+full coverage when the criterion requires it; use a full machine check or mark it unverified.
 
 A broken or missing link to an optional artifact unused by every chosen method is diagnostic only: it
 does not delay the verdict or justify a packaging-only DO round. When a chosen method genuinely needs

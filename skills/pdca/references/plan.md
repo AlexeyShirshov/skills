@@ -56,6 +56,9 @@ conditions under which they apply.
   reformulation, correction, narrowing or substitute. User-supplied criteria are kept verbatim — no addition, correction, weakening or
   replacement; a new criterion is allowed only where the user supplied none. Decomposition,
   implementation approach and verification detail are not acceptance requirements.
+- For software behavior, express derived criteria as observable outcomes under relevant
+  conditions, not as properties of the source text or an internal implementation choice.
+  CHECK decides how to exercise the behavior; PLAN does not prescribe a test or command.
 - A criterion is about the requested result, not provenance metadata: `committed == tested` is not a
   criterion unless the user's own requirement makes it part of the result.
 - **No invented audit gates.** For an ordinary task never add a required acceptance item on arbitrary

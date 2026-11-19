@@ -71,6 +71,9 @@ requirement. There is no global canonical .NET command set or exit-code table to
   available identity, not a mandatory hash, manifest or `committed == tested` gate. Once a matching
   build is verified, use it with `--no-build`; launching collection or CHECK is not by itself a reason
   to recompile. A docs-only change claims no build receipt and needs none.
+- **Build the original project.** When CHECK needs a build, run the project-configured command on the
+  original candidate in its checkout. Persist the build evidence, not a buildable project copy, under
+  `evidence_root`; leave `.csproj` and other product files in the checkout.
 - **Selectors must match the configured runner.** Use the fully qualified name where that runner
   needs it; `dotnet test <project> --no-build --filter <selector>` is one form, a project runner with
   its own `-class`/`-method` selection is another. A selector matching zero cases proves nothing:
@@ -158,23 +161,10 @@ CHECK keeps the base procedure, its per-criterion method choice, verdict, routin
 the coder's evidence rules; this section adds what a .NET check examines and how its evidence is
 read. CHECK chooses its own methods and commands — nothing here is a pre-DO obligation.
 
-- **Applicable work, no fixed tally.** Examine the actual change and the criteria: build and analyzers
-  under the project's own `.editorconfig`/warning policy — read the effective `dotnet_diagnostic.*`
-  severities when the chosen lens needs them; suppressions (`#pragma warning disable`,
-  `[SuppressMessage]`, `<NoWarn>`), disabled tests (`Skip=`), empty `catch` and `Task.Delay` as raw
-  candidates from the actual diff, with scope, counts and judgment left to CHECK — a marker is not an
-  automatic defect; public API, naming/BCL conventions, compatibility or an API baseline and CS1591
-  policy when the change touches the surface; tests against the criteria; docs where required; a
-  security gather when triggered. No frozen plan manifest is created, and no universal surface lock
-  is required where the project has none.
-- **Diff review candidates.** Where the actual change makes them relevant: unsealed types when
-  extensibility is intentional and invariants allow it; mutable or defensive-copy structs; a mutable
-  `List<T>` or collection exposed from a public API; `ValueTask` misuse (multiple awaits, mixing with
-  `Task`, no synchronous fast path); `Span<T>`/async combinations judged against the project's
-  language version and target; missing `StringComparison` where comparison semantics matter;
-  `Substring`/`Replace` chains whose cost is real; `IDisposable` lifetimes; DI scope; async and
-  nullable-reference mistakes. These are candidates for CHECK's judgment, not token violations, and
-  no fixed list is applied blindly.
+- **Applicable evidence.** Verify behavior with tests or direct program/API runs. Where required,
+  use build and analyzer results under the project's actual warning policy, API compatibility
+  reports, documentation observations, or a security gather. CHECK evaluates those results against
+  the criteria rather than adding a source review or requiring a universal API baseline.
 - **Build and test evidence is executed evidence.** Record the actual commands, exit status, key
   numbers and log path; red↔green for a fix with both exit codes. An unfinished or not-started run
   carries no invented exit status or selected count, and a later retry does not erase the earlier
@@ -192,13 +182,6 @@ read. CHECK chooses its own methods and commands — nothing here is a pre-DO ob
   assembly/type or a controlled-mutant demonstration; surviving mutants on the changed code are
   killed or justified against the criterion. A controlled mutant is not equivalent to a full Stryker
   score, and neither is claimed from a run that did not execute.
-- **Optional `T? x = null` / `= default` on `*Options`** — a finding when it lets a wrong behaviour be
-  chosen silently; the overload pair (one minimal, one requiring the value) is one fix where the task
-  matches. Nullable reference annotations alone do not create distinct signatures — a pair differing
-  only in annotations is a duplicate member (CS0111) — and this does not generalise to `Nullable<T>`
-  value types. `CS8625` is a warning when a `null` literal reaches a non-nullable reference type
-  under nullable analysis, and an error only where the project's warnings-as-errors policy makes it
-  one. `required` enforces initialization, not runtime null rejection for reference types.
 - **Security** — the coder's trigger and boundaries apply; the review is evidence, the decision
   CHECK's, and its absence `unverified`, never a pass.
 - **A refusal is asserted by its reason.** A test catching an exception proves the refusal only when it
@@ -253,7 +236,7 @@ security boundaries, handoff) apply unchanged.
   outside the authorised allowance is recorded in the executing phase as a policy deviation, never
   renamed away, and it neither freezes the verification choice nor licenses repeat runs.
 - **Freeze order and line endings.** Where the project pins CRLF or another normalisation, normalise
-  the final files **before** freezing: normalise → freeze (byte copy with sha256 orig = copy) → build
+  the final files **before** freezing: normalise → record candidate identity in place → build
   → one measurement on that same identity. Building or measuring before the last normalisation, or
   freezing a set that differs from the built one, makes the measurement invalid: re-freeze and
   re-measure once — an evidence re-gather, not a new product attempt.
@@ -297,14 +280,11 @@ security boundaries, handoff) apply unchanged.
   durable status) and introduces no path that competes with it. The executor remains the sole status
   writer; the original task, phase reports, dialogue language and Git ledger come from the base
   unchanged; per-unit evidence belongs to the parent cycle record, not a per-unit status file.
-- **Artifacts and cleanup.** If CHECK's chosen method needs the full bodies of artifacts, a staged
-  copy may be used — persisted under the cycle's `evidence_root` with the original left in place —
-  with source identity and staged-vs-source fidelity verified by CHECK; no reviewer pack is
-  mandatory each task. Bind evidence to the relevant candidate inputs, including meaningful
-  uncommitted changes; `HEAD` alone neither proves nor disproves equivalence. A staged copy is
-  validated against the original. A drift after the snapshot makes CHECK reconsider only the
-  impacted conclusion per the base, not a new counter. A missing body or a staged-vs-source mismatch
-  is `unverified` or an evidence blocker, never an automatic product fail or pass. Cleanup is not a
+- **Artifacts and cleanup.** Record build, test and observation evidence per the base CHECK
+  packaging rule; product changes stay in the checkout. Bind evidence to the relevant candidate
+  inputs, including meaningful uncommitted changes; `HEAD` alone neither proves nor disproves
+  equivalence. Drift in the candidate makes CHECK reconsider only the impacted conclusion per the
+  base. Cleanup is not a
   phase gate and nothing is deleted automatically: preserve proof and recovery per the base, limit
   any cleanup to task-owned artifacts within an explicit allowed scope, and never move or lose
   original source data. A true DO → ACT terminal outcome needs no phantom successful CHECK to permit

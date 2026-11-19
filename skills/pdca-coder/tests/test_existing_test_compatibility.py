@@ -79,9 +79,10 @@ class ExistingTestCompatibilityContractTest(unittest.TestCase):
         for rule in (
             "plan records the mode, a reference to the task-start baseline, and the source and exact scope of any explicit permission",
             "then passes them unchanged to do",
-            "do preserves them and passes them with the frozen candidate and evidence to check",
-            "check independently compares the candidate with the baseline",
-            "verifies each existing-test change against the selected mode and explicit permission",
+            "do preserves them and passes them with the candidate identity and evidence to check",
+            "check evaluates a baseline comparison produced in place",
+            "not the test files or a copied diff",
+            "cover each existing-test change against the selected mode and explicit permission",
             "a missing baseline or authorization is not proof of permission or a pass",
         ):
             with self.subTest(rule=rule):

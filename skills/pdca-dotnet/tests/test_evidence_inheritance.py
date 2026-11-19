@@ -1,9 +1,7 @@
 """The .NET overlay inherits the base evidence root and adds no path of its own.
 
-The base contract owns `.pdca/<task>/rv<k>/` and the persistence rule.  The
-overlay only stages artifact copies for CHECK — under that same root, with the
-original left in place — and must never claim a mandated evidence path of its own
-or an exception from the base rule.
+The base contract owns `.pdca/<task>/rv<k>/` and the persistence rule. The
+overlay stores proof there and builds the original candidate in its checkout.
 
 Run:
     python3 -m unittest discover -s skills/pdca-dotnet/tests -p 'test_*.py' -v
@@ -35,10 +33,11 @@ class EvidenceInheritanceTest(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertIn(token, self.text)
 
-    def test_staged_copies_live_under_the_base_root(self) -> None:
-        self.assertIn("persisted under the cycle's evidence_root", self.text)
-        self.assertIn("with the original left in place", self.text)
-        self.assertIn("staged-vs-source fidelity", self.text)
+    def test_build_evidence_is_persisted_without_copying_the_candidate(self) -> None:
+        self.assertIn("persist the build evidence, not a buildable project copy", self.text)
+        self.assertIn("leave .csproj and other product files in the checkout", self.text)
+        self.assertIn("record candidate identity in place", self.text)
+        self.assertNotIn("byte copy", self.text)
 
     def test_the_old_mandated_path_wording_does_not_return(self) -> None:
         self.assertNotIn("or mandated evidence path", self.text)

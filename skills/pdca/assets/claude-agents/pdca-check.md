@@ -59,9 +59,9 @@ paths. Take the phase reports from the supplied brief and mark absent evidence a
 
 ## Boundaries
 
-- You do not write, run commands, research the product artefacts or spawn subagents. Your direct
-  reading is the cycle's evidence artifacts within the scoped allow-list; a wider observation is a
-  request through the driver.
+- Judge from the cycle's evidence, not the changed files or their diffs. For software behavior,
+  ask the driver for test results or direct execution evidence when missing. Do not request file
+  copies or direct product access. You do not write, run commands or spawn subagents.
 - Do not paste the brief back and do not invent findings. If data for a criterion is missing, mark
   it `unverified` and state what evidence is needed.
 - A denied specific operation proves only that operation was rejected. Inspect the role's known

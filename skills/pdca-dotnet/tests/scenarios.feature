@@ -200,15 +200,14 @@ Feature: The pdca-dotnet overlay under pressure
   Rule: Artifacts and cleanup stay inside the task scope
 
     @G1 @pinned
-    Scenario: G1 A staged artifact copy is used for CHECK
-      Given a staged copy offered as CHECK evidence
-      When CHECK reads it
-      Then source identity includes uncommitted state
-      And the staged copy is validated against the source
-      And a mismatch is unverified or an evidence blocker, never an automatic pass or product fail
+    Scenario: G1 Build evidence is produced without copying the candidate
+      Given a candidate in its checkout, including relevant uncommitted state
+      When the executor builds it for CHECK
+      Then the build evidence is bound to the candidate identity
+      And CHECK receives the evidence, not a copy of the project
       # source: skills/pdca-dotnet/SKILL.md §.NET do/act deltas
       # test: skills/pdca-dotnet/tests/test_pdca_evidence.py::MinimumManifestTests.test_tree_binding_when_present_must_equal_the_frozen_tree
-      # test: skills/pdca-dotnet/tests/test_evidence_inheritance.py::EvidenceInheritanceTest.test_staged_copies_live_under_the_base_root
+      # test: skills/pdca-dotnet/tests/test_evidence_inheritance.py::EvidenceInheritanceTest.test_build_evidence_is_persisted_without_copying_the_candidate
 
     @G2 @pinned
     Scenario: G2 Cleanup would delete a failed task's evidence

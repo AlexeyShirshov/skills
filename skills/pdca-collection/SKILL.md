@@ -204,13 +204,13 @@ Allocate lanes/worktrees/branches/runners **only** after ALL-barrier and persist
 
 ### C — integration verification
 
-**Stage candidate before C.** Before `pdca-check`, executor persists the integrated snapshot at collection `evidence_root` inside `.pdca/` (default `.pdca/<collection-id>/rv<k>/`). Stage every CHECK input under `snapshot/` (leave product originals in place), with `sha256` manifest, identity bound to the final integrated commit/ref and worktree state, item statuses and evidence pointers. Dispatch only after writing; CHECK reads `.pdca/**` only.
+**Record integration evidence before C.** The executor persists the integrated candidate identity, item statuses and evidence pointers at collection `evidence_root` inside `.pdca/` (default `.pdca/<collection-id>/rv<k>/`). Bind evidence to the final integrated worktree state; leave the product in place and do not stage file copies or diffs for CHECK.
 
-Parent CHECK uses **base `../pdca/SKILL.md` §Phase contracts → CHECK**: `pdca-check` independently chooses methods/evidence; tests run through `pdca-executor`, outside observation through `pdca-scout`. Dispatch includes the complete inline base CHECK contract and `evidence_root`; scope is staged snapshot, integration invariants and relevant verification deltas (`../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md`). The dispatch does not replace item CHECK, widen permissions, or inline candidates/product files; CHECK reads the staged candidate itself.
+Parent CHECK uses **base `../pdca/SKILL.md` §Phase contracts → CHECK**: `pdca-check` independently chooses methods/evidence; tests run through `pdca-executor`, outside observation through `pdca-scout`. Dispatch includes the complete inline base CHECK contract and `evidence_root`; scope is the integrated candidate, integration invariants and relevant verification deltas (`../pdca-coder/SKILL.md`, `../pdca-dotnet/SKILL.md`). The dispatch does not replace item CHECK or widen permissions.
 
-Start integration CHECK **after all lanes are terminal**; merge eligible `done` groups, exclude `incomplete`, and leave no conflict/unfinished merge. Supply group statuses, `skipped` note/reason, original requirements, staged snapshot and evidence.
+Start integration CHECK **after all lanes are terminal**; merge eligible `done` groups, exclude `incomplete`, and leave no conflict/unfinished merge. Supply group statuses, `skipped` note/reason, original requirements, candidate identity and evidence.
 
-A **missing, incomplete or stale** snapshot (missing copy, manifest mismatch, stale identity) is not product failure or attempt: **re-gather**; collection stays `unverified`.
+Missing, incomplete or stale evidence required by a chosen method is not a product failure or attempt: **re-gather** under the base CHECK rules.
 
 Integration `PASS` may coexist with `incomplete` groups and verifies included work only. Keep
 **integrated-tree verdict** distinct from **collection completeness**; PASS never marks unfinished items `done` or compensates unmet goals. Run CHECK even with no eligible group; no retroactive acceptance.
