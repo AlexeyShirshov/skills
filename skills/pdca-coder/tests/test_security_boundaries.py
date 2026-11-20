@@ -64,8 +64,9 @@ GIT_DIFF = "git " + "diff"
 
 # Write-proof allowlist (escalate decision, variant b).  A glob wildcard before
 # the ` -- ` separator can swallow arbitrary flags (`*` matches spaces too), so
-# only fully literal commands and literal command + tail ` -- *` survive; after
-# ` -- ` git reads the tokens as pathspecs, never as flags.
+# only fixed command shapes and a trailing ` -- *` survive. The scout's
+# revision diff uses fixed-width slots after `--end-of-options`; after ` -- `
+# git reads the tokens as pathspecs, never as flags.
 GIT_PREFIXES = (GIT_DIFF, "git log", "git show", "git blame", "git ls-files")
 BASE_LITERAL_ALLOW = (
     "ls*",
@@ -100,10 +101,16 @@ PATHSPEC_ALLOW = (
     "git status --porcelain -- *",
 )
 GIT_ALLOW = GIT_LITERAL_ALLOW + PATHSPEC_ALLOW
-# The fixed HEAD reads are a scout-only widening (a driver asks it "what is HEAD");
-# the auditor's minimal surface is unchanged and is a separate security decision.
-SCOUT_HEAD_ALLOW = ("git log --oneline -n 1", "git log -1 --oneline")
-SCOUT_GIT_ALLOW = GIT_LITERAL_ALLOW + SCOUT_HEAD_ALLOW + PATHSPEC_ALLOW
+# The auditor doesn't inherit the scout's HEAD reads or two-revision diff.
+SCOUT_REVISION_DIFF = GIT_DIFF + " --no-color --no-ext-diff --no-textconv --end-of-options"
+SCOUT_REVISION_SLOTS = ("?" * 40 + " ") * 2
+SCOUT_ONLY_GIT_ALLOW = (
+    "git log --oneline -n 1",
+    "git log -1 --oneline",
+    f"{SCOUT_REVISION_DIFF} {SCOUT_REVISION_SLOTS}-- *",
+)
+SCOUT_GIT_ALLOW = GIT_ALLOW + SCOUT_ONLY_GIT_ALLOW
+SCOUT_REVISIONS = f"{'a' * 40} {'b' * 40}"
 # The shared read-only roles are not interchangeable: scout and the security
 # auditor inspect git facts, escalate makes decisions and needs no git access.
 # Keep one exact minimal set per role instead of widening all three to parity.
@@ -149,6 +156,8 @@ NEGATIVE_PROBES = (
     "git log -1 --output=/x",
     "git log -1 --oneline --follow",
     GIT_DIFF + " --stat --output=/x -- src/foo.py",
+    f"{SCOUT_REVISION_DIFF} --output=/x {SCOUT_REVISIONS} -- src/foo.py",
+    f"{SCOUT_REVISION_DIFF} {SCOUT_REVISIONS} --output=/x -- src/foo.py",
     "git ls-files --output=/x",
     "git -C /x status --porcelain",
     "echo hi && git status --porcelain",
@@ -161,7 +170,11 @@ FORBIDDEN_KEY_TOKENS = ("git -C", "&&", ";", "|", "echo ", "sh -c", "$(")
 
 # Positive probes: every literal and every ` -- path` form is admitted.
 BASE_POSITIVE_PROBES = BASE_LITERAL_ALLOW
-SCOUT_GIT_POSITIVE_PROBES = SCOUT_HEAD_ALLOW
+SCOUT_GIT_POSITIVE_PROBES = (
+    "git log --oneline -n 1",
+    "git log -1 --oneline",
+    f"{SCOUT_REVISION_DIFF} {SCOUT_REVISIONS} -- src/foo.py",
+)
 GIT_POSITIVE_PROBES = GIT_LITERAL_ALLOW + (
     GIT_DIFF + " --stat -- src/foo.py",
     GIT_DIFF + " --name-only -- src/foo.py",
@@ -176,8 +189,8 @@ GIT_POSITIVE_PROBES = GIT_LITERAL_ALLOW + (
 
 
 def glob_match(pattern: str, command: str) -> bool:
-    """Full-match a permission glob (`*` -> `.*`) against a whole command."""
-    regex = re.escape(pattern).replace(r"\*", ".*")
+    """Full-match a permission glob against a whole command."""
+    regex = re.escape(pattern).replace(r"\*", ".*").replace(r"\?", ".")
     return re.fullmatch(regex, command) is not None
 
 
@@ -374,12 +387,12 @@ class WriteProofAllowlistTest(unittest.TestCase):
                         "%s grants a bare diff form %r" % (role, key),
                     )
 
-    def test_git_blocks_differ_only_by_the_scout_head_reads(self):
+    def test_git_blocks_differ_only_by_scout_specific_reads(self):
         blocks = {}
         for role in READ_ONLY_ROLES:
             blocks[role] = {k for k in self._allow(role) if k.startswith(GIT_PREFIXES)}
         self.assertEqual(blocks["pdca-scout"],
-                         blocks["pdca-security-auditor"] | set(SCOUT_HEAD_ALLOW))
+                         blocks["pdca-security-auditor"] | set(SCOUT_ONLY_GIT_ALLOW))
         self.assertEqual(set(), blocks["pdca-escalate"],
                          "escalate takes decisions and needs no git access")
 
