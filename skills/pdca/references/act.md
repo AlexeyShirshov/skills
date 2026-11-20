@@ -12,6 +12,9 @@ ACT closes every cycle and is its only closing path. It records the outcome the 
 determined: it issues no new verdict, no expert waiver and no approval, and it never implements,
 tests or changes a product, test or checked artifact.
 
+For an unfinished campaign step wholly withdrawn by the user, apply `pdca-incremental` §Scope
+withdrawal instead of the retrospective dispatch below. This exception does not close the campaign.
+
 1. **Retrospective (mandatory)** — a short evidence-grounded retrospective via `pdca-check` in
    `retrospective` mode, recorded by `pdca-executor` in `## Lessons learned`: what worked, what did
    not, what to do differently next time, 0–3 transferable lessons, categories, evidence pointers,
@@ -69,7 +72,7 @@ contracts → ACT).
 
 ## Retrospective (mandatory, ACT)
 
-Every closure runs a short evidence-grounded retrospective through `pdca-check` in `retrospective`
+Except for the scope withdrawal in §Closing order, every closure runs a short evidence-grounded retrospective through `pdca-check` in `retrospective`
 mode — successful `CHECK → ACT`, terminal `CHECK → ACT` (`STOP`), `PLAN → ACT` and `DO → ACT`.
 Intermediate `CHECK → DO` and `CHECK → PLAN` do not trigger it. The retrospective is analysis, not
 a new CHECK: it returns no verdict, no criteria matrix and no transition authority, and it never

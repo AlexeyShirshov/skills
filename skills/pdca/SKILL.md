@@ -222,6 +222,9 @@ durable reason; in normal mode, report to the user.
 - **Autonomous mode** — no intermediate approvals or questions: the driver invokes the required
   agents, manages state and advances on the planner's decisions and CHECK results. All permissions,
   contracts, verification requirements and stop conditions stay in force.
+  When delegating the controller, request completion-only notifications if the host offers them
+  (OpenCode: `notify: "completion"`). Keep routine handoffs in status. If the host wakes the
+  primary while work continues, report only a new result, blocker or decision needed from the user.
 
 ### State machine and counters
 
@@ -419,8 +422,8 @@ detour: the originating outcome is recorded per `references/act.md`, including t
 independent CHECK for an established result.
 
 Product work found during closure is not ACT's: it goes back to DO and a final CHECK. Every closure
-runs through ACT, never beside it; each runs a retrospective via `pdca-check` (`retrospective` mode),
-recorded in `## Lessons learned`.
+runs through ACT, never beside it. Record the `pdca-check` retrospective in `## Lessons learned`;
+for a user-withdrawn campaign step with no result, use `pdca-incremental` §Scope withdrawal.
 
 ### Evidence over assertion
 

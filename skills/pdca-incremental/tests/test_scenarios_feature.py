@@ -28,7 +28,7 @@ EXPECTED_IDS = (
     *(f"B{i}" for i in range(1, 6)),
     *(f"C{i}" for i in range(1, 4)),
     *(f"D{i}" for i in range(1, 4)),
-    *(f"E{i}" for i in range(1, 5)),
+    *(f"E{i}" for i in range(1, 6)),
     *(f"F{i}" for i in range(1, 3)),
     *(f"G{i}" for i in range(1, 3)),
     *(f"H{i}" for i in range(1, 3)),

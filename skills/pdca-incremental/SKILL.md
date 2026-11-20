@@ -108,7 +108,8 @@ PLAN may clarify the metric's meaning or the criteria and never binds its own pr
 user prescribed stays binding.
 
 - **A change of the goal, recipe, threshold or floor is not a refinement**: it is a **new campaign
-  with a new baseline**. Old revisions and accepted results are kept; backfill is forbidden.
+  with a new baseline**. Removing independent units under the same method follows §Scope withdrawal.
+  Old revisions and accepted results are kept; backfill is forbidden.
 - **Threshold provenance.** A numeric threshold without a measured baseline is **provisional**;
   revising it on measurement is a `supersede` record with reason and evidence, not a goal change. A
   threshold backed by a measured baseline or set by the user changes only as a goal change; "red and
@@ -269,6 +270,7 @@ Per-step ACT, including a terminal `STOP`, runs the same configured `pdca-check`
 base contract (`retrospective` mode); the demoted `#### Lessons learned` is `pending` at step creation
 and finished in ACT. It is persisted in the same campaign file, creates no new role, log, phase or
 counter, and leaves the shared `## Progress log` as the single chronology.
+For a user-withdrawn step with no result, use the §Scope withdrawal checkpoint instead.
 
 ### Campaign-level Lessons learned
 
@@ -589,6 +591,26 @@ per-command timeouts and safety hold as in the base. The **commit policy** (§Ca
 the only campaign-specific permission, and `push` is never part of it.
 
 ## Strategic revision and recovery
+
+### Scope withdrawal
+
+When the user explicitly removes a named unit, stop work on that unit. Record the instruction
+verbatim, the excluded unit and any outstanding work handle at the checkpoint. If the entire active
+step was withdrawn before it produced a candidate or verdict, close it in ACT in **that same executor
+write**: mark the step
+`not accepted`, `CHECK: not run`, zero credit and `Lessons learned: not applicable — user withdrawal`.
+No separate retrospective, evidence packaging or commit. Ignore late results for the removed unit.
+Keep the original task, accepted results, counters and defect history. If a step also covers retained
+units, keep it open for those units; preserve any existing candidate or verdict under its actual scope.
+
+At the next boundary, the planner selects the remaining work. If retained units have the same criteria,
+method and independently attributable evidence, continue the same campaign from the last accepted
+state. Record the revised denominator separately; reuse comparable rows and measure only missing or
+affected ones. An inseparable aggregate or a changed metric, threshold or floor still needs a new
+baseline under §Campaign goal and measurement. On verified completion of the reduced scope, report
+`limited` against the original task (§Stop); normal-mode approval and the final CHECK still apply.
+
+### Strategy changes
 
 New facts may require revising the strategy at an explicit safe checkpoint while preserving the goal,
 history, result, knowledge, constraints and unfinished work. Silent in-flight switching and resetting

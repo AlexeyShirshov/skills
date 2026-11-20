@@ -222,6 +222,16 @@ Feature: The pdca-incremental campaign under pressure
       # source: skills/pdca-incremental/SKILL.md §Campaign invariants
       # test: skills/pdca-incremental/tests/test_standalone_contract.py::CampaignFailureSemanticsTest.test_stop_table_keeps_the_blocked_row_honest
 
+    @E5 @uncovered
+    Scenario: E5 The user removes an independent provider during discovery
+      Given seven provider rows, an accepted SQLite commit and an in-memory probe with no candidate
+      When the user explicitly excludes in-memory and keeps the six SQL providers
+      Then the executor closes only the withdrawn step in one write with zero credit and no retrospective
+      And a late probe report does not trigger a second close or change the accepted SQLite row
+      And the planner continues the same campaign using comparable retained rows rather than measuring all six again
+      And the reduced denominator is recorded separately from the original seven
+      # source: skills/pdca-incremental/SKILL.md §Scope withdrawal
+
   Rule: Commit and effort are authorized, not assumed
 
     @F1 @uncovered

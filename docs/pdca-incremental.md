@@ -81,6 +81,10 @@ binding.
 
 - **A change of the goal, recipe, threshold or floor is not a refinement.** It is a new campaign with
   a new baseline. Old revisions and accepted results are kept; backfill is forbidden.
+- **Removing one unit.** If you exclude a provider, the campaign keeps comparable results for the
+  remaining providers. It records an unfinished step devoted solely to the excluded provider once,
+  without credit or a retrospective, provided it has no candidate or verdict. If the previous
+  measurement cannot separate the providers, the planner requests a new baseline.
 - **Threshold provenance.** A numeric threshold without a measured baseline is **provisional**.
   Revising it on measurement is a `supersede` record with reason and evidence, not a goal change. A
   threshold backed by a measured baseline or set by the user changes only as a goal change. "Red and
