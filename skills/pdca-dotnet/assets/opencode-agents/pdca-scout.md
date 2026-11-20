@@ -37,6 +37,7 @@ permission:
     "git diff --stat -- *": allow
     "git diff --name-only -- *": allow
     "git diff --no-color -- *": allow
+    "git diff --no-color --no-ext-diff --no-textconv --end-of-options ???????????????????????????????????????? ???????????????????????????????????????? -- *": allow
     "git log --oneline -n 20 -- *": allow
     "git ls-files -- *": allow
     "git blame -- *": allow
@@ -137,6 +138,9 @@ permissions:
     resource: "git diff --no-color -- *"
     effect: allow
   - action: shell
+    resource: "git diff --no-color --no-ext-diff --no-textconv --end-of-options ???????????????????????????????????????? ???????????????????????????????????????? -- *"
+    effect: allow
+  - action: shell
     resource: "git log --oneline -n 20 -- *"
     effect: allow
   - action: shell
@@ -160,14 +164,15 @@ pointers — the caller makes the decision.
   `permission` (`git status` incl. `--short`/`--porcelain`/` -- *` path forms, `git rev-parse …`,
   `git diff --stat`/`--name-only`/`--no-color`, `git log --oneline -n 20` and `-n 1`, `git log -1
   --oneline`, `git show HEAD`/`--stat HEAD`/`--name-only HEAD`, `git ls-files` incl. ` -- *`,
-  `git blame -- *`) are allowed — no wildcard before ` -- `, so write flags such as `--output` never
-  match. The frontmatter is the whole surface; the forms named here are the working ones, not a
-  second allowlist.
+  `git blame -- *`) and the revision diff below are allowed. In the revision diff, `--end-of-options`
+  ends option parsing before the revision arguments; keep both it and the `--` before the path.
 - **One allowed command per call.** Put the directory in the shell tool's `workdir`; no `cd … && …`,
   no `git -C <dir> …`, no `sh -c`, `echo` prefix, `;`, `&&` or `|` compound. Canonical uses:
   `git status --porcelain` for the dirty state; `git log --oneline -n 1` (or `git log -1 --oneline`)
   for HEAD and `git log --oneline -n 20` for history; `git show HEAD` for its diff;
-  `git diff --stat -- src/` and `git ls-files -- src/` with the pathspec after `--`. A denied form is
+  `git diff --stat -- src/` and `git ls-files -- src/` with the pathspec after `--`. To compare two
+  revisions for a path, use `git diff --no-color --no-ext-diff --no-textconv --end-of-options <old-sha> <new-sha> -- <path>`.
+  Use full 40-character SHA-1 IDs from `git rev-parse`, not branch names or abbreviated hashes. A denied form is
   a form problem, not a missing capability: switch to one of these literal forms instead of
   rephrasing the command.
   A toolchain or language probe is **not** in this surface: a version fact is recorded by

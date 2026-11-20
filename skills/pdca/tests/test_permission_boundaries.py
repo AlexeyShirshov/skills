@@ -32,7 +32,7 @@ RUNNER_ASSETS = tuple(sorted(
 ))
 SCOUT_ASSET = SKILL_DIR / "assets/opencode-agents/pdca-scout.md"
 
-# The scout's git literals: a wildcard before ` -- ` can swallow write flags
+# The scout's git literals: a variable-length wildcard before ` -- ` can swallow write flags
 # (`--output`), and a wrapper or repo override would escape the literal surface.
 GIT_PREFIXES = ("git diff", "git log", "git show", "git blame", "git ls-files")
 FORBIDDEN_KEY_TOKENS = ("git -C", "&&", ";", "|", "echo ", "sh -c", "$(")
@@ -344,7 +344,45 @@ class ScoutSurfaceTest(unittest.TestCase):
             with self.subTest(form=form):
                 self.assertEqual("allow", self.bash.get(form))
 
-    def test_no_git_key_has_a_wildcard_before_double_dash(self) -> None:
+    def assert_shell_effect(self, command: str, expected: str) -> None:
+        self.assertEqual(expected, legacy_effective(self.perm, "shell", command))
+        # V2 also accepts the bare command for patterns ending in ` *`.
+        effect = "ask"
+        for pattern, value in self.v2.items():
+            if _matches(pattern, command) or (
+                pattern.endswith(" *") and _matches(pattern[:-2], command)
+            ):
+                effect = value
+        self.assertEqual(expected, effect)
+
+    def test_revision_diff_does_not_grant_output_flag(self) -> None:
+        prefix = "git diff --no-color --no-ext-diff --no-textconv"
+        revisions = f"{'a' * 40} {'b' * 40}"
+        for output in ("--output=probe.patch", "--output probe.patch"):
+            for command in (
+                f"git diff --no-color {output} -- src/",
+                f"{prefix} {output} --end-of-options {revisions} -- src/",
+                f"{prefix} --end-of-options {output} {revisions} -- src/",
+                f"{prefix} --end-of-options {revisions} {output} -- src/",
+            ):
+                with self.subTest(command=command):
+                    self.assert_shell_effect(command, "deny")
+
+    def test_revision_diff_grants_two_full_sha1_ids_after_end_of_options(self) -> None:
+        prefix = "git diff --no-color --no-ext-diff --no-textconv"
+        old, new = "a" * 40, "b" * 40
+        self.assert_shell_effect(
+            f"{prefix} --end-of-options {old} {new} -- src/", "allow"
+        )
+        for command in (
+            f"{prefix} {old} {new} -- src/",
+            f"{prefix} --end-of-options HEAD {new} -- src/",
+            f"{prefix} --end-of-options {old} {new} src/",
+        ):
+            with self.subTest(command=command):
+                self.assert_shell_effect(command, "deny")
+
+    def test_no_git_key_has_a_star_before_double_dash(self) -> None:
         for key, effect in self.bash.items():
             if effect != "allow" or not key.startswith(GIT_PREFIXES):
                 continue
@@ -368,6 +406,7 @@ class ScoutSurfaceTest(unittest.TestCase):
             "git log --oneline -n 20",
             "git show head",
             "git ls-files -- src/",
+            "git diff --no-color --no-ext-diff --no-textconv --end-of-options <old-sha> <new-sha> -- <path>",
             "no `git -c",
         ):
             with self.subTest(token=token):
