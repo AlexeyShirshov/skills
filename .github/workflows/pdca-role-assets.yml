@@ -11,43 +11,49 @@ name: pdca-role-assets
 on:
   push:
     paths:
+      - "skills/pdca*/**/*.py"
+      - "skills/pdca*/tests/**"
+      - "tests/pdca/test_skill_payload.py"
       - "skills/pdca/assets/opencode-agents/**"
       - "skills/pdca-coder/assets/opencode-agents/**"
       - "skills/pdca-dotnet/assets/opencode-agents/**"
       - "skills/pdca-collection/assets/opencode-agents/**"
       - "skills/pdca-incremental/assets/opencode-agents/**"
-      - "skills/pdca/scripts/sync_role_assets.py"
-      - "skills/pdca/tests/test_role_assets.py"
+      - "tools/pdca/sync_role_assets.py"
+      - "tests/pdca/test_role_assets.py"
       - "skills/pdca/SKILL.md"
       - "skills/pdca/references/**"
-      - "skills/pdca/tests/test_routing_consistency.py"
-      - "skills/pdca/tests/test_frontmatter_yaml.py"
+      - "tests/pdca/test_routing_consistency.py"
+      - "tests/pdca/test_frontmatter_yaml.py"
       - "skills/pdca/assets/install-agents-prompt.md"
-      - "skills/pdca/tests/test_install_agents_prompt.py"
+      - "tests/pdca/test_install_agents_prompt.py"
       - "skills/pdca*/assets/claude-agents/**"
       - "skills/pdca*/assets/codex-agents/**"
-      - "skills/pdca/scripts/gen_host_agents.py"
-      - "skills/pdca/tests/test_host_agent_artifacts.py"
+      - "tools/pdca/gen_host_agents.py"
+      - "tests/pdca/test_host_agent_artifacts.py"
       - ".github/workflows/pdca-role-assets.yml"
   pull_request:
     paths:
+      - "skills/pdca*/**/*.py"
+      - "skills/pdca*/tests/**"
+      - "tests/pdca/test_skill_payload.py"
       - "skills/pdca/assets/opencode-agents/**"
       - "skills/pdca-coder/assets/opencode-agents/**"
       - "skills/pdca-dotnet/assets/opencode-agents/**"
       - "skills/pdca-collection/assets/opencode-agents/**"
       - "skills/pdca-incremental/assets/opencode-agents/**"
-      - "skills/pdca/scripts/sync_role_assets.py"
-      - "skills/pdca/tests/test_role_assets.py"
+      - "tools/pdca/sync_role_assets.py"
+      - "tests/pdca/test_role_assets.py"
       - "skills/pdca/SKILL.md"
       - "skills/pdca/references/**"
-      - "skills/pdca/tests/test_routing_consistency.py"
-      - "skills/pdca/tests/test_frontmatter_yaml.py"
+      - "tests/pdca/test_routing_consistency.py"
+      - "tests/pdca/test_frontmatter_yaml.py"
       - "skills/pdca/assets/install-agents-prompt.md"
-      - "skills/pdca/tests/test_install_agents_prompt.py"
+      - "tests/pdca/test_install_agents_prompt.py"
       - "skills/pdca*/assets/claude-agents/**"
       - "skills/pdca*/assets/codex-agents/**"
-      - "skills/pdca/scripts/gen_host_agents.py"
-      - "skills/pdca/tests/test_host_agent_artifacts.py"
+      - "tools/pdca/gen_host_agents.py"
+      - "tests/pdca/test_host_agent_artifacts.py"
       - ".github/workflows/pdca-role-assets.yml"
 
 permissions:
@@ -65,18 +71,20 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check canonical roles and mirrors
-        run: python3 skills/pdca/scripts/sync_role_assets.py --check
+        run: python3 tools/pdca/sync_role_assets.py --check
       - name: Install PyYAML (frontmatter gate dependency)
         run: python3 -m pip install pyyaml
       - name: Run role-asset tests
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_role_assets.py' -v
+        run: python3 -m unittest discover -s tests/pdca -p 'test_role_assets.py' -v
       - name: Run frontmatter YAML gate
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_frontmatter_yaml.py' -v
+        run: python3 -m unittest discover -s tests/pdca -p 'test_frontmatter_yaml.py' -v
       - name: Run routing guards
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_routing_consistency.py' -v
+        run: python3 -m unittest discover -s tests/pdca -p 'test_routing_consistency.py' -v
       - name: Check generated harness sets
-        run: python3 skills/pdca/scripts/gen_host_agents.py --check
+        run: python3 tools/pdca/gen_host_agents.py --check
       - name: Run install-prompt guards
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_install_agents_prompt.py' -v
+        run: python3 -m unittest discover -s tests/pdca -p 'test_install_agents_prompt.py' -v
       - name: Run generated-agent guards
-        run: python3 -m unittest discover -s skills/pdca/tests -p 'test_host_agent_artifacts.py' -v
+        run: python3 -m unittest discover -s tests/pdca -p 'test_host_agent_artifacts.py' -v
+      - name: Check installable skill contents
+        run: python3 -m unittest discover -s tests/pdca -p 'test_skill_payload.py' -v

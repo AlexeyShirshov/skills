@@ -165,9 +165,10 @@ read. CHECK chooses its own methods and commands — nothing here is a pre-DO ob
   use build and analyzer results under the project's actual warning policy, API compatibility
   reports, documentation observations, or a security gather. CHECK evaluates those results against
   the criteria rather than adding a source review or requiring a universal API baseline.
-- **Build and test evidence is executed evidence.** Record the actual commands, exit status, key
-  numbers and log path; red↔green for a fix with both exit codes. An unfinished or not-started run
-  carries no invented exit status or selected count, and a later retry does not erase the earlier
+- **Build and test evidence is executed evidence.** Link the original runner or CI output for the
+  candidate. Record the actual commands, exit status and counts; red↔green for a fix with both
+  exit codes. An unfinished or not-started run carries no invented exit status or selected count,
+  and a later retry does not erase the earlier
   failure; recording a deviation does not authorise it. Findings carry the actual CA/analyzer ID when
   one exists — never a fabricated ID; a configured analyzer is evidence only when it ran. The
   executor's run is candidate evidence; CHECK interprets it independently, and a report, `0 selected`
@@ -289,45 +290,6 @@ security boundaries, handoff) apply unchanged.
   any cleanup to task-owned artifacts within an explicit allowed scope, and never move or lose
   original source data. A true DO → ACT terminal outcome needs no phantom successful CHECK to permit
   cleanup.
-
-## Optional verification helpers
-
-Two standard-library helpers implement the inner-loop and evidence rules mechanically for projects
-that choose that method. They are **optional**: a task whose criteria do not need them owes neither
-run, and their absence is not a failure. Neither executes a supplied command; both validate recorded
-JSON and print `FAIL:`/`ERROR:` with exit `2`/`1`.
-
-**Where they live.** Both helpers ship only in this overlay's own `scripts/` directory: `../pdca-dotnet/scripts/`
-relative to the base package, installed as `<skills-root>/pdca-dotnet/scripts/`. The base `../pdca/scripts/`
-carries base helpers, so listing it says nothing about these two — an overlay
-helper is looked up in the overlay's `scripts/`, not in the base's. Their absence from a project's
-`.pdca/scripts/` is equally normal, because that directory is workspace, not installation: stage
-byte-identical copies from the overlay's `scripts/` before the first run, record the staging (source path
-and sha256), and run the staged copies from the project root. A missing workspace copy is staging work,
-never grounds for a substitute gate, a waiver, a deviation or a `Notice:`.
-
-`scripts/validate_inner_loop.py` accepts a `brief`, `report`, `project` (journal projection) or
-`manifest`. A brief has `unit` and a nested `scope`:
-
-```json
-{
-  "unit": "Foo.Tests",
-  "scope": {
-    "projects": ["tests/Foo.Tests.csproj"],
-    "selectors": ["FullyQualifiedName~Foo.Tests.BarTests"],
-    "files": ["src/Foo/Bar.cs"],
-    "rationale": "affected unit project after the Bar change",
-    "rebuild": "affected",
-    "boundary": "stream"
-  }
-}
-```
-
-A report adds `executions`; a manifest has `task`, `status_file`, `contract_rv`, `tree`, `base_ref`,
-`footprint`, `exclusions`, `required_rows` and `rows[]`. Optional metadata such as `tree_binding` and
-`tree_method` may be omitted. `scripts/pdca_evidence.py` provides `generate` and `lint` for an
-immutable receipt tree under `.pdca/<task>/rv<k>/`. Use these helpers only where the project already
-keeps such evidence or the cycle chooses that method; they create no additional phase gate.
 
 ## Composition
 

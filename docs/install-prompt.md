@@ -83,10 +83,8 @@ PROFILE=<профиль или пусто>
      вход семейства, поэтому она нужна всегда.
    - Хелперы из `scripts/` установленного скилла — источник рантайм-копий: `pdca-executor` кладёт
      их байт-в-байт копиями в `.pdca/scripts/` проекта и запускает оттуда
-     (`python3 .pdca/scripts/<helper>.py …`), а не из установленного каталога скилла. У оверлея свои
-     хелперы: `pdca-dotnet/scripts/` несёт `validate_inner_loop.py` и `pdca_evidence.py`, в базовом
-     `pdca/scripts/` их нет — отсутствие там ничего не доказывает, и пустой `.pdca/scripts/` это
-     нормальное состояние до стейджинга, а не повод записывать подмену гейта.
+     (`python3 .pdca/scripts/<helper>.py …`), а не из установленного каталога скилла.
+     У `pdca-dotnet` своих скриптов нет.
    - Существующие каталоги с теми же именами сначала сохрани в <name>.bak-<UTC timestamp>.
    - Проверь frontmatter каждого установленного SKILL.md:
      * `name` совпадает с именем каталога;
@@ -104,7 +102,7 @@ PROFILE=<профиль или пусто>
      claude   → `claude-agents/*.md` (`name`, `description`, `tools`; модель добавишь сам),
      codex    → `codex-agents/*.toml` (`name`, `description`, `developer_instructions` как
      TOML-literal + `features.shell_tool = false` у read-only ролей; модель добавишь сам).
-     Эти два набора генерируются из канона `skills/pdca/scripts/gen_host_agents.py` и стерегутся
+     Эти два набора генерируются из канона `tools/pdca/gen_host_agents.py` и стерегутся
      `--check`; правь канон, а не сгенерированный файл.
    - Привязка моделей (единственное, чего нет в наборе): opencode — `agents`-блок профиля;
      claude — поле `model:` в каждом скопированном файле (алиас, полный id или `inherit`; помни про
@@ -120,7 +118,7 @@ PROFILE=<профиль или пусто>
      `pdca-orchestrator`) — байт-в-байт зеркала канонического
      `$SKILLS_REPO/skills/pdca/assets/opencode-agents/`; у `pdca-collection`/`pdca-incremental`
      есть только зеркало `pdca-orchestrator`. Сверяй с каноном, а не с прежней установленной
-     копией (`python3 skills/pdca/scripts/sync_role_assets.py --check`).
+     копией (`python3 tools/pdca/sync_role_assets.py --check`).
    - Если CONFIG_REPO задан, синхронизируй те же файлы в его каталог агентов (источник для
      будущих установок), с бэкапами.
    - Проверь: ни в одном агенте нет выдуманного `model:`; у драйвера есть allowlist pdca-*.

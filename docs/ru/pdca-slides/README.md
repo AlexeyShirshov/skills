@@ -51,9 +51,10 @@ npm run build                   # статичный SPA в dist/ (GitHub Pages,
 | `public/pdca-state-dark.svg` | граф состояний (кадрированная вырезка) — слайд «Машина состояний» |
 | `public/pdca-contract-dark.svg` | схема контракта целиком — слайд «Контракт целиком» |
 
-Обе схемы — byte-identical копии `skills/pdca/assets/diagram/pdca-*-dark.svg`; их пишет
-`gen_pdca.py` (кропы `pdca-hand-dark.svg`). После регенерации скопируйте их в `public/` —
-`skills/pdca/tests/test_diagram_artifacts.py` сверяет копии и проверяет, что кропы
+Обе схемы — побайтовые копии `skills/pdca/assets/diagram/pdca-*-dark.svg`. Чтобы обновить их,
+запустите `tools/pdca/diagrams/pdca/gen_pdca.py` из `skills/pdca/assets/diagram/` и
+скопируйте полученные вырезки в `public/`:
+`tests/pdca/test_diagram_artifacts.py` сверяет копии и проверяет, что кропы
 вертикально покрывают исходник.
 
 Источник фактов — контракты семейства `skills/pdca*` и [техническая статья](../pdca.md).

@@ -85,17 +85,10 @@ For the PDCA family the global skills root is enough — OpenCode discovers
 `~/.config/opencode/skills`. The `skills-keep.txt` + `curate-skills.mjs` pack is only for skills kept
 in a custom `skills` source; if the family lives there, add the five ids to that list and rebuild it.
 
-The helpers under the installed skill's `scripts/` are the **source** of the runtime copies — the
-package you installed determines which ones exist (`pdca` and `pdca-coder` ship `pdca_cost.py`;
-`pdca-dotnet` also ships `validate_inner_loop.py` and `pdca_evidence.py`, but only in its
-own `pdca-dotnet/scripts/` — the base `pdca/scripts/` does not carry them, so listing the base directory
-proves nothing about their availability). Before the first helper run,
-`pdca-executor` stages them into the project's `.pdca/scripts/` as byte-identical copies, and every
-command runs from the project root (`python3 .pdca/scripts/<helper>.py …`); a helper is never
-executed from the installed skill directory. The `.pdca/` workspace itself is created by the cycle in
-the project it runs in; an empty `.pdca/scripts/` is the normal pre-staging state, not a sign of an
-unavailable helper and not a reason to record a substitution or a waiver. `tests/` and the diagram
-generators under `assets/diagram/` are development-only and not needed at runtime.
+For collection runs, `pdca-executor` stages a
+byte-identical copy of `status_lint.py` from the installed `pdca-collection/scripts/` into
+the project's `.pdca/scripts/` before first use. The source checkout
+keeps maintainer scripts and tests in `tools/pdca/` and `tests/`, outside the installed skills.
 
 Keep the durable record and drop the local by-product — add once, in the project that runs cycles:
 
@@ -138,8 +131,9 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 > `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-orchestrator`) have **one authoritative source**:
 > `skills/pdca/assets/opencode-agents/`. `pdca-coder` and `pdca-dotnet` ship byte-identical real-file
 > copies of those six (frontmatter, body and permissions), and `pdca-collection`/`pdca-incremental`
-> carry only the same `pdca-orchestrator` copy. Regenerate or verify the mirrors with
-> `python3 skills/pdca/scripts/sync_role_assets.py --check` (or `--fix`); the explicit allowlist
+> carry only the same `pdca-orchestrator` copy. From the source checkout, regenerate or verify
+> the mirrors with
+> `python3 tools/pdca/sync_role_assets.py --check` (or `--fix`); the explicit allowlist
 > never touches `pdca-security-auditor` or hand-written files. `pdca-security-auditor` is the only
 > coder/.NET role that differs by design — it is a specialist gather role, not one of the shared six.
 > Copying `pdca`/`pdca-coder`/`pdca-dotnet` assets therefore yields the same six roles; a form package
@@ -191,7 +185,7 @@ the file name to it is only a convention.
   reference has no nesting-depth key; some builds accept `agents.max_spawn_depth` (§6).
 
 **Three ready-to-copy sets, one authored source.** `assets/opencode-agents/` is canonical; the
-other two are generated from it by `python3 skills/pdca/scripts/gen_host_agents.py` (`--check` runs
+other two are generated from it by `python3 tools/pdca/gen_host_agents.py` (`--check` runs
 in CI) and carry the same body byte-for-byte, with only the host envelope around it:
 
 | Folder | Harness | Envelope |
@@ -226,10 +220,10 @@ agent files are deployed.
 
 - **one package** — copy `skills/pdca/assets/opencode-agents/*.md` (or the equivalent six-role
   mirror in `pdca-coder`/`pdca-dotnet`); add the form package's orchestrator if you use a form;
-- **generated harness sets** — `python3 skills/pdca/scripts/gen_host_agents.py --check` fails on a
+- **generated harness sets** — `python3 tools/pdca/gen_host_agents.py --check` fails on a
   missing, drifted or stale `claude-agents/` or `codex-agents/` file; `--fix` regenerates them from
   the canonical OpenCode assets. Edit the canonical role, never a generated file;
-- **CI drift guard** — `python3 skills/pdca/scripts/sync_role_assets.py --check` fails on any
+- **CI drift guard** — `python3 tools/pdca/sync_role_assets.py --check` fails on any
   missing or drifted mirror; `--fix` writes only the allowlisted mirror paths. The canonical files
   are never written by the generator.
 
@@ -255,7 +249,7 @@ the rest — do not write your own, and do not keep an older host copy under the
 The shared role assets are written in the **V1 `permission:` map**, which V2 translates, and every one
 also carries the equivalent **V2 `permissions:` list**. Both representations must express the same
 policy; the tests check their equivalence. Keep both in sync when editing an asset, or regenerate the
-mirrors with `python3 skills/pdca/scripts/sync_role_assets.py --fix`.
+mirrors with `python3 tools/pdca/sync_role_assets.py --fix`.
 
 What the driver must be (the asset already encodes this — check it after installation):
 

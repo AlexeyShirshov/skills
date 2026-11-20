@@ -24,7 +24,7 @@ The host config is `~/.config/opencode`.
 2. Test:
    ```bash
    OPENCODE_CONFIG_REPO=/home/alex/sources/opencode-config \
-     python3 -m unittest discover -s skills/<skill>/tests -p 'test_*.py'
+     python3 -m unittest discover -s tests/<skill> -p 'test_*.py'
    ```
    Some suites compare against the snapshot (`config/agents`, `config/profiles`); they are
    skipped unless `OPENCODE_CONFIG_REPO` is set.

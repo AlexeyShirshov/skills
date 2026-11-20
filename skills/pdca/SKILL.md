@@ -458,7 +458,7 @@ The cycle's **persistent PDCA state and evidence** live under one fixed project-
 .pdca/
 ├─ scripts/            # runtime copies of helper scripts used by the cycle
 ├─ status/             # durable cycle/campaign status files
-└─ <task>/rv<k>/       # evidence: frozen manifest, logs, per-row artifacts
+└─ <task>/rv<k>/       # primary evidence for the criteria, such as run logs
 ```
 
 - **Status path.** The driver passes an explicit `status_path` locating the current cycle's record;
@@ -467,7 +467,7 @@ The cycle's **persistent PDCA state and evidence** live under one fixed project-
 - **Evidence root.** The driver passes an explicit `evidence_root` in every DO dispatch — the initial
   one, a follow-up and a CHECK-directed re-gather alike — with the contract default
   `.pdca/<task>/rv<k>/` and attempts under `attempts/`. Evidence artefacts handed to CHECK are
-  **persisted** there: full logs, manifests, per-row artifacts. Temporary scratch files may live
+  **persisted** there: full logs and other primary results for the criteria. Temporary scratch files may live
   outside `.pdca/` (a `TMPDIR`), but they are never the only source: the full log or artefact behind
   a result is written under `evidence_root` before DO returns, so CHECK can read the proof within its
   evidence scope. The product files themselves stay wherever the task puts them — evidence never

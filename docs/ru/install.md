@@ -86,16 +86,10 @@ cp -r skills/pdca* ~/.config/opencode/skills/
 в отдельном `skills`-источнике; если семейство живёт там, добавьте пять id в список и пересоберите
 пак.
 
-Хелперы из `scripts/` установленного скилла — **источник** рантайм-копий (`pdca` и `pdca-coder`
-поставляют `pdca_cost.py`; `pdca-dotnet` дополнительно `validate_inner_loop.py` и
-`pdca_evidence.py` — только в своём `pdca-dotnet/scripts/`, в базовом `pdca/scripts/` их нет, так что
-листинг базового каталога ничего не доказывает об их отсутствии). Перед первым запуском хелпера
-`pdca-executor` кладёт их в `.pdca/scripts/` проекта байт-в-байт копиями, и каждая команда идёт от
-корня проекта (`python3 .pdca/scripts/<helper>.py …`); из установленного каталога скилла хелпер не
-запускается никогда. Сам workspace `.pdca/` цикл создаёт в проекте, где идёт; пустой `.pdca/scripts/` —
-нормальное состояние до стейджинга, а не признак недоступного хелпера и не повод записывать подмену
-или waiver. `tests/` и генераторы диаграмм в `assets/diagram/` нужны только для разработки, не для
-рантайма.
+Для коллекции `pdca-executor` перед первым
+запуском кладёт байт-в-байт копию `status_lint.py` из установленного `pdca-collection/scripts/`
+в `.pdca/scripts/` проекта. Скрипты сопровождения и тесты хранятся в `tools/pdca/` и `tests/` исходного репозитория
+и не входят в установку скиллов.
 
 Долговечную запись держите в индексе, локальный побочный продукт — вне его. Один раз, в проекте,
 где идут циклы:
@@ -139,8 +133,9 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 > `pdca-check`, `pdca-escalate`, `pdca-scout`, `pdca-orchestrator`) **один авторитетный источник**:
 > `skills/pdca/assets/opencode-agents/`. `pdca-coder` и `pdca-dotnet` поставляют байт-в-байт
 > копии этих шести (frontmatter, тело и права), а `pdca-collection`/`pdca-incremental` — только
-> такую же копию `pdca-orchestrator`. Проверка и перегенерация:
-> `python3 skills/pdca/scripts/sync_role_assets.py --check` (или `--fix`); явный allowlist никогда
+> такую же копию `pdca-orchestrator`. Для проверки или перегенерации из исходного репозитория
+> запустите:
+> `python3 tools/pdca/sync_role_assets.py --check` (или `--fix`); явный allowlist никогда
 > не трогает `pdca-security-auditor` и рукописные файлы. `pdca-security-auditor` — единственная
 > роль coder/.NET, которая отличается намеренно: это специалист-сборщик фактов, а не одна из общих
 > шести. Поэтому ассеты `pdca`/`pdca-coder`/`pdca-dotnet` дают те же шесть ролей, а пакет формы
@@ -148,7 +143,7 @@ cp skills/pdca-coder/assets/opencode-agents/*.md ~/.config/opencode/agents/
 > шестиролевых пакетов.
 
 **Три готовых набора, один авторский источник.** `assets/opencode-agents/` — канон; два других
-генерируются из него командой `python3 skills/pdca/scripts/gen_host_agents.py` (`--check` в CI) и
+генерируются из него командой `python3 tools/pdca/gen_host_agents.py` (`--check` в CI) и
 несут то же тело байт-в-байт, отличаясь только обёрткой хоста:
 
 | Каталог | Хост | Обёртка |
@@ -231,11 +226,11 @@ Codex принимает кастомных агентов как отдельн
 - **один пакет** — копируйте `skills/pdca/assets/opencode-agents/*.md` (или эквивалентное
   шестиролевое зеркало в `pdca-coder`/`pdca-dotnet`); если используете форму, добавьте её
   оркестратор;
-- **сгенерированные наборы под хосты** — `python3 skills/pdca/scripts/gen_host_agents.py --check`
+- **сгенерированные наборы под хосты** — `python3 tools/pdca/gen_host_agents.py --check`
   падает на отсутствующем, разошедшемся или лишнем файле в `claude-agents/`/`codex-agents/`;
   `--fix` перегенерирует их из канонических OpenCode-ассетов. Правьте канон, никогда — сгенерированный
   файл;
-- **CI-защита от дрейфа** — `python3 skills/pdca/scripts/sync_role_assets.py --check` падает на
+- **CI-защита от дрейфа** — `python3 tools/pdca/sync_role_assets.py --check` падает на
   любом отсутствующем или разошедшемся зеркале; `--fix` пишет только пути из allowlist.
   Канонические файлы генератор не пишет.
 
@@ -261,7 +256,7 @@ markdown роли** — id моделей привязывает профиль 
 Общие ассеты ролей записаны в **V1-карте `permission:`**, которую V2 транслирует, и каждый несёт ещё
 и эквивалентный **V2-список `permissions:`**. Оба представления должны выражать одну политику; тесты
 проверяют их эквивалентность. Держите оба блока синхронными при правке ассета или перегенерируйте зеркала
-через `python3 skills/pdca/scripts/sync_role_assets.py --fix`.
+через `python3 tools/pdca/sync_role_assets.py --fix`.
 
 Каким он должен быть (ассет это уже кодирует — проверьте после установки):
 

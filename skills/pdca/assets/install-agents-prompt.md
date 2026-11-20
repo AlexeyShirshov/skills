@@ -10,7 +10,7 @@ harness, so nothing is translated at install time:
 | Codex | `assets/codex-agents/*.toml` | `name`, `description`, `developer_instructions`, shell feature flag |
 
 The canonical set is authored by hand; the other two are generated from it by
-`skills/pdca/scripts/gen_host_agents.py` (`--check` in CI) and carry the role body byte-for-byte.
+`tools/pdca/gen_host_agents.py` (`--check` in CI) and carry the role body byte-for-byte.
 None of the three sets carries a model — that is the one thing the installer must bind, and only
 the host knows which ids it offers.
 
@@ -146,8 +146,8 @@ MODELS=<...>
 - One shared set: the six roles are canonical in `pdca` and byte-identical mirrors in the overlays,
   so refreshing from `pdca` updates them all. `pdca-security-auditor` is the one coder/.NET
   specialist and comes from that overlay. `claude-agents/` and `codex-agents/` are generated from
-  the same canonical files — edit the canonical asset, then run
-  `python3 skills/pdca/scripts/gen_host_agents.py --fix`, never a generated file.
+  the same canonical files — in the source checkout, edit the canonical asset, then run
+  `python3 tools/pdca/gen_host_agents.py --fix`, never a generated file.
 - **Why a prompt and not a script.** The conversion is mechanical, so it is generated and checked in;
   what remains is the part a generator cannot decide: which model ids this host offers, where its
   bindings live, and whether the installed build actually supports the delegation chain. A script

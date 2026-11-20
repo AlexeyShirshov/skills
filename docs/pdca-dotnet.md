@@ -137,6 +137,8 @@ overlay adds no extra completeness checklist, mandatory row or pre-DO blocker.
 CHECK keeps the base procedure, its per-criterion method choice, verdict, routing and accounting, and the
 coder overlay's evidence rules. This section adds what a .NET check examines and how its evidence is read.
 CHECK chooses its own methods and commands; nothing here is a pre-DO obligation.
+For test criteria, link the original runner or CI output for the candidate, including the test
+selection, counts and exit status.
 
 - **Applicable work, no fixed tally.** Examine the actual change and the criteria: build and analyzers
   under the project's own `.editorconfig` / warning policy — read the effective `dotnet_diagnostic.*`
@@ -240,32 +242,7 @@ boundaries and handoff — apply unchanged.
   within an explicit allowed scope, and never move or lose original source data. A true `DO → ACT`
   terminal outcome needs no phantom successful CHECK to permit cleanup.
 
-## 7. Optional verification helpers
-
-The skill ships two standard-library helpers for projects that want the inner-loop and evidence rules
-checked mechanically. They are **optional**: a task whose criteria do not need them owes neither run, and
-their absence is not a failure. They never execute a supplied command; they validate recorded JSON.
-
-- `scripts/validate_inner_loop.py` — validates a `brief` (the DO test scope before dispatch), a `report`
-  (scope plus executions before CHECK), an append-only `journal` projection, and the shape of an evidence
-  `manifest`. It distinguishes unit from integration runs, rejects zero-target selectors, catches a
-  stale `--no-build` artifact, and treats an unfinished run as unfinished.
-- `scripts/pdca_evidence.py` — generates and lints an immutable, receipt-based evidence tree bound to a
-  frozen synthetic tree, with a scoped manifest and `rv<k>` history.
-
-Both files exist only in this skill's own `scripts/` (`skills/pdca-dotnet/scripts/`, installed as
-`<skills-root>/pdca-dotnet/scripts/`). The base package's `scripts/` carries `pdca_cost.py` only,
-so checking it says nothing about these two helpers. A project's `.pdca/scripts/`
-is workspace, not installation: absence there is the normal pre-staging state, and the executor fills it
-with byte-identical copies (recording the source path and sha256) before the first run. A missing copy
-there is not a reason for a substitute gate, a waiver or a deviation record.
-
-Neither helper is a gate the base did not ask for: use them where the project already has such evidence
-or where a cycle chooses that method. The scripts' module docstrings are the CLI reference
-(`brief`, `report`, `project`, `manifest`; `generate`, `lint`), and their exit codes are `0` success,
-`2` validation violation, `1` usage or operational error.
-
-## 8. Limitations and false expectations
+## 7. Limitations and false expectations
 
 - **“The overlay is the whole .NET contract.”** No. It adds .NET facts to the base and the coder overlay;
   the base owns every phase, criterion, counter and status rule.
@@ -280,7 +257,7 @@ or where a cycle chooses that method. The scripts' module docstrings are the CLI
   makes them relevant, with a configured baseline; a score never replaces a mandatory criterion.
 - **“The overlay may commit or push.”** No. Commits and pushes remain explicit authorisations.
 
-## 9. Where to go next
+## 8. Where to go next
 
 - The base cycle: [`pdca.md`](pdca.md), [`pdca-guide.md`](pdca-guide.md),
   [`skills/pdca/SKILL.md`](../skills/pdca/SKILL.md).
@@ -301,4 +278,3 @@ or where a cycle chooses that method. The scripts' module docstrings are the CLI
 | .NET plan deltas | `skills/pdca-dotnet/SKILL.md §.NET plan deltas` |
 | .NET check deltas and missing evidence | `skills/pdca-dotnet/SKILL.md §.NET check deltas` |
 | .NET DO/ACT deltas, host safety, docs and artifacts | `skills/pdca-dotnet/SKILL.md §.NET do/act deltas` |
-| Optional helper scripts | `skills/pdca-dotnet/scripts/validate_inner_loop.py`; `skills/pdca-dotnet/scripts/pdca_evidence.py` |

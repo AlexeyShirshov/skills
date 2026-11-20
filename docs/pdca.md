@@ -183,7 +183,7 @@ Everything the skill writes lives under one project-local root, `.pdca/`, in the
 .pdca/
 ├─ scripts/            # runtime copies of helper scripts, when a helper is used
 ├─ status/             # durable cycle and campaign status files
-└─ <task>/rv<k>/       # evidence: manifest, logs, per-row artifacts
+└─ <task>/rv<k>/       # primary evidence for the criteria, such as run logs
 ```
 
 The **status file** is the source of truth. Its default path in Bounded Execution is

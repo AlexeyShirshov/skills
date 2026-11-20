@@ -427,8 +427,8 @@ The cycle has exactly **one progress mirror**: the status file.
 them. The contract revision `rv` names the criteria/contract version; it is visible only in the
 evidence path. **One evidence location binding:** the root and every path resolve in the same
 checkout the checks run in. A secondary checkout is the binding root, and evidence appears there at
-the identical repository-relative path. A manifest whose tree cannot be recomputed from its own
-`base_ref` is invalid, not an exception.
+the identical repository-relative path. For each criterion, link the primary result to the candidate
+and the inputs the check actually covered.
 
 **Closing only on fresh evidence.** The driver does not inspect evidence itself. CHECK decides the
 method and sufficiency per criterion; the executor runs or produces the evidence and returns the exit
