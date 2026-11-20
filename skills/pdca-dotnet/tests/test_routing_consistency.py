@@ -214,12 +214,11 @@ class GeneratedDiagramTest(unittest.TestCase):
 
     def test_named_edges_and_nodes_present_in_both_themes(self):
         expected_edges = {
-            "check_security", "security_check_report", "security_escalate_tradeoff",
-            "escalate_do_nonexhausted", "escalate_plan_exhausted", "escalate_act",
+            "check_security", "security_check_report", "plan_act_terminal",
             "act_stop", "do_act_incomplete", "check_act",
         }
         expected_nodes = {"PLAN", "DO", "CHECK", "ACT", "START", "EXIT",
-                          "sec_check", "escalate", "stop"}
+                          "sec_check", "stop"}
         for svg in ("pdca-hand.svg", "pdca-hand-dark.svg"):
             root = ET.fromstring(self.runs[0][svg])
             with self.subTest(svg=svg):
@@ -227,16 +226,15 @@ class GeneratedDiagramTest(unittest.TestCase):
                 nodes = {el.get("data-node-id") for el in root.iter() if el.get("data-node-id")}
                 self.assertTrue(expected_edges <= edges)
                 self.assertTrue(expected_nodes <= nodes)
+                self.assertNotIn("escalate", nodes)
+                self.assertFalse({edge for edge in edges if "escalate" in edge})
 
-    def test_svg_edge_directions_security_and_escalation(self):
+    def test_svg_edge_directions_security_and_terminal_outcomes(self):
         root = ET.fromstring(self.runs[0]["pdca-hand.svg"])
         expected = {
             "check_security": ("CHECK", "sec_check"),
             "security_check_report": ("sec_check", "CHECK"),
-            "security_escalate_tradeoff": ("sec_check", "escalate"),
-            "escalate_do_nonexhausted": ("escalate", "DO"),
-            "escalate_plan_exhausted": ("escalate", "PLAN"),
-            "escalate_act": ("escalate", "ACT"),
+            "plan_act_terminal": ("PLAN", "ACT"),
             "act_stop": ("ACT", "stop"),
             "do_act_incomplete": ("DO", "ACT"),
             "check_act": ("CHECK", "ACT"),
@@ -250,7 +248,7 @@ class GeneratedDiagramTest(unittest.TestCase):
             root = ET.fromstring(self.runs[0][svg])
             texts = " ".join(el.text or "" for el in root.iter() if el.tag.endswith("text"))
             with self.subTest(svg=svg):
-                for token in ("not exhausted", "r exhausted", "r+1", "trade-off"):
+                for token in ("consultation, not a transition", "asking phase", "r+1", "trade-off"):
                     self.assertIn(token, texts)
 
     def test_html_inlines_paired_svg_module_for_module(self):

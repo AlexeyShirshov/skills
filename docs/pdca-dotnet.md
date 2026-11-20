@@ -41,6 +41,8 @@ task, and a user-prescribed command or method stays a requirement.
 
 ## 3. The .NET toolchain
 
+See the [.NET workflow diagram](../skills/pdca-dotnet/assets/diagram/pdca-hand-dark.svg) for the relationship between toolchain evidence and the base cycle.
+
 The toolchain is a property of the existing project environment. Take the build, test, format, pack and
 docs commands from its manifests, CI workflow, `.editorconfig` and analyzer configuration, solution and
 project files, task runner or README. A command or threshold the user prescribed is a requirement. There
@@ -229,12 +231,10 @@ boundaries and handoff — apply unchanged.
   path. The executor remains the sole status writer; the original task, phase reports, dialogue language
   and Git ledger come from the base unchanged; per-unit evidence belongs to the parent cycle record, not a
   per-unit status file.
-- **Artifacts and cleanup.** If CHECK's chosen method needs the full bodies of artifacts, a staged copy
-  may be used, with source identity and staged-vs-source fidelity verified by CHECK; no reviewer pack is
-  mandatory each task. Source identity includes the uncommitted working state when present, so evidence
-  is bound to the actual candidate rather than to `HEAD` alone, and a staged copy is validated against the
-  original. A drift after the snapshot makes CHECK reconsider the impacted conclusion per the base, not a
-  new counter. A missing body or a staged-vs-source mismatch is `unverified` or an evidence blocker,
+- **Artifacts and cleanup.** Run verification against the candidate in its checkout, including
+  relevant uncommitted changes. Store logs and measurements under the evidence root, not copies of
+  changed source or diffs. If a relevant input changes, reconsider only the evidence that depends on
+  it; a `HEAD` change alone doesn't invalidate a run. Missing required evidence is `unverified`,
   never an automatic product fail or pass. Cleanup is not a phase gate and nothing is deleted
   automatically: preserve proof and recovery per the base, limit any cleanup to task-owned artifacts
   within an explicit allowed scope, and never move or lose original source data. A true `DO → ACT`

@@ -233,15 +233,19 @@ normal mode — the user's recorded approval. The plan carries the original task
 constraints, prohibitions and scope; it does not carry a frozen verification procedure. Choosing and
 running the verification is CHECK's work at CHECK time.
 
-**PLAN → ACT** has two terminal outcomes, and neither requires a full feasibility proof:
+**PLAN → ACT** has four terminal outcomes:
 
 - `acceptance criteria cannot be determined` — the supplied information and the authorized read-only
   gather cannot make the criteria determinate; it carries the missing information and the reason.
 - `original task is infeasible under the stated constraints` — the supplied facts, the authorized
   gather or a planned bounded probe prove that the **original task** cannot be achieved; it carries
   the cause and evidence. One failed candidate and uncertainty after a probe are not proof.
+- `goal cannot be measured under the available means` — the required value lacks a usable metric,
+  instrument, or comparable basis.
+- `requested result already established` — the supplied facts establish the result; ACT records
+  the derivation and evidence without claiming an independent CHECK.
 
-Both go directly to ACT: no DO, no CHECK, no mandatory escalation detour, no invented criterion and
+All four go directly to ACT: no DO, no CHECK, no mandatory escalation detour, no invented criterion and
 no substitute deliverable.
 
 ### DO's exits
@@ -395,6 +399,13 @@ silent pass. Auto-commit, where a project policy or the user allows it, is likew
 is never part of the cycle.
 
 ## 9. The cycle's memory and evidence
+
+Phase reports are stored once. The executor records their path and SHA-256, and the driver forwards
+that pair unchanged. The ready handoff contains the complete CHECK procedure inline; passing only
+the path to the installed reference isn't enough. The hash identifies the report, not the product.
+CHECK chooses what proves each criterion, runs verification through the executor against the
+candidate in its checkout, and can reuse evidence when relevant inputs and conditions are equivalent.
+See the [CHECK reference](../skills/pdca/references/check.md).
 
 The cycle has exactly **one progress mirror**: the status file.
 

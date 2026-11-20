@@ -91,7 +91,7 @@ The state machine is the whole machine:
 ```text
 PLAN → DO (normal mode: after approval) → CHECK → ACT → (EXIT | PLAN)
 DO → ACT (cannot finish) | CHECK → DO (defect) | CHECK → PLAN (contract) | CHECK → ACT (STOP)
-PLAN → ACT (criteria undetermined | original task infeasible)
+PLAN → ACT (criteria undetermined | goal not measurable | task infeasible | result established)
 ```
 
 **PLAN.** `pdca-planner` defines the **result contract of this cycle**: the goal and expected result,
@@ -105,6 +105,9 @@ cycle goes straight to ACT — no DO, no CHECK. If the supplied facts prove that
 itself** cannot be achieved under its constraints, PLAN returns `original task is infeasible under the
 stated constraints` with cause and evidence. One failed candidate is not such proof, and an
 explanation or a smaller goal is never a substitute deliverable.
+If the required value can't be measured with available means, PLAN names the missing measurement
+basis. If the supplied facts already establish the requested result, PLAN gives the derivation and
+evidence. These outcomes also go straight to ACT without DO, CHECK, or a PASS.
 
 **DO.** `pdca-executor` carries out the approved result contract and chooses the implementation inside
 it. It may split the work into units, with disjoint ownership for any parallel work, and it records

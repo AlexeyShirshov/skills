@@ -104,6 +104,20 @@ Criteria state required outcomes. Implementation and developer verification belo
 verification belongs to CHECK, as the governing contract assigns. DO may propose a worktree split,
 performed only within the cycle's authorised workspace operations.
 
+## Existing-test compatibility
+
+By default, preserve the unit and integration tests present when the task starts, including their
+assertions and behavior through fixtures, shared helpers, snapshots, and configuration. This baseline
+doesn't reset on replan or resume. Adding tests is allowed.
+
+Explicit consent for named tests applies only to the agreed change. Only an explicit
+`non-backward-compatible` choice switches modes; ordinary plan approval and autonomy don't.
+CHECK judges the baseline comparison gathered in the candidate's checkout. If the fix requires
+an unauthorized change to an existing test, DO reports that it cannot finish before making the
+change. ACT records the STOP and the decision needed. See the
+[compatibility contract](../skills/pdca-coder/SKILL.md#existing-test-compatibility).
+For the phase and security-stream layout, see the [coder workflow diagram](../skills/pdca-coder/assets/diagram/pdca-coder-hand-dark.svg).
+
 ## Code-specific check deltas
 
 CHECK keeps the base procedure, its per-criterion method choice, verdict, routing and accounting. This

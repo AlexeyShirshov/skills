@@ -160,14 +160,14 @@
 <rect x="959.75" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="1111.75" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="1136.75" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
-<text x="971.75" y="397" class="t">Task checks</text>
-<text x="971.75" y="416" class="s">mandatory · by work type</text>
+<text x="971.75" y="397" class="t">Evidence in place</text>
+<text x="971.75" y="416" class="s">verify the integrated checkout</text>
 <rect x="958.75" y="436" width="211" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="959.75" y="443" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="1111.75" y="443" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="1136.75" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
-<text x="971.75" y="459" class="t">Tests</text>
-<text x="971.75" y="478" class="s">functional · acceptance</text>
+<text x="971.75" y="459" class="t">Evidence</text>
+<text x="971.75" y="478" class="s">logs and measurements</text>
 <rect x="958.75" y="498" width="211" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="959.75" y="505" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="1111.75" y="505" width="50" height="18" rx="6" fill="#0d9488"/>

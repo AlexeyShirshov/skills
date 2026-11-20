@@ -36,27 +36,27 @@ BLOCKS = {
     "P": [
         ("PLAN", "start · design", "medium"),
         ("Gather", "pdca-scout + dotnet-* (6 lenses)", "weak"),
-        ("Decide · pdca-planner", "fix / defer · decomposition", "medium"),
+        ("Result contract", "pdca-planner · no DO steps", "medium"),
         ("Criteria · goal", "goal · acceptance (+negative)", "medium"),
-        ("Tasks · risks", "units · no TBD", "medium"),
+        ("Semantic tools", "when needed · host policy", "medium"),
         ("Tests · docs", "strategy · plan", "medium"),
         ("Perf decision", "measure? · tool · baseline", "medium"),
         ("Spike", "needed? · tool · PoC", "medium"),
-        ("Unit mode", "sequence · tree · worktrees", "medium"),
-        ("Contract vN", "evidence · row ID · rv", "medium"),
-        ("Command contract", "resolve · argv · outcome", "medium"),
+        ("Compatibility", "keep baseline tests by default", "medium"),
+        ("Contract rev.", "criteria IDs · evidence rv", "medium"),
+        ("Constraints", "no frozen CHECK command", "medium"),
         ("Effort policy", "accounting · not a cutoff", "medium"),
     ],
     "D": [
         ("DO", "journal · plan until approval", "weak"),
         ("Test scope", "structured · affected subset", "medium"),
-        ("Brief gate", "validate_inner_loop · fail-closed", "weak"),
+        ("Optional helper", "validate_inner_loop", "weak"),
         ("Code", "inside the contract", "weak"),
         ("Tests", "DO chooses the method", "weak"),
         ("Docs · prose", "README · DocFX", "weak"),
         ("DO ledger", "evidence by row ID/rv", "weak"),
         ("Build gate", "0 warnings · TreatWarningsAsErrors", "weak"),
-        ("Anchor re-check", "drift → ACT incomplete", "weak"),
+        ("Candidate", "in its checkout · keep logs", "weak"),
     ],
     "C": [
         ("CHECK · gather", "fork 4 streams + security", "weak"),
@@ -79,17 +79,17 @@ BLOCKS = {
         ("T3 · trade-off", "arch/API · hard security", "strong"),
         ("T4 · risky-diff", "acceptance before ACT", "strong"),
         ("T5 · low-conf", "PLAN / DO classification", "strong"),
-        ("Decision", "→ pdca-planner · executor · STOP", "strong"),
+        ("Consultation", "returns to asking phase", "strong"),
     ],
     "S": [
-        ("Terminal", "no doable PLAN r+1", "weak"),
-        ("Normal", "ask the user", "weak"),
-        ("Autonomous", "recorded STOP · no prompt", "weak"),
+        ("Terminal", "no permitted continuation", "weak"),
+        ("Record", "cause · outstanding criteria", "weak"),
+        ("No acceptance", "ACT records STOP", "weak"),
     ],
     "A": [
         ("ACT", "cycle close-out", "weak"),
         ("Lesson", "→ memory", "weak"),
-        ("Rules", "AGENTS.md · overlay", "weak"),
+        ("Retrospective", "analysis only", "medium"),
         ("Status file", "finalization · source of truth", "weak"),
         ("Report", "closed / left / blockers", "weak"),
         ("Message", "commit advice · manual", "weak"),
@@ -102,7 +102,7 @@ TAIL = {"D": [
     ("XML-doc", "after code · if the project requires", "weak"),
     ("Build · tests", "build gate · unit loop", "weak"),
     ("Integr. tests", "DO → CHECK boundary", "weak"),
-    ("Report gate", "validate_inner_loop · fail-closed", "weak"),
+    ("Run receipt", "exit status · counts · log", "weak"),
 ], "C": [
     ("Completeness", "evidence contract · before PASS", "medium"),
     ("Triage · verdict", "stream aggregate → pass/fail", "medium"),
@@ -111,16 +111,16 @@ TAIL = {"D": [
 # orchestrator inputs, per phase
 INPUTS = [
     "PLAN ← “start” · “replan from pdca-check” · “cycle N+1 from ACT”",
-    "DO ← “plan ready · approval/instant” · “defect fix from pdca-check (incl. security)” · “fix from pdca-escalate while r not exhausted”",
+    "DO ← “complete plan and approval when required” · “defect or evidence request from CHECK”",
     "CHECK ← “streams closed”",
     "CHECK · security ← “if: auth / secrets / input / crypto” · “report → CHECK”",
-    "ACT ← “pdca-check pass” · “DO cannot finish” · “STOP finalization”",
+    "ACT ← “CHECK outcome” · “DO cannot finish” · “terminal PLAN”",
     "ESCALATION ← “T1 ambiguity” · “T2 counter” · “T3 trade-off” · “T4 risky-diff” · “T5 low-confidence”",
-    "STOP ← “ACT outcome: no doable PLAN r+1”",
+    "STOP ← “ACT outcome: no permitted continuation”",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "start\nreplan: pdca-check\ncycle N+1", "D": "plan ready · contract/approval\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
-            "SEC": "from CHECK · if\nauth/secrets/input/crypto\ngather (facts)\nreport → CHECK", "E": "T1 ambiguity\nT2 counter · 3rd CHECK(r)\nT3 trade-off · T4 risky-diff\nT5 low-confidence", "S": "no plan r+1\n→ ACT", "A": "pdca-check pass\nor STOP → ACT"}
+DISPATCH = {"P": "start\nreplan: pdca-check\ncycle N+1", "D": "plan ready · approval if needed\nCHECK fix or evidence request", "C": "candidate complete",
+            "SEC": "from CHECK · if\nauth/secrets/input/crypto\ngather (facts)\nreport → CHECK", "E": "T1 ambiguity\nT2 counter · 3rd CHECK(r)\nT3 trade-off · T4 risky-diff\nT5 low-confidence", "S": "recorded by ACT", "A": "CHECK · DO blocker\nor terminal PLAN"}
 
 # per-phase state-graph node colors (shared by both themes)
 STC = {"START": None, "PLAN": "#2563eb", "DO": "#7c3aed", "CHECK": "#d97706",
@@ -338,7 +338,7 @@ def render(P, title):
     for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", "start"),
                                ("plan_do", "PLAN", "DO", None),
                                ("do_check", "DO", "CHECK", "streams closed"),
-                               ("check_act", "CHECK", "ACT", "pass"),
+                                ("check_act", "CHECK", "ACT", "accept or STOP"),
                                ("act_exit", "ACT", "EXIT", "closed")]:
         _x1, _x2 = stx[_a] + NW, stx[_b]
         s.append(poly([(_x1, _y), (_x2, _y)], edge_id=_eid))
@@ -360,43 +360,29 @@ def render(P, title):
     s.append(f'<path d="M950,{R1_TOP} C950,{R1_TOP-132} 415,{R1_TOP-132} 415,{R1_TOP}" fill="none" stroke="{P["arrow"]}" marker-end="url(#arrow)" data-edge-id="check_plan_replan"/>')
     s.append(label(683, R1_TOP - 136, "wrong contract · r+1 on revision", P["label"]))
     for _nid, _x, _t, _c, _d in [("sec_check", 837, "CHECK stream", "#be123c", True),
-                                 ("escalate", 1100, "ESCALATE", "#b91c1c", False),
                                  ("stop", 1360, "STOP", "#b91c1c", False)]:
         _da = ' stroke-dasharray="5 4"' if _d else ''
         s.append(f'<rect x="{_x}" y="{R2_TOP}" width="{NW}" height="{NH}" rx="10" fill="{_c}" fill-opacity="0.08" stroke="{_c}" stroke-width="1.6"{_da} data-node-id="{_nid}"/>')
         s.append(f'<text x="{_x+NW/2}" y="{R2_TOP+NH/2+5}" class="st" fill="{_c}" text-anchor="middle">{esc(_t)}</text>')
-    _y2 = R2_TOP + NH / 2
     # conditional parallel CHECK stream: CHECK forks, stream reports back into CHECK triage
     s.append(poly([(917, R1_BOT), (917, R2_TOP)], "#be123c", dash="5 4", edge_id="check_security"))
     s.append(label(907, (R1_BOT + R2_TOP) / 2 - 6, "if · auth/secrets/input/crypto", "#be123c", "end"))
     s.append(poly([(937, R2_TOP), (937, R1_BOT)], "#be123c", edge_id="security_check_report"))
     s.append(label(947, (R1_BOT + R2_TOP) / 2 + 6, "report → CHECK", "#be123c", "start"))
-    # CHECK verdict (all streams aggregated) triggers escalation on repeat / 3rd fail(r)
-    s.append(poly([(960, R1_BOT), (960, R1_BOT + 30), (1180, R1_BOT + 30), (1180, R2_TOP)], edge_id="check_escalate_trigger"))
-    s.append(label(1070, R1_BOT + 22, "pdca-escalate triggers (T1–T5)", P["label"]))
-    # ONLY a hard security tradeoff escalates directly (no ordinary security fail bypass)
-    s.append(poly([(997, _y2), (1100, _y2)], "#b91c1c", edge_id="security_escalate_tradeoff"))
-    s.append(label(1048, _y2 - 7, "hard trade-off", P["label"]))
-    # pdca-escalate decides; no actionable r+1 -> ACT finalizes it, never a STOP beside ACT
-    s.append(poly([(1220, R2_TOP), (1220, R1_BOT)], "#b91c1c", edge_id="escalate_act"))
-    s.append(label(1230, (R1_BOT + R2_TOP) / 2, "no plan r+1 → ACT", P["label"], "start"))
     # STOP is finalized by ACT and is not a path beside it
     s.append(poly([(1240, R1_BOT), (1240, R2_TOP - 24), (1440, R2_TOP - 24), (1440, R2_TOP)],
                   "#b91c1c", edge_id="act_stop"))
     s.append(label(1340, R2_TOP - 31, "STOP · ACT outcome", P["label"], "start"))
-    # pdca-escalate decision -> DO while r not exhausted (current plan)
-    s.append(poly([(1160, R2_BOT), (1160, M4), (646, M4), (646, R1_BOT)], edge_id="escalate_do_nonexhausted"))
-    s.append(label(850, M4 - 8, "decision · r not exhausted → DO", P["label"]))
-    # pdca-escalate decision -> genuine PLAN r+1 only when exhausted; never a 4th DO
-    _m4 = M4 + 14
-    s.append(poly([(1200, R2_BOT), (1200, _m4), (375, _m4), (375, R1_BOT)], edge_id="escalate_plan_exhausted"))
-    s.append(label(760, _m4 + 13, "r exhausted → PLAN r+1", P["label"]))
+    s.append(poly([(375, R1_BOT), (375, M4), (1210, M4), (1210, R1_BOT)],
+                  edge_id="plan_act_terminal"))
+    s.append(label(760, M4 - 8, "PLAN terminal → ACT (no DO or CHECK)", P["label"]))
+    s.append(label(760, M4 + 20, "ESCALATE is a consultation, not a transition; the asking phase routes its conclusion.", P["label"]))
     # arrow-type legend (mirrors the universal diagram)
     _fin = M4 + 44
     s.append(label(24, _fin, "plain arrow — a transition", P["sub"], "start"))
     s.append(label(300, _fin, "arc — loop-back before ACT", P["sub"], "start"))
     s.append(label(620, _fin, "dashed — next cycle", P["sub"], "start"))
-    s.append(label(900, _fin, "bottom row — escalation and STOP", P["sub"], "start"))
+    s.append(label(900, _fin, "bottom row — security stream and STOP", P["sub"], "start"))
     s.append('</svg>')
     return "\n".join(s)
 

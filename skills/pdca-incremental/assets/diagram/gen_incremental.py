@@ -72,6 +72,7 @@ _TR_RU = {
     "pdca-executor · edit/bash · facts": "pdca-executor · edit/bash · факты",
     "pdca-check · read-only · evidence": "pdca-check · read-only · evidence",
     "pdca-executor · status/docs": "pdca-executor · статус/docs",
+    "pdca-executor · closure only": "pdca-executor · только закрытие",
     "Step exit": "Выход шага",
     "accept · revise · blocked → ACT": "принять · ревизия · blocked → ACT",
     # ACCEPT cards
@@ -92,6 +93,11 @@ _TR_RU = {
     "next · revise · stop": "дальше · ревизия · стоп",
     # STOP cards (outcome ids stay English)
     "the only success": "единственный успех",
+    "whole-goal CHECK required": "нужен CHECK всей цели",
+    "Paused ≠ STOP": "Пауза ≠ STOP",
+    "running · checkpoint": "running · точка продолжения",
+    "explicit scope change": "явное изменение области",
+    "no permitted continuation": "нет разрешённого продолжения",
     "the remainder proven by numbers": "остаток доказан числами",
     "resume point in the status file": "точка возобновления в статусе",
     # campaign state graph
@@ -156,7 +162,7 @@ BLOCKS = {
         ("P · PLAN", "pdca-planner · step plan · rev r", "medium"),
         ("D · DO", "pdca-executor · edit/bash · facts", "cheap"),
         ("C · CHECK", "pdca-check · read-only · evidence", "medium"),
-        ("A · ACT", "pdca-executor · status/docs", "cheap"),
+        ("A · ACT", "pdca-executor · closure only", "cheap"),
         ("Step exit", "accept · revise · blocked → ACT", "medium"),
     ],
     "A": [
@@ -169,11 +175,13 @@ BLOCKS = {
         ("Remainder", "prove with numbers · blocker", "medium"),
         ("Next seed", "pdca-planner · the next step", "medium"),
         ("Route", "next · revise · stop", "medium"),
+        ("Paused ≠ STOP", "running · checkpoint", "cheap"),
     ],
     "X": [
-        ("met", "the only success", "cheap"),
+        ("met", "whole-goal CHECK required", "cheap"),
         ("unreachable", "the remainder proven by numbers", "cheap"),
-        ("blocked/stopped", "resume point in the status file", "cheap"),
+        ("blocked/stopped", "no permitted continuation", "cheap"),
+        ("limited", "explicit scope change", "cheap"),
     ],
 }
 

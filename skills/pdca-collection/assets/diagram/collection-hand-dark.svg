@@ -160,14 +160,14 @@
 <rect x="959.75" y="381" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="1111.75" y="381" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="1136.75" y="393.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
-<text x="971.75" y="397" class="t">Проверки задачи</text>
-<text x="971.75" y="416" class="s">обязательные · по типу работы</text>
+<text x="971.75" y="397" class="t">Проверка на месте</text>
+<text x="971.75" y="416" class="s">проверить интегрированное дерево</text>
 <rect x="958.75" y="436" width="211" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="959.75" y="443" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="1111.75" y="443" width="50" height="18" rx="6" fill="#0d9488"/>
 <text x="1136.75" y="455.5" class="bm" fill="#cbd5e1" text-anchor="middle">cheap</text>
-<text x="971.75" y="459" class="t">Тесты</text>
-<text x="971.75" y="478" class="s">функциональные · приёмка</text>
+<text x="971.75" y="459" class="t">Доказательства</text>
+<text x="971.75" y="478" class="s">логи и замеры</text>
 <rect x="958.75" y="498" width="211" height="50" rx="8" fill="#223046" stroke="#3b4a63" stroke-width="1"/>
 <rect x="959.75" y="505" width="3" height="36" rx="1.5" fill="#0d9488"/>
 <rect x="1111.75" y="505" width="50" height="18" rx="6" fill="#0d9488"/>

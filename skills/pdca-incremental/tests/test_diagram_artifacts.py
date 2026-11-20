@@ -84,7 +84,7 @@ RU_LABELS = (
     "исправление · N",
     "финализировано ACT · met · unreachable · blocked · stopped",
     "проверка — необязательный интеграционный гейт: цель = гейт, baseline не двигает",
-    "точка возобновления в статусе",
+    "Пауза ≠ STOP", "нужен CHECK всей цели",
 )
 # The old campaign catalogue (step kinds) is gone: the step boundary decides.
 STALE_LABELS = (

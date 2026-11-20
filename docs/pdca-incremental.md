@@ -443,7 +443,8 @@ mandatory requirement or criterion is `unmet`/`unverified`, and no score, margin
 A metric or rubric that is part of the original requirement is a **criterion** with its evidence, not a
 parallel taxonomy. A local step acceptance never clears a global requirement. Independently refuting
 evidence is CHECK's ordinary judging under the base CHECK contract (`../pdca/references/check.md`,
-which the executor inlines in the ready handoff; the driver forwards its path and SHA-256), and `limited` exists only under the Stop
+which the executor inlines in the ready handoff; the driver forwards the handoff's path and SHA-256),
+and `limited` exists only under the Stop
 rule below.
 
 ## 11. Stop

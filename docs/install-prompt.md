@@ -165,8 +165,9 @@ PROFILE=<профиль или пусто>
    - Если правишь `skills` в opencode.json: V1 — `{ "paths": [...], "urls": [...] }`,
      V2 — один массив `[ ... ]`; не смешивай формы в одном файле.
 
-6. Перезапуск и проверка
-   - opencode V2: `opencode service restart`, затем `opencode debug agents` (все роли и драйвер
+6. Проверка настройки
+   - opencode V2: изменения подхватываются автоматически; при необходимости пользователь может
+     вызвать `/reload`. Проверь `opencode debug agents` (все роли и драйвер
      видны) и `opencode debug config` (`experimental.subagent_depth` виден в секции `experimental`;
      само значение — не проверка цепочки).
    - opencode V1: перезапусти TUI/приложение (команды `service` в V1 нет); проверь

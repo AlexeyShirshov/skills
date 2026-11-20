@@ -36,22 +36,22 @@ BLOCKS = {
     "P": [
         ("PLAN", "start · design", "medium"),
         ("Gather", "pdca-scout + domain lenses", "weak"),
-        ("Decide · pdca-planner", "fix / defer · decomposition", "medium"),
+        ("Result contract", "pdca-planner · no DO steps", "medium"),
         ("Criteria · goal", "goal · acceptance (+negative)", "medium"),
-        ("Tasks · risks", "units · no TBD", "medium"),
+        ("Existing tests", "task-start baseline", "medium"),
         ("Tests · docs", "strategy · plan", "medium"),
         ("Perf decision", "measure? · tool · baseline", "medium"),
         ("Spike", "needed? · tool · PoC", "medium"),
-        ("Unit mode", "sequence · tree · worktrees", "medium"),
-        ("Evidence map", "criterion · source · path", "medium"),
+        ("Compatibility", "preserve tests by default", "medium"),
+        ("Constraints", "no frozen CHECK method", "medium"),
         ("Effort policy", "accounting · not a cutoff", "medium"),
     ],
     "D": [
         ("DO", "journal · plan until approval", "weak"),
         ("Code", "inside the contract", "weak"),
-        ("Tests", "DO chooses the method", "weak"),
+        ("Tests", "add without weakening", "weak"),
         ("Docs · prose", "README · documentation", "weak"),
-        ("Re-anchor", "drift → ACT incomplete", "weak"),
+        ("Candidate", "in its checkout · logs only", "weak"),
     ],
     "C": [
         ("CHECK · gather", "fork 4 streams + security", "weak"),
@@ -67,7 +67,7 @@ BLOCKS = {
     ],
     "E": [
         ("Scout", "pdca-scout · file:line", "weak"),
-        ("Escalation", "decides · decision → orb", "strong"),
+        ("Consultation", "returns to asking phase", "strong"),
     ],
     "S": [
         ("Status file", "write · source of truth", "weak"),
@@ -77,7 +77,7 @@ BLOCKS = {
     "A": [
         ("ACT", "cycle close-out", "weak"),
         ("Lesson", "→ memory", "weak"),
-        ("Rules", "AGENTS.md · overlay", "weak"),
+        ("Retrospective", "analysis only", "medium"),
         ("Status", "file · outcome", "weak"),
         ("Handoff", "→ EXIT · commit advice", "weak"),
     ],
@@ -99,18 +99,17 @@ TAIL = {"D": [
 # orchestrator inputs, per phase
 INPUTS = [
     "PLAN ← “start” · “replan from pdca-check” · “cycle N+1 from ACT”",
-    "DO ← “plan ready” · “defect fix from pdca-check (incl. security)” · “fix from pdca-escalate while r not exhausted”",
+    "DO ← “complete plan and approval when required” · “defect or evidence request from CHECK”",
     "CHECK ← “streams closed”",
     "CHECK · security ← “if: auth / secrets / input / crypto” · “report → CHECK”",
-    "ACT ← “pdca-check pass” · “DO cannot finish” · “STOP finalization”",
+    "ACT ← “CHECK outcome” · “DO cannot finish” · “terminal PLAN”",
     "ESCALATION ← “ambiguity” · “repeat after 1 fix / 3rd CHECK(r) failure”\n"
     "“arch/API/hard-security trade-off” · “risky diff acceptance” · “low PLAN/DO confidence”",
-    "STOP ← “ACT outcome: no doable PLAN r+1” · “blocker unresolved”\n"
-    "“queue empty / remainder blocked” · “iteration limit (n/3)” · “user stop”",
+    "STOP ← “ACT outcome: no permitted continuation”",
 ]
 # down-arrow (dispatch) label per column
-DISPATCH = {"P": "start\nreplan: pdca-check\ncycle N+1", "D": "plan ready · contract/approval\nfix from pdca-check (security)\nfix from pdca-escalate (r active)", "C": "streams closed",
-            "SEC": "from CHECK · if\ngather (facts)\nreport → CHECK", "E": "repeat after 1 fix\n3rd CHECK(r) failure\nhard trade-off", "S": "no plan r+1\n→ ACT", "A": "pdca-check pass\nor STOP → ACT"}
+DISPATCH = {"P": "start\nreplan: pdca-check\ncycle N+1", "D": "plan ready · approval if needed\nCHECK fix or evidence request", "C": "candidate complete",
+            "SEC": "from CHECK · if\ngather (facts)\nreport → CHECK", "E": "repeat after 1 fix\n3rd CHECK(r) failure\nhard trade-off", "S": "recorded by ACT", "A": "CHECK · DO blocker\nor terminal PLAN"}
 
 # per-phase state-graph node colors (shared by both themes)
 STC = {"START": None, "PLAN": "#2563eb", "DO": "#7c3aed", "CHECK": "#d97706",
@@ -336,7 +335,7 @@ def render(P, title):
     for _eid, _a, _b, _lab in [("start_plan", "START", "PLAN", "start"),
                                ("plan_do", "PLAN", "DO", "approval (normal) / instant\n(autonomous) · n=1/3"),
                                ("do_check", "DO", "CHECK", "streams closed"),
-                               ("check_act", "CHECK", "ACT", "pass"),
+                               ("check_act", "CHECK", "ACT", "accept or terminal STOP"),
                                ("act_exit", "ACT", "EXIT", "closed")]:
         _x1, _x2 = stx[_a] + NW, stx[_b]
         s.append(poly([(_x1, _y), (_x2, _y)], edge_id=_eid))
@@ -355,37 +354,23 @@ def render(P, title):
     s.append(f'<path d="M1168,{R1_TOP} C1168,{R1_TOP-180} 355,{R1_TOP-180} 355,{R1_TOP}" fill="none" stroke="#059669" stroke-dasharray="5 4" marker-end="url(#arrow)" data-edge-id="act_plan"/>')
     s.append(label(761, R1_TOP - 186, "next cycle · N+1", P["label"]))
     for _nid, _x, _t, _c, _d in [("sec_check", 837, "CHECK stream", "#be123c", True),
-                                 ("pdca-escalate", 1100, "ESCALATE", "#b91c1c", False),
                                  ("stop", 1360, "STOP", "#b91c1c", False)]:
         _da = ' stroke-dasharray="5 4"' if _d else ''
         s.append(f'<rect x="{_x}" y="{R2_TOP}" width="{NW}" height="{NH}" rx="10" fill="{_c}" fill-opacity="0.08" stroke="{_c}" stroke-width="1.6"{_da} data-node-id="{_nid}"/>')
         s.append(f'<text x="{_x+NW/2}" y="{R2_TOP+NH/2+5}" class="st" fill="{_c}" text-anchor="middle">{esc(_t)}</text>')
-    _y2 = R2_TOP + NH / 2
     # conditional parallel CHECK stream: CHECK forks, stream reports back into CHECK triage
     s.append(poly([(917, R1_BOT), (917, R2_TOP)], "#be123c", dash="5 4", edge_id="check_security"))
     s.append(label(907, (R1_BOT + R2_TOP) / 2 - 6, "if · auth/secrets/input/crypto", "#be123c", "end"))
     s.append(poly([(937, R2_TOP), (937, R1_BOT)], "#be123c", edge_id="security_check_report"))
     s.append(label(947, (R1_BOT + R2_TOP) / 2 + 6, "report → CHECK", "#be123c", "start"))
-    # CHECK verdict (all streams aggregated) triggers escalation on repeat / 3rd fail(r)
-    s.append(poly([(945, R1_BOT), (945, R1_BOT + 30), (1180, R1_BOT + 30), (1180, R2_TOP)], edge_id="check_escalate_trigger"))
-    s.append(label(1070, R1_BOT + 22, "repeat after 1 fix · 3rd CHECK(r) failure", P["label"]))
-    # ONLY a hard security tradeoff escalates directly (no ordinary security fail bypass)
-    s.append(poly([(955, _y2), (1100, _y2)], "#b91c1c", edge_id="security_escalate_tradeoff"))
-    s.append(label(1048, _y2 - 7, "hard trade-off", P["label"]))
-    # pdca-escalate decides; no actionable r+1 -> ACT finalizes it, never a STOP beside ACT
-    s.append(poly([(1200, R2_TOP), (1200, R1_BOT)], "#b91c1c", edge_id="escalate_act"))
-    s.append(label(1208, (R1_BOT + R2_TOP) / 2, "no plan r+1 → ACT", P["label"], "start"))
     # STOP is finalized by ACT and is not a path beside it
     s.append(poly([(1215, R1_BOT), (1215, R2_TOP - 24), (1420, R2_TOP - 24), (1420, R2_TOP)],
                   "#b91c1c", edge_id="act_stop"))
     s.append(label(1320, R2_TOP - 31, "STOP · ACT outcome", P["label"], "start"))
-    # pdca-escalate decision -> DO while r not exhausted (current plan)
-    s.append(poly([(1160, R2_BOT), (1160, M4), (646, M4), (646, R1_BOT)], edge_id="escalate_do_nonexhausted"))
-    s.append(label(850, M4 - 8, "decision · r not exhausted → DO", P["label"]))
-    # pdca-escalate decision -> genuine PLAN r+1 only when exhausted; never a 4th DO
-    _m4 = M4 + 14
-    s.append(poly([(1200, R2_BOT), (1200, _m4), (375, _m4), (375, R1_BOT)], edge_id="escalate_plan_exhausted"))
-    s.append(label(760, _m4 + 13, "r exhausted → PLAN r+1", P["label"]))
+    s.append(poly([(355, R1_BOT), (355, M4), (1190, M4), (1190, R1_BOT)],
+                  edge_id="plan_act_terminal"))
+    s.append(label(760, M4 - 8, "PLAN terminal → ACT (no DO or CHECK)", P["label"]))
+    s.append(label(760, M4 + 20, "ESCALATE is a consultation, not a transition; the asking phase routes its conclusion.", P["label"]))
     s.append('</svg>')
     return "\n".join(s)
 

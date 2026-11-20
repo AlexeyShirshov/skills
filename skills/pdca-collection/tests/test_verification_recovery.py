@@ -593,9 +593,8 @@ class VerificationRecoveryRenderTest(unittest.TestCase):
                 col_text = group_visible_text(col).lower()
                 self.assertIn("pdca-check", col_text)
                 self.assertIn("medium", col_text)
-                # the four generic mandatory-check cards survive (task-typed,
-                # not tied to any single technology) ...
-                for needle in ("check", "test", "perform", "review"):
+                # Keep technology-neutral evidence and the integrated checkout visible.
+                for needle in ("integrated checkout", "logs and measurements", "perform", "review"):
                     self.assertIn(needle, col_text)
                 self.assertEqual(
                     4,

@@ -101,7 +101,9 @@ class DiagramArtifactsTest(unittest.TestCase):
                 self.assertIn("do_act_incomplete", edges)
                 self.assertNotIn("do_plan_blocker", edges)
                 self.assertIn("act_stop", edges)
-                self.assertNotIn("escalate_stop", edges)
+                self.assertIn("plan_act_terminal", edges)
+                self.assertFalse({edge for edge in edges if "escalate" in edge})
+                self.assertNotIn("pdca-escalate", boxes)
 
                 def ends(edge):
                     pts = [tuple(map(float, p.split(",")))
@@ -118,6 +120,9 @@ class DiagramArtifactsTest(unittest.TestCase):
                 start, end = ends(edges["act_stop"])
                 self.assertTrue(inside("ACT", start))
                 self.assertTrue(inside("stop", end))
+                start, end = ends(edges["plan_act_terminal"])
+                self.assertTrue(inside("PLAN", start))
+                self.assertTrue(inside("ACT", end))
 
     def test_emit_titles(self):
         for name in ("pdca-coder-hand.html", "pdca-coder-hand-dark.html"):

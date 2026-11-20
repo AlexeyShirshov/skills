@@ -219,6 +219,10 @@ _TR_RU = {
     "mandatory · by work type": "обязательные · по типу работы",
     "Tests": "Тесты",
     "functional · acceptance": "функциональные · приёмка",
+    "Evidence in place": "Проверка на месте",
+    "verify the integrated checkout": "проверить интегрированное дерево",
+    "Evidence": "Доказательства",
+    "logs and measurements": "логи и замеры",
     "Performance": "Скорость",
     "measurements": "измерения",
     "if hot path": "если горячий путь",
@@ -402,8 +406,8 @@ BLOCKS = {
         # (build/tests/lint for code, render/preview for design, …), never
         # hardcoded here.  The verdict itself is the always-run medium `pdca-check`
         # card appended inside the column (see render below).
-        ("Task checks", "mandatory · by work type", "weak"),
-        ("Tests", "functional · acceptance", "weak"),
+        ("Evidence in place", "verify the integrated checkout", "weak"),
+        ("Evidence", "logs and measurements", "weak"),
         (("Performance", "measurements"), "if hot path", "weak"),
         ("Review lenses", "risk · regression · conformance", "weak"),
     ],

@@ -3,7 +3,7 @@
 Installing a skill copies instructions only. A PDCA skill **names roles** — it creates no agents and
 sets no models — so the cycle only runs after the host provides those agents, lets the cheap primary
 dispatch them, and allows nested delegation. This page is the missing install checklist:
-skills → agents → orchestrator → delegation depth → permissions → model bindings → restart →
+skills → agents → orchestrator → delegation depth → permissions → model bindings →
 verification. It is host-agnostic; the commands shown as the reference adapter are OpenCode V2, with
 the OpenCode V1 mapping and the mapping for Claude Code, Codex and custom hosts (`dsh`, …) given
 inline.
@@ -42,7 +42,7 @@ the primary to control a cycle, that is a reported blocker, never a reason to wi
 
 ## 2. Install the skills
 
-Install the whole skill directory: `SKILL.md`, `assets/`, and `scripts/` where the skill ships it.
+Install the whole skill directory: `SKILL.md`, `references/`, `assets/`, and `scripts/` where present.
 Map the skills root to your host:
 
 | Host | Skills root |
@@ -65,8 +65,13 @@ npx skills add AlexeyShirshov/skills@pdca-dotnet -g -y
 
 One command per skill (`pdca`, `pdca-coder`, `pdca-dotnet`, `pdca-collection`,
 `pdca-incremental`); `-g` installs for all projects, without it the CLI targets the current one.
-`pdca` is the single entry and the whole cycle; the two overlays and the two forms stay installable
-on their own for an explicit invocation. Only `pdca` is advertised to the model: every other skill
+`pdca` is the single entry. Install the whole family if you want all routes available. A selected
+form needs `pdca`; `pdca-dotnet` also needs `pdca-coder`. A collection needs `pdca-incremental` when
+an item is routed as a campaign. PLAN chooses the route before the driver checks its required skill
+closure by exact ID. Being listed isn't proof of loading. A missing contract yields an installation
+prompt; a denied load is a permission blocker, not a reason to install another copy.
+
+Only `pdca` is advertised to the model: every other skill
 carries `metadata.opencode/autoinvoke: false`, so it loads only by explicit ID (`@pdca-dotnet`) or
 when the base PLAN selects that overlay or form. This is the deliberate split — the model cannot
 pick a contract by phrase.
@@ -313,7 +318,7 @@ run is the only proof.
 The forms are not interchangeable: V2 accepts a top-level `subagent_depth` but **ignores** it
 (warning `omitted unsupported legacy setting`), and V1 ignores `experimental.subagent_depth`. In both
 cases the depth falls back to a single level — the driver can no longer delegate and every autonomous
-cycle degrades to the flat primary. Requires a restart.
+cycle degrades to the flat primary.
 
 ## 7. Permissions: let the cheap primary dispatch
 
@@ -372,7 +377,7 @@ If the host forbids `general`/`explore`, do not bypass it: a missing role is a *
 | skill auto-selection | `metadata.opencode/autoinvoke: "false"` | same, plus optional `disable-model-invocation` |
 | agent frontmatter | `mode: subagent`, `permission:` map | `mode: subagent`, `permissions:` list; the shipped V1 map is translated, and both blocks are kept equivalent |
 | `skills` config | `{ paths, urls }` | one array |
-| restart / verify | restart the TUI; `opencode agent list` | `opencode service restart`; `opencode debug agents` / `debug config` |
+| refresh / verify | restart the TUI; `opencode agent list` | config reloads automatically; `opencode debug agents` / `debug config` |
 
 Both versions share the config locations and are not installed side by side by default; identify the
 major with `opencode --version`. The install prompt (`docs/install-prompt.md`) takes
@@ -402,24 +407,18 @@ A subagent with no binding inherits the invoking primary's model — it works ou
 whole cycle then runs on one (usually expensive) model. Prefer a CHECK model from a **different
 family** than PLAN: an independent verdict is the point of the role.
 
-## 9. Restart and verify
+## 9. Verify the setup
 
-Agents load at startup; the check differs per host:
+How to refresh and verify agent definitions differs by host:
 
-| Host | Restart | Verify |
+| Host | Refresh | Verify |
 |---|---|---|
-| OpenCode | `opencode service restart` | `opencode debug agents`, `opencode debug config` |
+| OpenCode V2 | Config reloads automatically; use `/reload` to force a refresh | `opencode debug agents`, `opencode debug config` |
 | Claude Code | edits under an existing agents directory load within seconds; a newly created `agents` directory needs a new session | `/agents` lists the subagents, `/tasks` shows the model each one runs on, `claude plugin validate <agents-dir>` reports frontmatter that does not parse |
 | Codex | a new thread (agent files are loaded again) | delegating to the role opens its agent thread under the expected `name` and shows the model it runs on; the `pdca` skill is listed as available in that session |
 | custom (`dsh`, …) | per host | the host's equivalent of the two checks below |
 
-OpenCode reference:
-
-```sh
-opencode service restart
-```
-
-Then check, in this order:
+For OpenCode V2, check in this order:
 
 1. **Agents are visible.** `opencode debug agents` must list every role the skill dispatches, plus
    `pdca-orchestrator`.
@@ -498,7 +497,7 @@ this status from OPEN; completing a step here, or a green repository run, does n
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| A role is "not found" on dispatch | agent file missing, or installed into a directory the host does not discover | put it in `~/.config/opencode/agents/` (or `.opencode/agents/`), restart, re-check with `debug agents` |
+| A role is "not found" on dispatch | agent file missing, or installed into a directory the host does not discover | put it in `~/.config/opencode/agents/` (or `.opencode/agents/`), then re-check with `debug agents` |
 | Cycle falls back to the flat primary | no `pdca-orchestrator`, no usable nested delegation (legacy key ignored, limit too low), or the host forbids delegation | §5 and §6 |
 | `Notice:` about a missing role | the skill's role name differs from the installed agent name (e.g. `pdca-planner` vs `pdca-planner`) | install the matching family, or alias the agent |
 | A role behaves like its V1 twin | the asset carries both the `permission:` map and the `permissions:` list, and one of them is stale | keep both blocks semantically equivalent (and regenerate mirrors with `sync_role_assets.py --fix`); V2 translates `permission` → `permissions`, `task` → `subagent`, `bash` → `shell`, `write`/`patch` → `edit`; the merged rules are visible in `debug agents` |
@@ -520,7 +519,7 @@ this status from OPEN; completing a step here, or a green repository run, does n
 
 The checklist is packaged as a copy-paste prompt: [`install-prompt.md`](install-prompt.md). Fill its
 `Inputs` block — including `HOST=opencode|claude|codex|dsh|custom` — send it to a cheap primary (e.g.
-`build`), and the agent performs the steps idempotently, with backups, a restart and the verification
+`build`), and the agent performs the steps idempotently, with backups and the verification
 of §9.
 
 The skill files remain the normative source: `skills/<skill>/SKILL.md`, section

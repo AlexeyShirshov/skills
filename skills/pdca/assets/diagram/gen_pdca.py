@@ -3,8 +3,8 @@
 
 The diagram is domain-neutral. It shows the orchestrator strip with the
 per-phase inputs (as in the sibling diagrams), the four phase columns P/D/C/A
-plus the non-phase escalation column E (dashed, a transition rather than a
-phase) with tier-badged cards (fact-gathering is the `Сбор · gather`
+plus the non-phase escalation column E (a consultation, not a transition)
+with tier-badged cards (fact-gathering is the `Сбор · gather`
 card inside PLAN, as in the sibling diagrams), the cheap/medium/strong tier
 legend with the pdca-* roles, and finally the cycle state graph (START, P · PLAN, D · DO,
 C · CHECK, A · ACT, EXIT, ЭСКАЛАЦИЯ, STOP) with every side transition.
@@ -70,8 +70,8 @@ BLOCKS = {
         ("Evidence", "лог под evidence_root", "weak"),
         ("Blockers", "фиксируются явно", "weak"),
         ("Unfinished", "остаётся открытым", "weak"),
-        ("Сверка якорей", "дрейф → incomplete", "weak"),
-        ("Candidate-отчёт", "без вердикта · без PASS", "weak"),
+        ("Кандидат на месте", "логи, не копии кода", "weak"),
+        ("Отчёт DO", "путь + SHA-256", "weak"),
     ],
     "C": [
         ("Критерии", "met | unmet | unverified", "medium"),
@@ -279,8 +279,12 @@ _TR_EN = {
     "не может завершить → ACT": "cannot finish → ACT",
     "дефект · n+1 (n/3)": "defect · n+1 (n/3)",
     "неверный контракт → CHECK → PLAN · r+1": "wrong contract → CHECK → PLAN · r+1",
-    "критерии · невозможность · уже установлено → ACT":
-        "criteria · infeasible · already established → ACT",
+    "нет критериев · неизмеримо · невыполнимо · результат установлен → ACT":
+        "criteria undetermined · unmeasurable · infeasible · already established → ACT",
+    "Кандидат на месте": "Candidate in checkout",
+    "логи, не копии кода": "logs, not product copies",
+    "Отчёт DO": "DO report",
+    "путь + SHA-256": "path + SHA-256",
     "исчерпание": "exhausted",
     "STOP · blocked/incomplete": "STOP · blocked/incomplete",
     "r не исчерпан → DO": "r not exhausted → DO",
@@ -554,7 +558,7 @@ def render(P):
     # infeasible, or the supplied facts already establish the requested result.
     s.append(curve(f"M334,{R1_TOP} C334,{R1_TOP-190} 1040,{R1_TOP-190} 1040,{R1_TOP}",
                    P["arrow"], "plan_act_terminal"))
-    s.append(label(682, R1_TOP - 168, "критерии · невозможность · уже установлено → ACT", P["label"]))
+    s.append(label(682, R1_TOP - 168, "нет критериев · неизмеримо · невыполнимо · результат установлен → ACT", P["label"]))
 
     # Consultation is outside the state machine: it neither routes nor decides.
     s.append(stnode(488, R2_TOP, NW, NH, "ЭСКАЛАЦИЯ", "консультация", P["escalate"], "CONSULTATION"))

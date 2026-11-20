@@ -253,6 +253,11 @@ methods and evidence for the **actual integrated result**, with test execution t
 integration invariants and any relevant specialized-skill verification deltas. It does not replace
 each item's own whole-goal CHECK.
 
+Run integration probes against the integrated tree in place. Store the logs, measurements, and
+observations needed by the chosen methods under the collection's evidence root, not source copies or
+diffs. A probe on an individual lane isn't evidence about the merged candidate unless the relevant
+inputs and conditions are equivalent.
+
 The integration CHECK starts **after all lanes are terminal**. With multiple groups, all eligible
 `done` groups must already be merged, all `incomplete` groups excluded, and no merge conflict or
 unfinished merge state may remain. Its inputs include the actual group statuses and the separate
