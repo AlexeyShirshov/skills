@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>roslynq</ToolCommandName>
     <PackageId>opencode-roslyn</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Alexey Shirshov</Authors>
     <Description>Roslyn semantic analysis CLI for opencode: structure, symbols, members, refs, callers, implementations, rename.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
