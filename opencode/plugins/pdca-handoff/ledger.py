@@ -196,6 +196,12 @@ def transact(req):
         fcntl.flock(fd, fcntl.LOCK_EX)
         raw = path.read_bytes()
         text = raw.decode()
+        if req["op"] == "mechanics":
+            from mechanics_ledger import apply
+            updated, result = apply(text, req)
+            if updated != text:
+                save(path, updated.encode())
+            return result
         one(text, "^"+OPT_IN+"$")
         line, s = checkpoint(text)
         op = req["op"]
@@ -261,6 +267,9 @@ def transact(req):
 
 
 if __name__ == "__main__":
+    # -I excludes cwd and the script directory. Import helpers only from the installed package.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    sys.modules.setdefault("ledger", sys.modules[__name__])
     try:
         print(json.dumps(transact(json.load(sys.stdin))))
     except (ValueError, KeyError, TypeError, OSError) as exc:

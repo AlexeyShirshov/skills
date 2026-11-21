@@ -403,7 +403,8 @@ the `disposition` (open or paused); and the one-line resume point a new session 
 For a campaign created with `Mechanics: pdca-handoff-v1`, the base driver's optional handoff
 can open the next step from a completed ACT. Keep the step ID and cycle number distinct.
 The planner still decides what to do; the executor's adapter records and delivers that decision.
-An existing manual campaign stays manual.
+An existing manual campaign stays manual. Elect packet, event and wait capabilities independently
+in Checkpoint per base `references/adapters.md`; use the active step's coordinates and shared log.
 
 ## Campaign cycle
 

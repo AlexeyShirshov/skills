@@ -1,18 +1,20 @@
 {
   "name": "opencode-pdca-handoff",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "exports": {
     ".": "./index.js"
   },
   "files": [
     "index.js",
+    "mechanics.js",
     "ledger.py",
+    "mechanics_ledger.py",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test test/handoff.test.js"
+    "test": "node --test test/*.test.js"
   },
   "license": "MIT"
 }

@@ -4,6 +4,7 @@ import { realpath } from "node:fs/promises"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { isDeepStrictEqual } from "node:util"
+import { installMechanics } from "./mechanics.js"
 
 const tool = "pdca_handoff_v1"
 const helper = fileURLToPath(new URL("./ledger.py", import.meta.url))
@@ -22,7 +23,7 @@ function receiptSpec({ owner, planner, evidence, boundary, brief, fences }) {
 
 function ledger(root, input) {
   return new Promise((resolve, reject) => {
-    const p = spawn("python3", ["-I", helper], { cwd: root, stdio: ["pipe", "pipe", "pipe"] })
+    const p = spawn("python3", ["-I", "-B", helper], { cwd: root, stdio: ["pipe", "pipe", "pipe"] })
     let out = "",
       err = ""
     p.stdout.setEncoding("utf8").on("data", (d) => {
@@ -293,10 +294,15 @@ export async function install(ctx) {
     "session.execution.failed",
     "session.execution.interrupted",
   ]
-  const events = ctx.event.subscribe({ types: terminal, signal: controller.signal })
+  const mechanics = await installMechanics(ctx, { root, ledger, serial, info, fences })
+  const events = ctx.event.subscribe({
+    types: [...terminal, "session.synthetic", "session.inbox.delivered", "shell.exited"],
+    signal: controller.signal,
+  })
   const observer = (async () => {
     for await (const event of events) {
       if (controller.signal.aborted) break
+      await mechanics.event(event)
       if (!terminal.includes(event.type)) continue
       for (const r of active.values()) if (event.data?.sessionID === r.spec.planner) await reconcile(r)
     }
@@ -306,6 +312,7 @@ export async function install(ctx) {
   // No polling. Recovery deals with a completion during reload and an admitted
   // outbox message whose receipt was lost.
   for (const r of active.values()) void reconcile(r)
+  mechanics.restore()
   await ctx.tool.transform((editor) =>
     editor.add({
       name: tool,

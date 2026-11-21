@@ -2,7 +2,7 @@
 
 Use this optional server plugin to send a ready plan to an existing executor without a separate model turn to record the plan, number the step or construct the dispatch. The executor and planner must already be working for the same driver in the same project directory.
 
-Version 1 supports two autonomous boundaries: a pending bounded PLAN and the next campaign step after an accepted, completed ACT. Approval, classification, substantive work, independent CHECK, other phase transitions and collection scheduling use the existing skills.
+The original `pdca_handoff_v1` protocol supports a pending autonomous PLAN and the next campaign step after a completed, accepted ACT. Version 0.2 adds three independent operations. Approval, classification, substantive work, verification decisions and collection scheduling stay with their existing owners.
 
 ## Enable it in a project
 
@@ -19,24 +19,41 @@ Replace `/ABSOLUTE/PATH/TO/skills` with your checkout. The executor needs permis
 
 Start a **new** autonomous cycle or campaign. The executor elects the adapter when it creates the status. An existing manual campaign stays manual. Without the tool, the skills use their original writer and dispatch procedure. See the [driver handoff](../../../skills/pdca/references/driver.md#dispatch-transport) and the [executor procedure](../../../skills/pdca/references/act.md#optional-handoff).
 
+### Choose operations independently
+
+New skills use only the tool names the host actually offers. The 0.1 plugin continues to handle PLAN → DO only. Upgrading the plugin doesn't transfer ownership of an existing status file. The following 0.2 capabilities are on by default where supported; to offer a subset, use a plugin config entry with `options.capabilities`, for example `["packet-v1", "events-v1"]`. An empty list leaves the original handoff tool alone.
+
+| Capability | What the adapter does | What remains a decision |
+| --- | --- | --- |
+| `packet-v1` | Checks the pinned transport recipe, declared candidate inputs, command receipts, observation/log hashes and checker read permissions. Includes the installed CHECK contract and selected sections. Pins and optionally delivers the packet by a stable inbox ID. | Which inputs are required and what their evidence proves. |
+| `events-v1` | Records the original phase report, projects the supported phase/counter change and appends a single keyed row to the shared log. With tracked delivery it captures the checker's exact decision without another executor turn. | The plan, verdict, and whether a revision is substantive. |
+| `wait-v1` | Tracks a registered executor shell. Native completion wakes the executor once; after restart, a matching live Linux process remains running. Lost process identity without a terminal receipt means **unknown**, not success. | Whether to fix a failure or authorize a new run. |
+
+See the [adapter contract](../../../skills/pdca/references/adapters.md) for the wire formats, election fields and manual takeover. Registration requires the host-issued background handle in the same executor's history. The plugin does not rerun a lost command.
+
 ## What survives a restart
 
 The authoritative receipt is in the original `.pdca/status/*.md` file. The plugin pins the exact completed planner report under the assigned evidence directory, updates the status and counters in one atomic replacement, and queues the substantive DO brief. The plugin store indexes authorized tickets by location; it is not a second progress log. Repeating a delivery uses the same OpenCode inbox message ID. The planner's ordinary notification to its parent can still wake that parent.
 
 The executor can `inspect` the ticket. `held` returns a pinned decision or an interruption reason. `pending` means the status was committed but delivery is unconfirmed. `delivered` means inbox admission, not performance or acceptance of the task. `recover` reconciles the same ticket. New instructions, a changed status, a changed pinned report or lost permission prevent automatic dispatch.
 
-For a planned transfer to manual operation, release a waiting ticket before changing the writer election. After an unexpected removal, quiesce the old writer; inspect the checkpoint's `message`, `ref`, `counters` and `deliveryID` and compare them with the executor's inbox/history. For an admitted message, resume that work; never dispatch it again. Keep an unknown outcome open for reconciliation. This mechanism recovers its own planner handoff, not arbitrary background shell jobs.
+For a planned transfer to manual operation, release a waiting ticket before changing the writer election. After an unexpected removal, quiesce the old writer; inspect the checkpoint and compare pending IDs with the recipient's inbox/history. Resume admitted work instead of dispatching it again. Retain the prepared packet if delivery has not begun. The status retains the operation receipts even with the plugin unloaded; an unknown outcome stays open for reconciliation.
 
 ## Reproduce the measurements
 
 From this directory, run:
 
 ```sh
-node --test test/handoff.test.js
+node --test test/*.test.js
 python3 test/replay.py --runs 3
+python3 test/compatibility.py
 ```
 
 The first command needs Node.js 22+ and Python 3. The replay also needs `opencode` on `PATH`. It creates private OpenCode servers with temporary home, config and data directories, and a loopback-only scripted provider. Neither a production model nor a running PDCA session is used.
+
+Run `test/compatibility.py` from a source checkout with commit `96b5f27` available. It compares no plugin, the actual 0.1 plugin at that commit, 0.2, and removal of 0.2 after packet publication but before delivery. It executes a background shell, verifies an independent CHECK received the packet once, checks its pinned verdict, counters and product, and reports model requests after the verdict separately from total requests.
+
+On OpenCode 2.3.2, all four lanes delivered one CHECK and reached ACT at `N=8, r=1, n=1`. Recording the verdict took two executor model requests in the manual, 0.1 and takeover lanes and zero in 0.2. In one run the complete extension fixture used 13 provider requests both manually and with 0.2 (19 with takeover); setup, wait registration and native parent notifications also consume turns. This measures bookkeeping removal, not a whole-campaign speedup.
 
 The control has no plugin. Its executor pins the report and records the transition in one tool call. Both lanes execute the same fixture, compare the product and check the complete normalized status. Normalization excludes the writer receipt, clock and content-addressed reference; each original report is verified separately. The replay prints role-specific provider calls, including the cost of arming before PLAN; parent notifications are counted separately. The interval is local test latency, not a prediction for a production campaign.
 

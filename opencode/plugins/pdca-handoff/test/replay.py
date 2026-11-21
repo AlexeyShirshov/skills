@@ -61,7 +61,7 @@ def wait_for(f, why, timeout=25):
     raise RuntimeError("timeout: " + why)
 
 
-def run(fast):
+def run(fast, *, plugin_dir=PLUGIN, extension=None):
     requests, errors = [], []
     planner, ticket = None, None
     provider_done = threading.Event()
@@ -78,7 +78,10 @@ def run(fast):
             tool = None
             result = "Acknowledged."
             label = "host/parent"
-            if model == "executor" and last["role"] == "tool":
+            custom=extension.response(model,last,text) if extension else None
+            if custom:
+                label,tool,result=custom
+            elif model == "executor" and last["role"] == "tool":
                 label = "tool-return"
                 result = "Finished substantive DO." if "PRODUCT_OK" in text else "Recorded: " + text
             elif model == "executor" and "Bootstrap" in text:
@@ -143,9 +146,10 @@ def run(fast):
                   "providers":{"local":{"package":"@opencode/ai/providers/openai-compatible",
                   "settings":{"baseURL":f"http://127.0.0.1:{httpd.server_port}/v1","apiKey":"fixture"},"models":models}},
                   "agents":{f"pdca-{r}":{"mode":"subagent","model":f"local/{r}"} for r in ["planner","executor"]},
-                  "plugins":[str(PLUGIN)] if fast else [],
+                  "plugins":[str(plugin_dir)] if fast else [],
                   "permissions":[{"action":"*","resource":"*","effect":"allow"}]}
         (root/"opencode.json").write_text(json.dumps(config))
+        if extension: extension.setup(root,config,plugin_dir)
         env = {k:os.environ[k] for k in ("PATH","LANG","TMPDIR") if k in os.environ}
         env.update(HOME=tmp, XDG_CONFIG_HOME=tmp+"/config",XDG_STATE_HOME=tmp+"/state",
                    XDG_CACHE_HOME=tmp+"/cache", XDG_DATA_HOME=tmp+"/data",NO_PROXY="127.0.0.1,localhost")
@@ -168,7 +172,8 @@ def run(fast):
                         headers={"Content-Type":"application/json","x-opencode-directory":str(root),
                                  "Authorization":auth})
                     with urlopen(req,timeout=15) as resp:
-                        return json.load(resp).get("data")
+                        body=resp.read()
+                        return json.loads(body).get("data") if body else None
                 def alive():
                     nonlocal auth
                     if proc.poll() is not None: raise RuntimeError("private server exited")
@@ -186,6 +191,7 @@ def run(fast):
                 parent=api("session",{"agent":"build","location":{"directory":str(root)},"title":"Driver"})["id"]
                 planner=api("session",{"agent":"pdca-planner","parentID":parent,"title":"Plan"})["id"]
                 owner=api("session",{"agent":"pdca-executor","parentID":parent,"title":"Work"})["id"]
+                if extension: extension.elect(root,owner)
                 def prompt(s,text):
                     return api(f"session/{s}/prompt",{"text":text})
                 def messages(s):
@@ -234,7 +240,9 @@ def run(fast):
                 lane=[x for x in requests[start:] if x[1]!="parent"]
                 i=next(i for i,x in enumerate(lane) if x[0]=="decision")
                 j=next(i for i,x in enumerate(lane) if x[0]=="do")
+                extra=extension.exercise(root,api,messages,prompt,owner,parent,requests) if extension else None
                 return {"mode":"plugin" if fast else "manual",
+                        **({"compatibility":extra} if extension else {}),
                         "calls_before_decision":[x[0] for x in requests[:start] if x[1]!="parent"],
                         "decision_to_DO":[x[0] for x in lane[i:j+1]],"intermediate_calls":j-i-1,
                         "interval_ms":round(1000*(lane[j][2]-lane[i][2])),

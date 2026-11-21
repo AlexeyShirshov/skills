@@ -103,10 +103,12 @@ report is recorded.
 
 ### Optional handoff
 
-Choose mechanics at the first status write. Without the executor tool `pdca_handoff_v1`, keep
-the manual writer and routing throughout. With it, elect `Mechanics: pdca-handoff-v1` inside
+Choose mechanics per operation at the first status write. Without `pdca_handoff_v1`, keep
+PLAN → DO manual. With it, elect `Mechanics: pdca-handoff-v1` inside
 Current state (cycle) or Checkpoint (campaign). The executor remains the writer: its adapter performs
 supported transitions; other writes keep their usual route.
+Elect other advertised tools separately per `adapters.md`; installing a newer plugin does not
+transfer any active operation to a second writer.
 
 Arm in an existing executor turn only when the driver has authorized the conditional autonomous DO:
 pass `status`, `planner` (existing sibling session), `evidence` (existing revision directory),

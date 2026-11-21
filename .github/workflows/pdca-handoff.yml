@@ -1,0 +1,24 @@
+name: pdca-handoff
+on:
+  push:
+    paths:
+      - "opencode/plugins/pdca-handoff/**"
+      - "skills/pdca/references/**"
+      - ".github/workflows/pdca-handoff.yml"
+  pull_request:
+    paths:
+      - "opencode/plugins/pdca-handoff/**"
+      - "skills/pdca/references/**"
+      - ".github/workflows/pdca-handoff.yml"
+permissions:
+  contents: read
+jobs:
+  adapter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test opencode/plugins/pdca-handoff/test/*.test.js
