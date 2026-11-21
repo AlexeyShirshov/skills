@@ -400,6 +400,11 @@ and history are retained — together with the remaining accounting; the next-st
 planner decided it opens; the knowledge added since the previous checkpoint with evidence pointers;
 the `disposition` (open or paused); and the one-line resume point a new session must act on first.
 
+For a campaign created with `Mechanics: pdca-handoff-v1`, the base driver's optional handoff
+can open the next step from a completed ACT. Keep the step ID and cycle number distinct.
+The planner still decides what to do; the executor's adapter records and delivers that decision.
+An existing manual campaign stays manual.
+
 ## Campaign cycle
 
 The campaign's PLAN work has two owners: `pdca-scout` gathers facts (discovery), `pdca-planner`

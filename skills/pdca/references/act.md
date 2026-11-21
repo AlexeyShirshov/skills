@@ -101,6 +101,41 @@ report is recorded.
 
 ## Status file
 
+### Optional handoff
+
+Choose mechanics at the first status write. Without the executor tool `pdca_handoff_v1`, keep
+the manual writer and routing throughout. With it, elect `Mechanics: pdca-handoff-v1` inside
+Current state (cycle) or Checkpoint (campaign). The executor remains the writer: its adapter performs
+supported transitions; other writes keep their usual route.
+
+Arm in an existing executor turn only when the driver has authorized the conditional autonomous DO:
+pass `status`, `planner` (existing sibling session), `evidence` (existing revision directory),
+`brief` (original task, criteria, scope, loaded overlay and constraints by reference) and `boundary`
+(`plan` for a pending PLAN, or `next-step` after completed ACT, baseline and discovery). Return the
+ticket to the driver. Do not start a separate model turn just to arm. First classification, changed
+dependencies, normal-mode approvals, terminal decisions and collection barriers use the ordinary
+route. Do not replan to obtain a ticket. If an existing status doesn't have the canonical shape,
+do not arm it. Use the ordinary route.
+
+On recovery inspect the ticket: `armed` waits for the named decision; `held` has a pinned report for
+the driver; `pending` has committed the status update but delivery is unconfirmed; `delivered` means
+the host admitted DO, not that DO finished. `recover` reuses the same inbox ID. On new instructions
+or interruption, reconcile instead of sending another DO. `release` disarms an armed/held ticket.
+If the plugin disappears, quiesce the writer, decode its base64 JSON checkpoint and reconcile the
+planner report and executor inbox before transferring to `Mechanics: manual`. With unknown admission,
+keep the handle and recovery blocker. Neither transfer nor restart resets counters.
+
+For the optional `pdca_handoff_v1` capability, keep the writer election in the existing status.
+Use the cycle skeleton's exact autonomous mode, current phase and counter lines. When arming an
+open PLAN use `pending` under its empty `### r<r>`; never replace an accepted or frozen PLAN.
+For the campaign fast path keep `Status: running`, `Mode: autonomous` and
+`Current step: <integer>   Phase: ACT   Cycle: <N>   Plan revision: r<r>   Attempt: <n>/3`
+in Campaign state, `Baseline: accepted` in Baseline record, `Record: completed; outcome: accepted`
+in the outgoing step's ACT record, and `Disposition: open` and one `Resume: …` line in Checkpoint.
+Set these markers only from the actual completed records. Preserve the adapter's checkpoint comment
+and shared log. A pending handoff owns its transition exclusively until delivery or reconciliation;
+other status updates resume afterward. Manual records need no new fields.
+
 Default path `.pdca/status/<task>-<N>.md`: `<task>` a kebab slug, `<N>` the task's cycle number
 (`../SKILL.md` §State machine and counters). Written only by `pdca-executor`, in the same turn as the
 event.

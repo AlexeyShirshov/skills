@@ -246,6 +246,10 @@ in Bounded Execution, or the containing status record and single log locator an 
 declares explicitly — one file, its final `## Progress log`. `pdca-executor` writes it on every event;
 a separate todo or a second event log is never opened.
 
+At creation select mechanics once: manual by default; with the executor's `pdca_handoff_v1`
+capability use `references/driver.md` §Optional handoff. The executor's adapter writes the
+authorized transition instead of a bookkeeping dispatch.
+
 **Four counters, do not mix them.** These definitions, with the same-defect threshold below, are the
 **only** place these numeric rules are stated; §Escalation refers here and repeats none.
 

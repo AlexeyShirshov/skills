@@ -51,6 +51,8 @@ A fresh dispatch carries `contract: pdca`, `form: UNDECIDED` and no persisted pl
 
 ## Dispatch transport
 
+**Optional handoff.** At an authorized autonomous boundary with unchanged loaded contracts and no outstanding gate, piggyback `arm` on an existing executor turn (its procedure: `act.md` §Optional handoff). Pass a standalone `PDCA-HANDOFF <ticket>` line to the named planner; request a final `PDCA-HANDOFF <ticket> ready` only for a dispatchable plan within that authorization. The adapter routes `ready`; never dispatch DO twice. Unticketed decisions keep the normal route.
+
 **Dispatchability gate (before any DO dispatch).** A plan about to be dispatched must name, for a
 measurable goal, its measurement method (block 4 of a step brief) and targets the goal's own domain
 allows one to point at. A plan naming only an area, cluster, theme or category where pointable items
