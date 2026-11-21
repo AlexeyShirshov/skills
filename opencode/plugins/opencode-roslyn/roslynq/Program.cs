@@ -442,8 +442,9 @@ sealed class QueryEngine : IDisposable
 
     MSBuildWorkspace _workspace;
     Solution _solution;
-    Dictionary<string, (long Ticks, int Length)>? _snapshot;
-    Dictionary<string, (long Ticks, int Length)>? _projects;
+    Dictionary<string, (long Ticks, int Length)> _snapshot;
+    Dictionary<string, (long Ticks, int Length)> _projects;
+    HashSet<string> _filesOnDisk;
 
     QueryEngine(string slnPath, MSBuildWorkspace workspace, Solution solution)
     {
@@ -451,6 +452,9 @@ sealed class QueryEngine : IDisposable
         _slnDir = Path.GetDirectoryName(slnPath)!;
         _workspace = workspace;
         _solution = solution;
+        _snapshot = KnownDocuments().ToDictionary(path => path, Stat, StringComparer.Ordinal);
+        _projects = ProjectStamps();
+        _filesOnDisk = SourceFilesOnDisk();
     }
 
     public static async Task<QueryEngine> OpenAsync(string slnPath)
@@ -494,35 +498,35 @@ sealed class QueryEngine : IDisposable
     {
         var known = KnownDocuments().ToDictionary(path => path, Stat, StringComparer.Ordinal);
         var projects = ProjectStamps();
-        if (_snapshot is null || _projects is null)
-        {
-            _snapshot = known;
-            _projects = projects;
-            return;
-        }
+        var filesOnDisk = SourceFilesOnDisk();
 
         var structural = known.Count != _snapshot.Count
             || known.Keys.Any(key => !_snapshot.ContainsKey(key))
             || _snapshot.Keys.Any(key => !known.ContainsKey(key))
             || known.Keys.Any(path => !File.Exists(path))
-            || AnyNewFileOnDisk(known)
+            // Compare disk paths to disk paths: Compile Remove can leave a .cs file
+            // on disk that will never appear in the workspace, even after a reload.
+            || !filesOnDisk.IsSubsetOf(_filesOnDisk)
             || projects.Count != _projects.Count
             || projects.Any(entry => !_projects.TryGetValue(entry.Key, out var stamp) || stamp != entry.Value);
 
         if (structural)
         {
             await ReloadAsync();
-            return;
         }
-
-        foreach (var (path, stamp) in known)
+        else
         {
-            if (_snapshot[path] == stamp) continue;
-            ApplyText(path);
+            foreach (var (path, stamp) in known)
+            {
+                if (_snapshot[path] == stamp) continue;
+                ApplyText(path);
+            }
+
+            _snapshot = known;
+            _projects = projects;
         }
 
-        _snapshot = known;
-        _projects = projects;
+        _filesOnDisk = filesOnDisk;
     }
 
     async Task ReloadAsync()
@@ -574,18 +578,16 @@ sealed class QueryEngine : IDisposable
         return set;
     }
 
-    bool AnyNewFileOnDisk(Dictionary<string, (long Ticks, int Length)> known)
+    HashSet<string> SourceFilesOnDisk()
     {
+        var files = new HashSet<string>(StringComparer.Ordinal);
         foreach (var project in _solution.Projects)
         {
             var dir = project.FilePath is { } projectFile ? Path.GetDirectoryName(projectFile) : null;
             if (dir is null || !Directory.Exists(dir)) continue;
-            foreach (var file in EnumerateSourceFiles(dir))
-            {
-                if (!known.ContainsKey(file)) return true;
-            }
+            files.UnionWith(EnumerateSourceFiles(dir));
         }
-        return false;
+        return files;
     }
 
     static IEnumerable<string> EnumerateSourceFiles(string dir)
