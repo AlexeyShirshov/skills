@@ -34,12 +34,16 @@ dotnet tool install --global opencode-roslyn
 dotnet tool update  --global opencode-roslyn
 ```
 
+The NuGet CLI release `1.0.1` avoids repeated workspace reloads when an unchanged
+`.cs` file is excluded from compilation. It detects newly added compile inputs on the next query.
+Update the CLI from NuGet to get this fix; the npm plugin doesn't need an update.
+
 Working on an unreleased version of the CLI? Build it from source — it lives next to this plugin, in
 [`roslynq/`](roslynq/) — and install it from the local package:
 
 ```sh
 cd opencode/plugins/opencode-roslyn/roslynq
-dotnet pack -c Release                     # → nupkg/opencode-roslyn.1.0.0.nupkg
+dotnet pack -c Release                     # writes the package to nupkg/
 dotnet tool install --global --add-source ./nupkg opencode-roslyn
 ```
 
@@ -241,5 +245,4 @@ Not done yet:
 - The `~/.config/opencode/tools/roslyn-cli/` copy and the one in
   [`AlexeyShirshov/opencode-config`](https://github.com/AlexeyShirshov/opencode-config) are now legacy;
   the global tool is installed from the NuGet package, not from them.
-
 

@@ -22,6 +22,9 @@ root README.md. Don't edit product files or commit.
 See the [user guide](docs/guide/README.md), [руководство пользователя](docs/ru/guide/README.md),
 [technical guide](docs/pdca-guide.md), or [Russian slide deck (PDF)](docs/ru/pdca-slides/slides-export.pdf).
 
+Using OpenCode V2 for PDCA? See [what `pdca-handoff` automates](opencode/plugins/pdca-handoff/README.md#what-the-plugin-does)
+or [зачем нужен `pdca-handoff`](docs/ru/guide/pdca-handoff.md).
+
 Persistent PDCA state and proof live under the project root, in `.pdca/` — helpers
 it runs (`.pdca/scripts/`), cycle status files (`.pdca/status/`) and evidence
 (`.pdca/<task>/rv<k>/`). The skill's own `scripts/` is the source of those helpers; the project runs
@@ -185,6 +188,7 @@ Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per p
 
 | Plugin | Description |
 | --- | --- |
+| [`pdca-handoff`](opencode/plugins/pdca-handoff/README.md) | Optional OpenCode V2 adapter for autonomous PLAN → DO handoff, CHECK packets, phase-event recording, and background shell recovery. |
 | [`opencode-git-status`](opencode/plugins/git-status) [![npm](https://img.shields.io/npm/v/opencode-git-status)](https://www.npmjs.com/package/opencode-git-status) | Git working-tree status in the OpenCode CLI sidebar footer — path, branch, ahead/behind and only the non-zero `git status --porcelain=v2` counters (staged, modified, added, deleted, untracked, conflicts, stashes) on one line, refreshed on a timer and on filesystem, git and session events without ever blocking the terminal. |
 | [`opencode-git-status-v1`](opencode/plugins/git-status-v1) [![npm](https://img.shields.io/npm/v/opencode-git-status-v1)](https://www.npmjs.com/package/opencode-git-status-v1) | The same one-line git status for **OpenCode V1** (`tui.tsx` entry) — branch, ahead/behind and porcelain-v2 counters, updated while you work. |
 | [`wsl-notify`](opencode/plugins/wsl-notify) [![npm](https://img.shields.io/npm/v/wsl-notify)](https://www.npmjs.com/package/wsl-notify) | Windows toast notifications for OpenCode — permission, question, completion and error events. Zero dependencies, one entrypoint for OpenCode V1 and V2, works from WSL (`powershell.exe` interop) and native Windows. |
@@ -193,9 +197,8 @@ Plugins live under [`opencode/plugins/`](opencode/plugins/), one directory per p
 | [`zen-failover`](opencode/plugins/zen-failover) [![npm](https://img.shields.io/npm/v/zen-failover)](https://www.npmjs.com/package/zen-failover) | Server failover for subscription providers: on an exhausted quota it moves every agent, the default model and the active session to the fallback (`ChatGPT` → the same model on Console, `Go` → direct DeepSeek), probes the plan once a minute, and restores the original bindings as soon as the subscription answers again. Transient per-minute `429`s are retried, not degraded. |
 | [`opencode-clear-session`](opencode/plugins/clear-session) [![npm](https://img.shields.io/npm/v/opencode-clear-session)](https://www.npmjs.com/package/opencode-clear-session) | `/clear` for the OpenCode V2 CLI — archives the current session (recoverable, not deleted), closes its tab and lands on a fresh session. V2 port of the V1 TUI plugin that replaces V2's built-in `session.clear` (same `/clear`, but it does not archive) and adds `/archive`; its only dependency is the host's `@opencode/plugin` API. |
 
-Install the published package in `opencode.json(c)` (`plugins` on V2, `plugin` on V1), or copy a plugin's
-entry file (`index.js`, or `tui.tsx` for the sidebar/TUI plugins) into `<config>/plugins/` and let
-opencode discover it locally. See each plugin's README for options and requirements.
+See each plugin's README for installation and requirements. For `pdca-handoff`, keep the
+package directory intact: the entry point uses JavaScript and Python files shipped alongside it.
 
 ## License
 

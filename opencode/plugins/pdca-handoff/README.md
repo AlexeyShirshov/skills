@@ -1,8 +1,29 @@
 # PDCA handoff for OpenCode V2
 
-Use this optional server plugin to send a ready plan to an existing executor without a separate model turn to record the plan, number the step or construct the dispatch. The executor and planner must already be working for the same driver in the same project directory.
+Use this optional server plugin when your PDCA agents spend model turns moving results
+between roles rather than deciding or doing the work. The plugin handles those transfers
+and records their state. You can run the same PDCA skills without it.
 
-The original `pdca_handoff_v1` protocol supports a pending autonomous PLAN and the next campaign step after a completed, accepted ACT. Version 0.2 adds three independent operations. Approval, classification, substantive work, verification decisions and collection scheduling stay with their existing owners.
+## What the plugin does
+
+For example, in an autonomous bug-fix cycle, the planner finishes the plan, the executor fixes
+the bug, and an independent checker reviews the evidence. With the plugin, OpenCode can handle
+these steps between the agents' substantive turns:
+
+- **Send a finished plan to the executor.** At an authorized autonomous boundary, save the original
+  plan, record PLAN → DO, and queue the DO brief for the existing executor. The planner and
+  executor must already work for the same driver in the same project directory. This also works
+  for the next campaign step after a completed, accepted ACT.
+- **Prepare and deliver CHECK evidence.** Verify the declared inputs and access, pin the packet,
+  and, when configured, send it to the assigned checker. Delivery doesn't mean acceptance.
+- **Record phase decisions.** Save the producer's exact report and apply supported status
+  transitions. With tracked CHECK delivery, record the verdict without a separate executor turn.
+- **Track a background command.** Reconcile an already launched and registered job after a restart.
+  If its outcome is unknown, keep it unknown rather than treating it as success or rerunning the job.
+
+The plugin doesn't write the plan, do the work, or judge the result. It doesn't change approval
+requirements or schedule collection items. Read the [Russian user guide](../../../docs/ru/guide/pdca-handoff.md)
+for an overview of when to use it.
 
 ## Enable it in a project
 

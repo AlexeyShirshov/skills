@@ -398,6 +398,20 @@ questions, not approvals, and never widens a permission. An unavailable approval
 silent pass. Auto-commit, where a project policy or the user allows it, is likewise explicit; `push`
 is never part of the cycle.
 
+### Optional OpenCode adapters
+
+The [`pdca-handoff` plugin](../opencode/plugins/pdca-handoff/README.md) can hand an authorized
+autonomous plan to its executor. Version 0.2 also adds three independent adapters:
+
+- `packet-v1` assembles and verifies the declared CHECK inputs and can deliver the packet.
+- `events-v1` records exact phase decisions and applies supported status transitions.
+- `wait-v1` tracks already launched background shell jobs and reconciles their state after a restart.
+
+The executor selects available, permitted adapters when it creates the status file. If an adapter
+is unavailable then, that operation stays manual. Upgrading the plugin doesn't transfer ownership
+of an existing status file. The planner and checker still own the plan and verdict. See the
+[adapter contract](../skills/pdca/references/adapters.md) for selection and manual takeover.
+
 ## 9. The cycle's memory and evidence
 
 Phase reports are stored once. The executor records their path and SHA-256, and the driver forwards

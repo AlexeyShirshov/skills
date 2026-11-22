@@ -8,9 +8,13 @@ verification. It is host-agnostic; the commands shown as the reference adapter a
 the OpenCode V1 mapping and the mapping for Claude Code, Codex and custom hosts (`dsh`, …) given
 inline.
 
-On OpenCode V2, you can also enable the [optional autonomous PLAN → DO handoff](../opencode/plugins/pdca-handoff/README.md). Other hosts and projects without it use the same skills with their existing dispatch procedure.
+On OpenCode V2, you can enable the optional [`pdca-handoff` plugin](../opencode/plugins/pdca-handoff/README.md).
+It handles autonomous PLAN → DO handoff and can independently assemble and deliver CHECK
+packets, record phase events, and track background shell jobs. Without an available adapter,
+the skills use the manual procedure for that operation. The plugin doesn't replace the host
+setup in this guide.
 
-Without it the cycle does not fail loudly. It either degrades to the flat primary (a recorded
+Without the required host setup, the cycle either degrades to the flat primary (a recorded
 `Notice:`), or hits a resource blocker on the first dispatch.
 
 ## 1. What the skill expects from the host
