@@ -27,13 +27,13 @@ dependency closure and must pass before dependent preparation, DO or work dispat
 
 A fresh dispatch carries `contract: pdca`, `form: UNDECIDED` and no persisted plan. Then:
 
-1. `pdca-scout` gathers the minimum facts, pointers only.
-2. One `pdca-planner` call carries the original goal unchanged, the facts as pointers, the
+1. Go straight to the planner. Dispatch `pdca-scout` only if the planner names a fact it needs to
+   decide. Return the fact pointers to the same pending PLAN.
+2. One `pdca-planner` call carries the unchanged goal and supplied criteria, available fact pointers,
    decision-relevant unknowns, any user-named form/overlay as a constraint, and the
-   `plan_reference_path` — the absolute path of the loaded `pdca` skill's `references/plan.md`. The
-   **only** form/overlay discriminator is `plan.md` §Entry and first step, which the planner reads
-   there: the dispatch carries no copy of the base §Forms routing table and no second form-selection
-   text. Never read or inline that file, or forward its contents.
+   `plan_reference_path` (the loaded `pdca` skill's absolute `references/plan.md` path). The
+   **only** form/overlay discriminator is `plan.md` §Entry and first step: no copy of the base §Forms
+   routing table or second form-selection text. Never read or inline that file, or forward its contents.
 3. The returned plan **is** the initial plan. `pdca-executor` persists it and the same controller
    continues at the **PLAN → DO** boundary of the decided context: no second full PLAN, no fresh
    controller, no new state file.

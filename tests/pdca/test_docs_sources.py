@@ -134,12 +134,13 @@ class DocsSourceMapTest(unittest.TestCase):
             body = rest.strip()
         elif ", :" in body:
             body, numbers = body.rsplit(", :", 1)
+        if numbers and not NUMBERS.fullmatch(numbers):
+            problems.append(f"{doc}: unparsable line range {skill_name}:{numbers}")
+            numbers = ""
         if body and not body.startswith("§"):
             problems.append(f"{doc}: unparsable citation {skill_name}{tail!r}")
             return [], numbers
         anchors = [part.lstrip("§").strip() for part in body.split(" · ")] if body else []
-        if numbers and not NUMBERS.match(numbers):
-            problems.append(f"{doc}: unparsable line range {skill_name}:{numbers}")
         return anchors, numbers
 
     def test_the_map_is_not_empty(self) -> None:

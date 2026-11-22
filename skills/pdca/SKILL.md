@@ -235,7 +235,8 @@ PLAN → ACT (criteria undetermined | goal not measurable | requested result inf
 ```
 
 The diagram is the whole machine; exits are detailed in §Phase contracts. **CHECK is mandatory to
-accept a completed result** and never runs on a candidate DO reports as blocked or incomplete;
+accept a completed result** and never runs on a candidate DO reports as blocked or incomplete
+because the deliverable itself is unfinished;
 **only CHECK returns to PLAN** (never DO); a consultation adds no node; **ACT finalizes** the accepted
 result (`EXIT` or the next `PLAN`), an honest `blocked`/`incomplete`/`STOP`, or a PLAN-terminal
 outcome — no DO, no CHECK, no invented criterion, no substitute deliverable — and a successful ACT
@@ -351,11 +352,7 @@ is `done` only on recorded evidence with its closure in the status file; a block
 `done`, unfinished work stays `blocked`/`pending`, and a rejected candidate restores the original
 unit.
 
-DO never issues a verdict, PASS or STOP; it returns a **completed candidate with evidence**, or
-**cannot finish** (missing prerequisite, refuted assumption, unavailable capability, security or
-permission boundary, contract contradiction) with cause, evidence and residual `unmet`/`unverified`
-requirements. A DO that cannot finish is still **DO → ACT**: it does not rewrite the plan and does
-not return to PLAN.
+DO never issues a verdict, PASS or STOP. It does not rewrite the plan and does not return to PLAN.
 
 **Expert review from DO.** While the work is still possible, DO may refer a complex or disputed
 **implementation** decision inside its own authority (a risky or irreversible choice) to
@@ -363,13 +360,15 @@ not return to PLAN.
 changes the criteria, nor widens a permission, nor substitutes for a user approval; the decision
 stays DO's.
 
-**DO → CHECK** — only after the executor completed the work and recorded what it did and ran, with
-evidence pointers. Completing DO is the executor's statement, not acceptance: the candidate goes to
-CHECK, which alone chooses the verification and accepts it.
+**DO → CHECK** — as soon as the scoped deliverable is complete, send the frozen candidate and
+available evidence. For each outstanding check, state what remains `unverified` and why. CHECK
+alone judges the criteria. If only external verification is blocked, keep CHECK pending. When
+availability changes, resume just that verification on the same candidate (`references/check.md`).
 
-**DO → ACT** — DO cannot finish under the approved contract. There is no CHECK of an unfinished
-candidate and no planner detour: ACT finalizes `blocked`/`incomplete`/`STOP` with cause, evidence and
-residual `unmet`/`unverified` requirements, with no `PASS`, no `done` and no credit.
+**DO → ACT** — DO cannot finish under the approved contract: a missing prerequisite, refuted
+assumption, unavailable capability, security or permission boundary, or contract contradiction
+prevents producing the deliverable itself. ACT records the cause, evidence and residual `unmet`/`unverified`
+requirements, with no `PASS`, no `done` and no credit.
 
 #### CHECK
 
