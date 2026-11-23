@@ -4,7 +4,9 @@
 //
 //   node test/smoke.mjs
 
+import childProcess from "node:child_process"
 import { mkdtemp, writeFile, chmod, readFile, rm } from "node:fs/promises"
+import { syncBuiltinESMExports } from "node:module"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
@@ -848,8 +850,22 @@ console.log("invocation")
   // The script must reach powershell as one `-Command` argument: `-EncodedCommand`
   // doubles it through base64 UTF-16LE and a host that caps an argument at ~2 KB
   // then fails the spawn with EINVAL (exit 1, nothing on screen).
-  const raised = await run([permissionAsked("per_invocation")])
+  const spawn = childProcess.spawn
+  let spawnOptions
+  childProcess.spawn = (file, args, options) => {
+    spawnOptions = options
+    return spawn(file, args, options)
+  }
+  syncBuiltinESMExports()
+  let raised
+  try {
+    raised = await run([permissionAsked("per_invocation")])
+  } finally {
+    childProcess.spawn = spawn
+    syncBuiltinESMExports()
+  }
   const args = (await readFile(argvLog, "utf8").catch(() => "")).split("\n").filter(Boolean)
+  check("the console is hidden when PowerShell is spawned", spawnOptions?.windowsHide === true)
   check("the toast script is passed after -Command", args.at(-2) === "-Command", args.slice(0, -1).join(" "))
   check("-EncodedCommand is never used", !args.includes("-EncodedCommand"))
   check("the script travels unencoded", (args.at(-1) ?? "").startsWith("$ErrorActionPreference="))

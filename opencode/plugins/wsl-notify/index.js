@@ -578,7 +578,8 @@ function toast(info, options) {
       "-Command",
       buildScript(info.title, info.message, info.sound),
     ],
-    { stdio: "ignore" },
+    // Hide the console at launch; PowerShell's own flag can act only after startup.
+    { stdio: "ignore", windowsHide: true },
   )
   child.on("error", (error) => console.error(`[wsl-notify] "${executable}" failed: ${error.message}`))
 }
