@@ -138,6 +138,14 @@ supplied set stays verbatim, no criterion is invented, and the cycle takes the `
 cannot be determined` outcome (§Terminal PLAN outcomes) instead of a ready plan or DO; only a new
 explicit user instruction changes the input, and plan approval is not one.
 
+**Compatibility decision.** If available evidence proves that the result requires an unauthorized
+change to an existing public contract or test, return the applicable terminal outcome rather than a
+ready plan. An explicit `non-backward-compatible` choice already authorizes in-scope contract and
+test changes. For a terminal compatibility outcome, report the affected API, behavior or test,
+the evidence, and the exact user decision needed. Distinguish an uncovered preservation requirement
+from a proven need to change behavior or a test. Return the decision needed to the driver; PLAN
+does not solicit it.
+
 ## Entry and first step
 
 The driver hands you the task unchanged and, when the user named one, the requested **form** or

@@ -219,7 +219,7 @@ durable reason; in normal mode, report to the user.
 
 - **Normal mode** — the user approves the planner's decisions for each cycle or incremental step
   before DO begins (§Normal-mode approval); that approval is the **only** start signal.
-- **Autonomous mode** — no intermediate approvals or questions: the driver invokes the required
+- **Autonomous mode** — no routine approvals or questions: the driver invokes the required
   agents, manages state and advances on the planner's decisions and CHECK results. All permissions,
   contracts, verification requirements and stop conditions stay in force.
   When delegating the controller, request completion-only notifications if the host offers them
@@ -321,8 +321,8 @@ carries the original task, criteria, constraints, prohibitions and scope **by ex
 cycle's `evidence_root` (§Workspace and durable status), and no frozen verification procedure; the plan
 is pinned by path and SHA-256; normal mode adds the user's approval. `pdca-executor` logs `DO started`.
 Choosing, validating and running the verification is CHECK's work at CHECK time, not a pre-DO
-prerequisite; an unusable method is re-chosen, not a plan defect. No asking the user for criteria: an indeterminate
-criterion blocks DO and routes **PLAN → ACT**.
+prerequisite; an unusable method is re-chosen, not a plan defect. PLAN does not solicit criteria; an
+indeterminate criterion blocks DO and routes **PLAN → ACT**.
 
 **PLAN → ACT** — four terminal outcomes, each with its payload in `references/plan.md`:
 `acceptance criteria cannot be determined`, `goal cannot be measured under the available means`,

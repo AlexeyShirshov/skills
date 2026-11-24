@@ -7,7 +7,8 @@ import unittest
 from pathlib import Path
 
 
-SKILL = Path(__file__).resolve().parents[2] / "skills/pdca-coder" / "SKILL.md"
+SKILLS = Path(__file__).resolve().parents[2] / "skills"
+SKILL = SKILLS / "pdca-coder/SKILL.md"
 
 
 def normalize(text: str) -> str:
@@ -75,6 +76,26 @@ class ExistingTestCompatibilityContractTest(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, self.contract)
 
+    def test_unapproved_public_contract_change_stops_compatible_do(self) -> None:
+        for rule in (
+            "in backward-compatible mode, a required change to an existing public signature, format or guaranteed observable behavior needs explicit user authorization",
+            "a clear instruction in the task itself can authorize that change",
+            "in this mode, permission to change the public contract does not cover existing-test edits",
+            "test authorization does not cover public-contract changes",
+            "additive work that preserves existing guarantees does not need this extra decision",
+            "use the same stop as soon as a required, unauthorized public-contract change is established, before changing the contract",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, self.contract)
+
+    def test_incompatible_mode_authorizes_both_changes_without_repeat_confirmation(self) -> None:
+        self.assertIn(
+            "the choice authorizes changes to the existing public contract and baseline tests "
+            "within the task scope without separate confirmation",
+            self.contract,
+        )
+        self.assertIn("or override an explicit preservation requirement", self.contract)
+
     def test_mode_baseline_and_permission_travel_and_check_verifies(self) -> None:
         for rule in (
             "plan records the mode, a reference to the task-start baseline, and the source and exact scope of any explicit permission",
@@ -110,6 +131,50 @@ class ExistingTestCompatibilityContractTest(unittest.TestCase):
             with self.subTest(phase=start):
                 content = normalize(heading_section(self.skill, start))
                 self.assertIn("existing-test compatibility", content)
+
+
+class CompatibilityDecisionRoutingTest(unittest.TestCase):
+    def test_terminal_plan_reports_the_actual_conflict_without_inventing_criteria_or_edits(self) -> None:
+        plan = (SKILLS / "pdca/references/plan.md").read_text(encoding="utf-8")
+        terminal = normalize(heading_section(plan, "## Terminal PLAN outcomes"))
+        for rule in (
+            "return the applicable terminal outcome rather than a ready plan",
+            "an explicit non-backward-compatible choice already authorizes in-scope contract and test changes",
+            "distinguish an uncovered preservation requirement from a proven need to change behavior or a test",
+            "return the decision needed to the driver; plan does not solicit it",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, terminal)
+
+    def test_primary_asks_for_a_scoped_choice_without_bypassing_the_stop(self) -> None:
+        act = (SKILLS / "pdca/references/act.md").read_text(encoding="utf-8")
+        decision = normalize(heading_section(act, "### User decision on compatibility"))
+        for rule in (
+            "when a plan or do report says compatibility needs a user decision, record the outcome as usual",
+            "the primary asks the user directly in the dialogue language, in either control mode",
+            "wait for explicit user instruction before dispatching the affected work again",
+            "lead with the choice, not with stop",
+            "keep the existing contract, behavior and tests, and revise or clarify the task requirements",
+            "approve the specific change needed for the requested result",
+            "ask only for authorization still missing",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, decision)
+
+        driver = (SKILLS / "pdca/references/driver.md").read_text(encoding="utf-8")
+        routed = normalize(heading_section(driver, "## Routed, not taken"))
+        self.assertIn("relay act's compatibility question to your caller; the primary asks the user", routed)
+
+    def test_collection_reaches_the_same_user_decision_without_changing_queue_rules(self) -> None:
+        collection = (SKILLS / "pdca-collection/SKILL.md").read_text(encoding="utf-8")
+        report = normalize(heading_section(collection, "## Report"))
+        for rule in (
+            "relay it to the primary with the item id",
+            "#user-decision-on-compatibility",
+            "the barrier and lane rules still govern the other items",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, report)
 
 
 if __name__ == "__main__":

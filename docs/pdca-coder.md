@@ -110,11 +110,15 @@ By default, preserve the unit and integration tests present when the task starts
 assertions and behavior through fixtures, shared helpers, snapshots, and configuration. This baseline
 doesn't reset on replan or resume. Adding tests is allowed.
 
-Explicit consent for named tests applies only to the agreed change. Only an explicit
-`non-backward-compatible` choice switches modes; ordinary plan approval and autonomy don't.
-CHECK judges the baseline comparison gathered in the candidate's checkout. If the fix requires
-an unauthorized change to an existing test, DO reports that it cannot finish before making the
-change. ACT records the STOP and the decision needed. See the
+If you explicitly choose `non-backward-compatible`, PDCA can change existing tests and the public
+contract within the task scope without asking again. Explicit requirements to preserve particular
+behavior or tests still apply. Ordinary plan approval and autonomy don't switch modes. CHECK
+judges the baseline comparison gathered in the candidate's checkout.
+
+In `backward-compatible` mode, if the task needs a change to an existing test or public contract
+that you haven't authorized, PDCA stops the affected work and asks you to choose: keep the behavior
+and revise the task, or approve the specific change. Permission to change the public contract
+doesn't also approve edits to existing tests. See the
 [compatibility contract](../skills/pdca-coder/SKILL.md#existing-test-compatibility).
 For the phase and security-stream layout, see the [coder workflow diagram](../skills/pdca-coder/assets/diagram/pdca-coder-hand-dark.svg).
 

@@ -70,6 +70,26 @@ required approval, or CHECK attempts exhausted under the no-4th rule — and onl
 its own transitions, decides it; a consultation alone needs no new plan (`../SKILL.md` §Phase
 contracts → ACT).
 
+### User decision on compatibility
+
+When a PLAN or DO report says compatibility needs a user decision, record the outcome as usual.
+Return a separate question with the affected task or item and an evidence pointer to the driver.
+Child drivers relay it to their caller; the primary asks the user directly in the dialogue
+language, in either control mode. Retain the recorded outcome and wait for explicit user
+instruction before dispatching the affected work again.
+
+Lead with the choice, not with `STOP`, `blocked` or a phase name. Say what must change and why, or
+what the acceptance criteria fail to cover if the need for a change isn't established. Ask which
+way to proceed:
+
+- Keep the existing contract, behavior and tests, and revise or clarify the task requirements.
+- Approve the specific change needed for the requested result. Name the public API or behavior
+  and any existing tests whose edits need consent; ask only for authorization still missing.
+
+For example: “To deliver [result], we need to change [behavior] because [reason]. Would you rather
+keep the current behavior and revise the task, or approve [specific change] and continue? That
+change also requires updating [existing test]; please confirm whether to update it.”
+
 ## Retrospective (mandatory, ACT)
 
 Except for the scope withdrawal in §Closing order, every closure runs a short evidence-grounded retrospective through `pdca-check` in `retrospective`

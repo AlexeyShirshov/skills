@@ -73,7 +73,7 @@ Compose a dispatch from the receiving phase's own contract inputs, plus only the
   Section map (locations only; applicability remains phase/criterion-specific):
   | Selected overlay | Applicable evidence/run sections |
   |---|---|
-  | `pdca-coder` | `SKILL.md` §Code evidence requirements (relevant rules); §Coverage evidence lifecycle; §Build and test command forms; §Test run safety (every phase — DO and CHECK), only when relevant. |
+  | `pdca-coder` | `SKILL.md` §Existing-test compatibility; §Code evidence requirements (relevant rules); §Coverage evidence lifecycle; §Build and test command forms; §Test run safety (every phase — DO and CHECK), only when relevant. |
   | `pdca-dotnet` (inherits coder) | Relevant coder sections, plus `SKILL.md` §.NET toolchain and commands; §Coverage comparison and report reuse; §.NET check deltas → Tests are judged on the applicable complete scope; §.NET do/act deltas → Freeze order and line endings, Integration lane or Test host safety (DO and CHECK), only when relevant. |
 
 **Prepare once, route by path.** Inline CHECK content belongs inside the handoff file, not in the tool prompt.
@@ -109,9 +109,9 @@ Metadata — status path, form, contract, overlay, dispatch rule and refs — ar
 - Planner decisions are routed, never re-decided: the next step or the STOP exactly as the loaded
   `pdca-incremental` contract's §Step boundary says, including a pre-approved STOP on PASS; a
   non-PASS goes back to the planner as a loop-back.
-- A PLAN-terminal outcome goes to **ACT** with its cause and evidence (base §PLAN → ACT); a DO that
-  cannot finish goes to **ACT** (base §DO → ACT), never back to PLAN. Inside a campaign step an
-  established result still needs the independent CHECK.
+- Route terminal PLAN and `cannot finish` DO to **ACT** with cause and evidence, never back to PLAN.
+  Established campaign steps still need independent CHECK. Relay ACT's compatibility question to
+  your caller; the primary asks the user (`act.md` §User decision on compatibility).
 - Approval is the primary's: a caller-driven handoff carries the durable pending ref, and a missing or
   mismatched record yields an approval-needed checkpoint — never DO and never a fresh PLAN
   (`../SKILL.md` §Normal-mode approval; a paused collection item stays `in-progress` with

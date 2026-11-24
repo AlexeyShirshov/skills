@@ -257,7 +257,7 @@ For each item in the recorded order:
    otherwise the next one does not branch from a committed result. Commit **only the files of the
    item** (`git add <paths>`), not `git add -A`: otherwise alien/artefact files are picked up.
 
-`pdca-orchestrator` **makes no decisions** — it only routes the plan: it does not decide that an item is impossible/not ready/independent, does not choose the scope and does not judge the result; any question goes to `pdca-planner`, not to the user. The status `incomplete` is a consequence of a failure or of an impossibility by the contract (§Lane execution and schedule revision), not a judgement of the lane.
+`pdca-orchestrator` **makes no decisions** — it only routes the plan: it does not decide that an item is impossible/not ready/independent, does not choose the scope and does not judge the result. Questions about the plan go to `pdca-planner`; decisions reserved to the user go through the primary (§Report). The status `incomplete` is a consequence of a failure or of an impossibility by the contract (§Lane execution and schedule revision), not a judgement of the lane.
 
 ### The queue and the per-item continuation
 
@@ -485,6 +485,11 @@ The item enumeration stays `pending` | `in-progress` | `done` | `incomplete`; th
 ## Report
 
 Follow base §Phase contracts → ACT and `../pdca/references/act.md`: report what was done, evidence, remaining/blocked work and next step. Distinguish collection completeness from integrated-tree verdict (§C), and accepted goals from plan-terminal resolutions and execution failures.
+
+When an item reports a compatibility decision, relay it to the primary with the item ID as soon as
+the report is available. The primary asks the user using the question from
+[ACT §User decision on compatibility](../pdca/references/act.md#user-decision-on-compatibility).
+The barrier and lane rules still govern the other items.
 
 ## Approval barrier (normal mode)
 

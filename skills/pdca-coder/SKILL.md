@@ -112,21 +112,35 @@ change, delete, skip, disable or weaken them, directly or indirectly through fix
 snapshots or configuration when that changes an existing test. Adding tests is allowed, including in
 an existing file, while leaving its baseline tests unchanged. Explicit user consent authorizes only
 the named tests and agreed change scope; it does not switch modes or permit further changes. Only the
-user's explicit `non-backward-compatible` choice selects that mode and authorizes existing-test
-changes within the task scope; it does not relax acceptance or quality criteria.
+user's explicit `non-backward-compatible` choice selects that mode. The choice authorizes changes to
+the existing public contract and baseline tests within the task scope without separate confirmation;
+it does not relax acceptance or quality criteria or override an explicit preservation requirement.
+
+**Public contract.** In `backward-compatible` mode, a required change to an existing public
+signature, format or guaranteed observable behavior needs explicit user authorization. A clear
+instruction in the task itself can authorize that change; autonomy and general plan approval
+cannot. In this mode, permission to change the public contract does not cover existing-test edits,
+and test authorization does not cover public-contract changes. Additive work that preserves
+existing guarantees does not need this extra decision.
 
 **Handoffs and CHECK.** PLAN records the mode, a reference to the task-start baseline, and the source
 and exact scope of any explicit permission, then passes them unchanged to DO. DO preserves them and
 passes them with the candidate identity and evidence to CHECK. CHECK evaluates a baseline comparison
 produced in place by DO or observed by `pdca-scout`, not the test files or a copied diff. The comparison
 must cover each existing-test change against the selected mode and explicit permission; a missing
-baseline or authorization is not proof of permission or a pass.
+baseline or authorization is not proof of permission or a pass. CHECK also verifies any change to
+an existing public contract against the recorded mode and any applicable scoped permission.
 
 **STOP.** If the requested result cannot be achieved in `backward-compatible` mode without an
 existing-test change outside explicit consent, stop DO before making that change. Return `cannot
 finish` through the base DO→ACT route with the cause, evidence, affected tests and exact user decision
 needed; ACT records STOP under its contract. No autonomous workaround or escalation can waive this
 boundary.
+
+Use the same stop as soon as a required, unauthorized public-contract change is established, before
+changing the contract. State the current and proposed behavior or signature, the affected callers
+and tests where known, and which authorization is still needed. For either stop, ACT follows
+[`act.md` §User decision on compatibility](../pdca/references/act.md#user-decision-on-compatibility).
 
 **Status.** In the existing base status record, reference the baseline and record the mode and its
 authorization basis; in `backward-compatible` mode also record any explicit user consent and its
