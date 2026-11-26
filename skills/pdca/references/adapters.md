@@ -79,3 +79,18 @@ missing operation only: use the existing packet, continue an admitted CHECK, or 
 job/output. An unknown admission stays a blocker. Remove only the reconciled capability from
 `Adapters:` (or mark manual); preserve receipts and other elections. A subsequent plugin reload
 cannot reclaim a manually owned operation.
+
+## Managed child dispatch
+
+For an already authorized follow-up to a direct PDCA child whose previous work is complete, call
+`pdca_dispatch_v1` with `action: "send"`, an unused key for the logical role turn, the existing
+`child` session ID, and the exact prepared `brief`. Use one sender. Keep the existing route for new
+children, CHECK, and operations that already have an adapter or require a specific final marker.
+No new status fields or election are needed for managed dispatch.
+
+`admitted` means queued, not running. Wait for the managed result notice. Use its exact child
+session/message reference as the ordinary role report; the completion marker says transport is
+complete and is not a phase decision. `inspect` reads the receipt; `recover` reconciles the same key
+when a restart, missing notice, or explicit request calls for recovery. Treat `unknown` as a resource
+blocker until reconciled. Keep the same phase and counters; never duplicate a managed turn. The
+role omits its completion marker from interim reports while required background work is pending.

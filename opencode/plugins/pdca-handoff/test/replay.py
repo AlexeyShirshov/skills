@@ -72,6 +72,8 @@ def run(fast, *, plugin_dir=PLUGIN, extension=None):
 
         def do_POST(self):
             d = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            if extension and hasattr(extension, "observe_request"):
+                extension.observe_request(d)
             model = d["model"]
             last = d["messages"][-1]
             text = str(last.get("content", ""))
@@ -149,7 +151,7 @@ def run(fast, *, plugin_dir=PLUGIN, extension=None):
                   "plugins":[str(plugin_dir)] if fast else [],
                   "permissions":[{"action":"*","resource":"*","effect":"allow"}]}
         (root/"opencode.json").write_text(json.dumps(config))
-        if extension: extension.setup(root,config,plugin_dir)
+        if extension and hasattr(extension, "setup"): extension.setup(root,config,plugin_dir)
         env = {k:os.environ[k] for k in ("PATH","LANG","TMPDIR") if k in os.environ}
         env.update(HOME=tmp, XDG_CONFIG_HOME=tmp+"/config",XDG_STATE_HOME=tmp+"/state",
                    XDG_CACHE_HOME=tmp+"/cache", XDG_DATA_HOME=tmp+"/data",NO_PROXY="127.0.0.1,localhost")

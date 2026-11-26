@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 import { installMechanics } from "./mechanics.js"
+import { installDispatch } from "./dispatch.js"
 
 const tool = "pdca_handoff_v1"
 const helper = fileURLToPath(new URL("./ledger.py", import.meta.url))
@@ -295,6 +296,7 @@ export async function install(ctx) {
     "session.execution.interrupted",
   ]
   const mechanics = await installMechanics(ctx, { root, ledger, serial, info, fences })
+  const dispatch = await installDispatch(ctx, { root, serial, info, fences })
   const events = ctx.event.subscribe({
     types: [...terminal, "session.synthetic", "session.inbox.delivered", "shell.exited"],
     signal: controller.signal,
@@ -303,6 +305,7 @@ export async function install(ctx) {
     for await (const event of events) {
       if (controller.signal.aborted) break
       await mechanics.event(event)
+      await dispatch?.event(event)
       if (!terminal.includes(event.type)) continue
       for (const r of active.values()) if (event.data?.sessionID === r.spec.planner) await reconcile(r)
     }
@@ -313,6 +316,7 @@ export async function install(ctx) {
   // outbox message whose receipt was lost.
   for (const r of active.values()) void reconcile(r)
   mechanics.restore()
+  dispatch?.restore()
   await ctx.tool.transform((editor) =>
     editor.add({
       name: tool,
@@ -337,6 +341,7 @@ export async function install(ctx) {
   )
   return async () => {
     controller.abort()
+    await dispatch?.close()
     await observer
     await chain
   }

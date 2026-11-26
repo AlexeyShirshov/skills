@@ -8,6 +8,7 @@
   "files": [
     "index.js",
     "mechanics.js",
+    "dispatch.js",
     "ledger.py",
     "mechanics_ledger.py",
     "README.md",

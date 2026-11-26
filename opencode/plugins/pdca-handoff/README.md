@@ -52,6 +52,28 @@ New skills use only the tool names the host actually offers. The 0.1 plugin cont
 
 See the [adapter contract](../../../skills/pdca/references/adapters.md) for the wire formats, election fields and manual takeover. Registration requires the host-issued background handle in the same executor's history. The plugin does not rerun a lost command.
 
+### Track follow-ups to existing subagents
+
+Managed dispatch is on by default on supported hosts. If you set `options.capabilities`, include
+`"dispatch-v1"` to keep it. Set `options.managedDispatch` to `true` or `false` to override that list
+for managed dispatch.
+
+Confirm that `pdca_dispatch_v1` appears for your driver. It sends a follow-up to an existing direct
+PDCA child. Keep the existing route for initial dispatch, CHECK, and handoffs with their own adapter
+or final report marker. Existing in-flight work is not enrolled.
+
+For each managed follow-up, the plugin records the prompt ID before submission. It checks the
+child's saved result on completion, after a restart, and at the dispatch deadline (10 minutes by
+default). It delivers the marked final report under one stable inbox ID. The native report stays
+in OpenCode history but the driver receives only the managed copy as a routing input. If no final
+report is available at the deadline, the plugin reports `unknown` and leaves the child and any
+background commands alone. An unknown prompt admission is not retried. The plugin doesn't change
+phase decisions, approvals, or counters.
+
+See [managed child dispatch](../../../skills/pdca/references/adapters.md#managed-child-dispatch) for
+the driver's procedure. To check the transport on a private OpenCode server, run
+`python3 test/dispatch_replay.py` from this directory.
+
 ## What survives a restart
 
 The authoritative receipt is in the original `.pdca/status/*.md` file. The plugin pins the exact completed planner report under the assigned evidence directory, updates the status and counters in one atomic replacement, and queues the substantive DO brief. The plugin store indexes authorized tickets by location; it is not a second progress log. Repeating a delivery uses the same OpenCode inbox message ID. The planner's ordinary notification to its parent can still wake that parent.
