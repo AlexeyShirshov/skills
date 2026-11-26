@@ -64,6 +64,17 @@ or final report marker. When the tool is available to an OpenCode orchestrator, 
 it to the current dispatch instructions, including in resumed sessions. Existing in-flight work
 is not enrolled.
 
+If an OpenCode orchestrator uses native `subagent` for an eligible follow-up, the plugin registers
+the same turn before OpenCode sends it. The native tool keeps its permission checks and remains
+the only sender. Its result includes the managed dispatch key. New sessions, CHECK, live steering,
+model overrides, and handoffs with another protocol keep their existing route.
+If an unmarked final report already reached the orchestrator through OpenCode, the plugin records
+that delivery without sending a second notice.
+
+Completed report notifications expose a `PDCA-REPORT` token. Use it to pass an exact source to
+the executor without retyping the child session or message ID. The plugin rejects ambiguous
+matches before sending the executor follow-up.
+
 For each managed follow-up, the plugin records the prompt ID before submission. It checks the
 child's saved result on completion, after a restart, and at the dispatch deadline (10 minutes by
 default). It delivers the marked final report under one stable inbox ID. The native report stays
@@ -74,7 +85,8 @@ phase decisions, approvals, or counters.
 
 See [managed child dispatch](../../../skills/pdca/references/adapters.md#managed-child-dispatch) for
 the driver's procedure. To check the transport on a private OpenCode server, run
-`python3 test/dispatch_replay.py` from this directory.
+`python3 test/dispatch_replay.py` from this directory. Add `--native` to exercise registration from
+the built-in `subagent` tool.
 
 ## What survives a restart
 

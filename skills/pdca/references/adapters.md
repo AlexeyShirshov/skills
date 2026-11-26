@@ -91,6 +91,14 @@ Call `pdca_dispatch_v1` with `action: "send"`, a fresh stable `key` for the logi
 the existing `child` session ID, and the exact prepared `brief`. Use one sender. If an existing
 key or an uncertain admission is reported, reconcile that turn instead of switching to `subagent`.
 
+**Report capture.** For an executor follow-up that pins a completed report, pass the `PDCA-REPORT`
+token from its notification as the `report` value. The plugin supplies the exact session/message
+pair from OpenCode. On an eligible native follow-up, put the whole `PDCA-REPORT <token>` line in the
+brief instead. Without a token or managed transport, use the ordinary exact-reference procedure.
+
+When the plugin registers an eligible OpenCode orchestrator's native follow-up, the native tool
+remains the only sender and returns a managed key. Reconcile it by that key without sending again.
+
 `admitted` means queued, not running. Wait for the managed result notice. Use its exact child
 session/message reference as the ordinary role report; the completion marker says transport is
 complete and is not a phase decision. `inspect` reads the receipt; `recover` reconciles the same key

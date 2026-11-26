@@ -19,6 +19,7 @@ async function fixture(t, options = {}) {
   const prompts = []
   const notices = new Map()
   const sent = []
+  const nativeHooks = new Map()
   let contextHook, emit, cleanup
   const control = { lostPrompt: false, lostNotice: false, deny: false, moved: false }
   const ctx = {
@@ -86,7 +87,13 @@ async function fixture(t, options = {}) {
         })()
       },
     },
-    tool: { transform: async (fn) => fn({ add: (d) => defs.set(d.name, d) }) },
+    tool: {
+      transform: async (fn) => fn({ add: (d) => defs.set(d.name, d) }),
+      hook: async (type, fn) => {
+        nativeHooks.set(type, fn)
+        return { dispose: async () => { nativeHooks.delete(type) } }
+      },
+    },
   }
   const stop = async () => {
     await cleanup?.()
@@ -117,9 +124,129 @@ async function fixture(t, options = {}) {
     contextHook?.(event)
     return event
   }
+  const native = async (input, fields = {}, hook = "execute.before") => {
+    const event = { ...command, tool: "subagent", input, ...fields }
+    await nativeHooks.get(hook)?.(event)
+    return hook === "execute.before" ? event.input : event.result
+  }
   return { call, inspect, recover, complete, history, prompts, notices, sent, control, stop, reload,
-    emit: (...args) => emit(...args), modelContext, defs }
+    emit: (...args) => emit(...args), modelContext, native, defs }
 }
+
+const nativeFollowUp = { sessionID: child, agent: "pdca-executor", prompt: send.brief }
+
+test("native follow-up is managed without replacing the OpenCode sender", async (t) => {
+  const f = await fixture(t)
+  const input = await f.native(nativeFollowUp)
+  const ticket = /\nPDCA-DISPATCH ([a-f0-9]{64}) native$/.exec(input.prompt)[1]
+  assert.ok(input.prompt.startsWith(send.brief + "\n"))
+  assert.equal(f.prompts.length, 0)
+  const ack = await f.native(input, {
+    status: "completed", result: { content: "Native launch", metadata: { sessionID: child } },
+  }, "execute.after")
+  const { key } = ack.metadata.pdcaDispatch
+  assert.equal((await f.call({ action: "inspect", key })).state, "admitted")
+  f.history.get(child).push({ id: "msg_native_admission", type: "user", text: input.prompt })
+  f.complete("Native child report.", ticket)
+  await f.emit()
+  assert.equal(f.notices.size, 1)
+  assert.match([...f.notices.values()][0].text, /Native child report\./)
+  assert.equal([...f.notices.values()][0].metadata.childID, child)
+  assert.equal((await f.call({ action: "inspect", key })).inputID, "msg_native_admission")
+  await assert.rejects(f.native(nativeFollowUp), /Existing managed dispatch/)
+})
+
+test("preserve native initial dispatch, a live follow-up, CHECK, and another adapter's protocol", async (t) => {
+  const f = await fixture(t)
+  for (const input of [
+    { agent: "pdca-executor", prompt: send.brief },
+    { ...nativeFollowUp, agent: "pdca-check" },
+    { ...nativeFollowUp, prompt: `${send.brief}\nPDCA-HANDOFF ticket` },
+    { ...nativeFollowUp, prompt: `${send.brief}\nPDCA-RECORD receipt do` },
+    { ...nativeFollowUp, model: "provider/override" },
+  ]) assert.equal(await f.native(input), input)
+  f.history.get(child).push({ id: "msg_live", type: "user", text: "Already running." })
+  assert.equal(await f.native(nativeFollowUp), nativeFollowUp)
+  assert.equal(f.notices.size, 0)
+  assert.equal(f.prompts.length, 0)
+})
+
+test("an unmarked native completion retires the watch only after actual final delivery", async (t) => {
+  const f = await fixture(t)
+  const input = await f.native(nativeFollowUp)
+  const ack = await f.native(input, {
+    status: "completed", result: { content: "Native launch", metadata: { sessionID: child } },
+  }, "execute.after")
+  const { key } = ack.metadata.pdcaDispatch
+  const messages = f.history.get(child)
+  messages.push({ id: "msg_native_input", type: "user", text: input.prompt })
+  const body = f.complete("Final report in the required native format.")
+  messages.at(-2).time = { completed: 2000 }
+  const notice = (id, state, created) => ({
+    id, type: "synthetic", time: { created }, metadata: { source: "subagent", childID: child, state: "completed" },
+    text: `<background-result kind="subagent" sessionID="${child}" state="${state}" description="Native">\n${body}\n</background-result>`,
+  })
+  const parentMessages = f.history.get(parent)
+  parentMessages.push(notice("msg_old_report", "completed", 1000), notice("msg_running", "running", 2100))
+  await f.emit("session.inbox.delivered", parent)
+  assert.equal((await f.call({ action: "inspect", key })).state, "admitted")
+  parentMessages.push(notice("msg_delivered", "completed", 2200))
+  await f.emit("session.inbox.delivered", parent)
+  const receipt = await f.call({ action: "inspect", key })
+  assert.equal(receipt.state, "delivered")
+  assert.equal(receipt.ref.message, "msg_report")
+  assert.equal(f.notices.size, 0)
+  assert.notEqual(await f.native(nativeFollowUp, { id: "call_next" }), nativeFollowUp)
+})
+
+test("restart recovers a native marked result without submitting a plugin prompt", async (t) => {
+  const f = await fixture(t)
+  const input = await f.native(nativeFollowUp)
+  const ticket = /\nPDCA-DISPATCH ([a-f0-9]{64}) native$/.exec(input.prompt)[1]
+  await f.stop()
+  f.history.get(child).push({ id: "msg_native_input", type: "user", text: input.prompt })
+  f.complete("Saved after the observer stopped.", ticket)
+  await f.reload()
+  // Drain the startup reconciliation before checking its notice.
+  await f.emit()
+  assert.equal(f.notices.size, 1)
+  assert.equal(f.prompts.length, 0)
+})
+
+test("#403: resolve exact native report IDs from notification, not from the brief", async (t) => {
+  const f = await fixture(t)
+  const report = f.complete("Exact source body from the saved child.", undefined, "msg_exact_body")
+  const text = `<background-result kind="subagent" sessionID="${child}" state="completed" description="Find facts">\n${report}\n</background-result>`
+  const notice = { type: "synthetic", id: "msg_original_notice", text,
+    metadata: { source: "subagent", childID: child, state: "completed" } }
+  f.history.get(parent).push(notice)
+  const projected = f.modelContext({ tools: { [tool]: {} }, messages: [{ ...notice, content: text }] })
+  const token = /\nPDCA-REPORT ([a-f0-9]{16})$/.exec(projected.messages[0].content)[1]
+  assert.match(projected.system.at(-1).text, /use its PDCA-REPORT token/)
+  await assert.rejects(f.call({ ...send, report: "ffffffffffffffff" }), /one completed PDCA report/)
+  const bound = await f.native({ ...nativeFollowUp, prompt: `Pin the indicated report.\nPDCA-REPORT ${token}` })
+  assert.match(bound.prompt, /"session":"ses_executor","message":"msg_exact_body"/)
+  assert.equal(f.prompts.length, 0)
+  assert.equal(f.history.get(parent).at(-1), notice)
+})
+
+test("explicit dispatch binds a report token, and ambiguous native notices fail closed", async (t) => {
+  const f = await fixture(t)
+  const text = "Repeated scout summary."
+  f.complete(text, undefined, "msg_first")
+  f.complete(text, undefined, "msg_second")
+  const notice = { type: "synthetic", id: "msg_notice", metadata: { source: "subagent", childID: child, state: "completed" },
+    text: `<background-result kind="subagent" sessionID="${child}" state="completed" description="Observe">\n${text}\n</background-result>` }
+  f.history.get(parent).push(notice)
+  const msg = { ...notice, content: notice.text }
+  const projected = f.modelContext({ tools: { [tool]: {} }, messages: [msg] })
+  const token = projected.messages[0].content.split("PDCA-REPORT ")[1]
+  await assert.rejects(f.call({ ...send, report: token }), /one exact completed child message/)
+  assert.equal(f.prompts.length, 0)
+  f.history.set(child, f.history.get(child).slice(0, 2))
+  await f.call({ ...send, report: token })
+  assert.match(f.prompts[0].text, /"session":"ses_executor","message":"msg_first"/)
+})
 
 test("a resumed orchestrator receives the current transport pointer only if it can call dispatch", async (t) => {
   const f = await fixture(t)
@@ -264,5 +391,6 @@ for (const [name, options, enabled] of [
   test(`tool availability: ${name}`, async (t) => {
     const f = await fixture(t, options)
     assert.equal(f.defs.has(tool), enabled)
+    if (!enabled) assert.equal(await f.native(nativeFollowUp), nativeFollowUp)
   })
 }
