@@ -251,6 +251,19 @@ class TransportPermissionTest(unittest.TestCase):
         self.assertIn("Load a contract through the host's skill mechanism by exact ID", body)
         self.assertIn("read references/driver.md in full", body)
 
+    def test_resumed_driver_selects_managed_dispatch_only_for_new_eligible_work(self) -> None:
+        driver = read(SKILL_DIR / "references/driver.md")
+        transport = driver.split("**Role transport.**", 1)[1].split("**Optional handoff.**", 1)[0]
+        self.assertIn("reread this section before sending a new role brief", transport)
+        self.assertIn("Reconcile pending work by its original handle", transport)
+        self.assertIn("call `pdca_dispatch_v1` instead of `subagent`", transport)
+        self.assertIn("If unavailable, use native `subagent`", transport)
+        self.assertIn("managed child dispatch", driver.split("## Read scope", 1)[1])
+        self.assertIn(
+            "refresh driver.md §Dispatch transport before the next new role dispatch",
+            norm(read(ASSETS / "pdca-orchestrator.md")),
+        )
+
     def test_escalate_receives_its_protocol_because_it_cannot_load_a_skill(self) -> None:
         escalate = ASSETS / "pdca-escalate.md"
         self.assertRegex(frontmatter(escalate), r'(?m)^  skill:\n    "\*": deny')

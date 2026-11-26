@@ -190,7 +190,8 @@ def run(fast, *, plugin_dir=PLUGIN, extension=None):
                         except OSError:return False
                     raise RuntimeError("test server rejected its startup credential")
                 wait_for(alive,"private server startup")
-                parent=api("session",{"agent":"build","location":{"directory":str(root)},"title":"Driver"})["id"]
+                parent_agent=getattr(extension, "parent_agent", "build")
+                parent=api("session",{"agent":parent_agent,"location":{"directory":str(root)},"title":"Driver"})["id"]
                 planner=api("session",{"agent":"pdca-planner","parentID":parent,"title":"Plan"})["id"]
                 owner=api("session",{"agent":"pdca-executor","parentID":parent,"title":"Work"})["id"]
                 if extension: extension.elect(root,owner)

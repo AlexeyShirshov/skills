@@ -51,15 +51,13 @@ A fresh dispatch carries `contract: pdca`, `form: UNDECIDED` and no persisted pl
 
 ## Dispatch transport
 
-**Optional handoff.** At an authorized autonomous boundary with unchanged loaded contracts and no outstanding gate, piggyback `arm` on an existing executor turn (its procedure: `act.md` §Optional handoff). Pass a standalone `PDCA-HANDOFF <ticket>` line to the named planner; request a final `PDCA-HANDOFF <ticket> ready` only for a dispatchable plan within that authorization. The adapter routes `ready`; never dispatch DO twice. Unticketed decisions keep the normal route. For authorized follow-ups with `pdca_dispatch_v1` available, see [managed child dispatch](adapters.md#managed-child-dispatch).
+**Role transport.** On resume after a restart, reload or checkpoint, reread this section before sending a new role brief. Reconcile pending work by its original handle; keep its sender.
+For an authorized new follow-up to an idle direct child, **call `pdca_dispatch_v1` instead of `subagent`** when it is available and [managed child dispatch](adapters.md#managed-child-dispatch) applies. If unavailable, use native `subagent`; keep any route already owned by another adapter.
 
-**Dispatchability gate (before any DO dispatch).** A plan about to be dispatched must name, for a
-measurable goal, its measurement method (block 4 of a step brief) and targets the goal's own domain
-allows one to point at. A plan naming only an area, cluster, theme or category where pointable items
-exist **is not dispatchable**: return it to the same planner, missing block named. The driver fills
-no such gap itself or through DO discovery, and DO-discovered work never replaces the plan's
-targets. Where the domain genuinely has no such items, say so in the dispatch: that absence belongs
-to the goal, not a licence for vague targets.
+**Optional handoff.** At an authorized autonomous boundary with unchanged loaded contracts and no outstanding gate, piggyback `arm` on an existing executor turn (its procedure: `act.md` §Optional handoff). Pass a standalone `PDCA-HANDOFF <ticket>` line to the named planner; request a final `PDCA-HANDOFF <ticket> ready` only for a dispatchable plan within that authorization. The adapter routes `ready`; never dispatch DO twice.
+
+**Dispatchability gate (before any DO dispatch).** For a measurable goal, require the measurement method (block 4 of a step brief) and pointable domain targets. A plan naming only an area, cluster, theme or category where pointable items exist **is not dispatchable**: return it to the same planner, missing block named.
+The driver cannot fill that gap, and DO discovery cannot replace the plan's targets. If the domain genuinely has no pointable items, say so in the dispatch.
 
 Compose a dispatch from the receiving phase's own contract inputs, plus only these transport items:
 
@@ -94,7 +92,7 @@ After confirmed failure and transient-cause resolution, retry unchanged once; an
 
 This section is the single owner of the driver's own reads; base §Roles and §Escalation only point here, and no other file restates the list.
 - loaded base/form/PLAN-selected overlays by exact ID through the host skill mechanism; use their loaded contents only, never open an installation-path file;
-- `references/driver.md` (this file), in full, once; `references/adapters.md` only for elected packet/event/wait operations;
+- `references/driver.md` in full on entry, §Dispatch transport on resume; `references/adapters.md` for elected packet/event/wait operations or managed child dispatch;
 - CHECK and retrospective contracts are packaged by the executor; no driver read is needed;
 - `references/escalate.md`, opened only to build an ESCALATE brief before that dispatch;
 - the exact recovery prompt `assets/install-agents-prompt.md` or `assets/install-skills-prompt.md`, relative to the loaded base skill, only when its corresponding preflight fires;

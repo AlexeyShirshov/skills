@@ -112,14 +112,29 @@ async function fixture(t, options = {}) {
     }, { type: "idle", id: `msg_idle_${id}`, outcome: "succeeded" })
     return body
   }
-  const applyContext = (messages) => {
-    const event = { sessionID: parent, messages }
-    contextHook(event)
-    return event.messages
+  const modelContext = (fields = {}) => {
+    const event = { sessionID: parent, agent: command.agent, messages: [], system: [], tools: {}, ...fields }
+    contextHook?.(event)
+    return event
   }
   return { call, inspect, recover, complete, history, prompts, notices, sent, control, stop, reload,
-    emit: (...args) => emit(...args), applyContext, defs }
+    emit: (...args) => emit(...args), modelContext, defs }
 }
+
+test("a resumed orchestrator receives the current transport pointer only if it can call dispatch", async (t) => {
+  const f = await fixture(t)
+  const tools = { subagent: {}, [tool]: {} }
+  const messages = [{ role: "assistant", content: "Previous follow-ups used subagent." }]
+  await f.reload()
+  const request = f.modelContext({ tools, messages })
+  assert.match(request.system[0].text, /pdca_dispatch_v1.*references\/driver\.md/)
+  assert.match(request.system[0].text, /on resume, read the current section/)
+  assert.deepEqual(request.tools, tools)
+  assert.deepEqual(request.messages, messages)
+  assert.deepEqual(f.modelContext({ tools: { subagent: {} } }).system, [])
+  assert.deepEqual(f.modelContext({ tools, agent: "pdca-executor" }).system, [])
+  assert.equal(f.prompts.length, 0)
+})
 
 test("#417: deliver the saved child report without a native result or another execution", async (t) => {
   const f = await fixture(t)
@@ -143,7 +158,7 @@ test("#417: deliver the saved child report without a native result or another ex
   }
   const unrelated = { ...late, metadata: { source: "subagent", childID: "ses_other" } }
   const interim = { ...late, content: [{ type: "text", text: "Still building." }] }
-  assert.deepEqual(f.applyContext([late, unrelated, interim]), [unrelated, interim])
+  assert.deepEqual(f.modelContext({ messages: [late, unrelated, interim] }).messages, [unrelated, interim])
 })
 
 test("restart reconciles a child that finished with no observer", async (t) => {

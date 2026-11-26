@@ -82,11 +82,14 @@ cannot reclaim a manually owned operation.
 
 ## Managed child dispatch
 
-For an already authorized follow-up to a direct PDCA child whose previous work is complete, call
-`pdca_dispatch_v1` with `action: "send"`, an unused key for the logical role turn, the existing
-`child` session ID, and the exact prepared `brief`. Use one sender. Keep the existing route for new
-children, CHECK, and operations that already have an adapter or require a specific final marker.
-No new status fields or election are needed for managed dispatch.
+This route applies when `pdca_dispatch_v1` is available for the driver and the already authorized
+follow-up targets an idle direct `pdca-planner`, `pdca-executor`, `pdca-escalate`, or `pdca-scout`
+child whose previous work is complete. Use the existing route for a new child, CHECK, or an
+operation with its own adapter or required final marker. No status election is needed.
+
+Call `pdca_dispatch_v1` with `action: "send"`, a fresh stable `key` for the logical role turn,
+the existing `child` session ID, and the exact prepared `brief`. Use one sender. If an existing
+key or an uncertain admission is reported, reconcile that turn instead of switching to `subagent`.
 
 `admitted` means queued, not running. Wait for the managed result notice. Use its exact child
 session/message reference as the ordinary role report; the completion marker says transport is

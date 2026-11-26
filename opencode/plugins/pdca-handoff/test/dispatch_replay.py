@@ -11,13 +11,25 @@ MARKER = re.compile(r"PDCA-DISPATCH [a-f0-9]{64} complete")
 
 
 class ManagedDispatch:
+    parent_agent = "pdca-orchestrator"
     native_seen_by_model = False
+    pointer_seen = False
+
+    def setup(self, root, config, _plugin_dir):
+        config["agents"][self.parent_agent] = {"mode": "subagent", "model": "local/parent"}
+        (root / "opencode.json").write_text(json.dumps(config))
 
     def elect(self, _root, owner):
         self.child = owner
 
     def observe_request(self, request):
         if request["model"] == "parent":
+            self.pointer_seen = any(
+                m.get("role") == "system" and
+                "pdca_dispatch_v1 is available" in str(m.get("content")) and
+                "references/driver.md" in str(m.get("content"))
+                for m in request["messages"]
+            )
             self.native_seen_by_model |= any(
                 REPORT in str(m.get("content")) and "<background-result" in str(m.get("content"))
                 for m in request["messages"]
@@ -25,6 +37,8 @@ class ManagedDispatch:
 
     def response(self, model, last, text):
         if model == "parent" and last["role"] == "user" and "Exercise managed dispatch" in text:
+            if not self.pointer_seen:
+                return "missing-transport-pointer", None, "Missing current transport instructions."
             return "managed-send", ("pdca_dispatch_v1", {
                 "action": "send", "key": KEY, "child": self.child, "brief": "Verify PostgreSQL access only.",
             }), None

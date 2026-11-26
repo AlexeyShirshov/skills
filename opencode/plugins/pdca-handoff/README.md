@@ -60,7 +60,9 @@ for managed dispatch.
 
 Confirm that `pdca_dispatch_v1` appears for your driver. It sends a follow-up to an existing direct
 PDCA child. Keep the existing route for initial dispatch, CHECK, and handoffs with their own adapter
-or final report marker. Existing in-flight work is not enrolled.
+or final report marker. When the tool is available to an OpenCode orchestrator, the plugin points
+it to the current dispatch instructions, including in resumed sessions. Existing in-flight work
+is not enrolled.
 
 For each managed follow-up, the plugin records the prompt ID before submission. It checks the
 child's saved result on completion, after a restart, and at the dispatch deadline (10 minutes by

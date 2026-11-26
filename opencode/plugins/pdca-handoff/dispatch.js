@@ -19,6 +19,9 @@ const require = (value, why) => {
 const marker = (ticket) => `PDCA-DISPATCH ${ticket} complete`
 const assistantText = (message) =>
   message.content.filter((p) => p.type === "text" && p.text).map((p) => p.text).join("\n\n")
+const driverPointer =
+  "pdca_dispatch_v1 is available. Before a new role dispatch, apply §Dispatch transport in the " +
+  "base pdca skill's references/driver.md; on resume, read the current section before choosing a sender."
 
 const schema = {
   type: "object",
@@ -155,6 +158,9 @@ export async function installDispatch(ctx, { root, info, fences, serial }) {
   } while (after)
 
   const registration = await sessions.hook("context", (event) => {
+    // A resumed orchestrator may still have pre-plugin instructions in its transcript.
+    if (event.agent === "pdca-orchestrator" && Object.hasOwn(event.tools, tool))
+      event.system.push({ type: "text", text: driverPointer })
     // Native child reports remain in history. Hide only managed marked results
     // from this recipient's model so a late native wake can't route them twice.
     event.messages = event.messages.filter((m) => {

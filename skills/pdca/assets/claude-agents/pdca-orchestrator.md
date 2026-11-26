@@ -52,6 +52,9 @@ missing field instead of inferring one.
   read scope, routed-versus-taken decisions). It is not a second contract; if it cannot be loaded,
   return an explicit blocker instead of reconstructing it. Never derive that directory from the form
   contract's path, a workspace guess or discovery.
+- **On resume after a restart, reload or checkpoint:** refresh `driver.md` §Dispatch transport
+  before the next new role dispatch, using the current tool catalog. Keep pending work on its
+  existing route and reconcile it from its original handle.
 
 For selected skill contracts, follow base §Preflight — required skill contracts. Load a contract
 through the host's skill mechanism by exact ID; only a successful exact-ID host load of the full
